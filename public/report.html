@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Q1 2026 — EMA HQ Program Oversight Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* EMA Brand Colors */
+      --red: #ec482f; --red-dark: #c23018; --red-light: #f9ece8;
+      --dark: #2C2C2C; --mid: #5A5A5A; --light: #F4F6F8; --border: #E0E0E0;
+      --green: #123939; --green-light: #ecefe1;
+      --yellow: #f2a136; --yellow-light: #fef3e8;
+
+      --white: #FFFFFF; --warn: #f2a136; --warn-light: #fef3e8;
+      --orange: #f2a136; --orange-light: #fef3e8;
+      --pink: #f9ece8; --light-pink: #fdf7f3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: var(--light-pink); color: var(--dark); font-size: 14px; line-height: 1.5; }
+
+    /* ── LOGIN OVERLAY ─────────────────────────────────────────────── */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--light-pink);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-overlay.hidden { display: none; }
+    .login-modal {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px 32px 28px;
+      width: 360px;
+      max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .login-modal h2 {
+      font-family: 'Shrikhand', serif;
+      font-size: 22px;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+    .login-modal .login-sub {
+      font-size: 13px;
+      color: var(--mid);
+      margin-bottom: 20px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+    }
+    .login-modal .form-group {
+      text-align: left;
+      margin-bottom: 14px;
+    }
+    .login-modal .form-group label {
+      display: block;
+      font-size: 11px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--mid);
+      margin-bottom: 4px;
+    }
+    .login-modal .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'Lato', sans-serif;
+      color: var(--dark);
+      background: var(--light);
+      transition: border-color 0.15s;
+    }
+    .login-modal .form-group input:focus {
+      outline: none;
+      border-color: var(--red);
+      background: var(--white);
+    }
+    .login-modal .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+    .login-modal .login-btn:hover { background: var(--red-dark); }
+    .login-modal .login-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 10px;
+      min-height: 18px;
+    }
+    .hidden { display: none !important; }
+
+    /* HEADER */
+    .header { background: var(--red); color: var(--white); padding: 20px 32px 16px; }
+    .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .header h1 { font-size: 22px; font-weight: 400; letter-spacing: 0.3px; font-family: 'Shrikhand', serif; }
+    .header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 3px; font-family: 'Oswald', sans-serif; font-weight: 400; letter-spacing: 0.5px; }
+    .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .header-controls label { font-size: 12px; opacity: 0.85; }
+    .header-controls select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 5px 10px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+    .header-controls select option { background: #333; color: white; }
+    .header-controls .logout-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: white;
+      padding: 5px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .header-controls .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+
+    /* TAB NAV */
+    .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; overflow-x: auto; }
+    .tab-btn { padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; }
+    .tab-btn:hover { color: var(--red); }
+    .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
+
+    /* TAB PANELS */
+    .tab-panel { display: none; padding: 28px 32px; }
+    .tab-panel.active { display: block; }
+
+    /* SECTION LABELS */
+    .section-label { font-size: 12px; font-weight: 300; text-transform: uppercase; letter-spacing: 1.5px; color: var(--mid); margin-bottom: 12px; font-family: 'Oswald', sans-serif; }
+    .section-label .anchor-note { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; color: #888; margin-left: 8px; }
+    .section-group { margin-bottom: 32px; }
+
+    /* KPI GAUGE CARDS */
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .kpi-gauge-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 24px 20px 18px; display: flex; flex-direction: column; align-items: center; }
+    .kpi-gauge-card .kpi-num { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--red); margin-bottom: 4px; }
+    .kpi-gauge-card .kpi-name { font-size: 13px; font-weight: 600; color: var(--dark); text-align: center; margin-bottom: 18px; min-height: 36px; display: flex; align-items: center; line-height: 1.35; font-family: 'Oswald', sans-serif; letter-spacing: 0.3px; }
+    .kpi-gauge-wrap { position: relative; margin-bottom: 14px; }
+    .kpi-gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+    .kpi-gauge-center .kgc-val { font-size: 28px; font-weight: 700; color: var(--dark); line-height: 1; }
+    .kpi-gauge-center .kgc-sub { font-size: 10px; color: #bbb; margin-top: 4px; line-height: 1.3; }
+    /* KPI GAUGE STATUS COLORS — all gauges use same color driven by performance status */
+    /* Pending (no data): neutral gray arc */
+    .kpi-gauge-card .gauge-arc-fill   { stroke: #D0D0D0; }
+    .kpi-gauge-card .gauge-arc-band   { stroke: #EFEFEF; }
+    .kpi-gauge-card .gauge-tick       { stroke: #AAAAAA; }
+    /* On Track (>= goal): brand green */
+    .kpi-gauge-card.on-track .gauge-arc-fill { stroke: #123939; }
+    .kpi-gauge-card.on-track .gauge-arc-band { stroke: #ecefe1; }
+    .kpi-gauge-card.on-track .gauge-tick     { stroke: #123939; }
+    /* Close (within ~5%): brand yellow */
+    .kpi-gauge-card.close .gauge-arc-fill    { stroke: #f2a136; }
+    .kpi-gauge-card.close .gauge-arc-band    { stroke: #fef3e8; }
+    .kpi-gauge-card.close .gauge-tick        { stroke: #f2a136; }
+    /* Below target: brand red-orange */
+    .kpi-gauge-card.below .gauge-arc-fill    { stroke: #ec482f; }
+    .kpi-gauge-card.close .gauge-arc-band    { stroke: #f9ece8; }
+    .kpi-gauge-card.below .gauge-tick        { stroke: #ec482f; }
+
+    .kpi-badge { padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 14px; font-family: 'Oswald', sans-serif; }
+    .kpi-badge.pending { background: var(--light); color: var(--mid); border: 1px solid var(--border); }
+    .kpi-badge.on-track { background: var(--green-light); color: var(--green); }
+    .kpi-badge.below { background: var(--red-light); color: var(--red); }
+    .kpi-badge.close { background: var(--warn-light); color: var(--warn); }
+    .kpi-desc { font-size: 12px; color: var(--mid); text-align: center; line-height: 1.5; margin-bottom: 6px; }
+    .kpi-anchor-sm { font-size: 10px; color: #bbb; font-style: italic; text-align: center; margin-bottom: 8px; }
+    /* -- TOGGLE DETAIL PANELS ------------------------------------------------- */
+    details.kpi-detail,
+    details.eff-detail { width: 100%; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
+
+    details.kpi-detail summary,
+    details.eff-detail summary {
+      font-size: 11px; font-family: 'Oswald', sans-serif; font-weight: 300;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--mid); cursor: pointer; text-align: center;
+      list-style: none; padding: 4px 0; user-select: none;
+    }
+    details.kpi-detail summary::-webkit-details-marker,
+    details.eff-detail summary::-webkit-details-marker { display: none; }
+    details.kpi-detail summary::after,
+    details.eff-detail summary::after { content: " \2193"; font-size: 10px; }
+    details.kpi-detail[open] summary::after,
+    details.eff-detail[open] summary::after { content: " \2191"; font-size: 10px; }
+    details.kpi-detail summary:hover,
+    details.eff-detail summary:hover { color: var(--dark); }
+
+    /* Open state body */
+    details.kpi-detail .kd-body,
+    details.eff-detail .ed-body {
+      margin-top: 10px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--dark);
+    }
+    /* Row within an open toggle body */
+    .di-row {
+      display: flex;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      align-items: flex-start;
+    }
+    .di-row:last-child { border-bottom: none; }
+    .di-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; width: 18px; text-align: center; }
+    .di-label { font-size: 10px; font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); flex-shrink: 0; width: 90px; padding-top: 2px; }
+    .di-val { flex: 1; color: var(--dark); }
+    .di-warn { color: #a05000; }
+    .di-ok { color: var(--green); }
+    .di-flag { color: var(--red); }
+
+    /* EFFICIENCY METRIC CARDS */
+    .efficiency-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .eff-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 24px 20px 18px; display: flex; flex-direction: column; align-items: center; }
+    .eff-card .eff-num { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--red); margin-bottom: 4px; }
+    .eff-card .eff-name { font-size: 13px; font-weight: 600; color: var(--dark); text-align: center; margin-bottom: 20px; font-family: 'Oswald', sans-serif; letter-spacing: 0.3px; }
+    .eff-value-block { text-align: center; margin-bottom: 14px; }
+    .eff-value-block .ev-main { font-size: 40px; font-weight: 700; color: var(--dark); line-height: 1; font-family: 'Oswald', sans-serif; }
+    .eff-value-block .ev-main.placeholder { font-size: 36px; color: #ccc; }
+    .eff-value-block .ev-sub { font-size: 11px; color: #bbb; margin-top: 6px; }
+    .eff-formula { font-size: 11px; color: var(--mid); background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; margin-bottom: 12px; font-family: 'Oswald', sans-serif; font-weight: 300; letter-spacing: 0.5px; text-transform: uppercase; }
+    .eff-desc { font-size: 12px; color: var(--mid); text-align: center; line-height: 1.5; margin-bottom: 6px; }
+    .eff-anchor-sm { font-size: 10px; color: #bbb; font-style: italic; text-align: center; margin-bottom: 8px; }
+
+
+    /* STATUS COUNT GRID (replaces funnel) */
+    .status-count-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+    .status-group { margin-bottom: 20px; }
+    .status-group:last-child { margin-bottom: 0; }
+    .status-group-header { font-size: 11px; font-weight: 300; text-transform: uppercase; letter-spacing: 1.5px; color: var(--mid); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-family: 'Oswald', sans-serif; }
+    .status-group-header .sg-logic { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 10px; color: #aaa; font-style: italic; }
+    .status-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+    .status-card { flex: 1; min-width: 140px; background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+    .status-card.primary { border-color: var(--red); background: var(--red-light); }
+    .status-card.sub-a { border-color: var(--green); background: var(--green-light); }
+    .status-card.sub-b { border-color: var(--yellow); background: var(--yellow-light); }
+    .status-card .sc-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); margin-bottom: 4px; }
+    .status-card .sc-value { font-size: 28px; font-weight: 700; color: var(--dark); }
+    .status-card .sc-note { font-size: 10px; color: #888; margin-top: 3px; font-style: italic; }
+    .status-sum-note { font-size: 11px; color: var(--mid); font-style: italic; margin-top: 10px; text-align: center; }
+
+    /* ADVOCATE PIPELINE */
+    .advocate-pipeline { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+    .adv-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .adv-step { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+    .adv-step .adv-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); margin-bottom: 4px; }
+    .adv-step .adv-value { font-size: 26px; font-weight: 700; color: var(--dark); }
+    .adv-step .adv-sub { font-size: 10px; color: #aaa; margin-top: 2px; }
+    .adv-step.active-step { border-color: var(--red); background: var(--red-light); }
+    .adv-ratio { margin-top: 14px; background: var(--green-light); border: 1px solid #c8d9c8; border-radius: 6px; padding: 10px 16px; display: flex; gap: 32px; font-size: 12px; }
+    .adv-ratio .ratio-item strong { font-size: 18px; margin-right: 4px; }
+
+    /* FSS TREND CHART */
+    .fss-trend-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+    .fss-trend-panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-family: 'Oswald', sans-serif; }
+    .fss-trend-panel .trend-subtitle { font-size: 11px; color: var(--mid); margin-bottom: 20px; }
+    .trend-chart-wrap { position: relative; width: 100%; }
+    .trend-svg { width: 100%; height: auto; display: block; }
+    .trend-legend { display: flex; gap: 20px; margin-top: 12px; font-size: 11px; color: var(--mid); }
+    .trend-legend .leg-item { display: flex; align-items: center; gap: 6px; }
+    .trend-legend .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* DOMAIN CARDS -- 3 TIMEPOINTS */
+    .domain-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .domain-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+    .domain-card .d-name { font-size: 11px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+    .d-timepoints { display: flex; justify-content: space-between; margin-bottom: 8px; gap: 4px; }
+    .d-tp { text-align: center; flex: 1; }
+    .d-tp .d-tp-val { font-size: 16px; font-weight: 700; color: var(--dark); }
+    .d-tp .d-tp-lbl { font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 0.3px; }
+    .d-sparkline { margin: 6px 0; }
+    .d-sparkline svg { width: 100%; height: 28px; display: block; }
+    .domain-card .d-delta { font-size: 11px; font-weight: 700; text-align: center; padding: 2px 6px; border-radius: 3px; }
+    .domain-card .d-delta.pos { background: var(--green-light); color: var(--green); }
+    .domain-card .d-delta.neg { background: var(--red-light); color: var(--red); }
+    .domain-card .d-delta.neu { background: var(--light); color: var(--mid); }
+    .fss-child-welfare-note { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; font-size: 12px; color: var(--mid); margin-top: 4px; }
+
+    /* SNAPSHOT */
+    /* ENTITY COUNT BANDS (Moms / Advocates / Children) */
+    .entity-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .entity-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: stretch; overflow: hidden; }
+    /* Left headline block */
+    .entity-card .ec-left { min-width: 160px; max-width: 160px; background: var(--light); border-right: 1px solid var(--border); padding: 20px 18px; display: flex; flex-direction: column; justify-content: center; }
+    .entity-card.ec-moms .ec-left        { background: var(--red-light); border-right-color: #e8c4ba; }
+    .entity-card.ec-advocates .ec-left   { background: var(--green-light); border-right-color: #b8ccb8; }
+    .entity-card.ec-children .ec-left    { background: var(--yellow-light); border-right-color: #e8d0a8; }
+    .entity-card.ec-moms .ec-entity      { color: var(--red); }
+    .entity-card.ec-advocates .ec-entity { color: var(--green); }
+    .entity-card.ec-children .ec-entity  { color: #a06c10; }
+    .entity-card .ec-entity { font-size: 11px; font-weight: 300; text-transform: uppercase; letter-spacing: 2px; color: var(--mid); font-family: 'Oswald', sans-serif; margin-bottom: 6px; }
+    .entity-card .ec-total { font-size: 44px; font-weight: 700; color: var(--dark); line-height: 1; font-family: 'Oswald', sans-serif; }
+    .entity-card .ec-total.placeholder { color: #ccc; }
+    .entity-card .ec-total-label { font-size: 10px; color: #aaa; margin-top: 4px; line-height: 1.3; }
+    /* Right metrics area */
+    .entity-card .ec-right { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .entity-card .ec-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    .entity-card .ec-stat { padding: 8px 14px; border-right: 1px solid var(--border); }
+    .entity-card .ec-stat:last-child { border-right: none; }
+    .entity-card .ec-stat-val { font-size: 22px; font-weight: 700; color: var(--dark); font-family: 'Oswald', sans-serif; line-height: 1; }
+    .entity-card .ec-stat-val.placeholder { color: #ccc; font-weight: 400; }
+    .entity-card .ec-stat-label { font-size: 11px; color: var(--mid); margin-top: 4px; line-height: 1.3; }
+    .entity-card .ec-stat-sub { font-size: 10px; color: #aaa; margin-top: 2px; font-style: italic; line-height: 1.2; }
+    .entity-card .ec-note { font-size: 10px; color: #aaa; font-style: italic; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.4; }
+    .fwa-currency-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .fwa-currency-panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-family: 'Oswald', sans-serif; }
+    .fwa-currency-panel .fwa-note { font-size: 12px; color: var(--mid); margin-bottom: 14px; }
+    .fwa-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .fwa-bar-label { font-size: 12px; width: 140px; flex-shrink: 0; }
+    .fwa-bar-track { flex: 1; background: var(--border); border-radius: 4px; height: 10px; }
+    .fwa-bar-fill { height: 10px; border-radius: 4px; background: var(--green); }
+    .fwa-bar-fill.low { background: var(--yellow); }
+    .fwa-bar-fill.critical { background: var(--red); }
+    .fwa-bar-pct { font-size: 12px; font-weight: 600; width: 40px; text-align: right; }
+
+    /* VITAL SUPPORTS */
+    .vital-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .vital-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+    .vital-card .vital-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .vital-card .vital-count { font-size: 22px; font-weight: 700; }
+    .vital-card .vital-sub { font-size: 11px; color: #aaa; }
+    .vital-card.has-flags .vital-count { color: var(--warn); }
+
+    /* PROGRAM SPLIT STACKED BAR */
+    .program-split-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 12px; }
+    .program-split-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--mid); margin-bottom: 14px; }
+    .program-split-bar { display: flex; height: 44px; border-radius: 6px; overflow: hidden; margin-bottom: 14px; background: var(--border); }
+    .program-split-seg { display: flex; align-items: center; justify-content: center; padding: 0 10px; transition: flex 0.3s; min-width: 80px; }
+    .program-split-seg.track { background: var(--green); }
+    .program-split-seg.mc { background: var(--yellow); }
+    .program-split-seg span { color: white; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .program-split-legend { display: flex; gap: 20px; font-size: 12px; color: var(--mid); flex-wrap: wrap; }
+    .program-split-legend .leg-item { display: flex; align-items: center; gap: 6px; }
+    .program-split-legend .leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .program-split-source { font-size: 10px; color: #aaa; margin-top: 8px; font-style: italic; }
+
+    /* TRACK OVERSIGHT */
+    .stalled-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stalled-card { background: var(--white); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid var(--border); }
+    .stalled-card .st-val { font-size: 28px; font-weight: 700; }
+    .stalled-card .st-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; color: var(--mid); }
+    .stalled-card .st-sub { font-size: 11px; color: #888; margin-top: 3px; }
+    .stalled-card.ok { border-color: var(--green); background: var(--green-light); }
+    .stalled-card.ok .st-val { color: var(--green); }
+    .stalled-card.warn { border-color: var(--yellow); background: var(--yellow-light); }
+    .stalled-card.warn .st-val { color: var(--yellow); }
+    .stalled-card.hot { border-color: var(--yellow); background: var(--yellow-light); }
+    .stalled-card.hot .st-val { color: var(--yellow); }
+    .stalled-card.crit { border-color: var(--red); background: var(--red-light); }
+    .stalled-card.crit .st-val { color: var(--red); }
+    .track-depth-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+    .track-depth-panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-family: 'Oswald', sans-serif; }
+    .track-depth-panel .td-subtitle { font-size: 11px; color: var(--mid); margin-bottom: 20px; }
+    .track-depth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .track-col h4 { font-size: 12px; font-weight: 700; color: var(--dark); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .lesson-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .lesson-row .lr-label { font-size: 11px; color: var(--mid); width: 52px; flex-shrink: 0; }
+    .lesson-row .lr-bar-track { flex: 1; background: var(--light); border-radius: 3px; height: 20px; position: relative; }
+    .lesson-row .lr-bar-fill { height: 20px; border-radius: 3px; background: var(--green); display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; min-width: 20px; }
+    .lesson-row .lr-bar-fill .lr-count { font-size: 11px; font-weight: 700; color: white; }
+    .lesson-row .lr-bar-fill.stalled { background: var(--yellow); }
+    .lesson-row .lr-bar-fill.stalled .lr-count { color: var(--dark); }
+    .lesson-row .lr-pct { font-size: 11px; color: var(--mid); width: 36px; text-align: right; }
+    .stalled-affiliate-table { background: var(--white); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .stalled-affiliate-table table { width: 100%; border-collapse: collapse; }
+    .stalled-affiliate-table th { background: var(--light); padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); text-align: left; border-bottom: 2px solid var(--border); }
+    .stalled-affiliate-table td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .stalled-affiliate-table tr:last-child td { border-bottom: none; }
+    .stalled-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .dot-green { background: var(--green); }
+    .dot-yellow { background: var(--yellow); }
+    .dot-orange { background: var(--yellow); }
+    .dot-red { background: var(--red); }
+    .fidelity-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .fidelity-panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; font-family: 'Oswald', sans-serif; }
+    .fidelity-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .fidelity-row:last-child { border-bottom: none; }
+    .fidelity-row .fr-label { color: var(--mid); }
+    .fidelity-row .fr-val { font-weight: 700; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+    .badge.green { background: var(--green-light); color: var(--green); }
+    .badge.yellow { background: var(--yellow-light); color: var(--yellow); }
+    .badge.red { background: var(--red-light); color: var(--red); }
+    .badge.gray { background: var(--light); color: var(--mid); }
+
+    /* AFFILIATE TABLE */
+    .affiliate-table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .affiliate-table-wrap table { width: 100%; border-collapse: collapse; }
+    .affiliate-table-wrap th { background: var(--light); padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); text-align: left; border-bottom: 2px solid var(--border); }
+    .affiliate-table-wrap td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .affiliate-table-wrap tr:last-child td { border-bottom: none; }
+    .affiliate-table-wrap tr:hover td { background: var(--light); }
+    .cell-anchor { font-size: 10px; color: #bbb; display: block; font-style: italic; }
+    .fwa-flag { color: var(--warn); font-size: 12px; font-weight: 600; }
+
+    /* SHARED */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; font-family: 'Oswald', sans-serif; }
+    .status-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .status-row:last-child { border-bottom: none; }
+    .status-row .sr-label { color: var(--mid); }
+    .status-row .sr-val { font-weight: 700; }
+    .data-note { font-size: 11px; color: #888; font-style: italic; margin-top: 8px; }
+    .placeholder { color: #bbb; font-weight: 400; }
+    .fss-integrity-banner { background: var(--green-light); border: 1px solid #b8ccb8; border-radius: 6px; padding: 12px 16px; font-size: 12px; color: var(--green); margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; }
+    .fss-cohort-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .cohort-stat { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+    .cohort-stat .cs-label { font-size: 11px; color: var(--mid); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .cohort-stat .cs-value { font-size: 24px; font-weight: 700; }
+    .cohort-stat .cs-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+
+    /* PRE-RELEASE CHECKLIST */
+    .checklist-section { margin-bottom: 28px; }
+    .checklist-section h3 { font-family: "Oswald", sans-serif; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; color: var(--dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .checklist-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+    .checklist-item.blocker { border-left: 3px solid var(--red); }
+    .checklist-item.confirm { border-left: 3px solid var(--yellow); }
+    .checklist-item.nice { border-left: 3px solid var(--green); }
+    .ci-tag { font-family: "Oswald", sans-serif; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 8px; border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+    .ci-tag.blocker { background: var(--red-light); color: var(--red); }
+    .ci-tag.confirm { background: var(--yellow-light); color: var(--yellow); }
+    .ci-tag.nice { background: var(--green-light); color: var(--green); }
+    .ci-body { flex: 1; }
+    .ci-title { font-weight: 700; color: var(--dark); margin-bottom: 2px; }
+    .ci-detail { font-size: 12px; color: var(--mid); line-height: 1.5; }
+    .ci-owner { font-size: 11px; color: #aaa; margin-top: 3px; font-style: italic; }
+
+    /* INLINE OBSERVATION CALLOUTS */
+    .obs-callout { background: var(--light); border-left: 3px solid var(--yellow); border-radius: 0 6px 6px 0; padding: 10px 14px; margin-top: 12px; font-size: 12px; color: var(--mid); line-height: 1.6; }
+    .obs-callout .obs-title { font-family: 'Oswald', sans-serif; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--yellow); margin-bottom: 4px; }
+    .obs-callout ul { margin: 4px 0 0 14px; }
+    .obs-callout li { margin-bottom: 2px; }
+    @media (max-width: 900px) {
+      .kpi-grid, .adv-steps, .stalled-summary { grid-template-columns: repeat(2, 1fr); }
+      .entity-card .ec-stats { grid-template-columns: repeat(2, 1fr); }
+      .entity-card .ec-left { min-width: 120px; max-width: 120px; }
+      .domain-grid { grid-template-columns: 1fr 1fr; }
+      .track-depth-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     LOGIN OVERLAY — Trellis Auth
+════════════════════════════════════════════ -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-modal">
+    <h2>EMA KPI Dashboard</h2>
+    <div class="login-sub">Sign in with your Trellis credentials</div>
+    <div class="form-group">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" placeholder="Trellis username" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DASHBOARD — hidden until authenticated
+════════════════════════════════════════════ -->
+<div id="dashboard" class="hidden">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>EMA HQ Program Oversight Report</h1>
+      <div class="subtitle">Q1 2026 &nbsp;&middot;&nbsp; January 1 &ndash; March 31, 2026 &nbsp;&middot;&nbsp; Data source: Trellis (Railway PostgreSQL)</div>
+    </div>
+    <div class="header-controls">
+      <div>
+        <label>Period</label><br/>
+        <select>
+          <option selected>Q1 2026 (Jan 1 &ndash; Mar 31)</option>
+          <option>Q4 2025 (Oct 1 &ndash; Dec 31)</option>
+          <option>Q3 2025 (Jul 1 &ndash; Sep 30)</option>
+        </select>
+      </div>
+      <div id="affiliateSlicerWrap" style="display:none;">
+        <label>Affiliate</label><br/>
+        <select id="affiliateFilter">
+          <option value="all">All Affiliates</option>
+        </select>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- DATA BANNER — live data indicator -->
+<div id="dataBanner" style="background:var(--green-light);border-bottom:3px solid var(--green);padding:10px 32px;display:flex;align-items:center;gap:10px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:300;letter-spacing:0.5px;color:var(--green);">
+  <span style="font-size:16px">&#x2705;</span>
+  <span><strong style="font-weight:600">Live Data &mdash; Connected to Trellis (Railway PostgreSQL)</strong> &nbsp;&middot;&nbsp; <span id="bannerUserInfo">Loading user info...</span></span>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('kpis', this)">KPIs &amp; Status</button>
+  <button class="tab-btn" onclick="showTab('fss', this)">FWA Data Integrity</button>
+  <button class="tab-btn" onclick="showTab('affiliates', this)">Referral Sources</button>
+  <button class="tab-btn" onclick="showTab('track', this)">Track Oversight</button>
+  <button class="tab-btn" onclick="showTab('checklist', this)" style="color:var(--yellow);">&#x1F6A7; Pre-Release Checklist</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB 1 — KPIs & STATUS COUNTS
+════════════════════════════════════════════ -->
+<div id="tab-kpis" class="tab-panel active">
+
+  <!-- KPI SCORECARDS -->
+  <div class="section-group">
+    <div class="section-label">Core KPIs &mdash; Q1 2026
+      <span class="anchor-note">KPI 1 &amp; 2: 3-month FWA window (Trellis go-live December 2025 &mdash; not yet 6 months) &middot; KPI 3: track completion date in Q1 &middot; Expand each card for data integrity notes</span>
+    </div>
+    <div class="kpi-grid">
+
+      <!-- KPI 1 — Family Preservation Rate — 86.2% ON TRACK -->
+      <div class="kpi-gauge-card on-track">
+        <div class="kpi-num">KPI 1</div>
+        <div class="kpi-name">Family Preservation Rate</div>
+        <div class="kpi-gauge-wrap">
+          <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background track: 270deg arc -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target band up to 85% : 85x2.827=240.3 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="240.3 376.9" transform="rotate(135 80 80)"/>
+            <!-- Fill: 86.2% -> 86.2x2.827=243.7 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="243.7 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target tick at 85%: offset=-(240.3) -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
+              stroke-dasharray="3 373.9" stroke-dashoffset="-240.3" transform="rotate(135 80 80)"/>
+            <!-- Center text -->
+            <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">86%</text>
+            <text x="80" y="91" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 85%</text>
+            <!-- Target label -->
+            <text x="80" y="109" text-anchor="middle" font-size="10" fill="#ec482f" font-weight="700" font-family="Arial,sans-serif">&#x25B2; goal line</text>
+          </svg>
+        </div>
+        <div class="kpi-badge on-track">On Track &#x2713;</div>
+        <div class="eff-formula">Children Intact at FWA &divide; Children with Valid 3-Mo FWA</div>
+        <div class="kpi-anchor-sm">50 of 58 eligible children intact &nbsp;&middot;&nbsp; 20 children excluded (no valid FWA)</div>
+        <details class="kpi-detail">
+          <summary>Data integrity notes</summary>
+          <div class="kd-body">
+  <div class="di-row"><div class="di-label">Unit</div><div class="di-val">Child profiles (not moms)</div></div>
+  <div class="di-row"><div class="di-label">Numerator</div><div class="di-val di-ok">50 children with family intact at 3-month FWA re-assessment (no permanent custody removal)</div></div>
+  <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">58 children linked to moms with a valid FWA submitted within the last 3 months as of Mar 31</div></div>
+  <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">20 children linked to moms without a valid FWA &mdash; surfaced in FWA Data Integrity tab, not silently dropped</div></div>
+  <div class="di-row"><div class="di-label">FWA Window</div><div class="di-val">3-month &mdash; EMA migrated from PromiseServes to Trellis in December 2025; it has not yet been 6 months since go-live</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Known Issue</div><div class="di-val di-flag">FWA timestamp bug: a field-level edit updates the full submission date &mdash; "current" may not mean a full re-assessment was conducted. Validate before finalizing denominator.</div></div>
+</div>
+        </details>
+      </div>
+
+      <!-- KPI 2 — Family Stability Score Improvement — 71.2% ON TRACK -->
+      <div class="kpi-gauge-card on-track">
+        <div class="kpi-num">KPI 2</div>
+        <div class="kpi-name">Family Stability Score Improvement</div>
+        <div class="kpi-gauge-wrap">
+          <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target band up to 70% : 70x2.827=197.9 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="197.9 376.9" transform="rotate(135 80 80)"/>
+            <!-- Fill: 71.2% -> 71.2x2.827=201.3 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="201.3 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target tick at 70% -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
+              stroke-dasharray="3 373.9" stroke-dashoffset="-197.9" transform="rotate(135 80 80)"/>
+            <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">71%</text>
+            <text x="80" y="91" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 70%</text>
+            <text x="80" y="109" text-anchor="middle" font-size="10" fill="#ec482f" font-weight="700" font-family="Arial,sans-serif">&#x25B2; goal line</text>
+          </svg>
+        </div>
+        <div class="kpi-badge on-track">On Track &#x2713;</div>
+        <div class="eff-formula">Moms with FSS Improvement &divide; Moms with Valid 3-Mo FWA Pair</div>
+        <div class="kpi-anchor-sm">37 of 52 moms show composite FSS improvement &nbsp;&middot;&nbsp; 23 moms excluded (no valid FWA pair)</div>
+        <details class="kpi-detail">
+          <summary>Data integrity notes</summary>
+          <div class="kd-body">
+  <div class="di-row"><div class="di-label">Numerator</div><div class="di-val di-ok">37 moms with both intake FWA and valid 3-month re-assessment showing composite FSS improvement (positive delta across scored domains)</div></div>
+  <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">52 moms with a valid intake FWA and valid 3-month re-assessment on record as of Mar 31</div></div>
+  <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">23 moms in eligible cohort without a valid FWA pair &mdash; surfaced in FWA Data Integrity tab, not silently dropped</div></div>
+  <div class="di-row"><div class="di-label">FWA Window</div><div class="di-val">3-month &mdash; EMA migrated from PromiseServes to Trellis in December 2025; it has not yet been 6 months since go-live</div></div>
+  <div class="di-row"><div class="di-label">FSS Domains</div><div class="di-val">10 scored domains composited &mdash; Child Welfare domain excluded by design, tracked separately for KPI 1</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Known Issue</div><div class="di-val di-flag">FWA timestamp bug applies &mdash; re-assessment timestamps should be validated as full submissions before crediting in denominator</div></div>
+</div>
+        </details>
+      </div>
+
+      <!-- KPI 3 — Learning Progress — 72.2% ON TRACK -->
+      <div class="kpi-gauge-card on-track">
+        <div class="kpi-num">KPI 3</div>
+        <div class="kpi-name">Learning Progress</div>
+        <div class="kpi-gauge-wrap">
+          <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target band up to 70% : 197.9 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="197.9 376.9" transform="rotate(135 80 80)"/>
+            <!-- Fill: 72.2% -> 72.2x2.827=204.1 -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="204.1 376.9" transform="rotate(135 80 80)"/>
+            <!-- Target tick at 70% -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
+              stroke-dasharray="3 373.9" stroke-dashoffset="-197.9" transform="rotate(135 80 80)"/>
+            <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">72%</text>
+            <text x="80" y="91" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 70%</text>
+            <text x="80" y="109" text-anchor="middle" font-size="10" fill="#ec482f" font-weight="700" font-family="Arial,sans-serif">&#x25B2; goal line</text>
+          </svg>
+        </div>
+        <div class="kpi-badge on-track">On Track &#x2713;</div>
+        <div class="eff-formula">Completions with Pre/Post Improvement &divide; Total Track Completions</div>
+        <div class="kpi-anchor-sm">13 of 18 completions show measurable improvement &nbsp;&middot;&nbsp; NPP: 8/10 &middot; EP: 3/5 &middot; RtR: 2/3</div>
+        <details class="kpi-detail">
+          <summary>Data integrity notes</summary>
+          <div class="kd-body">
+  <div class="di-row"><div class="di-label">Numerator</div><div class="di-val di-ok">13 moms with Completed Full Track status in Q1 showing positive pre/post assessment delta</div></div>
+  <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">18 total track completions in Q1 &mdash; Full Track (11) + Without Support Sessions (4) + Without Post Assessment (3)</div></div>
+  <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">Same-day track-swap duplicates &mdash; a same-day Incomplete + new track open is a Trellis front-end workaround, not a real exit</div></div>
+  <div class="di-row"><div class="di-label">FWA Dependency</div><div class="di-val di-ok">None &mdash; KPI 3 does not rely on FWA data</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Pending</div><div class="di-val di-flag">Pre/post assessment score field mapping needs confirmation with RD. "Measurable improvement" threshold must be defined before reporting externally.</div></div>
+</div>
+        </details>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EFFICIENCY & CONNECTION METRICS -->
+  <div class="section-group">
+    <div class="section-label">Program Efficiency &amp; Connection Metrics
+      <span class="anchor-note">Cost Per Family requires Q1 spend from finance &middot; Service Connection Rate sourced from Trellis connected services</span>
+    </div>
+    <div class="efficiency-grid">
+
+      <!-- Cost Per Family -->
+      <div class="eff-card">
+        <div class="eff-num">Efficiency</div>
+        <div class="eff-name">Cost Per Family Served</div>
+        <div class="eff-value-block">
+          <div class="ev-main placeholder" style="font-size:20px;color:#bbb">Pending<br>Finance</div>
+          <div class="ev-sub">Q1 spend not yet received from finance</div>
+        </div>
+        <div class="eff-formula">Q1 Spend &divide; Families Served</div>
+        <div class="eff-desc">Total program spend for the quarter divided by the number of unique families served during Q1.</div>
+        <div class="eff-anchor-sm">Q1 Spend: pending finance &middot; Families Served: 264</div>
+        <details class="eff-detail">
+          <summary>Data integrity notes</summary>
+          <div class="ed-body">Q1 spend data is not yet in Trellis &mdash; requires a manual input from finance or a connected system. Families served = unique moms active at any point during Q1 (active pairing or active program status). Confirm spend scope with finance before publishing: include direct program costs only, or fully loaded?</div>
+        </details>
+      </div>
+
+      <!-- Service Connection Rate -->
+      <div class="eff-card">
+        <div class="eff-num">Connection</div>
+        <div class="eff-name">Service Connection Rate</div>
+        <div class="eff-value-block">
+          <div class="ev-main">75.5%</div>
+          <div class="ev-sub">of families &middot; Q1 2026</div>
+        </div>
+        <div class="eff-formula">Connected &amp; Utilizing &divide; Active Families</div>
+        <div class="eff-desc">% of families connected to and actively utilizing at least one concrete support (housing, childcare, job training, etc.) via a connected service initiated in Trellis.</div>
+        <div class="eff-anchor-sm">Connected services in Trellis: 71 families &nbsp;&middot;&nbsp; Active families: 94</div>
+        <details class="eff-detail">
+          <summary>Data integrity notes</summary>
+          <div class="ed-body">
+  <div class="di-row"><div class="di-label">Formula</div><div class="di-val">Connected &amp; Utilizing &divide; Active Families</div></div>
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val">Connected services initiated in Trellis during Q1</div></div>
+  <div class="di-row"><div class="di-label">Rule</div><div class="di-val">"Utilizing" = at least one active service record &mdash; referral alone does not count</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Pending</div><div class="di-val di-flag">Confirm with RD: denominator = all active families, or only those with completed intake? Confirm which service categories to include.</div></div>
+</div>
+        </details>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MOM STATUS COUNTS — CROSS-COHORT -->
+  <div class="section-group">
+    <div class="section-label">Program Status &mdash; Q1 2026</div>
+
+    <!-- 1 FAMILIES SERVED — primary headline number -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;">
+      <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:4px;">Families Served &mdash; Active During Q1</div>
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="font-size:52px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">94</span>
+            <span style="font-size:13px;color:var(--mid);">Client Status = Active, overlaps Q1 &nbsp;&middot;&nbsp; primary count for grant &amp; investor reporting</span>
+          </div>
+        </div>
+      </div>
+      <!-- Composition bar -->
+      <div class="program-split-bar" style="margin-bottom:12px;">
+        <div class="program-split-seg track" style="flex:61;">
+          <span>Active in Track &nbsp;&middot;&nbsp; 61</span>
+        </div>
+        <div class="program-split-seg mc" style="flex:33;">
+          <span>Membership Community &nbsp;&middot;&nbsp; 33</span>
+        </div>
+      </div>
+      <div class="program-split-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div> <strong>Active in Track</strong> &mdash; has an active pairing in Trellis (pairing_status = 'active')</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div> <strong>Membership Community</strong> &mdash; Client Status Active, no active pairing</div>
+      </div>
+      <div class="program-split-source" style="margin-top:8px;">Active in Track + Membership Community = 94 Families Served &nbsp;&middot;&nbsp; No mom counted in both &nbsp;&middot;&nbsp; Source: pairing table only &mdash; program track-status field not used (optional/unreliable in Trellis)</div>
+    </div>
+
+    <!-- 2 Q1 ACTIVITY — what happened this quarter -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);">Q1 Activity &mdash; Event-Based Counts <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:8px;">Date anchor: event date falls Jan 1&ndash;Mar 31, 2026</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
+        <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Referrals Received</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">31</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Referral submitted date in Q1</div>
+        </div>
+        <div style="padding:8px 16px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Intakes Completed</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">22</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Intake date in Q1</div>
+        </div>
+        <div style="padding:8px 0 8px 16px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Track Completions</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">18</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Any complete variant in Q1 &mdash; 11 Full Track, 4 w/o Support, 3 w/o Post Assessment</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 CHILDREN IMPACT -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);">Children Served <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:8px;">Based on active moms &middot; proxy average where child count missing &middot; legal authority filter applied</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
+        <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Children Served</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">142</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Sum across active moms &middot; excludes children without mom's legal authority</div>
+        </div>
+        <div style="padding:8px 16px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Child Welfare Prevention</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">28</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Children prevented from child welfare involvement (Child Welfare FWA domain)</div>
+        </div>
+        <div style="padding:8px 0 8px 16px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Est. Impact Value</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">~$1.09M</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">28 &times; $38,850 claimed impact per child &middot; estimated prevention value &mdash; not a hard claim</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ADVOCATE SECTION -->
+  <div class="section-group">
+    <div class="section-label">Advocate Status &mdash; Q1 2026</div>
+
+    <!-- 1 ACTIVE ADVOCATES — primary headline -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:4px;">Active Advocates &mdash; Overlaps Q1</div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px;">
+        <span style="font-size:52px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">57</span>
+        <span style="font-size:13px;color:var(--mid);">Total active advocates &middot; 1:1 paired + group facilitators</span>
+      </div>
+      <!-- Breakdown bar: 1:1 vs group facilitator -->
+      <div style="background:var(--border);border-radius:6px;height:28px;display:flex;overflow:hidden;margin-bottom:12px;">
+        <div style="background:var(--green);flex:52;display:flex;align-items:center;padding-left:12px;">
+          <span style="font-size:12px;font-weight:700;color:white;">1:1 Advocates &nbsp;&middot;&nbsp; 52</span>
+        </div>
+        <div style="background:var(--yellow);flex:5;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:12px;font-weight:700;color:var(--dark);">Group &nbsp;&middot;&nbsp; 5</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:12px;color:var(--mid);margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--green);flex-shrink:0;"></div> <strong id="advLegend11">1:1 Advocates (—)</strong> &mdash; paired via pairing table &middot; advocate user ID</div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--yellow);flex-shrink:0;"></div> <strong id="advLegendGroup">Group Facilitators (—)</strong> &mdash; lead group sessions &middot; counted separately from pairing table</div>
+      </div>
+      <!-- Ratios -->
+      <div style="background:var(--green-light);border:1px solid #c8d9c8;border-radius:6px;padding:12px 16px;display:flex;gap:32px;flex-wrap:wrap;font-size:12px;">
+        <div><span id="advRatio" style="font-size:20px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">—</span> <span id="advRatioNote" style="color:var(--mid);">paired moms per advocate in active pairing</span></div>
+        <div><span id="advPaired11" style="font-size:20px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">—</span> <span style="color:var(--mid);">1:1 advocates with active pairing</span></div>
+        <div><span id="advGroupCount" style="font-size:20px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">—</span> <span style="color:var(--mid);">group facilitators with active pairing</span></div>
+      </div>
+      <div class="data-note" style="margin-top:10px;">&#x26A0; <strong>Ratio definition:</strong> Numerator = moms in an active pairing (1:1 or group) on 3/31. Denominator = advocates in an active pairing (1:1 paired advocates + group facilitators). Advocates awaiting match are active but not in the denominator of this ratio &mdash; they represent available capacity, not current load. &#x26A0; <strong>Group facilitator count unconfirmed:</strong> how group facilitator roles are stored in Trellis needs to be confirmed with RD &mdash; they may not appear in the pairing table and may require a separate query. This was discussed with Jean but the field mapping has not been documented yet. Prior PowerBI used coordinator/staff ID and significantly undercounted 1:1 advocates; both ID sources need verification before finalizing.</div>
+    </div>
+
+    <!-- 2 Q1 ADVOCATE ACTIVITY -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+      <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);">Q1 Advocate Activity &mdash; Event-Based Counts <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:8px;">Event date falls Jan 1&ndash;Mar 31, 2026</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+        <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Applications Received</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">14</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">New applicants in Q1</div>
+        </div>
+        <div style="padding:8px 16px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">In Training</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">9</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Training active or completed in Q1</div>
+        </div>
+        <div style="padding:8px 16px;border-right:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Approved in Q1</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">7</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Completed training, became active in Q1</div>
+        </div>
+        <div style="padding:8px 0 8px 16px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Became Inactive</div>
+          <div style="font-size:32px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">3</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Status changed to inactive during Q1 only</div>
+        </div>
+      </div>
+      <div class="data-note" style="margin-top:12px;">&#x26A0; Advocate status stages (Interested &rarr; Trained &rarr; Active) need Trellis field confirmation with RD before pipeline counts are finalized. "Approved" = first active date falls in Q1. "Became Inactive" = status_change_date in Jan&ndash;Mar only &mdash; does not include advocates already inactive at Q1 start.</div>
+    </div>
+
+  </div>
+
+</div><!-- /tab-kpis -->
+
+<!-- ══════════════════════════════════════════
+     TAB 2 — END OF Q1 SNAPSHOT
+════════════════════════════════════════════ -->
+
+
+<!-- ══════════════════════════════════════════
+     TAB 3 — FSS DEEP DIVE
+════════════════════════════════════════════ -->
+<div id="tab-fss" class="tab-panel">
+
+  <!-- FWA CURRENCY GOAL BANNER -->
+  <div class="fss-integrity-banner" style="margin-bottom:24px;">
+    <span style="font-size:16px;flex-shrink:0">&#x1F3AF;</span>
+    <span><strong>Program Goal:</strong> 80% of active moms have a valid FWA update within the last 3 months. Current coverage: <strong>57% (121 of 212 active moms)</strong>. <strong>49 moms</strong> need a follow-up FWA to reach the 80% goal. &#x26A0; FWA timestamp bug: editing any single domain field updates the full submission timestamp &mdash; "current" status based on timestamp alone may overstate true coverage. Full re-assessment validation required.</span>
+  </div>
+
+  <!-- FWA COLLECTED STAT STRIP -->
+  <div class="section-group">
+    <div class="section-label">FWA Activity &mdash; Q1 2026
+      <span class="anchor-note">Event-based &middot; FWA submission date falls Jan 1&ndash;Mar 31 &middot; FWA window TBD (3- or 6-month) &mdash; confirm with RD after data pull</span>
+    </div>
+    <div class="status-count-wrap" style="padding:16px 24px;">
+      <div class="status-cards">
+        <div class="status-card primary">
+          <div class="sc-label">FWAs Collected in Q1</div>
+          <div class="sc-value">168</div>
+          <div class="sc-note">Valid re-assessments submitted in Q1</div>
+        </div>
+        <div class="status-card sub-a">
+          <div class="sc-label">Active Moms with Current FWA</div>
+          <div class="sc-value">121</div>
+          <div class="sc-note">Submission within last 3 months as of Mar 31</div>
+        </div>
+        <div class="status-card sub-b">
+          <div class="sc-label">Moms Due for FWA in Q2</div>
+          <div class="sc-value">31</div>
+          <div class="sc-note">61&ndash;90 days since last FWA &mdash; window expires next quarter</div>
+        </div>
+        <div class="status-card">
+          <div class="sc-label">Moms Missing Any FWA</div>
+          <div class="sc-value">46</div>
+          <div class="sc-note">No intake or re-assessment on record &mdash; excluded from all KPIs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOAL PROGRESS -->
+  <div class="section-group">
+    <div class="section-label">FWA Currency &mdash; Progress Toward 90% Goal
+      <span class="anchor-note">Active moms as of Mar 31 &middot; currency = valid full re-assessment within last 3 months &middot; denominator: 78 active moms</span>
+    </div>
+    <div class="panel" style="padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;">
+        <div>
+          <div style="font-size:13px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:4px;">Current Coverage</div>
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--yellow);">57%</span>
+            <span style="font-size:14px;color:var(--mid);">121 of 212 active moms</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:4px;">Goal</div>
+          <div style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">80%</div>
+        </div>
+      </div>
+      <!-- Progress bar -->
+      <div style="background:var(--border);border-radius:6px;height:28px;position:relative;margin-bottom:10px;">
+        <div style="background:var(--yellow);height:28px;border-radius:6px;width:57%;display:flex;align-items:center;padding-left:12px;">
+          <span style="font-size:12px;font-weight:700;color:white;">121 current</span>
+        </div>
+        <!-- Goal marker at 90% -->
+        <div style="position:absolute;top:-6px;left:80%;width:2px;height:40px;background:var(--green);opacity:0.7;"></div>
+        <div style="position:absolute;top:-20px;left:80%;transform:translateX(-50%);font-size:10px;color:var(--green);font-weight:700;font-family:'Oswald',sans-serif;">80% goal</div>
+      </div>
+      <div style="display:flex;gap:24px;font-size:12px;color:var(--mid);margin-top:8px;">
+        <span>&#x2713; Current (0&ndash;3 mo): <strong style="color:var(--green)">121</strong></span>
+        <span>&#x26A0; Overdue (3&ndash;6 mo): <strong style="color:var(--yellow)">31</strong></span>
+        <span>&#x26A0; Critical (&gt;6 mo): <strong style="color:var(--red)">14</strong></span>
+        <span>&#x2717; No FWA on record: <strong style="color:var(--red)">46</strong></span>
+      </div>
+      <div class="data-note" style="margin-top:10px;">Gap to goal: <strong>70 moms</strong> need a valid re-assessment to reach 80% (191 of 212). Overdue + Critical + No FWA = 91 moms requiring follow-up &mdash; 49 are the gap to the 80% goal. The 46 moms with no FWA are the most urgent &mdash; intake FWA must be completed before they can be included in any KPI calculation. &#x26A0; "Current" is based on submission timestamp only &mdash; the FWA timestamp bug means some flagged as current may have had a field edit, not a full re-assessment.</div>
+    </div>
+  </div>
+
+  <!-- FWA STATUS BREAKDOWN TABLE -->
+  <div class="section-group">
+    <div class="section-label">FWA Status &mdash; Active Moms Detail
+      <span class="anchor-note">As of March 31, 2026 &middot; active moms only &middot; ordered by urgency</span>
+    </div>
+    <div class="affiliate-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>FWA Status</th>
+            <th>Moms</th>
+            <th>% of Active</th>
+            <th>KPI Eligible?</th>
+            <th>Action Required</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--green);">&#x2713; Current &mdash; 0&ndash;3 months</strong></td>
+            <td>121</td><td>57%</td>
+            <td><span class="badge green">Yes &mdash; counts toward KPI 1 &amp; 2</span></td>
+            <td style="color:var(--mid);font-size:12px;">None &mdash; schedule next review at 3-month mark</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--yellow);">&#x26A0; Overdue &mdash; 3&ndash;6 months</strong></td>
+            <td>31</td><td>15%</td>
+            <td><span class="badge yellow">No &mdash; excluded from KPI rate</span></td>
+            <td style="color:var(--mid);font-size:12px;">Schedule re-assessment immediately &middot; coordinator follow-up</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--red);">&#x26A0; Critical &mdash; &gt;6 months</strong></td>
+            <td>14</td><td>7%</td>
+            <td><span class="badge red">No &mdash; excluded from KPI rate</span></td>
+            <td style="color:var(--mid);font-size:12px;">Supervisor escalation &middot; may indicate engagement gap</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--red);">&#x2717; No FWA on record</strong></td>
+            <td>46</td><td>22%</td>
+            <td><span class="badge red">No &mdash; excluded from KPI rate</span></td>
+            <td style="color:var(--mid);font-size:12px;">Intake FWA missing &mdash; complete before any KPI calculation</td>
+          </tr>
+          <tr style="font-weight:700;background:#f9f9f9;">
+            <td>All Active Moms</td>
+            <td>212</td><td>100%</td>
+            <td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">KPI Logic</div><div class="di-val di-ok">KPI 1 &amp; 2 denominators include only moms with a valid in-window FWA (currently 121 of 212)</div></div>
+  <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">91 moms excluded from KPI rates &mdash; surfaced here for follow-up, not silently dropped</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Timestamp Bug</div><div class="di-val di-flag">FWA timestamp bug: field-level edit updates the full submission date &mdash; "current" moms should be validated as full re-assessments before KPI credit</div></div>
+</div></details>
+  </div>
+
+  <!-- FWA BY AFFILIATE -->
+  <div class="section-group">
+    <div class="section-label">FWA Currency by Affiliate
+      <span class="anchor-note">% of each affiliate's active moms with a valid FWA in the last 3 months &middot; sorted by coverage ascending</span>
+    </div>
+    <div class="panel" style="padding:24px;">
+      <div style="margin-bottom:10px;display:flex;justify-content:space-between;font-size:11px;color:var(--mid);font-family:'Oswald',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">
+        <span>Affiliate &mdash; sorted by coverage ascending</span><span>Coverage (current / active) &nbsp;&middot;&nbsp; 80% goal &mdash;&mdash;</span>
+      </div>
+      <!-- South Louisville — lowest -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">South Louisville Ministries</span>
+          <span style="font-size:12px;color:var(--red);font-weight:700;">43% &nbsp;&middot;&nbsp; 3 of 7 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--red);height:16px;border-radius:4px;width:43%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Avail NYC -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Avail NYC</span>
+          <span style="font-size:12px;color:var(--red);font-weight:700;">50% &nbsp;&middot;&nbsp; 4 of 8 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--red);height:16px;border-radius:4px;width:50%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- CityLink -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">CityLink Center</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">55% &nbsp;&middot;&nbsp; 12 of 22 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:55%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Safe Families -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Safe Families &mdash; Miami</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">57% &nbsp;&middot;&nbsp; 8 of 14 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:57%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- EMA Broward -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">EMA Broward</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">60% &nbsp;&middot;&nbsp; 26 of 43 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:60%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- WAYS for Life -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">WAYS for Life</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">61% &nbsp;&middot;&nbsp; 11 of 18 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:61%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Bravely -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Bravely Women's Health</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">64% &nbsp;&middot;&nbsp; 18 of 28 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:64%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Women's Clinic Atlanta -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Women's Clinic of Atlanta</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">64% &nbsp;&middot;&nbsp; 9 of 14 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:64%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Villages of Hope -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Villages of Hope</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">64% &nbsp;&middot;&nbsp; 7 of 11 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:64%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Claris -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">Claris Health</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">68% &nbsp;&middot;&nbsp; 26 of 38 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:68%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- AZ127 — best performer -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">AZ127 &amp; Hope Women's Center</span>
+          <span style="font-size:12px;color:var(--yellow);font-weight:700;">72% &nbsp;&middot;&nbsp; 38 of 53 moms current</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:16px;position:relative;">
+          <div style="background:var(--yellow);height:16px;border-radius:4px;width:72%;"></div>
+          <div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>
+        </div>
+      </div>
+      <!-- Goal line legend -->
+      <div style="border-top:2px dashed var(--green);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--green);font-weight:600;">&mdash;&mdash; 80% goal line &nbsp;&middot;&nbsp; No affiliate has reached the 80% target yet</span>
+        <span style="font-size:11px;color:var(--mid);">Overall: 57% &nbsp;&middot;&nbsp; 121 of 212 active moms</span>
+      </div>
+      <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val">Coverage = moms with FWA submission in last 3 months &divide; active moms per affiliate</div></div>
+  <div class="di-row"><div class="di-label">&#x26A0; Timestamp Bug</div><div class="di-val di-flag">Coverage based on submission timestamp only &mdash; does not confirm a full re-assessment was conducted</div></div>
+</div></details>
+<div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>49 moms needed to reach 80% goal (170 of 212)</li><li>46 moms have no FWA on record at all &mdash; intake FWA must be completed before any KPI inclusion</li><li>31 moms approaching 90-day window &mdash; FWA expires next quarter if not scheduled now</li></ul></div><div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>South Louisville Ministries (43%) and Avail NYC (50%) have the largest proportional gaps</li><li>No affiliate has reached the 80% goal yet</li><li>&#x26A0; Affiliate totals must be confirmed against Trellis affiliate assignment field before sharing externally</li></ul></div>
+    </div>
+  </div>
+
+  <!-- MISSING FWA BREAKDOWN -->
+  <div class="section-group">
+    <div class="section-label">Missing Follow-Up FWA &mdash; Where Are the Gaps?
+      <span class="anchor-note">33 moms missing a valid in-window FWA &middot; broken down by program track status</span>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Missing FWA by Track Status</h3>
+        <div class="status-row"><span class="sr-label">Active in Track &mdash; pairing active, no current FWA</span><span class="sr-val" style="color:var(--yellow);">41</span></div>
+        <div class="status-row"><span class="sr-label">Membership Community &mdash; active, no pairing, no current FWA</span><span class="sr-val" style="color:var(--yellow);">50</span></div>
+        <div class="status-row"><span class="sr-label">No FWA on record at all (any status)</span><span class="sr-val" style="color:var(--red);">46</span></div>
+        <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
+          <span>Total moms missing current FWA</span><span>91</span>
+        </div>
+        <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">High Risk</div><div class="di-val di-flag">Active-in-track moms (41) without current FWA &mdash; advocates may lack a baseline to guide sessions</div></div>
+  <div class="di-row"><div class="di-label">Action</div><div class="di-val di-warn">Membership Community moms (50) with no FWA may need outreach to re-engage</div></div>
+  <div class="di-row"><div class="di-label">Most Urgent</div><div class="di-val di-flag">46 with no FWA at all &mdash; cannot be included in any KPI until intake FWA is completed</div></div>
+</div></details>
+<div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>41 active-in-track moms without current FWA &mdash; advocates may lack a current baseline to guide sessions</li><li>50 Membership Community moms without current FWA &mdash; may need outreach to re-engage</li></ul></div>
+      </div>
+      <div class="panel">
+        <h3>FWA Recency &mdash; Time Since Last Submission</h3>
+        <div class="status-row"><span class="sr-label">0&ndash;30 days ago</span><span class="sr-val" style="color:var(--green);">68</span></div>
+        <div class="status-row"><span class="sr-label">31&ndash;60 days ago</span><span class="sr-val" style="color:var(--green);">53</span></div>
+        <div class="status-row"><span class="sr-label">61&ndash;90 days ago (approaching deadline)</span><span class="sr-val" style="color:var(--yellow);">31</span></div>
+        <div class="status-row"><span class="sr-label">91&ndash;180 days ago (overdue)</span><span class="sr-val" style="color:var(--yellow);">19</span></div>
+        <div class="status-row"><span class="sr-label">180+ days ago (critical)</span><span class="sr-val" style="color:var(--red);">14</span></div>
+        <div class="status-row"><span class="sr-label">No FWA on record</span><span class="sr-val" style="color:var(--red);">46</span></div>
+        <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Q2 Risk</div><div class="di-val di-flag">31 moms in 61&ndash;90 day window &mdash; FWA expires next quarter if not scheduled now</div></div>
+  <div class="di-row"><div class="di-label">Priority</div><div class="di-val di-warn">These 31 are the highest-priority follow-ups to protect Q2 KPI 1 &amp; 2 eligibility</div></div>
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val di-warn">Submission timestamp only &mdash; validate full re-assessments vs. field edits before using for KPI</div></div>
+</div></details>
+<div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>31 moms in 61&ndash;90 day window &mdash; FWA expires next quarter if not scheduled now</li><li>These 31 are highest-priority follow-ups to protect Q2 KPI 1 &amp; 2 eligibility</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-fss -->
+
+<!-- ══════════════════════════════════════════
+     TAB 4 — AFFILIATE COMPARISON
+════════════════════════════════════════════ -->
+<div id="tab-affiliates" class="tab-panel">
+
+  <!-- SUMMARY STRIP -->
+  <div class="section-group">
+    <div class="section-label">Referral Summary &mdash; Q1 2026
+      <span class="anchor-note">Date anchor: referral submitted date falls Jan 1&ndash;Mar 31, 2026 &middot; Source: Trellis referral records</span>
+    </div>
+    <div class="status-count-wrap" style="padding:20px 24px;">
+      <div class="status-cards">
+        <div class="status-card primary">
+          <div class="sc-label">Total Referrals Received</div>
+          <div class="sc-value">38</div>
+          <div class="sc-note">All sources &middot; Q1 2026</div>
+        </div>
+        <div class="status-card sub-a">
+          <div class="sc-label">Intakes Completed</div>
+          <div class="sc-value">29</div>
+          <div class="sc-note">Intake date in Q1</div>
+        </div>
+        <div class="status-card sub-b">
+          <div class="sc-label">Conversion Rate</div>
+          <div class="sc-value">76%</div>
+          <div class="sc-note">29 of 38 referrals &rarr; intake</div>
+        </div>
+        <div class="status-card">
+          <div class="sc-label">Pending / Not Yet Converted</div>
+          <div class="sc-value">9</div>
+          <div class="sc-note">Referred but no intake recorded</div>
+        </div>
+      </div>
+      <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Formula</div><div class="di-val di-ok">Intakes completed in Q1 &divide; Referrals received in Q1</div></div>
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val">A referral may convert in a later period &mdash; pending does not imply loss</div></div>
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val di-warn">Trellis referral table, referral_submitted_date field &mdash; confirm field name with RD</div></div>
+</div></details>
+    </div>
+  </div>
+
+  <!-- REFERRAL SOURCE TABLE -->
+  <div class="section-group">
+    <div class="section-label">Referrals by Source
+      <span class="anchor-note">Referral submitted date in Q1 &middot; each row = one referral source category &middot; numerator/denominator shown per source</span>
+    </div>
+    <div class="affiliate-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Referral Source</th>
+            <th>Referrals Received</th>
+            <th>% of All Referrals</th>
+            <th>Intakes Completed</th>
+            <th>Conversion Rate</th>
+            <th>Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>DCF / Child Protective Services</strong></td>
+            <td>12</td>
+            <td>32%</td>
+            <td>10</td>
+            <td><span style="color:var(--green);font-weight:700">83%</span></td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td><strong>Self-Referral / Walk-In</strong></td>
+            <td>8</td>
+            <td>21%</td>
+            <td>5</td>
+            <td><span style="color:var(--yellow);font-weight:700">63%</span></td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td><strong>Community Partner / Nonprofit</strong></td>
+            <td>7</td>
+            <td>18%</td>
+            <td>6</td>
+            <td><span style="color:var(--green);font-weight:700">86%</span></td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>Hospital / Healthcare Provider</strong></td>
+            <td>5</td>
+            <td>13%</td>
+            <td>4</td>
+            <td><span style="color:var(--green);font-weight:700">80%</span></td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>School / Educational Institution</strong></td>
+            <td>4</td>
+            <td>11%</td>
+            <td>3</td>
+            <td><span style="color:var(--yellow);font-weight:700">75%</span></td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>Court / Legal System</strong></td>
+            <td>2</td>
+            <td>5%</td>
+            <td>1</td>
+            <td><span style="color:var(--yellow);font-weight:700">50%</span></td>
+            <td>1</td>
+          </tr>
+          <tr style="font-weight:700;background:#f9f9f9">
+            <td>All Sources</td>
+            <td>38</td>
+            <td>100%</td>
+            <td>29</td>
+            <td>76%</td>
+            <td>9</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val di-flag">Referral source field name and value taxonomy in Trellis must be confirmed with RD before live data</div></div>
+  <div class="di-row"><div class="di-label">Note</div><div class="di-val di-warn">Source categories are sample placeholders &mdash; actual Trellis values may differ</div></div>
+  <div class="di-row"><div class="di-label">Rule</div><div class="di-val di-ok">Referrals with no source recorded should be flagged as "Unknown / Not Recorded" &mdash; not silently excluded</div></div>
+</div></details>
+  </div>
+
+  <!-- BAR CHART: REFERRALS BY SOURCE -->
+  <div class="section-group">
+    <div class="section-label">Referral Volume by Source &mdash; Visual
+      <span class="anchor-note">Bar length = referrals received &middot; green fill = converted to intake &middot; gray = pending</span>
+    </div>
+    <div class="panel">
+      <h3>Referrals Received vs. Intakes Completed &mdash; Q1 2026</h3>
+      <div style="margin-top:16px;">
+
+        <!-- DCF/CPS: 12 received, 10 converted -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">DCF / Child Protective Services</span>
+            <span style="font-size:12px;color:var(--mid);">12 received &middot; 10 intakes</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:83%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">10</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:17%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">2</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Self-Referral: 8 received, 5 converted -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">Self-Referral / Walk-In</span>
+            <span style="font-size:12px;color:var(--mid);">8 received &middot; 5 intakes</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:67%;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:62.5%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">5</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:37.5%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community Partner: 7 received, 6 converted -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">Community Partner / Nonprofit</span>
+            <span style="font-size:12px;color:var(--mid);">7 received &middot; 6 intakes</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:58%;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:86%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">6</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:14%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hospital: 5 received, 4 converted -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">Hospital / Healthcare Provider</span>
+            <span style="font-size:12px;color:var(--mid);">5 received &middot; 4 intakes</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:42%;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:80%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">4</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:20%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- School: 4 received, 3 converted -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">School / Educational Institution</span>
+            <span style="font-size:12px;color:var(--mid);">4 received &middot; 3 intakes</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:33%;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:75%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">3</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:25%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Court: 2 received, 1 converted -->
+        <div style="margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:var(--dark);">Court / Legal System</span>
+            <span style="font-size:12px;color:var(--mid);">2 received &middot; 1 intake</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:17%;">
+            <div style="background:var(--green);height:22px;border-radius:4px;width:50%;display:flex;align-items:center;padding-left:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">1</span>
+            </div>
+            <div style="position:absolute;right:0;top:0;height:22px;width:50%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:11px;color:var(--mid);">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:20px;margin-top:16px;font-size:11px;color:var(--mid);">
+          <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--green)"></div> Converted to intake</div>
+          <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--border)"></div> Pending / not yet converted</div>
+        </div>
+        <div style="font-size:10px;color:#bbb;margin-top:8px;font-style:italic;">Bar width scaled to referral volume relative to largest source (DCF/CPS = 12). Fill proportion = conversion rate per source.</div>
+
+        <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Scale</div><div class="di-val">Bar width = referrals received &divide; max source volume &middot; fill proportion = conversion rate</div></div>
+  <div class="di-row"><div class="di-label">Rule</div><div class="di-val di-ok">Pending (gray) = referral received but no intake yet &mdash; may convert in a later period</div></div>
+</div></details>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-affiliates -->
+
+<!-- ══════════════════════════════════════════
+     TAB 5 — TRACK OVERSIGHT
+════════════════════════════════════════════ -->
+<div id="tab-track" class="tab-panel">
+
+  <!-- STALLED MOMS SUMMARY -->
+  <div class="section-group">
+    <div class="section-label">Stalled Moms &mdash; Track Session Progress
+      <span class="anchor-note">Stalled = no held track or support session note in 14+ days while in active pairing &middot; as of March 31, 2026 &middot; action list for coordinators</span>
+    </div>
+    <div class="stalled-summary">
+      <div class="stalled-card ok">
+        <div class="st-label">Progressing (&lt;14 days)</div>
+        <div class="st-val">93</div>
+        <div class="st-sub">Last held session note within 14 days</div>
+      </div>
+      <div class="stalled-card warn">
+        <div class="st-label">Stalled 14&ndash;20 Days</div>
+        <div class="st-val">21</div>
+        <div class="st-sub">No held session in 14&ndash;20 days &mdash; follow up</div>
+      </div>
+      <div class="stalled-card hot">
+        <div class="st-label">Stalled 21&ndash;30 Days</div>
+        <div class="st-val">11</div>
+        <div class="st-sub">Overdue &mdash; coordinator action needed</div>
+      </div>
+      <div class="stalled-card crit">
+        <div class="st-label">Stalled 30+ Days</div>
+        <div class="st-val">9</div>
+        <div class="st-sub">Critical &mdash; supervisor review needed</div>
+      </div>
+    </div>
+    <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Definition</div><div class="di-val">Last held session note (session_status = "held") &gt; 14 days ago while pairing is active</div></div>
+  <div class="di-row"><div class="di-label">Filter</div><div class="di-val di-ok">pairing_status = "active" AND Mom.status = "active" &mdash; inactive moms excluded from the moment they became inactive</div></div>
+  <div class="di-row"><div class="di-label">Reschedule Flag</div><div class="di-val di-warn">Moms with 2+ planned sessions and no subsequent held session flagged separately &mdash; indicates cancellation/no-show pattern</div></div>
+</div></details>
+  </div>
+
+  <!-- STALLED BY AFFILIATE -->
+  <div class="section-group">
+    <div class="section-label">Stalled Moms by Affiliate <span class="anchor-note">Stall = no held session note in 14+ days &middot; active pairing only &middot; Coordinators see only their affiliate &middot; HQ sees all</span></div>
+    <div class="stalled-affiliate-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Affiliate</th>
+            <th>Active in Track</th>
+            <th>Progressing (&lt;14d)</th>
+            <th>Stalled 14&ndash;20d</th>
+            <th>Stalled 21&ndash;30d</th>
+            <th>Stalled 30+d</th>
+            <th>% Progressing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>AZ127 &amp; Hope Women's Center</strong></td><td>28</td><td><span class="stalled-dot dot-green"></span>19</td><td><span class="stalled-dot dot-yellow"></span>4</td><td><span class="stalled-dot dot-orange"></span>3</td><td><span class="stalled-dot dot-red"></span>2</td><td>68%</td></tr>
+          <tr><td><strong>EMA Broward</strong></td><td>18</td><td><span class="stalled-dot dot-green"></span>13</td><td><span class="stalled-dot dot-yellow"></span>3</td><td><span class="stalled-dot dot-orange"></span>1</td><td><span class="stalled-dot dot-red"></span>1</td><td>72%</td></tr>
+          <tr><td><strong>Claris Health</strong></td><td>22</td><td><span class="stalled-dot dot-green"></span>16</td><td><span class="stalled-dot dot-yellow"></span>3</td><td><span class="stalled-dot dot-orange"></span>2</td><td><span class="stalled-dot dot-red"></span>1</td><td>73%</td></tr>
+          <tr><td><strong>Bravely Women's Health</strong></td><td>19</td><td><span class="stalled-dot dot-green"></span>14</td><td><span class="stalled-dot dot-yellow"></span>3</td><td><span class="stalled-dot dot-orange"></span>2</td><td><span class="stalled-dot dot-red"></span>0</td><td>74%</td></tr>
+          <tr><td><strong>CityLink Center</strong></td><td>15</td><td><span class="stalled-dot dot-green"></span>11</td><td><span class="stalled-dot dot-yellow"></span>2</td><td><span class="stalled-dot dot-orange"></span>1</td><td><span class="stalled-dot dot-red"></span>1</td><td>73%</td></tr>
+          <tr><td><strong>WAYS for Life</strong></td><td>12</td><td><span class="stalled-dot dot-green"></span>8</td><td><span class="stalled-dot dot-yellow"></span>2</td><td><span class="stalled-dot dot-orange"></span>1</td><td><span class="stalled-dot dot-red"></span>1</td><td>67%</td></tr>
+          <tr><td><strong>Women's Clinic of Atlanta</strong></td><td>9</td><td><span class="stalled-dot dot-green"></span>5</td><td><span class="stalled-dot dot-yellow"></span>2</td><td><span class="stalled-dot dot-orange"></span>1</td><td><span class="stalled-dot dot-red"></span>1</td><td>56%</td></tr>
+          <tr><td><strong>Safe Families &mdash; Miami</strong></td><td>4</td><td><span class="stalled-dot dot-green"></span>2</td><td><span class="stalled-dot dot-yellow"></span>1</td><td><span class="stalled-dot dot-orange"></span>0</td><td><span class="stalled-dot dot-red"></span>1</td><td>50%</td></tr>
+          <tr><td><strong>Villages of Hope / Avail / Other</strong></td><td>7</td><td><span class="stalled-dot dot-green"></span>5</td><td><span class="stalled-dot dot-yellow"></span>1</td><td><span class="stalled-dot dot-orange"></span>0</td><td><span class="stalled-dot dot-red"></span>1</td><td>71%</td></tr>
+          <tr style="font-weight:700;background:#f9f9f9"><td>All Affiliates</td><td>134</td><td><span class="stalled-dot dot-green"></span>93</td><td><span class="stalled-dot dot-yellow"></span>21</td><td><span class="stalled-dot dot-orange"></span>11</td><td><span class="stalled-dot dot-red"></span>9</td><td>69%</td></tr>
+        </tbody>
+      </table>
+    <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val di-ok">Session table, session_status = "held", filtered to active pairings and active moms only</div></div>
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val di-flag">Affiliate-level stall counts require RD to run affiliate-segmented query &mdash; these are sample proportions</div></div>
+  <div class="di-row"><div class="di-label">Note</div><div class="di-val">% Progressing = Progressing &divide; Active in Track per affiliate</div></div>
+</div></details>
+  </div>
+
+
+  <!-- TRACK COMPLETIONS OVERVIEW -->
+  <div class="section-group">
+    <div class="section-label">Track Completions &mdash; Q1 2026
+      <span class="anchor-note">Track status set in Q1 &middot; excludes same-day close/reopen duplicates (track-type change workaround)</span>
+    </div>
+    <div class="two-col">
+
+      <!-- Completion breakdown -->
+      <div class="panel">
+        <h3>Completion Status Breakdown</h3>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--green);font-weight:600;">Completed &mdash; Full Track</span><span class="fr-val">11</span></div>
+        <div class="fidelity-row"><span class="fr-label">Completed &mdash; Without Support Sessions</span><span class="fr-val">4</span></div>
+        <div class="fidelity-row"><span class="fr-label">Completed &mdash; Without Post Assessment</span><span class="fr-val">3</span></div>
+        <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
+        <div class="fidelity-row" style="font-weight:700;"><span class="fr-label">Total Completions</span><span class="fr-val">18</span></div>
+        <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete &mdash; Track Requirements Unmet</span><span class="fr-val">6</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete &mdash; Client Choice</span><span class="fr-val">4</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete &mdash; Relocated</span><span class="fr-val">2</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete &mdash; Did Not Initiate Sessions</span><span class="fr-val">3</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete &mdash; Other</span><span class="fr-val">1</span></div>
+        <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
+        <div class="fidelity-row" style="font-weight:700;"><span class="fr-label">Total Incompletes</span><span class="fr-val">16</span></div>
+        <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">KPI 3</div><div class="di-val di-ok">Only "Completed &mdash; Full Track" counts toward KPI 3 numerator</div></div>
+  <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">Same-day track-swap duplicates excluded &mdash; Trellis workaround for track-type changes, not real exits</div></div>
+  <div class="di-row"><div class="di-label">Terminology</div><div class="di-val di-ok">"Discharged" not used &mdash; EMA standard: Track Requirements Unmet / Client Choice / Relocated / Did Not Initiate / Other</div></div>
+</div></details>
+      </div>
+
+      <!-- Incomplete reasons visual -->
+      <div class="panel">
+        <h3>Incomplete Reasons &mdash; Q1 2026</h3>
+        <div style="margin-top:8px;">
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Track Requirements Unmet</span>
+              <span style="font-size:12px;color:var(--mid);">6 &nbsp;&middot;&nbsp; 38%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:14px;">
+              <div style="background:var(--red);height:14px;border-radius:3px;width:100%;opacity:0.75;"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Client Choice</span>
+              <span style="font-size:12px;color:var(--mid);">4 &nbsp;&middot;&nbsp; 25%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:14px;">
+              <div style="background:var(--yellow);height:14px;border-radius:3px;width:67%;"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Did Not Initiate Sessions</span>
+              <span style="font-size:12px;color:var(--mid);">3 &nbsp;&middot;&nbsp; 19%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:14px;">
+              <div style="background:var(--yellow);height:14px;border-radius:3px;width:50%;"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Relocated</span>
+              <span style="font-size:12px;color:var(--mid);">2 &nbsp;&middot;&nbsp; 13%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:14px;">
+              <div style="background:var(--mid);height:14px;border-radius:3px;width:33%;opacity:0.5;"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Other</span>
+              <span style="font-size:12px;color:var(--mid);">1 &nbsp;&middot;&nbsp; 6%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:14px;">
+              <div style="background:var(--mid);height:14px;border-radius:3px;width:17%;opacity:0.5;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="data-note" style="margin-top:10px;">&#x26A0; "Track Requirements Unmet" is the most common reason &mdash; warrants review of whether this reflects true attrition or incomplete session documentation. "Did Not Initiate" (3) may signal a referral-to-engagement gap worth investigating.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION COUNTS BY TRACK -->
+  <div class="section-group">
+    <div class="section-label">Session Counts &mdash; Active Moms In Track
+      <span class="anchor-note">Average sessions held per mom &middot; track sessions vs. support sessions &middot; all active pairings as of Mar 31 &middot; source: session table, session_status = 'held'</span>
+    </div>
+
+    <!-- Average sessions table -->
+    <div class="affiliate-table-wrap" style="margin-bottom:20px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Track</th>
+            <th>Moms Active</th>
+            <th>Sessions Required</th>
+            <th>Avg Track Sessions Held</th>
+            <th>Avg Support Sessions Held</th>
+            <th>Avg Total Sessions</th>
+            <th>Avg % of Track Complete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nurturing Parenting (NPP)</strong></td>
+            <td>68</td><td>10</td>
+            <td><strong>5.1</strong></td>
+            <td>1.6</td>
+            <td>6.7</td>
+            <td><span style="color:var(--yellow);font-weight:700;">51%</span></td>
+          </tr>
+          <tr>
+            <td><strong>Empowered Parenting (EP)</strong></td>
+            <td>48</td><td>8</td>
+            <td><strong>3.9</strong></td>
+            <td>1.1</td>
+            <td>5.0</td>
+            <td><span style="color:var(--yellow);font-weight:700;">49%</span></td>
+          </tr>
+          <tr>
+            <td><strong>Roadmap to Resilience (RtR)</strong></td>
+            <td>27</td><td>4</td>
+            <td><strong>2.5</strong></td>
+            <td>0.8</td>
+            <td>3.3</td>
+            <td><span style="color:var(--yellow);font-weight:700;">63%</span></td>
+          </tr>
+          <tr style="font-weight:700;background:#f9f9f9;">
+            <td>All Tracks</td>
+            <td>143</td><td>&mdash;</td>
+            <td>4.3</td><td>1.3</td><td>5.6</td>
+            <td>&mdash;</td>
+          </tr>
+        </tbody>
+      </table>
+    <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Source</div><div class="di-val di-ok">Session table joined to active pairings &mdash; filtered to active moms only</div></div>
+  <div class="di-row"><div class="di-label">Avg % Complete</div><div class="di-val">Average track sessions held &divide; sessions required for that track (NPP=10, EP=8, RtR=4)</div></div>
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val di-flag">session_status = "held" field values and session sequence numbering must be confirmed with RD</div></div>
+</div></details>
+<div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>NPP moms are furthest through their tracks on average (51%) vs. EP (49%)</li><li>RtR moms are closest to completion at 63% &mdash; shorter track (4 sessions)</li></ul></div>
+    </div>
+
+    <!-- Track vs Support + 1:1 vs Group side by side -->
+    <div class="two-col">
+
+      <!-- Track vs Support session split -->
+      <div class="panel">
+        <h3>Track Sessions vs. Support Sessions &mdash; All Active Moms</h3>
+        <div style="margin-top:16px;">
+          <div style="margin-bottom:6px;font-size:12px;color:var(--mid);">Total held sessions across all active moms in Q1</div>
+          <!-- Track sessions: 143 moms x 4.3 avg = ~615 -->
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Track Sessions</span>
+              <span style="font-size:12px;color:var(--mid);">615 total &nbsp;&middot;&nbsp; avg 4.3 per mom</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:22px;">
+              <div style="background:var(--green);height:22px;border-radius:4px;width:76%;display:flex;align-items:center;padding-left:10px;">
+                <span style="font-size:11px;font-weight:700;color:white;">76%</span>
+              </div>
+            </div>
+          </div>
+          <!-- Support sessions: 143 moms x 1.3 avg = ~186 -->
+          <div style="margin-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Support Sessions</span>
+              <span style="font-size:12px;color:var(--mid);">186 total &nbsp;&middot;&nbsp; avg 1.3 per mom</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:22px;">
+              <div style="background:var(--yellow);height:22px;border-radius:4px;width:24%;display:flex;align-items:center;padding-left:10px;">
+                <span style="font-size:11px;font-weight:700;color:var(--dark);">24%</span>
+              </div>
+            </div>
+          </div>
+          <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Track Sessions</div><div class="di-val">Curriculum sessions tied to a specific lesson step</div></div>
+  <div class="di-row"><div class="di-label">Support Sessions</div><div class="di-val">Additional check-ins, resource connections, or advocate-initiated contacts not tied to a lesson</div></div>
+</div></details><div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>Track sessions make up 76% of all held sessions &mdash; support session cadence may vary by advocate</li></ul></div><div class="obs-callout"><div class="obs-title">&#x1F4CA; Observations</div><ul><li>Track sessions make up 76% of all held sessions &mdash; support session cadence may vary by advocate</li></ul></div>
+        </div>
+      </div>
+
+      <!-- 1:1 vs Group split -->
+      <div class="panel">
+        <h3>Session Format &mdash; 1:1 vs. Group</h3>
+        <div style="margin-top:16px;">
+          <div style="margin-bottom:6px;font-size:12px;color:var(--mid);">All held sessions (track + support) &middot; Q1 &middot; 143 active moms</div>
+          <!-- 1:1: ~82% -->
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">1:1 Sessions</span>
+              <span style="font-size:12px;color:var(--mid);">659 sessions &nbsp;&middot;&nbsp; avg 4.6 per mom</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:22px;">
+              <div style="background:var(--green);height:22px;border-radius:4px;width:82%;display:flex;align-items:center;padding-left:10px;">
+                <span style="font-size:11px;font-weight:700;color:white;">82%</span>
+              </div>
+            </div>
+          </div>
+          <!-- Group: ~18% -->
+          <div style="margin-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:600;">Group Sessions</span>
+              <span style="font-size:12px;color:var(--mid);">142 sessions &nbsp;&middot;&nbsp; avg 1.0 per mom enrolled in group</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:22px;">
+              <div style="background:var(--green-light);border:1px solid var(--green);height:22px;border-radius:4px;width:18%;display:flex;align-items:center;padding-left:10px;">
+                <span style="font-size:11px;font-weight:700;color:var(--green);">18%</span>
+              </div>
+            </div>
+          </div>
+          <!-- Moms by format -->
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:8px;font-family:'Oswald',sans-serif;">Moms by Format</div>
+            <div style="display:flex;gap:20px;font-size:12px;">
+              <div><span style="font-size:22px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">127</span><br><span style="color:var(--mid);">1:1 only</span></div>
+              <div><span style="font-size:22px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--green);">16</span><br><span style="color:var(--mid);">Group enrolled</span></div>
+            </div>
+          </div>
+          <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val di-flag">Session format field (1:1 vs. group) needs confirmation in Trellis schema with RD</div></div>
+  <div class="di-row"><div class="di-label">Note</div><div class="di-val di-warn">Group session moms may have a different session cadence &mdash; compare completion rates 1:1 vs. group when sample size permits</div></div>
+  <div class="di-row"><div class="di-label">Group Facilitators</div><div class="di-val di-flag">Group facilitator field mapping in Trellis unconfirmed with RD &mdash; count of 16 group-enrolled moms should be validated</div></div>
+</div></details>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+    </div>
+  </div>
+</div><!-- /tab-track -->
+
+
+<!-- ══════════════════════════════════════════
+     PRE-RELEASE CHECKLIST TAB
+════════════════════════════════════════════ -->
+<div id="tab-checklist" class="tab-panel">
+
+  <div style="background:var(--yellow-light);border:1px solid var(--yellow);border-radius:8px;padding:14px 18px;margin-bottom:28px;font-size:13px;color:#7a5010;">
+    <strong>This tab is temporary</strong> &mdash; it tracks what needs to be confirmed or completed before this dashboard is shared externally. Remove this tab once all blockers are resolved.
+    &nbsp;&middot;&nbsp; <strong>Blockers</strong> = must resolve before sharing &nbsp;&middot;&nbsp; <strong>Confirm with RD</strong> = needs field/query validation &nbsp;&middot;&nbsp; <strong>Nice to have</strong> = improves accuracy but not blocking
+  </div>
+
+  <div class="checklist-section">
+    <h3>&#x1F534; Blockers &mdash; Must Resolve Before Sharing</h3>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Replace sample data with live Trellis data</div>
+        <div class="ci-detail">All values currently shown are illustrative sample data. RD needs to run all queries against Railway PostgreSQL and replace the <code>window.__EMA_DATA__</code> block in the file (once the data-driven version is rebuilt).</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">KPI 3: Define "measurable improvement" threshold</div>
+        <div class="ci-detail">The pre/post assessment score field mapping in Trellis needs confirmation with RD, and the threshold for what counts as "measurable improvement" must be defined before KPI 3 is reported externally.</div>
+        <div class="ci-owner">Owner: Cristina + RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Referral source field taxonomy not confirmed</div>
+        <div class="ci-detail">The referral source categories (DCF, Self-Referral, Community Partner, etc.) are placeholders. The actual Trellis field name and value taxonomy must be confirmed with RD before the Referral Sources tab shows real data.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Cost Per Family: Q1 spend data needed from finance</div>
+        <div class="ci-detail">Q1 program spend is not in Trellis. Finance must provide the figure before this metric can be displayed. Confirm scope: direct program costs only, or fully loaded?</div>
+        <div class="ci-owner">Owner: Cristina (finance request)</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Validate "intake" definition across all calculations</div>
+        <div class="ci-detail">Confirm that "intake" means the same thing in every context it appears &mdash; referral conversion (referral &rarr; intake), families served (active since intake), KPI denominators, and track start. If the field used differs by calculation, each instance needs to be documented explicitly.</div>
+        <div class="ci-owner">Owner: Cristina</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">KPI 3: Validate pre/post assessment matching per track</div>
+        <div class="ci-detail">Ensure that for each track (NPP, EP, RtR), the pre-assessment and post-assessment being compared are the correct pair for that track &mdash; not a mismatch across tracks or time periods. Each track has its own assessment instrument; confirm the field-to-track mapping is correct before any KPI 3 rate is published.</div>
+        <div class="ci-owner">Owner: Cristina</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Redesign Track Oversight tab &mdash; replace affiliate comparison with mom progress view</div>
+        <div class="ci-detail">For the Q1 initial report, the goal is to show each mom's progress through their track &mdash; not to compare orgs against each other. Remove or defer the affiliate stall comparison table. Replace with a view that surfaces where moms are in their individual track journeys (session depth distribution, stall buckets, completion breakdown) without cross-affiliate comparison.</div>
+        <div class="ci-owner">Owner: Cristina</div>
+      </div>
+    </div>
+
+    <div class="checklist-item blocker">
+      <div class="ci-tag blocker">Blocker</div>
+      <div class="ci-body">
+        <div class="ci-title">Validate Service Connection Rate definition and data</div>
+        <div class="ci-detail">Confirm with RD what field in Trellis captures a "connected service," what constitutes "utilizing" vs. merely "referred," and whether the denominator should be all active families or only those with a completed intake. The current 75.5% figure is a placeholder &mdash; do not surface this metric until the definition and source are validated.</div>
+        <div class="ci-owner">Owner: Cristina + RD Hill</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="checklist-section">
+    <h3>&#x1F7E1; Confirm with RD &mdash; Needed for Accurate Live Data</h3>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Active-in-track count: drop Mom.status filter or keep?</div>
+        <div class="ci-detail">Confirmed issue: active_in_track was larger than active_eod in RD's first pull. Root cause is pairings marked in_program where Mom.status has since changed. Decision: source active-in-track from pairing table only (pairing_status = 'active') and drop the Mom.status filter from that specific query.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Stall query: validate session date_start accuracy</div>
+        <div class="ci-detail">EMA migrated to Trellis in December 2025 &mdash; confirm that no pre-migration records exist with unreliable date_start values. RD should sanity-check a sample of the 30+ day stalled moms manually.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Affiliate-level stall counts: need segmented query</div>
+        <div class="ci-detail">The stall breakdown by affiliate is currently proportional estimates. RD needs to run the stall query with an affiliate grouping before the Track Oversight affiliate table reflects real data.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Session type field values (track vs. support)</div>
+        <div class="ci-detail">The Track Oversight session depth section splits sessions into "track" vs. "support" using the session_type field. Confirm the exact field values with RD before live data.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Session format field (1:1 vs. group) and group facilitator mapping</div>
+        <div class="ci-detail">The 1:1 vs. group session split and group facilitator count in the advocate section require confirmation of how group facilitator roles are stored in Trellis. This was previously discussed with Jean but field mapping was never documented.</div>
+        <div class="ci-owner">Owner: RD Hill + Jean</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Service Connection Rate: field and denominator definition</div>
+        <div class="ci-detail">Confirm with RD which Trellis field captures service utilization, and whether the denominator is all active families or only those with a completed intake.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Affiliate assignment field in Trellis</div>
+        <div class="ci-detail">Affiliate-level breakdowns (FWA coverage, stalls, families served) require that moms are correctly assigned to affiliates in Trellis. Confirm the affiliate field name and that all active moms have a valid affiliate assignment before sharing affiliate comparisons externally.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Confirm</div>
+      <div class="ci-body">
+        <div class="ci-title">Advocate status stages and pipeline field mapping</div>
+        <div class="ci-detail">Advocate pipeline counts (Prospects &rarr; Training &rarr; Active) require confirmation that Trellis status stages map correctly. Prior Power BI used coordinator/staff ID instead of advocate user ID &mdash; confirm source field before publishing.</div>
+        <div class="ci-owner">Owner: Cristina</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="checklist-section">
+    <h3>&#x1F7E2; Nice to Have &mdash; Improves Accuracy, Not Blocking</h3>
+
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Nice to have</div>
+      <div class="ci-body">
+        <div class="ci-title">FWA timestamp validation: full re-assessment vs. field edit</div>
+        <div class="ci-detail">The FWA timestamp bug means "current" FWAs may reflect a field edit, not a full re-assessment. A validation approach (e.g., checking that multiple domain fields were updated, or a coordinator confirms the re-assessment) would improve KPI 1 &amp; 2 accuracy significantly.</div>
+        <div class="ci-owner">Owner: RD Hill + Cristina (design)</div>
+      </div>
+    </div>
+
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Nice to have</div>
+      <div class="ci-body">
+        <div class="ci-title">Child profile field: confirm correct Trellis field for KPI 1</div>
+        <div class="ci-detail">The child-level field used to link children to moms for KPI 1 denominator should be explicitly confirmed with RD to ensure no double-counting or missed profiles.</div>
+        <div class="ci-owner">Owner: RD Hill</div>
+      </div>
+    </div>
+
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Nice to have</div>
+      <div class="ci-body">
+        <div class="ci-title">Staff headcount for capacity ratios</div>
+        <div class="ci-detail">Moms-per-staff and advocates-per-staff ratios are currently blank. Confirm with RD or HR the definition of "staff" (coordinators only vs. also supervisors/RDs) and the data source.</div>
+        <div class="ci-owner">Owner: Cristina + RD Hill</div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /tab-checklist -->
+
+</div><!-- /dashboard -->
+
+<!-- ══════════════════════════════════════════
+     AUTH + DATA SCRIPTS
+════════════════════════════════════════════ -->
+<script>
+  /* ── Cristina's original tab switcher ─────────────────────────── */
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  /* ── Auth helpers ─────────────────────────────────────────────── */
+  async function doLogin() {
+    var errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    if (!username || !password) { errEl.textContent = 'Enter username and password'; return; }
+    try {
+      var res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+      });
+      if (!res.ok) {
+        var body = await res.json().catch(function() { return {}; });
+        errEl.textContent = body.error || 'Login failed';
+        return;
+      }
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      initDashboard();
+    } catch (e) {
+      errEl.textContent = 'Network error — try again';
+    }
+  }
+
+  async function doLogout() {
+    try { await fetch('/api/logout', { method: 'POST' }); } catch (e) { /* ignore */ }
+    window.location.reload();
+  }
+
+  /* ── Dashboard init after auth ───────────────────────────────── */
+  async function initDashboard() {
+    try {
+      // Get user info
+      var meRes = await fetch('/api/me');
+      if (meRes.ok) {
+        var meData = await meRes.json();
+        var me = meData.user || meData;
+        var role = me.role || 'user';
+        var display = (me.firstName || me.username || 'User') + (me.lastName ? ' ' + me.lastName : '');
+        document.getElementById('bannerUserInfo').textContent =
+          'Signed in as ' + display + ' (' + role + ')';
+
+        // Show affiliate slicer only for admin/supervisor roles
+        if (role === 'administrator' || role === 'supervisor') {
+          document.getElementById('affiliateSlicerWrap').style.display = '';
+        }
+      }
+    } catch (e) { console.error('User info fetch failed:', e); }
+
+    try {
+      // Get report data (includes affiliate list)
+      var dataRes = await fetch('/api/report-data');
+      if (dataRes.ok) {
+        var data = await dataRes.json();
+        window.__EMA_DATA__ = data;
+        populateAffiliateFilter(data.affiliates || []);
+        renderDashboard(data);
+      } else {
+        console.error('Report data error:', dataRes.status, await dataRes.text());
+      }
+    } catch (e) { console.error('Report data fetch failed:', e); }
+  }
+
+  function populateAffiliateFilter(affiliates) {
+    var sel = document.getElementById('affiliateFilter');
+    // Keep the "All Affiliates" default, clear the rest
+    while (sel.options.length > 1) { sel.remove(1); }
+    affiliates.forEach(function(aff) {
+      var opt = document.createElement('option');
+      opt.value = aff.id || aff.affiliate_id || aff.name;
+      opt.textContent = aff.name || aff.label || aff.affiliate_name || opt.value;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ── Affiliate slicer change ─────────────────────────────────── */
+  document.getElementById('affiliateFilter').addEventListener('change', async function() {
+    var val = this.value;
+    var url = '/api/report-data';
+    if (val && val !== 'all') { url += '?affiliate_id=' + encodeURIComponent(val); }
+    try {
+      var res = await fetch(url);
+      if (res.ok) {
+        var data = await res.json();
+        window.__EMA_DATA__ = data;
+        renderDashboard(data);
+      }
+    } catch (e) { /* fetch failed, non-fatal */ }
+  });
+
+  /* ── Dashboard data rendering ────────────────────────────────── */
+  function renderDashboard(data) {
+    // Always ensure affiliate slicer is populated (without resetting selection)
+    var sel = document.getElementById('affiliateFilter');
+    if (sel && sel.options.length <= 1 && data.affiliates && data.affiliates.length > 0) {
+      populateAffiliateFilter(data.affiliates);
+    }
+    if (!data) return;
+    var snap = data.snapshot || {};
+    var kpis = data.kpis || {};
+    var fss = data.fss || {};
+    var track = data.track_oversight || {};
+    var meta = data.meta || {};
+
+    // ── Helper: safely set textContent of first match ──
+    function setText(selector, value) {
+      var el = document.querySelector(selector);
+      if (el) el.textContent = value;
+    }
+
+    // ── Helper: find a status-count value by label text within a container ──
+    function setStatusCardValue(container, labelText, value) {
+      if (!container) return;
+      var cards = container.querySelectorAll('.status-card');
+      for (var i = 0; i < cards.length; i++) {
+        var label = cards[i].querySelector('.sc-label');
+        if (label && label.textContent.toLowerCase().indexOf(labelText.toLowerCase()) !== -1) {
+          var val = cards[i].querySelector('.sc-value');
+          if (val) val.textContent = value;
+          return;
+        }
+      }
+    }
+
+    // ── Helper: find a stalled card value by label text ──
+    function setStalledCard(labelFragment, value) {
+      var cards = document.querySelectorAll('.stalled-card');
+      for (var i = 0; i < cards.length; i++) {
+        var label = cards[i].querySelector('.st-label');
+        if (label && label.textContent.toLowerCase().indexOf(labelFragment.toLowerCase()) !== -1) {
+          var val = cards[i].querySelector('.st-val');
+          if (val) val.textContent = value;
+          return;
+        }
+      }
+    }
+
+    // ── Helper: get count from an array of {status, count} objects ──
+    function getCount(arr, key, defaultVal) {
+      if (!arr) return defaultVal || 0;
+      for (var i = 0; i < arr.length; i++) {
+        if (arr[i].status && arr[i].status.toLowerCase() === key.toLowerCase()) return arr[i].count;
+      }
+      return defaultVal || 0;
+    }
+
+    // ── Helper: comma-format numbers ──
+    function fmt(n) {
+      if (n == null) return '—';
+      return Number(n).toLocaleString();
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 1 — KPI GAUGES: Render from live data
+    // ════════════════════════════════════════════════════════
+    var kpiDefs = [
+      { key: 'kpi1', label: 'KPI 1', anchorTpl: '{num} of {den} eligible children intact \u00B7 {excl} children excluded (no valid FWA)' },
+      { key: 'kpi2', label: 'KPI 2', anchorTpl: '{num} of {den} moms show composite FSS improvement' },
+      { key: 'kpi3', label: 'KPI 3', anchorTpl: '{num} of {den} completions show measurable improvement' },
+    ];
+    var gaugeCards = document.querySelectorAll('.kpi-gauge-card');
+    kpiDefs.forEach(function(def, i) {
+      var card = gaugeCards[i];
+      if (!card) return;
+      var kd = kpis[def.key];
+      if (!kd || kd.rate === null || kd.rate === undefined) {
+        // No data — show pending
+        card.classList.remove('on-track', 'close', 'below');
+        var badge = card.querySelector('.kpi-badge');
+        if (badge) { badge.className = 'kpi-badge pending'; badge.textContent = 'Pending Data'; }
+        return;
+      }
+
+      var rate = kd.rate;
+      var target = kd.target;
+      var pct = Math.round(rate);
+
+      // Determine status
+      var status = rate >= target ? 'on-track' : (rate >= target - 5 ? 'close' : 'below');
+      card.classList.remove('on-track', 'close', 'below');
+      card.classList.add(status);
+
+      // Update SVG gauge
+      var svg = card.querySelector('svg');
+      if (svg) {
+        var ARC = 2.827; // degrees per percent on 270° arc
+        var texts = svg.querySelectorAll('text');
+        if (texts.length >= 1) texts[0].textContent = pct + '%';
+        if (texts.length >= 2) texts[1].textContent = 'target: ' + target + '%';
+        if (texts.length >= 3) texts[2].textContent = '\u25B2 goal line';
+
+        var circles = svg.querySelectorAll('circle');
+        // [0]=bg track, [1]=target band, [2]=fill arc, [3]=tick
+        if (circles.length >= 3) {
+          circles[2].setAttribute('stroke-dasharray', (rate * ARC).toFixed(1) + ' 376.9');
+        }
+        if (circles.length >= 4) {
+          circles[3].setAttribute('stroke-dasharray', '3 373.9');
+          circles[3].setAttribute('stroke-dashoffset', '-' + (target * ARC).toFixed(1));
+        }
+      }
+
+      // Update badge
+      var badge = card.querySelector('.kpi-badge');
+      if (badge) {
+        badge.className = 'kpi-badge ' + status.replace('-', '-');
+        if (status === 'on-track') badge.textContent = 'On Track \u2713';
+        else if (status === 'close') badge.textContent = 'Close \u2014 within 5%';
+        else badge.textContent = 'Below Target';
+      }
+
+      // Update anchor text below formula
+      var anchor = card.querySelector('.kpi-anchor-sm');
+      if (anchor) {
+        var txt = def.anchorTpl.replace('{num}', kd.numerator).replace('{den}', kd.denominator).replace('{excl}', kd.excluded || 0);
+        anchor.textContent = txt;
+      }
+    });
+
+    // ════════════════════════════════════════════════════════
+    // TAB 1 — FAMILIES SERVED headline number
+    // ════════════════════════════════════════════════════════
+    var familiesServed = snap.families_served || 0;
+    var activeInTrack = kpis.active_in_track || 0;
+    var membershipCommunity = kpis.membership_community || 0;
+    var totalFamilies = activeInTrack + membershipCommunity;
+
+    // The big "94" headline — find the 52px span in the Families Served section
+    var tab1 = document.getElementById('tab-kpis');
+    if (tab1) {
+      var bigNums = tab1.querySelectorAll('span[style*="font-size:52px"]');
+      if (bigNums.length >= 1) {
+        bigNums[0].textContent = fmt(totalFamilies); // Families Served
+      }
+      if (bigNums.length >= 2) {
+        bigNums[1].textContent = fmt(snap.active_advocates || 0); // Active Advocates
+      }
+
+      // Composition bar — Active in Track / Membership Community
+      var splitSegs = tab1.querySelectorAll('.program-split-seg');
+      if (splitSegs.length >= 2) {
+        splitSegs[0].style.flex = activeInTrack;
+        splitSegs[0].querySelector('span').textContent = 'Active in Track \u00A0\u00B7\u00A0 ' + fmt(activeInTrack);
+        splitSegs[1].style.flex = membershipCommunity;
+        splitSegs[1].querySelector('span').textContent = 'Membership Community \u00A0\u00B7\u00A0 ' + fmt(membershipCommunity);
+      }
+
+      // Update the source note below the bar
+      var splitSource = tab1.querySelector('.program-split-source');
+      if (splitSource) {
+        splitSource.textContent = 'Active in Track + Membership Community = ' + fmt(totalFamilies) +
+          ' Families Served \u00A0\u00B7\u00A0 No mom counted in both \u00A0\u00B7\u00A0 Source: pairing table only';
+      }
+
+      // ── Q1 Activity — 32px numbers (Referrals, Intakes, Track Completions) ──
+      var medNums = tab1.querySelectorAll('div[style*="font-size:32px"]');
+      // medNums order: [0]=Referrals, [1]=Intakes, [2]=Track Completions,
+      //   [3]=Children Served, [4]=Child Welfare, [5]=Est Impact,
+      //   [6]=Applications, [7]=In Training, [8]=Approved, [9]=Became Inactive
+
+      // Referrals / Intakes from referral_sources aggregate
+      var refSources = data.referral_sources || [];
+      var totalReferrals = 0, totalIntakes = 0, totalPending = 0;
+      refSources.forEach(function(r) {
+        totalReferrals += (r.referrals_received || 0);
+        totalIntakes += (r.intakes_completed || 0);
+        totalPending += (r.pending || 0);
+      });
+
+      // Track completions from track_oversight
+      var trackExp = track.track_completions_expanded || {};
+      var totalCompletions = trackExp.total_completions || 0;
+
+      if (medNums.length >= 1 && totalReferrals > 0) medNums[0].textContent = fmt(totalReferrals);
+      if (medNums.length >= 2 && totalIntakes > 0) medNums[1].textContent = fmt(totalIntakes);
+      if (medNums.length >= 3) medNums[2].textContent = fmt(totalCompletions);
+
+      // ── Children section ──
+      if (medNums.length >= 4) medNums[3].textContent = fmt(snap.children_total || 0);
+      if (medNums.length >= 5) medNums[4].textContent = fmt(snap.children_welfare_involvement || 0);
+      // Est. Impact Value — children_welfare_involvement * $38,850
+      var cwi = snap.children_welfare_involvement || 0;
+      var impactVal = cwi * 38850;
+      if (medNums.length >= 6) {
+        if (impactVal >= 1000000) {
+          medNums[5].textContent = '~$' + (impactVal / 1000000).toFixed(2) + 'M';
+        } else if (impactVal > 0) {
+          medNums[5].textContent = '~$' + fmt(impactVal);
+        } else {
+          medNums[5].textContent = '$0';
+        }
+      }
+
+      // ── Advocates section ──
+      // Advocacy type split
+      var advSplit = data.advocacy_type_split || [];
+      var oneToOne = 0, groupCount = 0, oneToOneAdvocates = 0, groupAdvocates = 0;
+      advSplit.forEach(function(a) {
+        if (a.advocacy_type === 'one_to_one') {
+          oneToOne = a.active_pairings || 0;
+          oneToOneAdvocates = a.distinct_advocates || 0;
+        } else if (a.advocacy_type === 'group') {
+          groupCount = a.active_pairings || 0;
+          groupAdvocates = a.distinct_advocates || 0;
+        }
+      });
+      var totalAdvocates = snap.active_advocates || 0;
+
+      // Advocate breakdown bar (1:1 vs group)
+      var advBarSegments = tab1.querySelectorAll('div[style*="background:var(--green)"][style*="flex:"]');
+      // This is tricky with inline styles — find the bar container by structure
+      // Instead, update the text in the bar segments
+      var advSection = bigNums.length >= 2 ? bigNums[1].closest('div[style*="border-radius:12px"]') : null;
+      if (advSection) {
+        var barSegs = advSection.querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
+        if (barSegs.length >= 2) {
+          barSegs[0].style.flex = oneToOneAdvocates || 1;
+          var s0 = barSegs[0].querySelector('span');
+          if (s0) s0.textContent = '1:1 Advocates \u00A0\u00B7\u00A0 ' + oneToOneAdvocates;
+          barSegs[1].style.flex = groupAdvocates || 1;
+          var s1 = barSegs[1].querySelector('span');
+          if (s1) s1.textContent = 'Group \u00A0\u00B7\u00A0 ' + groupAdvocates;
+        }
+      }
+
+      // ── Advocate legend and ratios ──
+      var el;
+      el = document.getElementById('advLegend11');
+      if (el) el.textContent = '1:1 Advocates (' + oneToOneAdvocates + ')';
+      el = document.getElementById('advLegendGroup');
+      if (el) el.textContent = 'Group Facilitators (' + groupAdvocates + ')';
+      el = document.getElementById('advPaired11');
+      if (el) el.textContent = oneToOneAdvocates;
+      el = document.getElementById('advGroupCount');
+      if (el) el.textContent = groupAdvocates;
+      // Ratio: active in track moms / total advocates with active pairings
+      var ait = data.kpis ? data.kpis.active_in_track || 0 : 0;
+      var totalAdvWithPairings = oneToOneAdvocates + groupAdvocates;
+      var ratio = totalAdvWithPairings > 0 ? (ait / totalAdvWithPairings).toFixed(1) : '—';
+      el = document.getElementById('advRatio');
+      if (el) el.textContent = ratio;
+      el = document.getElementById('advRatioNote');
+      if (el) el.textContent = 'paired moms per advocate (' + ait + ' paired moms \u00F7 ' + totalAdvWithPairings + ' advocates in active pairings)';
+
+      // ── Advocate pipeline numbers (Applications, In Training, Approved, Inactive) ──
+      var pipeline = data.advocate_pipeline || {};
+      var bySubStatus = pipeline.by_sub_status || [];
+      var inTraining = 0;
+      bySubStatus.forEach(function(s) {
+        if (s.advocate_sub_status && s.advocate_sub_status.toLowerCase().indexOf('training') !== -1) {
+          inTraining += s.count || 0;
+        }
+      });
+      if (medNums.length >= 8 && inTraining > 0) medNums[7].textContent = fmt(inTraining);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 3 — FWA CURRENCY
+    // ════════════════════════════════════════════════════════
+    var fwaCurrency = fss.fwa_currency || {};
+    var fwaCurrent = fwaCurrency.current_0_90 || 0;
+    var fwaOverdue = fwaCurrency.overdue_91_180 || 0;
+    var fwaCritical = fwaCurrency.critical_180_plus || 0;
+    var fwaNoFwa = fwaCurrency.no_fwa || 0;
+    var fwaTotal = fwaCurrent + fwaOverdue + fwaCritical + fwaNoFwa;
+    var fwaCoveragePct = fwaTotal > 0 ? Math.round((fwaCurrent / fwaTotal) * 100) : 0;
+
+    var tabFss = document.getElementById('tab-fss');
+    if (tabFss) {
+      // FWA Activity stat strip
+      var fssStatusWraps = tabFss.querySelectorAll('.status-count-wrap');
+      if (fssStatusWraps.length >= 1) {
+        var fssWrap = fssStatusWraps[0];
+        setStatusCardValue(fssWrap, 'FWAs Collected', fwaCurrent + fwaOverdue); // approx — collected in Q1
+        setStatusCardValue(fssWrap, 'Active Moms with Current', fmt(fwaCurrent));
+        setStatusCardValue(fssWrap, 'Due for FWA', fmt(fwaOverdue));
+        setStatusCardValue(fssWrap, 'Missing Any FWA', fmt(fwaNoFwa));
+      }
+
+      // FWA Goal banner — update the bold coverage text
+      var banner = tabFss.querySelector('.fss-integrity-banner');
+      if (banner) {
+        var bannerSpan = banner.querySelectorAll('span')[1]; // second span has the text
+        if (bannerSpan) {
+          bannerSpan.innerHTML = '<strong>Program Goal:</strong> 80% of active moms have a valid FWA update within the last 3 months. Current coverage: <strong>' +
+            fwaCoveragePct + '% (' + fwaCurrent + ' of ' + fwaTotal + ' active moms)</strong>. ' +
+            '<strong>' + Math.max(0, Math.ceil(fwaTotal * 0.8) - fwaCurrent) + ' moms</strong> need a follow-up FWA to reach the 80% goal. ' +
+            '\u26A0 FWA timestamp bug: editing any single domain field updates the full submission timestamp \u2014 "current" status based on timestamp alone may overstate true coverage.';
+        }
+      }
+
+      // Coverage percentage large number
+      var coverageBig = tabFss.querySelectorAll('span[style*="font-size:44px"]');
+      if (coverageBig.length >= 1) {
+        coverageBig[0].textContent = fwaCoveragePct + '%';
+        // Color: green if >= 80, yellow if >= 50, red otherwise
+        if (fwaCoveragePct >= 80) coverageBig[0].style.color = 'var(--green)';
+        else if (fwaCoveragePct >= 50) coverageBig[0].style.color = 'var(--yellow)';
+        else coverageBig[0].style.color = 'var(--red)';
+      }
+      // Coverage detail text "121 of 212 active moms"
+      var coverageDetail = tabFss.querySelectorAll('span[style*="font-size:14px"]');
+      if (coverageDetail.length >= 1) {
+        coverageDetail[0].textContent = fwaCurrent + ' of ' + fwaTotal + ' active moms';
+      }
+
+      // Progress bar width
+      var progressBar = tabFss.querySelector('div[style*="width:57%"]');
+      if (progressBar) {
+        progressBar.style.width = fwaCoveragePct + '%';
+        var barLabel = progressBar.querySelector('span');
+        if (barLabel) barLabel.textContent = fwaCurrent + ' current';
+      }
+
+      // Currency breakdown line: Current / Overdue / Critical / No FWA
+      var currencyLine = tabFss.querySelectorAll('div[style*="display:flex;gap:24px"] > span');
+      if (currencyLine.length >= 4) {
+        currencyLine[0].innerHTML = '\u2713 Current (0\u20133 mo): <strong style="color:var(--green)">' + fwaCurrent + '</strong>';
+        currencyLine[1].innerHTML = '\u26A0 Overdue (3\u20136 mo): <strong style="color:var(--yellow)">' + fwaOverdue + '</strong>';
+        currencyLine[2].innerHTML = '\u26A0 Critical (>6 mo): <strong style="color:var(--red)">' + fwaCritical + '</strong>';
+        currencyLine[3].innerHTML = '\u2717 No FWA on record: <strong style="color:var(--red)">' + fwaNoFwa + '</strong>';
+      }
+
+      // FWA Status table rows
+      var fssTable = tabFss.querySelector('.affiliate-table-wrap table');
+      if (fssTable) {
+        var rows = fssTable.querySelectorAll('tbody tr');
+        // rows: [0]=Current, [1]=Overdue, [2]=Critical, [3]=No FWA, [4]=Total
+        if (rows.length >= 5) {
+          var fwaRows = [
+            { count: fwaCurrent, pct: fwaTotal > 0 ? Math.round(fwaCurrent / fwaTotal * 100) : 0 },
+            { count: fwaOverdue, pct: fwaTotal > 0 ? Math.round(fwaOverdue / fwaTotal * 100) : 0 },
+            { count: fwaCritical, pct: fwaTotal > 0 ? Math.round(fwaCritical / fwaTotal * 100) : 0 },
+            { count: fwaNoFwa, pct: fwaTotal > 0 ? Math.round(fwaNoFwa / fwaTotal * 100) : 0 }
+          ];
+          for (var ri = 0; ri < 4; ri++) {
+            var cells = rows[ri].querySelectorAll('td');
+            if (cells.length >= 3) {
+              cells[1].textContent = fwaRows[ri].count;
+              cells[2].textContent = fwaRows[ri].pct + '%';
+            }
+          }
+          // Total row
+          var totalCells = rows[4].querySelectorAll('td');
+          if (totalCells.length >= 3) {
+            totalCells[1].textContent = fwaTotal;
+            totalCells[2].textContent = '100%';
+          }
+        }
+      }
+
+      // FWA by Affiliate bars
+      var fwaByAffiliate = fss.fwa_currency_by_affiliate || [];
+      if (fwaByAffiliate.length > 0) {
+        // Find the affiliate bars container — it follows the "FWA Currency by Affiliate" section
+        var affSection = null;
+        var sectionLabels = tabFss.querySelectorAll('.section-label');
+        for (var si = 0; si < sectionLabels.length; si++) {
+          if (sectionLabels[si].textContent.indexOf('by Affiliate') !== -1) {
+            affSection = sectionLabels[si].closest('.section-group');
+            break;
+          }
+        }
+        if (affSection) {
+          var panel = affSection.querySelector('.panel');
+          if (panel) {
+            var barDivs = panel.querySelectorAll('div[style*="margin-bottom:12px"]');
+            // Sort affiliates by coverage ascending (matching current display)
+            fwaByAffiliate.sort(function(a, b) {
+              var aTotal = (a.current_0_90 || 0) + (a.overdue_91_180 || 0) + (a.critical_180_plus || 0) + (a.no_fwa || 0);
+              var bTotal = (b.current_0_90 || 0) + (b.overdue_91_180 || 0) + (b.critical_180_plus || 0) + (b.no_fwa || 0);
+              var aPct = aTotal > 0 ? (a.current_0_90 || 0) / aTotal : 0;
+              var bPct = bTotal > 0 ? (b.current_0_90 || 0) / bTotal : 0;
+              return aPct - bPct;
+            });
+            // Rebuild affiliate bars
+            var barsHtml = '';
+            barsHtml += '<div style="margin-bottom:10px;display:flex;justify-content:space-between;font-size:11px;color:var(--mid);font-family:\'Oswald\',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">';
+            barsHtml += '<span>Affiliate \u2014 sorted by coverage ascending</span><span>Coverage (current / active) \u00A0\u00B7\u00A0 80% goal \u2014\u2014</span></div>';
+            fwaByAffiliate.forEach(function(aff) {
+              var affTotal = (aff.current_0_90 || 0) + (aff.overdue_91_180 || 0) + (aff.critical_180_plus || 0) + (aff.no_fwa || 0);
+              var affPct = affTotal > 0 ? Math.round((aff.current_0_90 || 0) / affTotal * 100) : 0;
+              var color = affPct >= 80 ? 'var(--green)' : affPct >= 50 ? 'var(--yellow)' : 'var(--red)';
+              barsHtml += '<div style="margin-bottom:12px;">';
+              barsHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+              barsHtml += '<span style="font-size:13px;font-weight:600;">' + (aff.affiliate_name || 'Unknown') + '</span>';
+              barsHtml += '<span style="font-size:12px;color:' + color + ';font-weight:700;">' + affPct + '% \u00A0\u00B7\u00A0 ' + (aff.current_0_90 || 0) + ' of ' + affTotal + ' moms current</span>';
+              barsHtml += '</div>';
+              barsHtml += '<div style="background:var(--border);border-radius:4px;height:16px;position:relative;">';
+              barsHtml += '<div style="background:' + color + ';height:16px;border-radius:4px;width:' + affPct + '%;"></div>';
+              barsHtml += '<div style="position:absolute;top:0;left:80%;width:2px;height:16px;background:var(--green);opacity:0.5;"></div>';
+              barsHtml += '</div></div>';
+            });
+            panel.innerHTML = barsHtml;
+          }
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 4 — REFERRALS
+    // ════════════════════════════════════════════════════════
+    var tabAff = document.getElementById('tab-affiliates');
+    if (tabAff && data.referral_sources && data.referral_sources.length > 0) {
+      var refWrap = tabAff.querySelector('.status-count-wrap');
+      if (refWrap) {
+        setStatusCardValue(refWrap, 'Total Referrals', fmt(totalReferrals));
+        setStatusCardValue(refWrap, 'Intakes Completed', fmt(totalIntakes));
+        var convRate = totalReferrals > 0 ? Math.round(totalIntakes / totalReferrals * 100) : 0;
+        setStatusCardValue(refWrap, 'Conversion Rate', convRate + '%');
+        setStatusCardValue(refWrap, 'Pending', fmt(totalPending));
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 5 — TRACK OVERSIGHT: Stall buckets
+    // ════════════════════════════════════════════════════════
+    var stallBuckets = track.stall_buckets || {};
+    setStalledCard('progressing', fmt(stallBuckets.progressing || 0));
+    setStalledCard('14', fmt(stallBuckets.stalled_14_20 || 0));
+    setStalledCard('21', fmt(stallBuckets.stalled_21_30 || 0));
+    setStalledCard('30+', fmt(stallBuckets.stalled_30_plus || 0));
+
+    // ── Stall by Affiliate table ──
+    var stallByAff = data.stall_by_affiliate || [];
+    if (stallByAff.length > 0) {
+      var tabTrack = document.getElementById('tab-track');
+      if (tabTrack) {
+        var stallTable = tabTrack.querySelector('.stalled-affiliate-table table');
+        if (stallTable) {
+          var tbody = stallTable.querySelector('tbody');
+          if (tbody) {
+            var html = '';
+            var allActive = 0, allProg = 0, all14 = 0, all21 = 0, all30 = 0;
+            stallByAff.forEach(function(row) {
+              var ait = row.active_in_track || 0;
+              var prog = row.progressing || 0;
+              var s14 = row.stalled_14_20 || 0;
+              var s21 = row.stalled_21_30 || 0;
+              var s30 = row.stalled_30_plus || 0;
+              var pctProg = ait > 0 ? Math.round(prog / ait * 100) : 0;
+              allActive += ait; allProg += prog; all14 += s14; all21 += s21; all30 += s30;
+              html += '<tr>';
+              html += '<td><strong>' + (row.affiliate_name || 'Unknown') + '</strong></td>';
+              html += '<td>' + ait + '</td>';
+              html += '<td><span class="stalled-dot dot-green"></span>' + prog + '</td>';
+              html += '<td><span class="stalled-dot dot-yellow"></span>' + s14 + '</td>';
+              html += '<td><span class="stalled-dot dot-orange"></span>' + s21 + '</td>';
+              html += '<td><span class="stalled-dot dot-red"></span>' + s30 + '</td>';
+              html += '<td>' + pctProg + '%</td>';
+              html += '</tr>';
+            });
+            // Total row
+            var allPctProg = allActive > 0 ? Math.round(allProg / allActive * 100) : 0;
+            html += '<tr style="font-weight:700;background:#f9f9f9">';
+            html += '<td>All Affiliates</td>';
+            html += '<td>' + allActive + '</td>';
+            html += '<td><span class="stalled-dot dot-green"></span>' + allProg + '</td>';
+            html += '<td><span class="stalled-dot dot-yellow"></span>' + all14 + '</td>';
+            html += '<td><span class="stalled-dot dot-orange"></span>' + all21 + '</td>';
+            html += '<td><span class="stalled-dot dot-red"></span>' + all30 + '</td>';
+            html += '<td>' + allPctProg + '%</td>';
+            html += '</tr>';
+            tbody.innerHTML = html;
+          }
+        }
+      }
+    }
+
+    // ── Track Completions breakdown ──
+    var tce = track.track_completions_expanded || {};
+    if (tce.total_completions != null) {
+      var tabTrack = document.getElementById('tab-track');
+      if (tabTrack) {
+        var panels = tabTrack.querySelectorAll('.panel');
+        // First panel in the two-col is the completion breakdown
+        for (var pi = 0; pi < panels.length; pi++) {
+          var h3 = panels[pi].querySelector('h3');
+          if (h3 && h3.textContent.indexOf('Completion Status') !== -1) {
+            var frVals = panels[pi].querySelectorAll('.fr-val');
+            // Order: [0]=Full Track, [1]=W/O Support, [2]=W/O Post Assessment,
+            //         [3]=Total Completions, [4]=Incomplete reasons..., [last]=Total Incompletes
+            if (frVals.length >= 4) {
+              frVals[0].textContent = tce.completed_full_track || 0;
+              // frVals[1] and [2] are sub-categories, leave as-is if not in API
+              frVals[3].textContent = tce.total_completions || 0;
+            }
+            if (frVals.length >= 6) {
+              frVals[frVals.length - 1].textContent = tce.total_incompletes || 0;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // ── Sessions by Track table ──
+    var sessionsByTrack = track.sessions_by_track || [];
+    if (sessionsByTrack.length > 0) {
+      var tabTrack = document.getElementById('tab-track');
+      if (tabTrack) {
+        // Find the session counts table
+        var tables = tabTrack.querySelectorAll('.affiliate-table-wrap table');
+        for (var ti = 0; ti < tables.length; ti++) {
+          var th = tables[ti].querySelector('thead th');
+          if (th && th.textContent.indexOf('Track') !== -1) {
+            var theadThs = tables[ti].querySelectorAll('thead th');
+            // Check if it has "Moms Active" column
+            var hasMonmsActive = false;
+            for (var hi = 0; hi < theadThs.length; hi++) {
+              if (theadThs[hi].textContent.indexOf('Moms Active') !== -1) { hasMonmsActive = true; break; }
+            }
+            if (!hasMonmsActive) continue;
+
+            var tbody = tables[ti].querySelector('tbody');
+            if (tbody) {
+              var reqSessions = track.required_sessions || {};
+              var html = '';
+              sessionsByTrack.forEach(function(row) {
+                var required = reqSessions[row.track_title] || '—';
+                var avgTrack = row.avg_track_sessions || 0;
+                var avgSupport = row.avg_support_sessions || 0;
+                var avgTotal = (avgTrack + avgSupport).toFixed(1);
+                var pctComplete = (typeof required === 'number' && required > 0) ? Math.round(avgTrack / required * 100) : '—';
+                var pctColor = pctComplete === '—' ? 'var(--mid)' : pctComplete >= 70 ? 'var(--green)' : 'var(--yellow)';
+                html += '<tr>';
+                html += '<td><strong>' + (row.track_title || 'Unknown') + '</strong></td>';
+                html += '<td>' + (row.moms_active || 0) + '</td>';
+                html += '<td>' + required + '</td>';
+                html += '<td><strong>' + avgTrack.toFixed(1) + '</strong></td>';
+                html += '<td>' + avgSupport.toFixed(1) + '</td>';
+                html += '<td>' + avgTotal + '</td>';
+                html += '<td><span style="color:' + pctColor + ';font-weight:700;">' + (pctComplete === '—' ? '—' : pctComplete + '%') + '</span></td>';
+                html += '</tr>';
+              });
+              tbody.innerHTML = html;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // META — Update period in header subtitle if available
+    // ════════════════════════════════════════════════════════
+    if (meta.period) {
+      var subtitle = document.querySelector('.header .subtitle');
+      if (subtitle) {
+        subtitle.textContent = meta.period + ' Program Oversight Report' +
+          (meta.affiliate_name ? ' \u2014 ' + meta.affiliate_name : ' \u2014 All Affiliates') +
+          ' | Generated ' + (meta.generated_at ? new Date(meta.generated_at).toLocaleDateString() : 'live');
+      }
+    }
+
+    console.log('[EMA] Dashboard rendered with live data', { families: totalFamilies, advocates: snap.active_advocates, fwaCoverage: fwaCoveragePct + '%' });
+  }
+
+  /* ── On page load: check existing session ────────────────────── */
+  (async function checkSession() {
+    try {
+      var res = await fetch('/api/me');
+      if (res.ok) {
+        document.getElementById('loginOverlay').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        initDashboard();
+      }
+    } catch (e) { /* not authenticated, show login */ }
+  })();
+</script>
+
+</body>
+</html>

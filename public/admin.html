@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMA Tickets — Admin Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- Trellis Login -->
+<div id="loginOverlay" class="pin-overlay">
+  <div class="pin-modal">
+    <h2>Admin Access</h2>
+    <p class="text-muted text-sm mb-2">Sign in with your Trellis credentials</p>
+    <div class="form-group">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" placeholder="Trellis username" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <p id="loginError" class="text-sm mt-1" style="color:var(--danger)"></p>
+  </div>
+</div>
+
+<!-- Dashboard (hidden until PIN verified) -->
+<div id="dashboard" class="hidden">
+  <div class="container-wide">
+
+    <!-- Header -->
+    <div class="flex-between mb-2">
+      <div>
+        <h1>EMA Tickets</h1>
+        <p class="text-muted text-sm">Admin Dashboard</p>
+      </div>
+      <div class="flex gap-sm" style="align-items:center">
+        <span class="text-sm text-muted" id="welcomeUser"></span>
+        <button class="btn btn-secondary btn-sm" onclick="showView('reports')">Reports</button>
+        <button class="btn btn-secondary btn-sm" onclick="showView('team')">Team</button>
+        <a href="/" class="btn btn-secondary btn-sm" style="text-decoration:none">Submit Portal</a>
+        <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="queue" onclick="switchTab('queue')">Ticket Queue</button>
+      <button class="tab" data-tab="detail" onclick="switchTab('detail')" id="detailTab" style="display:none">Ticket Detail</button>
+      <button class="tab" data-tab="reports" onclick="switchTab('reports')" id="reportsTab" style="display:none">Reports</button>
+      <button class="tab" data-tab="team" onclick="switchTab('team')" id="teamTab" style="display:none">Team</button>
+    </div>
+
+    <!-- Queue View -->
+    <div id="view-queue">
+      <!-- Filters -->
+      <div class="filters">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="filterStatus" onchange="loadTickets()">
+            <option value="">All</option>
+            <option value="open" selected>Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="filterType" onchange="loadTickets()">
+            <option value="">All</option>
+            <option value="bug">Bug</option>
+            <option value="staff_request">Staff Request</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="filterPriority" onchange="loadTickets()">
+            <option value="">All</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assignee</label>
+          <select id="filterAssignee" onchange="loadTickets()">
+            <option value="">All</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Ticket Table -->
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Assignee</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="ticketTableBody">
+              <tr><td colspan="7" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex-between mt-1">
+          <span class="text-sm text-muted" id="ticketCount"></span>
+          <div class="flex gap-sm">
+            <button class="btn btn-secondary btn-sm" id="prevPageBtn" onclick="prevPage()" disabled>&larr; Prev</button>
+            <button class="btn btn-secondary btn-sm" id="nextPageBtn" onclick="nextPage()">Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket Detail View -->
+    <div id="view-detail" class="hidden">
+      <span class="back-link" onclick="backToQueue()">&larr; Back to queue</span>
+      <div id="ticketDetail"></div>
+    </div>
+
+    <!-- Reports View -->
+    <div id="view-reports" class="hidden">
+      <span class="back-link" onclick="backToQueue()">&larr; Back to queue</span>
+      <div id="reportsContent"></div>
+    </div>
+
+    <!-- Team View -->
+    <div id="view-team" class="hidden">
+      <span class="back-link" onclick="backToQueue()">&larr; Back to queue</span>
+      <div id="teamContent"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/js/admin.js"></script>
+
+</body>
+</html>

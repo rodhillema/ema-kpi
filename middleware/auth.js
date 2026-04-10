@@ -1,0 +1,115 @@
+/* ============================================================
+   Trellis Login Authentication
+   - Session-based (express-session)
+   - Verifies password via bcrypt against User.passwordHash
+   - Checks role via UserRole + Role tables (coordinator and above)
+   - Whitelist bypasses role check for specific users
+   ============================================================ */
+
+const bcrypt = require('bcryptjs');
+const pool = require('../db');
+
+// Approved usernames — these bypass the role check entirely
+const WHITELISTED_USERNAMES = ['rd.hill', 'cristina.galloway'];
+
+// Roles allowed to access the KPI dashboard (coordinator and above)
+const ALLOWED_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator'];
+
+// Middleware: require authenticated session
+function requireAuth(req, res, next) {
+  if (req.session && req.session.user) return next();
+  res.status(401).json({ error: 'Not authenticated' });
+}
+
+// Middleware: require coordinator role or above
+function requireRole(req, res, next) {
+  if (ALLOWED_ROLES.includes(req.session.user.role)) return next();
+  res.status(403).json({ error: 'Access denied — insufficient role' });
+}
+
+// Login handler — validates Trellis credentials
+async function login(req, res) {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const normalizedUsername = username.trim().toLowerCase();
+
+    // 1. Find user in Trellis User table + affiliate name
+    const userResult = await pool.query(
+      `SELECT u."id", u."username", u."firstName", u."lastName", u."passwordHash", u."affiliateId",
+              a."name" AS "affiliateName"
+       FROM "User" u
+       LEFT JOIN "Affiliate" a ON a."id" = u."affiliateId"
+       WHERE LOWER(u."username") = $1 AND u."deleted_at" = 0
+       LIMIT 1`,
+      [normalizedUsername]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const user = userResult.rows[0];
+
+    // 2. Verify password against bcrypt hash
+    const passwordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordValid) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // 3. Look up role
+    const roleResult = await pool.query(
+      `SELECT r."key"
+       FROM "UserRole" ur
+       JOIN "Role" r ON r."id" = ur."role_id"
+       WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
+       LIMIT 1`,
+      [user.id]
+    );
+
+    const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
+
+    // 4. Access check: whitelisted users bypass role check, others need coordinator+
+    const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
+    if (!isWhitelisted && !ALLOWED_ROLES.includes(roleKey)) {
+      return res.status(403).json({ error: 'Access denied — coordinator role or above required' });
+    }
+
+    // 5. Create session
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: roleKey,
+      affiliateId: user.affiliateId,
+      affiliateName: user.affiliateName,
+    };
+
+    res.json({
+      success: true,
+      firstName: user.firstName,
+      role: roleKey,
+      affiliateName: user.affiliateName,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed — please try again' });
+  }
+}
+
+// Logout handler
+function logout(req, res) {
+  req.session.destroy(() => res.json({ success: true }));
+}
+
+// Session check handler
+function me(req, res) {
+  res.json({ user: req.session.user });
+}
+
+module.exports = { requireAuth, requireRole, login, logout, me };

@@ -1874,7 +1874,7 @@
 
   async function doLogout() {
     try { await fetch('/api/logout', { method: 'POST' }); } catch (e) { /* ignore */ }
-    window.location.reload();
+    window.location.href = '/';
   }
 
   /* ── Dashboard init after auth ───────────────────────────────── */

@@ -1852,36 +1852,41 @@
 
   /* ── Dashboard init after auth ───────────────────────────────── */
   async function initDashboard() {
-    try {
-      // Get user info
-      var meRes = await fetch('/api/me');
-      if (meRes.ok) {
+    // Fetch user info and report data in parallel for speed
+    var [meRes, dataRes] = await Promise.all([
+      fetch('/api/me').catch(function(e) { console.error('me fetch failed:', e); return null; }),
+      fetch('/api/report-data').catch(function(e) { console.error('data fetch failed:', e); return null; })
+    ]);
+
+    // Process user info
+    var role = 'user';
+    if (meRes && meRes.ok) {
+      try {
         var meData = await meRes.json();
         var me = meData.user || meData;
-        var role = me.role || 'user';
+        role = me.role || 'user';
         var display = (me.firstName || me.username || 'User') + (me.lastName ? ' ' + me.lastName : '');
         document.getElementById('bannerUserInfo').textContent =
           'Signed in as ' + display + ' (' + role + ')';
+      } catch (e) { console.error('User info parse failed:', e); }
+    }
 
-        // Show affiliate slicer only for admin/supervisor roles
-        if (role === 'administrator' || role === 'supervisor') {
-          document.getElementById('affiliateSlicerWrap').style.display = '';
-        }
-      }
-    } catch (e) { console.error('User info fetch failed:', e); }
-
-    try {
-      // Get report data (includes affiliate list)
-      var dataRes = await fetch('/api/report-data');
-      if (dataRes.ok) {
+    // Process report data
+    if (dataRes && dataRes.ok) {
+      try {
         var data = await dataRes.json();
         window.__EMA_DATA__ = data;
         populateAffiliateFilter(data.affiliates || []);
         renderDashboard(data);
-      } else {
-        console.error('Report data error:', dataRes.status, await dataRes.text());
-      }
-    } catch (e) { console.error('Report data fetch failed:', e); }
+
+        // Only show affiliate slicer AFTER it's populated, and only for admin/supervisor
+        if (role === 'administrator' || role === 'supervisor') {
+          document.getElementById('affiliateSlicerWrap').style.display = '';
+        }
+      } catch (e) { console.error('Report data parse failed:', e); }
+    } else if (dataRes) {
+      console.error('Report data error:', dataRes.status);
+    }
   }
 
   function populateAffiliateFilter(affiliates) {

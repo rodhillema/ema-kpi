@@ -301,7 +301,13 @@ async function doLogin() {
       errEl.className = "login-err show";
       return;
     }
-    applySession(data.user);
+    // Login response has user data at top level, /api/me wraps in .user
+    // Fetch full session info after login
+    var meRes = await fetch("/api/me");
+    if (meRes.ok) {
+      var meData = await meRes.json();
+      if (meData.user) applySession(meData.user);
+    }
   } catch (e) {
     errEl.textContent = "Network error — please try again.";
     errEl.className = "login-err show";

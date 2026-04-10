@@ -159,11 +159,11 @@ body.role-admin .cards{grid-template-columns:repeat(4,1fr)}
     <!-- RD: wrap in <form method="POST" action="/login"> + CSRF -->
     <div class="field">
       <label for="f-u">Username</label>
-      <input id="login-user" name="username" type="text" placeholder="your.name@ema.org" autocomplete="username">
+      <input id="f-u" name="username" type="text" placeholder="your.name@ema.org" autocomplete="username">
     </div>
     <div class="field">
       <label for="f-p">Password</label>
-      <input id="login-pass" name="password" type="password" placeholder="••••••••" autocomplete="current-password">
+      <input id="f-p" name="password" type="password" placeholder="••••••••" autocomplete="current-password">
     </div>
     <!-- RD: type="submit" when inside <form> -->
     <button class="login-btn" type="button" onclick="doLogin()">Sign In →</button>
@@ -287,8 +287,8 @@ function applySession(user) {
 async function doLogin() {
   var errEl = document.getElementById("login-err");
   errEl.className = "login-err";
-  var username = document.getElementById("login-user").value;
-  var password = document.getElementById("login-pass").value;
+  var username = document.getElementById("f-u").value;
+  var password = document.getElementById("f-p").value;
   try {
     var res = await fetch("/api/login", {
       method: "POST",

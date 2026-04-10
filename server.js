@@ -55,7 +55,7 @@ app.get('/api/advocate-lookup/:id', async (req, res) => {
 });
 
 // Page routes
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'hub.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 

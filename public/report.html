@@ -1615,30 +1615,48 @@
   <div class="checklist-section">
     <h3>🔴 Blockers — RD Action Required</h3>
 
-    <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Blocker</div>
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Complete</div>
       <div class="ci-body">
-        <div class="ci-title">Referral conversion rate: confirm "not converted" status in Trellis</div>
-        <div class="ci-detail">The conversion rate denominator should only include referrals that have reached a final outcome — converted or explicitly not converted. Pending referrals are excluded. RD needs to confirm: (1) whether Trellis has an explicit "declined" or "did not engage" referral status, (2) how to distinguish a genuinely pending referral from one that was quietly abandoned. Until this is confirmed the conversion rate shows as pending in the dashboard.</div>
-        <div class="ci-owner">Owner: RD Hill</div>
+        <div class="ci-title" style="text-decoration:line-through;">Referral conversion rate: confirm "not converted" status in Trellis</div>
+        <div class="ci-detail">Confirmed 4/9/2026. Trellis has explicit statuses: <code>prospect_status = 'did_not_engage_in_program'</code> (1,378 moms) is the "not converted" status. Sub-reasons available via <code>referral_sub_status</code>: client_declined_services (17), unable_to_contact (59), duplicate_referral (18), ineligible_for_program (8), referred_to_alternate_program (7). Conversion formula: <code>engaged_in_program / (engaged_in_program + did_not_engage_in_program)</code> — excludes <code>prospect</code> (still pending, 118 moms).</div>
+        <div class="ci-owner">Owner: RD Hill — DONE</div>
+      </div>
+    </div>
+
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Complete</div>
+      <div class="ci-body">
+        <div class="ci-title" style="text-decoration:line-through;">Referral source: confirm field name and pull raw values</div>
+        <div class="ci-detail">Confirmed 4/9/2026. Field: <code>Mom.agency_id → Agency.name</code>. Top sources: Hope Women's Center (294), Self-Referred (233), Childnet (169), North Broward Bureau (81), Bravely (66), Avail (65), CPS (53), DCF (40), Hamilton County JFS (39). 53.5% of moms have no agency linked — shown as "Unknown / Not Recorded." Two entries are raw UUIDs (bad data). Now wired to live API via <code>/api/report-data</code> referral_sources.</div>
+        <div class="ci-owner">Owner: RD Hill — DONE</div>
+      </div>
+    </div>
+
+    <div class="checklist-item nice">
+      <div class="ci-tag nice">Complete</div>
+      <div class="ci-body">
+        <div class="ci-title" style="text-decoration:line-through;">Replace sample data with live Trellis data</div>
+        <div class="ci-detail">All dashboard values now pull live from Railway PostgreSQL via <code>/api/report-data</code>. KPI gauges, entity cards, FWA currency, referral sources, stall buckets, track completions, session depth, and affiliate breakdowns are all wired. Completed 4/9/2026.</div>
+        <div class="ci-owner">Owner: RD Hill — DONE</div>
       </div>
     </div>
 
     <div class="checklist-item confirm">
-      <div class="ci-tag confirm">RD — Query Spec</div>
+      <div class="ci-tag confirm">Cristina</div>
       <div class="ci-body">
-        <div class="ci-title">Referral source: confirm field name and pull raw values</div>
-        <div class="ci-detail">Referral source is stored on Mom.agency_id → Agency.agency_name (confirmed from data dictionary — Mom.agency_id links to the Agency table, 129 Agency records, agency_name 100% populated). Pull DISTINCT agency_name for all Q1 moms. Include an "Unknown / Not Recorded" bucket for moms where agency_id is null (null_pct ≈ 53.5% — majority of moms have no agency linked, so this bucket will be large). Spelling variations within the linked agency names are expected — show as-is for Q1.</div>
-        <div class="ci-owner">Owner: RD Hill</div>
+        <div class="ci-title">Cost Per Family — needs finance input</div>
+        <div class="ci-detail">Q1 program spend is not in Trellis. Finance must provide the figure. Confirm scope: direct program costs only, or fully loaded? Once received, RD can add it to the API. Currently removed from dashboard per Cristina's decision — calculated outside this report.</div>
+        <div class="ci-owner">Owner: Cristina (finance request)</div>
       </div>
     </div>
 
-    <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Blocker</div>
+    <div class="checklist-item confirm">
+      <div class="ci-tag confirm">Cristina</div>
       <div class="ci-body">
-        <div class="ci-title">Replace sample data with live Trellis data</div>
-        <div class="ci-detail">All values currently shown are illustrative sample data. RD needs to run all queries against Railway PostgreSQL and replace the <code>window.__EMA_DATA__</code> block in the file (once the data-driven version is rebuilt).</div>
-        <div class="ci-owner">Owner: RD Hill</div>
+        <div class="ci-title">Service Connection Rate — connected_* fields empty in Trellis</div>
+        <div class="ci-detail">The <code>connected_*</code> boolean fields on the Mom record are all unpopulated (0 across all 9 fields for active moms). Only 14 ServiceReferral records exist. This metric cannot be reported until Trellis data entry catches up. Deferred to live coordinator dashboards per Cristina's decision.</div>
+        <div class="ci-owner">Owner: Cristina (data entry / Trellis workflow)</div>
       </div>
     </div>
 
@@ -2308,6 +2326,517 @@
         }
       }
     });
+
+    // ════════════════════════════════════════════════════════
+    // §1 — FAMILIES ENTITY CARD SUB-STATS (inline-styled card in tab-kpis)
+    // ════════════════════════════════════════════════════════
+    if (tab1) {
+      // The families card is the first card in the Program Status section
+      // It has three regions: "Active During Q1" stacked bar legend, "As of March 31" stats, and "Q1 Activity" grid
+      var familyCards = tab1.querySelectorAll('div[style*="background:var(--white)"][style*="border-radius:12px"]');
+      var familiesCard = familyCards.length >= 1 ? familyCards[0] : null;
+      if (familiesCard) {
+        // "Active During Q1" stacked bar legend — update the inline numbers
+        var activeBarLegend = familiesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] > div');
+        if (activeBarLegend.length >= 2) {
+          // In Track legend
+          var inTrackLegendSpan = activeBarLegend[0].querySelector('span[style*="font-weight:700"]');
+          var inTrackPct = totalFamilies > 0 ? Math.round(activeInTrack / totalFamilies * 100) : 0;
+          if (inTrackLegendSpan) inTrackLegendSpan.innerHTML = fmt(activeInTrack) + ' &nbsp;&middot;&nbsp; ' + inTrackPct + '%';
+          // Membership Community legend
+          var mcLegendSpan = activeBarLegend[1].querySelector('span[style*="font-weight:700"]');
+          var mcPct = totalFamilies > 0 ? Math.round(membershipCommunity / totalFamilies * 100) : 0;
+          if (mcLegendSpan) mcLegendSpan.innerHTML = fmt(membershipCommunity) + ' &nbsp;&middot;&nbsp; ' + mcPct + '%';
+        }
+
+        // Stacked bar flex proportions
+        var stackedBar = familiesCard.querySelector('div[style*="border-radius:6px"][style*="height:20px"][style*="display:flex"]');
+        if (stackedBar) {
+          var barSegs = stackedBar.children;
+          if (barSegs.length >= 2) {
+            barSegs[0].style.flex = activeInTrack || 1;
+            barSegs[1].style.flex = membershipCommunity || 1;
+          }
+        }
+
+        // "As of March 31" — three 24px numbers: active, in track, membership community
+        var asOfSection = familiesCard.querySelectorAll('div[style*="padding:16px 0"][style*="border-bottom"]');
+        var marchSection = asOfSection.length >= 2 ? asOfSection[1] : null;
+        if (marchSection) {
+          var marchNums = marchSection.querySelectorAll('span[style*="font-size:24px"]');
+          var fe = data.snapshot.families_expanded || {};
+          if (marchNums.length >= 1) marchNums[0].textContent = fmt(fe.active_at_end_of_period || (activeInTrack + membershipCommunity));
+          if (marchNums.length >= 2) marchNums[1].textContent = fmt(activeInTrack);
+          if (marchNums.length >= 3) marchNums[2].textContent = fmt(membershipCommunity);
+        }
+
+        // "Q1 Activity" — three 24px numbers: Referrals Received, Intakes Completed, Track Completions
+        var activityGrids = familiesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:repeat(3"]');
+        var q1Grid = activityGrids.length >= 1 ? activityGrids[0] : null;
+        if (q1Grid) {
+          var q1Nums = q1Grid.querySelectorAll('div[style*="font-size:24px"]');
+          if (q1Nums.length >= 1) q1Nums[0].textContent = fmt(totalReferrals);
+          if (q1Nums.length >= 2) q1Nums[1].textContent = fmt(totalIntakes);
+          if (q1Nums.length >= 3) q1Nums[2].textContent = fmt(totalCompletions);
+        }
+      }
+
+      // ════════════════════════════════════════════════════════
+      // §2 — CHILDREN ENTITY CARD SUB-STATS
+      // ════════════════════════════════════════════════════════
+      var childrenCard = familyCards.length >= 2 ? familyCards[1] : null;
+      if (childrenCard) {
+        // Children card has a 2-col grid: Child Welfare Prevention + Est. Impact Value
+        var childGridCols = childrenCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] > div');
+        var welfareCount = snap.children_welfare_involvement || 0;
+        if (childGridCols.length >= 1) {
+          var cwNum = childGridCols[0].querySelector('div[style*="font-size:24px"]');
+          if (cwNum) cwNum.textContent = fmt(welfareCount);
+        }
+        if (childGridCols.length >= 2) {
+          var impactNum = childGridCols[1].querySelector('div[style*="font-size:24px"]');
+          var impactVal = welfareCount * 38850;
+          var impactStr = impactVal >= 1000000 ? '~$' + (impactVal / 1000000).toFixed(2) + 'M' : impactVal >= 1000 ? '~$' + (impactVal / 1000).toFixed(0) + 'K' : '~$' + impactVal;
+          if (impactNum) impactNum.textContent = impactStr;
+          // Update the description line
+          var impactDesc = childGridCols[1].querySelector('div[style*="font-size:11px"][style*="font-style:italic"]');
+          if (impactDesc) impactDesc.textContent = welfareCount + ' \u00D7 $38,850 \u00B7 estimated prevention value';
+        }
+        // Update the description line for welfare prevention count
+        if (childGridCols.length >= 1) {
+          var cwDesc = childGridCols[0].querySelector('div[style*="font-size:11px"][style*="font-style:italic"]');
+          if (cwDesc) cwDesc.textContent = 'Children prevented from child welfare involvement';
+        }
+      }
+
+      // ════════════════════════════════════════════════════════
+      // §3 — ADVOCATES ENTITY CARD SUB-STATS
+      // ════════════════════════════════════════════════════════
+      var advocatesCard = familyCards.length >= 3 ? familyCards[2] : null;
+      if (advocatesCard) {
+        var totalActiveAdvocates = snap.active_advocates || 0;
+
+        // Parse pipeline data
+        var pipeline = data.advocate_pipeline || {};
+        var pipeByStatus = pipeline.by_status || [];
+        var pipeBySubStatus = pipeline.by_sub_status || [];
+        function getPipeCount(arr, key) {
+          for (var p = 0; p < arr.length; p++) {
+            if ((arr[p].advocate_status || arr[p].advocate_sub_status || '').toLowerCase().indexOf(key.toLowerCase()) !== -1) return arr[p].count || 0;
+          }
+          return 0;
+        }
+
+        // "Active During Q1" — stacked bar + legend with 4 segments
+        // Group facilitators, Paired 1:1, Waiting to be paired, Taking a break
+        var advBarLegend = advocatesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:repeat(4"] > div');
+        if (advBarLegend.length >= 4) {
+          var advTotal = totalActiveAdvocates || (groupAdvocates + oneToOneAdvocates);
+          var waitingCount = getPipeCount(pipeBySubStatus, 'waiting');
+          var breakCount = getPipeCount(pipeBySubStatus, 'break');
+          var grpPct = advTotal > 0 ? Math.round(groupAdvocates / advTotal * 100) : 0;
+          var o2oPct = advTotal > 0 ? Math.round(oneToOneAdvocates / advTotal * 100) : 0;
+          var waitPct = advTotal > 0 ? Math.round(waitingCount / advTotal * 100) : 0;
+          var brkPct = advTotal > 0 ? Math.round(breakCount / advTotal * 100) : 0;
+          var legSpans0 = advBarLegend[0].querySelector('span[style*="font-weight:700"]');
+          var legSpans1 = advBarLegend[1].querySelector('span[style*="font-weight:700"]');
+          var legSpans2 = advBarLegend[2].querySelector('span[style*="font-weight:700"]');
+          var legSpans3 = advBarLegend[3].querySelector('span[style*="font-weight:700"]');
+          if (legSpans0) legSpans0.innerHTML = fmt(groupAdvocates) + ' &nbsp;&middot;&nbsp; ' + grpPct + '%';
+          if (legSpans1) legSpans1.innerHTML = fmt(oneToOneAdvocates) + ' &nbsp;&middot;&nbsp; ' + o2oPct + '%';
+          if (legSpans2) legSpans2.innerHTML = fmt(waitingCount) + ' &nbsp;&middot;&nbsp; ' + waitPct + '%';
+          if (legSpans3) legSpans3.innerHTML = fmt(breakCount) + ' &nbsp;&middot;&nbsp; ' + brkPct + '%';
+
+          // Update the stacked bar flex segments
+          var advBar = advocatesCard.querySelector('div[style*="border-radius:6px"][style*="height:20px"][style*="display:flex"]');
+          if (advBar && advBar.children.length >= 4) {
+            advBar.children[0].style.flex = groupAdvocates || 0;
+            advBar.children[1].style.flex = oneToOneAdvocates || 1;
+            advBar.children[2].style.flex = waitingCount || 0;
+            advBar.children[3].style.flex = breakCount || 0;
+          }
+        }
+
+        // "As of March 31" — four 24px numbers
+        var advMarchSection = advocatesCard.querySelectorAll('div[style*="padding:16px 0"][style*="border-bottom"]');
+        var advMarch = advMarchSection.length >= 2 ? advMarchSection[1] : null;
+        if (advMarch) {
+          var advMarchNums = advMarch.querySelectorAll('span[style*="font-size:24px"]');
+          if (advMarchNums.length >= 1) advMarchNums[0].textContent = fmt(groupAdvocates);
+          if (advMarchNums.length >= 2) advMarchNums[1].textContent = fmt(oneToOneAdvocates);
+          if (advMarchNums.length >= 3) advMarchNums[2].textContent = fmt(getPipeCount(pipeBySubStatus, 'waiting'));
+          if (advMarchNums.length >= 4) advMarchNums[3].textContent = fmt(getPipeCount(pipeBySubStatus, 'break'));
+        }
+
+        // "Q1 Activity" — five 24px numbers: Application Received, Trained, Approved, Became Active, Became Inactive
+        // We can map from pipeline.by_status if available
+        var advActivityGrid = advocatesCard.querySelector('div[style*="display:grid"][style*="grid-template-columns:repeat(5"]');
+        if (advActivityGrid && pipeByStatus.length > 0) {
+          var advQ1Nums = advActivityGrid.querySelectorAll('div[style*="font-size:24px"]');
+          if (advQ1Nums.length >= 5) {
+            advQ1Nums[0].textContent = fmt(getPipeCount(pipeByStatus, 'applied') || getPipeCount(pipeByStatus, 'application'));
+            advQ1Nums[1].textContent = fmt(getPipeCount(pipeByStatus, 'trained') || getPipeCount(pipeByStatus, 'training'));
+            advQ1Nums[2].textContent = fmt(getPipeCount(pipeByStatus, 'approved'));
+            advQ1Nums[3].textContent = fmt(getPipeCount(pipeByStatus, 'active'));
+            advQ1Nums[4].textContent = fmt(getPipeCount(pipeByStatus, 'inactive') || getPipeCount(pipeByStatus, 'stepped'));
+          }
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // §6 — TAB 3 (REFERRALS) — SOURCE TABLE AND BAR CHART
+    // ════════════════════════════════════════════════════════
+    if (tabAff) {
+      var refSrcTable = tabAff.querySelectorAll('.affiliate-table-wrap table');
+      var refBarPanel = null;
+      // Find the referral source table (first table in tab-affiliates)
+      if (refSrcTable.length >= 1) {
+        var refTbody = refSrcTable[0].querySelector('tbody');
+        if (refTbody) {
+          var rs = data.referral_sources || [];
+          if (rs.length === 0) {
+            refTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px;">No referral data for this period.</td></tr>';
+          } else {
+            var refHtml = '';
+            rs.forEach(function(r) {
+              var received = r.referrals_received || 0;
+              var intakes = r.intakes_completed || 0;
+              var pending = r.pending || 0;
+              var pctOfAll = totalReferrals > 0 ? Math.round(received / totalReferrals * 100) : 0;
+              var resolved = intakes + (r.did_not_engage || 0);
+              var convRate = resolved > 0 ? Math.round(intakes / resolved * 100) : 0;
+              refHtml += '<tr>';
+              refHtml += '<td><strong>' + (r.referral_source || 'Unknown') + '</strong></td>';
+              refHtml += '<td>' + received + '</td>';
+              refHtml += '<td>' + pctOfAll + '%</td>';
+              refHtml += '<td>' + intakes + '</td>';
+              refHtml += '<td>' + convRate + '%</td>';
+              refHtml += '<td>' + pending + '</td>';
+              refHtml += '</tr>';
+            });
+            // Totals row
+            var totalResolved = rs.reduce(function(a, r) { return a + (r.intakes_completed || 0) + (r.did_not_engage || 0); }, 0);
+            var totalConvRate = totalResolved > 0 ? Math.round(totalIntakes / totalResolved * 100) : 0;
+            refHtml += '<tr style="font-weight:700;background:#f9f9f9">';
+            refHtml += '<td>All Sources</td>';
+            refHtml += '<td>' + totalReferrals + '</td>';
+            refHtml += '<td>100%</td>';
+            refHtml += '<td>' + totalIntakes + '</td>';
+            refHtml += '<td>' + totalConvRate + '%</td>';
+            refHtml += '<td>' + totalPending + '</td>';
+            refHtml += '</tr>';
+            refTbody.innerHTML = refHtml;
+          }
+        }
+      }
+
+      // Rebuild bar chart
+      var sectionGroups = tabAff.querySelectorAll('.section-group');
+      for (var sg = 0; sg < sectionGroups.length; sg++) {
+        var lbl = sectionGroups[sg].querySelector('.section-label');
+        if (lbl && lbl.textContent.indexOf('Referral Volume by Source') !== -1) {
+          var barPanel = sectionGroups[sg].querySelector('.panel');
+          if (barPanel) {
+            var rs = data.referral_sources || [];
+            if (rs.length === 0) {
+              barPanel.innerHTML = '<h3>Referrals Received vs. Intakes Completed</h3><div style="padding:20px;text-align:center;color:var(--mid);">No referral data for this period.</div>';
+            } else {
+              var maxReceived = Math.max.apply(null, rs.map(function(r) { return r.referrals_received || 0; }));
+              var barHtml = '<h3>Referrals Received vs. Intakes Completed</h3><div style="margin-top:16px;">';
+              rs.forEach(function(r, idx) {
+                var received = r.referrals_received || 0;
+                var intakes = r.intakes_completed || 0;
+                var pending = r.pending || 0;
+                var barWidth = maxReceived > 0 ? Math.round(received / maxReceived * 100) : 0;
+                var fillWidth = received > 0 ? Math.round(intakes / received * 100) : 0;
+                var pendWidth = received > 0 ? Math.round(pending / received * 100) : 0;
+                var mb = idx === rs.length - 1 ? '4px' : '14px';
+                barHtml += '<div style="margin-bottom:' + mb + ';">';
+                barHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+                barHtml += '<span style="font-size:12px;font-weight:600;color:var(--dark);">' + (r.referral_source || 'Unknown') + '</span>';
+                barHtml += '<span style="font-size:12px;color:var(--mid);">' + received + ' received \u00B7 ' + intakes + ' intake' + (intakes !== 1 ? 's' : '') + '</span>';
+                barHtml += '</div>';
+                barHtml += '<div style="background:var(--border);border-radius:4px;height:22px;position:relative;width:' + barWidth + '%;">';
+                barHtml += '<div style="background:var(--green);height:22px;border-radius:4px;width:' + fillWidth + '%;display:flex;align-items:center;padding-left:8px;">';
+                barHtml += '<span style="font-size:11px;font-weight:700;color:white;">' + intakes + '</span>';
+                barHtml += '</div>';
+                if (pending > 0) {
+                  barHtml += '<div style="position:absolute;right:0;top:0;height:22px;width:' + pendWidth + '%;background:var(--border);border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;">';
+                  barHtml += '<span style="font-size:11px;color:var(--mid);">' + pending + '</span>';
+                  barHtml += '</div>';
+                }
+                barHtml += '</div></div>';
+              });
+              barHtml += '<div style="display:flex;gap:20px;margin-top:16px;font-size:11px;color:var(--mid);">';
+              barHtml += '<div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--green)"></div> Converted to intake</div>';
+              barHtml += '<div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--border)"></div> Pending / not yet converted</div>';
+              barHtml += '</div>';
+              barHtml += '<div style="font-size:10px;color:#bbb;margin-top:8px;font-style:italic;">Bar width scaled to referral volume relative to largest source. Fill proportion = conversion rate per source.</div>';
+              barHtml += '</div>';
+              barPanel.innerHTML = barHtml;
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // §7 — TAB 4 (TRACK) — STALL BY AFFILIATE TABLE
+    // ════════════════════════════════════════════════════════
+    var stallByAffiliate = data.stall_by_affiliate || [];
+    if (stallByAffiliate.length > 0) {
+      var tabTrackEl = document.getElementById('tab-track');
+      if (tabTrackEl) {
+        // Find or create the stalled-affiliate-table
+        var stallTable = tabTrackEl.querySelector('.stalled-affiliate-table table');
+        if (!stallTable) {
+          // Look for section-group containing "Stall" and "Affiliate"
+          var trackSections = tabTrackEl.querySelectorAll('.section-group');
+          for (var ts = 0; ts < trackSections.length; ts++) {
+            var tsLabel = trackSections[ts].querySelector('.section-label');
+            if (tsLabel && (tsLabel.textContent.indexOf('Affiliate') !== -1 && tsLabel.textContent.indexOf('Stall') !== -1)) {
+              stallTable = trackSections[ts].querySelector('table');
+              break;
+            }
+          }
+        }
+        // If still no table, insert one after the stalled summary section
+        if (!stallTable) {
+          var stalledSummary = tabTrackEl.querySelector('.stalled-summary');
+          if (stalledSummary) {
+            var stallDiv = document.createElement('div');
+            stallDiv.className = 'stalled-affiliate-table';
+            stallDiv.style.marginTop = '20px';
+            stallDiv.style.marginBottom = '20px';
+            stallDiv.innerHTML = '<table><thead><tr><th>Affiliate</th><th>Active in Track</th><th>Progressing</th><th>Stalled 14\u201320d</th><th>Stalled 21\u201330d</th><th>Stalled 30+d</th></tr></thead><tbody></tbody></table>';
+            stalledSummary.parentNode.insertBefore(stallDiv, stalledSummary.nextSibling);
+            stallTable = stallDiv.querySelector('table');
+          }
+        }
+        if (stallTable) {
+          var stallTbody = stallTable.querySelector('tbody');
+          if (stallTbody) {
+            var stallHtml = '';
+            var totals = { active: 0, prog: 0, s14: 0, s21: 0, s30: 0 };
+            stallByAffiliate.forEach(function(row) {
+              var a = row.active_in_track || 0;
+              var p = row.progressing || 0;
+              var s14 = row.stalled_14_20 || 0;
+              var s21 = row.stalled_21_30 || 0;
+              var s30 = row.stalled_30_plus || 0;
+              totals.active += a; totals.prog += p; totals.s14 += s14; totals.s21 += s21; totals.s30 += s30;
+              stallHtml += '<tr>';
+              stallHtml += '<td><strong>' + (row.affiliate_name || 'Unknown') + '</strong></td>';
+              stallHtml += '<td>' + a + '</td>';
+              stallHtml += '<td><span class="stalled-dot dot-green"></span>' + p + '</td>';
+              stallHtml += '<td>' + (s14 > 0 ? '<span class="stalled-dot dot-yellow"></span>' : '') + s14 + '</td>';
+              stallHtml += '<td>' + (s21 > 0 ? '<span class="stalled-dot dot-orange"></span>' : '') + s21 + '</td>';
+              stallHtml += '<td>' + (s30 > 0 ? '<span class="stalled-dot dot-red"></span>' : '') + s30 + '</td>';
+              stallHtml += '</tr>';
+            });
+            stallHtml += '<tr style="font-weight:700;background:#f9f9f9;">';
+            stallHtml += '<td>All Affiliates</td>';
+            stallHtml += '<td>' + totals.active + '</td>';
+            stallHtml += '<td>' + totals.prog + '</td>';
+            stallHtml += '<td>' + totals.s14 + '</td>';
+            stallHtml += '<td>' + totals.s21 + '</td>';
+            stallHtml += '<td>' + totals.s30 + '</td>';
+            stallHtml += '</tr>';
+            stallTbody.innerHTML = stallHtml;
+          }
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // §8 — TAB 4 (TRACK) — COMPLETION BREAKDOWN DETAILS (all .fr-val)
+    // ════════════════════════════════════════════════════════
+    if (tce) {
+      var tabTrackEl2 = document.getElementById('tab-track');
+      if (tabTrackEl2) {
+        var completionPanels = tabTrackEl2.querySelectorAll('.panel');
+        for (var cp = 0; cp < completionPanels.length; cp++) {
+          var cpH3 = completionPanels[cp].querySelector('h3');
+          if (cpH3 && cpH3.textContent.indexOf('Completion Status') !== -1) {
+            var frRows = completionPanels[cp].querySelectorAll('.fidelity-row');
+            // Map each row by label text
+            for (var fr = 0; fr < frRows.length; fr++) {
+              var frLabel = frRows[fr].querySelector('.fr-label');
+              var frVal = frRows[fr].querySelector('.fr-val');
+              if (!frLabel || !frVal) continue;
+              var lt = frLabel.textContent.toLowerCase();
+              if (lt.indexOf('full track') !== -1) frVal.textContent = tce.completed_full_track || 0;
+              else if (lt.indexOf('without support') !== -1) frVal.textContent = tce.completed_without_support_sessions || 0;
+              else if (lt.indexOf('without post') !== -1) frVal.textContent = tce.completed_without_post_assessment || 0;
+              else if (lt.indexOf('total completions') !== -1) frVal.textContent = tce.total_completions || 0;
+              else if (lt.indexOf('requirements unmet') !== -1 || lt.indexOf('achieved outcome') !== -1) frVal.textContent = tce.incomplete_achieved_outcomes || 0;
+              else if (lt.indexOf('client choice') !== -1 || lt.indexOf('priorities shifted') !== -1) frVal.textContent = tce.incomplete_priorities_shifted || 0;
+              else if (lt.indexOf('relocated') !== -1 || lt.indexOf('extended wait') !== -1) frVal.textContent = tce.incomplete_extended_wait || 0;
+              else if (lt.indexOf('did not initiate') !== -1 || lt.indexOf('no advocate') !== -1) frVal.textContent = tce.incomplete_no_advocate || 0;
+              else if (lt.indexOf('total incompletes') !== -1) frVal.textContent = tce.total_incompletes || 0;
+              else if (lt.indexOf('incomplete') !== -1 && lt.indexOf('other') !== -1) {
+                // "Other" incomplete — compute as remainder
+                var knownIncompletes = (tce.incomplete_achieved_outcomes || 0) + (tce.incomplete_priorities_shifted || 0) + (tce.incomplete_extended_wait || 0) + (tce.incomplete_no_advocate || 0);
+                frVal.textContent = Math.max(0, (tce.total_incompletes || 0) - knownIncompletes);
+              }
+            }
+            break;
+          }
+        }
+
+        // Also update the "Incomplete Reasons" visual bar chart panel
+        for (var cp2 = 0; cp2 < completionPanels.length; cp2++) {
+          var cpH3b = completionPanels[cp2].querySelector('h3');
+          if (cpH3b && cpH3b.textContent.indexOf('Incomplete Reasons') !== -1) {
+            var totalInc = tce.total_incompletes || 0;
+            var reasons = [
+              { label: 'Track Requirements Unmet', val: tce.incomplete_achieved_outcomes || 0, color: 'var(--red)', opacity: '0.75' },
+              { label: 'Client Choice', val: tce.incomplete_priorities_shifted || 0, color: 'var(--yellow)', opacity: '1' },
+              { label: 'Did Not Initiate Sessions', val: tce.incomplete_no_advocate || 0, color: 'var(--yellow)', opacity: '1' },
+              { label: 'Relocated', val: tce.incomplete_extended_wait || 0, color: 'var(--mid)', opacity: '0.5' }
+            ];
+            var knownInc = reasons.reduce(function(a, r) { return a + r.val; }, 0);
+            var otherInc = Math.max(0, totalInc - knownInc);
+            if (otherInc > 0) reasons.push({ label: 'Other', val: otherInc, color: 'var(--mid)', opacity: '0.5' });
+            var maxReason = Math.max.apply(null, reasons.map(function(r) { return r.val; }));
+            var barsContainer = completionPanels[cp2].querySelector('div[style*="margin-top:8px"]');
+            if (barsContainer && totalInc > 0) {
+              var bHtml = '';
+              reasons.forEach(function(r, idx) {
+                var pct = totalInc > 0 ? Math.round(r.val / totalInc * 100) : 0;
+                var barW = maxReason > 0 ? Math.round(r.val / maxReason * 100) : 0;
+                var mb = idx === reasons.length - 1 ? '4px' : '12px';
+                bHtml += '<div style="margin-bottom:' + mb + ';">';
+                bHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+                bHtml += '<span style="font-size:12px;font-weight:600;">' + r.label + '</span>';
+                bHtml += '<span style="font-size:12px;color:var(--mid);">' + r.val + ' &nbsp;&middot;&nbsp; ' + pct + '%</span>';
+                bHtml += '</div>';
+                bHtml += '<div style="background:var(--border);border-radius:3px;height:14px;">';
+                bHtml += '<div style="background:' + r.color + ';height:14px;border-radius:3px;width:' + barW + '%;opacity:' + r.opacity + ';"></div>';
+                bHtml += '</div></div>';
+              });
+              barsContainer.innerHTML = bHtml;
+            }
+          }
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // §9 — TAB 4 (TRACK) — SESSION SPLIT BARS (Track vs Support, 1:1 vs Group)
+    // ════════════════════════════════════════════════════════
+    var tabTrackEl3 = document.getElementById('tab-track');
+    if (tabTrackEl3) {
+      var twoCols = tabTrackEl3.querySelectorAll('.two-col');
+      // The session split is the last .two-col in tab-track
+      for (var tc = 0; tc < twoCols.length; tc++) {
+        var tcPanels = twoCols[tc].querySelectorAll('.panel');
+        if (tcPanels.length < 2) continue;
+
+        // Track vs Support panel
+        var tvsPanelH3 = tcPanels[0].querySelector('h3');
+        if (tvsPanelH3 && tvsPanelH3.textContent.indexOf('Track Sessions vs') !== -1) {
+          // Calculate from sessions_by_track
+          var sbt = track.sessions_by_track || [];
+          var totalTrackSessions = 0, totalSupportSessions = 0, totalMomsActive = 0;
+          sbt.forEach(function(r) {
+            var momsActive = r.moms_active || 0;
+            totalTrackSessions += (r.avg_track_sessions || 0) * momsActive;
+            totalSupportSessions += (r.avg_support_sessions || 0) * momsActive;
+            totalMomsActive += momsActive;
+          });
+          totalTrackSessions = Math.round(totalTrackSessions);
+          totalSupportSessions = Math.round(totalSupportSessions);
+          var totalAllSessions = totalTrackSessions + totalSupportSessions;
+          var trackPct = totalAllSessions > 0 ? Math.round(totalTrackSessions / totalAllSessions * 100) : 0;
+          var supportPct = totalAllSessions > 0 ? 100 - trackPct : 0;
+          var avgTrackPerMom = totalMomsActive > 0 ? (totalTrackSessions / totalMomsActive).toFixed(1) : '0.0';
+          var avgSupportPerMom = totalMomsActive > 0 ? (totalSupportSessions / totalMomsActive).toFixed(1) : '0.0';
+
+          // Update the bars
+          var tvsBars = tcPanels[0].querySelectorAll('div[style*="margin-bottom:12px"], div[style*="margin-bottom:4px"]');
+          // Track sessions bar
+          if (tvsBars.length >= 1) {
+            var tvsHeader = tvsBars[0].querySelector('span[style*="font-size:12px"][style*="color:var(--mid)"]');
+            if (tvsHeader) tvsHeader.innerHTML = fmt(totalTrackSessions) + ' total &nbsp;&middot;&nbsp; avg ' + avgTrackPerMom + ' per mom';
+            var tvsFill = tvsBars[0].querySelector('div[style*="background:var(--green)"]');
+            if (tvsFill) {
+              tvsFill.style.width = trackPct + '%';
+              var tvsFillSpan = tvsFill.querySelector('span');
+              if (tvsFillSpan) tvsFillSpan.textContent = trackPct + '%';
+            }
+          }
+          // Support sessions bar
+          if (tvsBars.length >= 2) {
+            var supHeader = tvsBars[1].querySelector('span[style*="font-size:12px"][style*="color:var(--mid)"]');
+            if (supHeader) supHeader.innerHTML = fmt(totalSupportSessions) + ' total &nbsp;&middot;&nbsp; avg ' + avgSupportPerMom + ' per mom';
+            var supFill = tvsBars[1].querySelector('div[style*="background:var(--yellow)"]');
+            if (supFill) {
+              supFill.style.width = supportPct + '%';
+              var supFillSpan = supFill.querySelector('span');
+              if (supFillSpan) supFillSpan.textContent = supportPct + '%';
+            }
+          }
+
+          // Subtitle text
+          var subText = tcPanels[0].querySelector('div[style*="margin-bottom:6px"][style*="font-size:12px"]');
+          if (subText) subText.textContent = 'Total held sessions across all active moms · ' + fmt(totalMomsActive) + ' active moms';
+        }
+
+        // 1:1 vs Group panel
+        var grpPanelH3 = tcPanels[1].querySelector('h3');
+        if (grpPanelH3 && grpPanelH3.textContent.indexOf('1:1 vs') !== -1) {
+          // Calculate from advocacy_type_split
+          var oneToOneSessions = 0, groupSessions = 0;
+          advSplit.forEach(function(a) {
+            if (a.advocacy_type === 'one_to_one') oneToOneSessions = a.session_count || 0;
+            else if (a.advocacy_type === 'group') groupSessions = a.session_count || 0;
+          });
+          var totalFormatSessions = oneToOneSessions + groupSessions;
+          var o2oPctSess = totalFormatSessions > 0 ? Math.round(oneToOneSessions / totalFormatSessions * 100) : 0;
+          var grpPctSess = totalFormatSessions > 0 ? 100 - o2oPctSess : 0;
+          var avgO2o = oneToOne > 0 ? (oneToOneSessions / oneToOne).toFixed(1) : '0.0';
+          var avgGrp = groupCount > 0 ? (groupSessions / groupCount).toFixed(1) : '0.0';
+
+          // Update subtitle
+          var grpSub = tcPanels[1].querySelector('div[style*="margin-bottom:6px"][style*="font-size:12px"]');
+          if (grpSub) grpSub.innerHTML = 'All held sessions (track + support) &middot; ' + fmt(totalMomsActive) + ' active moms';
+
+          // 1:1 bar
+          var grpBars = tcPanels[1].querySelectorAll('div[style*="margin-bottom:12px"], div[style*="margin-bottom:4px"]');
+          if (grpBars.length >= 1) {
+            var o2oHeader = grpBars[0].querySelector('span[style*="font-size:12px"][style*="color:var(--mid)"]');
+            if (o2oHeader) o2oHeader.innerHTML = fmt(oneToOneSessions) + ' sessions &nbsp;&middot;&nbsp; avg ' + avgO2o + ' per mom';
+            var o2oFill = grpBars[0].querySelector('div[style*="background:var(--green)"]');
+            if (o2oFill) {
+              o2oFill.style.width = o2oPctSess + '%';
+              var o2oSpan = o2oFill.querySelector('span');
+              if (o2oSpan) o2oSpan.textContent = o2oPctSess + '%';
+            }
+          }
+          // Group bar
+          if (grpBars.length >= 2) {
+            var grpHeader = grpBars[1].querySelector('span[style*="font-size:12px"][style*="color:var(--mid)"]');
+            if (grpHeader) grpHeader.innerHTML = fmt(groupSessions) + ' sessions &nbsp;&middot;&nbsp; avg ' + avgGrp + ' per mom enrolled in group';
+            var grpFill = grpBars[1].querySelector('div[style*="background:var(--green-light)"], div[style*="border:1px solid var(--green)"]');
+            if (grpFill) {
+              grpFill.style.width = grpPctSess + '%';
+              var grpSpan = grpFill.querySelector('span');
+              if (grpSpan) grpSpan.textContent = grpPctSess + '%';
+            }
+          }
+
+          // "Moms by Format" numbers
+          var formatNums = tcPanels[1].querySelectorAll('span[style*="font-size:22px"]');
+          if (formatNums.length >= 2) {
+            formatNums[0].textContent = fmt(oneToOne);
+            formatNums[1].textContent = fmt(groupCount);
+          }
+        }
+      }
+    }
 
     console.log('[EMA] Dashboard rendered with live data', { families: totalFamilies, advocates: snap.active_advocates, fwaCoverage: fwaCoveragePct + '%' });
   }

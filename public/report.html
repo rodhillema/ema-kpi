@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Q1 2026 — ĒMA HQ Program Oversight Report</title>
+  <title>Q1 2026 - ĒMA HQ Program Oversight Report</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
@@ -158,7 +158,7 @@
     .kpi-gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
     .kpi-gauge-center .kgc-val { font-size: 28px; font-weight: 700; color: var(--dark); line-height: 1; }
     .kpi-gauge-center .kgc-sub { font-size: 10px; color: #bbb; margin-top: 4px; line-height: 1.3; }
-    /* KPI GAUGE STATUS COLORS — all gauges use same color driven by performance status */
+    /* KPI GAUGE STATUS COLORS - all gauges use same color driven by performance status */
     /* Pending (no data): neutral gray arc */
     .kpi-gauge-card .gauge-arc-fill   { stroke: #D0D0D0; }
     .kpi-gauge-card .gauge-arc-band   { stroke: #EFEFEF; }
@@ -282,7 +282,7 @@
     .trend-legend .leg-item { display: flex; align-items: center; gap: 6px; }
     .trend-legend .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
 
-    /* DOMAIN CARDS — 3 TIMEPOINTS */
+    /* DOMAIN CARDS - 3 TIMEPOINTS */
     .domain-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
     .domain-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
     .domain-card .d-name { font-size: 11px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
@@ -472,16 +472,140 @@
       .domain-grid { grid-template-columns: 1fr 1fr; }
       .track-depth-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── HUB-ALIGNED TOP NAV ─────────────────────────────────────────── */
+    .report-topnav {
+      background: var(--green);
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 1px 8px rgba(0,0,0,.2);
+      flex-shrink: 0;
+    }
+    .topnav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topnav-logo {
+      height: 22px;
+      width: auto;
+      display: block;
+    }
+    .topnav-hub {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      color: rgba(255,255,255,.4);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding-left: 12px;
+      border-left: 1px solid rgba(255,255,255,.15);
+    }
+    .topnav-sep {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,.15);
+    }
+    .topnav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topnav-link {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 4px;
+      transition: all .15s;
+    }
+    .topnav-link:hover { color: var(--white); border-color: rgba(255,255,255,.3); }
+    .topnav-user {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .5px;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────────────── */
+    .report-footer {
+      background: var(--green);
+      color: rgba(255,255,255,.35);
+      padding: 12px 32px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .footer-brand { opacity: .6; }
+    .footer-integrity {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255,255,255,.45);
+      text-decoration: none;
+      font-size: 10px;
+      letter-spacing: .5px;
+      transition: all .2s;
+      text-transform: none;
+      font-weight: 400;
+    }
+    .footer-integrity:hover { color: rgba(255,255,255,.8); }
+
+    /* ── DEMO HINT ───────────────────────────────────────────────── */
+    /* RD: remove this block before production deploy */
+    .demo-hint {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: var(--green-light);
+      border: 1px solid #c0d4c0;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--green);
+      line-height: 1.6;
+      text-align: left;
+    }
+    .demo-hint strong {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .demo-hint code {
+      font-family: monospace;
+      background: rgba(18,57,57,.08);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════
-     LOGIN OVERLAY — Trellis Auth
+     LOGIN OVERLAY - Trellis Auth
 ════════════════════════════════════════════ -->
 <div id="loginOverlay" class="login-overlay">
   <div class="login-modal">
-    <h2>EMA KPI Dashboard</h2>
+    <h2>ĒMA Impact Hub</h2>
     <div class="login-sub">Sign in with your Trellis credentials</div>
     <div class="form-group">
       <label for="loginUsername">Username</label>
@@ -493,19 +617,45 @@
     </div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-error" id="loginError"></div>
+    <!-- RD: remove this hint block before production deploy -->
+    <div class="demo-hint">
+      <strong>Demo logins (password: demo)</strong>
+      <code>demo</code> HQ Admin &nbsp;&middot;&nbsp;
+      <code>coord</code> Coordinator &nbsp;&middot;&nbsp;
+      <code>super</code> Supervisor
+    </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════
-     DASHBOARD — hidden until authenticated
+     DASHBOARD - hidden until authenticated
 ════════════════════════════════════════════ -->
 <div id="dashboard" class="hidden">
+
+<!-- ══════════════════════════════════════════
+     HUB-ALIGNED TOP NAV
+     RD: topnavUserInfo populated alongside bannerUserInfo in renderDashboard
+════════════════════════════════════════════ -->
+<nav class="report-topnav">
+  <div class="topnav-left">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="topnav-logo">
+    <span class="topnav-hub">Impact Hub</span>
+  </div>
+  <div class="topnav-right">
+    <a href="/hub" class="topnav-link">&#8592; Back to Hub</a>
+    <div class="topnav-sep"></div>
+    <a href="https://trellis.com/login" class="topnav-link" target="_blank">Go to Trellis &#8594;</a>
+    <div class="topnav-sep"></div>
+    <span class="topnav-user" id="topnavUserInfo"></span>
+    <button class="topnav-link" style="cursor:pointer;background:none;" onclick="doLogout()">Sign Out</button>
+  </div>
+</nav>
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-top">
     <div>
-      <h1>EMA HQ Program Oversight Report</h1>
+      <h1>ĒMA HQ Program Oversight Report</h1>
       <div class="subtitle">Q1 2026 &nbsp;&middot;&nbsp; January 1 &ndash; March 31, 2026 &nbsp;&middot;&nbsp; Data source: Trellis (Railway PostgreSQL)</div>
     </div>
     <div class="header-controls">
@@ -523,16 +673,15 @@
           <option value="all">All Affiliates</option>
         </select>
       </div>
-      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 </div>
 
 
-<!-- DATA BANNER — live data indicator -->
+<!-- DATA BANNER - live data indicator -->
 <div id="dataBanner" style="background:var(--green-light);border-bottom:3px solid var(--green);padding:10px 32px;display:flex;align-items:center;gap:10px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:300;letter-spacing:0.5px;color:var(--green);">
   <span style="font-size:16px">&#x2705;</span>
-  <span><strong style="font-weight:600">Live Data &mdash; Connected to Trellis (Railway PostgreSQL)</strong> &nbsp;&middot;&nbsp; <span id="bannerUserInfo">Loading user info...</span></span>
+  <span><strong style="font-weight:600">Live Data - Connected to Trellis (Railway PostgreSQL)</strong> &nbsp;&middot;&nbsp; <span id="bannerUserInfo">Loading user info...</span></span>
 </div>
 
 <!-- TAB NAV -->
@@ -545,18 +694,18 @@
 </div>
 
 <!-- ══════════════════════════════════════════
-     TAB 1 — KPIs & STATUS COUNTS
+     TAB 1 - KPIs & STATUS COUNTS
 ════════════════════════════════════════════ -->
 <div id="tab-kpis" class="tab-panel active">
 
   <!-- KPI SCORECARDS -->
   <div class="section-group">
-    <div class="section-label">Core KPIs — Q1 2026
+    <div class="section-label">Core KPIs - Q1 2026
       <span class="anchor-note">KPI 1 &amp; 2: 3-month assessment window (system launched December 2025) · KPI 3: track completion date in Q1 · Expand each card for data integrity notes</span>
     </div>
     <div class="kpi-grid">
 
-      <!-- KPI 1 — Family Preservation Rate — 86.2% ON TRACK -->
+      <!-- KPI 1 - Family Preservation Rate - 86.2% ON TRACK -->
       <div class="kpi-gauge-card on-track">
         <div class="kpi-num">KPI 1</div>
         <div class="kpi-name">Family Preservation Rate</div>
@@ -586,16 +735,16 @@
         <details class="kpi-detail">
           <summary>Data integrity notes</summary>
           <div class="kd-body">
-  <div class="di-row"><div class="di-label">What we count</div><div class="di-val di-ok">Each child belonging to an active mom counts as one data point — not the mom herself</div></div>
+  <div class="di-row"><div class="di-label">What we count</div><div class="di-val di-ok">Each child belonging to an active mom counts as one data point - not the mom herself</div></div>
   <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">58 children whose moms had a completed Family Wellbeing Assessment within the last 3 months as of March 31</div></div>
-  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">20 children whose moms don't yet have a current assessment on file — they show up in the FWA Data Integrity tab so coordinators can follow up</div></div>
-  <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 — there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date — so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
+  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">20 children whose moms don't yet have a current assessment on file - they show up in the FWA Data Integrity tab so coordinators can follow up</div></div>
+  <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 - there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date - so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
 </div>
         </details>
       </div>
 
-      <!-- KPI 2 — Family Stability Score Improvement — 71.2% ON TRACK -->
+      <!-- KPI 2 - Family Stability Score Improvement - 71.2% ON TRACK -->
       <div class="kpi-gauge-card on-track">
         <div class="kpi-num">KPI 2</div>
         <div class="kpi-name">Family Stability Score Improvement</div>
@@ -622,17 +771,17 @@
         <details class="kpi-detail">
           <summary>Data integrity notes</summary>
           <div class="kd-body">
-  <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">52 moms who had both a starting assessment on file and a current one within the last 3 months — we need both to measure change</div></div>
+  <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">52 moms who had both a starting assessment on file and a current one within the last 3 months - we need both to measure change</div></div>
   <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's combined score across 10 life areas from her starting point to her most recent assessment</div></div>
-  <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately — it feeds into KPI 1, not this score</div></div>
-  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">23 moms who are missing either a starting or current assessment — they appear in the FWA Data Integrity tab for coordinator follow-up</div></div>
-  <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 — there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date — so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
+  <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately - it feeds into KPI 1, not this score</div></div>
+  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">23 moms who are missing either a starting or current assessment - they appear in the FWA Data Integrity tab for coordinator follow-up</div></div>
+  <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 - there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date - so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
 </div>
         </details>
       </div>
 
-      <!-- KPI 3 — Learning Progress — 72.2% ON TRACK -->
+      <!-- KPI 3 - Learning Progress - 72.2% ON TRACK -->
       <div class="kpi-gauge-card on-track">
         <div class="kpi-num">KPI 3</div>
         <div class="kpi-name">Learning Progress</div>
@@ -659,11 +808,11 @@
         <details class="kpi-detail">
           <summary>Data integrity notes</summary>
           <div class="kd-body">
-  <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's total score between her start-of-track assessment and her end-of-track assessment — even one point up counts</div></div>
-  <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track in Q1 and have both a start and end assessment on file — each track counts separately</div></div>
-  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms with a missing start or end assessment, and a small number of records with data entry issues where the end date was recorded before the start date — all excluded counts are shown alongside this KPI</div></div>
-  <div class="di-row"><div class="di-label">Each track is its own score</div><div class="di-val">NPP, EP, and RR each use their own assessment — a mom completing two tracks counts twice, once per track</div></div>
-  <div class="di-row"><div class="di-label">Not related to FWA</div><div class="di-val di-ok">This KPI uses track learning assessments only — completely separate from the Family Wellbeing Assessment used in KPI 1 and KPI 2</div></div>
+  <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's total score between her start-of-track assessment and her end-of-track assessment - even one point up counts</div></div>
+  <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track in Q1 and have both a start and end assessment on file - each track counts separately</div></div>
+  <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms with a missing start or end assessment, and a small number of records with data entry issues where the end date was recorded before the start date - all excluded counts are shown alongside this KPI</div></div>
+  <div class="di-row"><div class="di-label">Each track is its own score</div><div class="di-val">NPP, EP, and RR each use their own assessment - a mom completing two tracks counts twice, once per track</div></div>
+  <div class="di-row"><div class="di-label">Not related to FWA</div><div class="di-val di-ok">This KPI uses track learning assessments only - completely separate from the Family Wellbeing Assessment used in KPI 1 and KPI 2</div></div>
 </div>
         </details>
       </div>
@@ -672,9 +821,9 @@
   </div>
 
 
-  <!-- PROGRAM STATUS — FAMILIES / CHILDREN / ADVOCATES -->
+  <!-- PROGRAM STATUS - FAMILIES / CHILDREN / ADVOCATES -->
   <div class="section-group">
-    <div class="section-label">Program Status — Q1 2026</div>
+    <div class="section-label">Program Status - Q1 2026</div>
 
     <!-- ══ FAMILIES ══ -->
     <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">
@@ -736,11 +885,11 @@
       </div>
       <div style="padding:0 24px 16px;">
         <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">How we count</div><div class="di-val di-ok">Every mom active at any point Jan 1–Mar 31 is included — including moms who completed or exited during the quarter</div></div>
+  <div class="di-row"><div class="di-label">How we count</div><div class="di-val di-ok">Every mom active at any point Jan 1–Mar 31 is included - including moms who completed or exited during the quarter</div></div>
   <div class="di-row"><div class="di-label">Reporting use</div><div class="di-val">This is the primary count used for grant and investor reporting</div></div>
-  <div class="di-row"><div class="di-label">Track completions</div><div class="di-val">18 total — 11 Full Track, 4 without Support Sessions, 3 without Post Assessment</div></div>
-  <div class="di-row"><div class="di-label">As of Mar 31</div><div class="di-val">78 moms still active at end of quarter — the difference from 94 reflects moms who exited or completed during Q1</div></div>
-  <div class="di-row"><div class="di-label">Bucket logic</div><div class="di-val">Every mom appears in exactly one bucket — In a Track takes precedence if she had a pairing at any point in Q1, otherwise Membership Community</div></div>
+  <div class="di-row"><div class="di-label">Track completions</div><div class="di-val">18 total - 11 Full Track, 4 without Support Sessions, 3 without Post Assessment</div></div>
+  <div class="di-row"><div class="di-label">As of Mar 31</div><div class="di-val">78 moms still active at end of quarter - the difference from 94 reflects moms who exited or completed during Q1</div></div>
+  <div class="di-row"><div class="di-label">Bucket logic</div><div class="di-val">Every mom appears in exactly one bucket - In a Track takes precedence if she had a pairing at any point in Q1, otherwise Membership Community</div></div>
   <div class="di-row"><div class="di-label">No double counting</div><div class="di-val di-ok">In a Track + Membership Community = 94 total · no mom appears in both</div></div>
 </div></details>
       </div>
@@ -772,11 +921,11 @@
       </div>
       <div style="padding:0 24px 16px;">
         <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Children served</div><div class="di-val">Sum of child profiles linked to moms active during Q1 — only children the mom has legal authority over are counted</div></div>
-  <div class="di-row"><div class="di-label">Not a hard claim</div><div class="di-val di-warn">The $38,850 impact figure is an estimated prevention value based on average foster care costs — always frame as an estimate, not a confirmed financial figure</div></div>
+  <div class="di-row"><div class="di-label">Children served</div><div class="di-val">Sum of child profiles linked to moms active during Q1 - only children the mom has legal authority over are counted</div></div>
+  <div class="di-row"><div class="di-label">Not a hard claim</div><div class="di-val di-warn">The $38,850 impact figure is an estimated prevention value based on average foster care costs - always frame as an estimate, not a confirmed financial figure</div></div>
   <div class="di-row"><div class="di-label">Missing counts</div><div class="di-val di-warn">Where a mom has no child count recorded, the average child count across all active moms is used as a proxy</div></div>
-  <div class="di-row"><div class="di-label">Child welfare prevention</div><div class="di-val">Children whose families remained intact where child welfare involvement was a documented risk at intake — sourced from the Child Welfare area of the Family Wellbeing Assessment</div></div>
-  <div class="di-row"><div class="di-label">Est. impact value</div><div class="di-val di-warn">28 × $38,850 per child — estimated prevention value based on average foster care costs, not a confirmed financial figure. Always frame as an estimate.</div></div>
+  <div class="di-row"><div class="di-label">Child welfare prevention</div><div class="di-val">Children whose families remained intact where child welfare involvement was a documented risk at intake - sourced from the Child Welfare area of the Family Wellbeing Assessment</div></div>
+  <div class="di-row"><div class="di-label">Est. impact value</div><div class="di-val di-warn">28 × $38,850 per child - estimated prevention value based on average foster care costs, not a confirmed financial figure. Always frame as an estimate.</div></div>
 </div></details>
       </div>
     </div>
@@ -856,14 +1005,14 @@
       </div>
       <div style="padding:0 24px 16px;">
         <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Unique counts</div><div class="di-val di-ok">Each advocate appears in exactly one bucket — priority order is: Group facilitator → Paired 1:1 → Waiting to be Paired → Taking a Break</div></div>
-  <div class="di-row"><div class="di-label">Pairing source</div><div class="di-val di-ok">Group facilitator and Paired 1:1 counts are sourced from mom's pairing record — this is the truth for whether pairing happened, regardless of what the advocate's own status says</div></div>
-  <div class="di-row"><div class="di-label">Sub-status fallback</div><div class="di-val">Waiting to be Paired and Taking a Break are sourced from the advocate's own sub-status — only used when no active pairing is found on mom's side</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known workaround</div><div class="di-val di-flag">Some advocates are set to Active status with a Taking a Break sub-status as a system workaround. Mom's pairing record takes precedence — if a pairing exists on mom's side they are correctly classified as Paired 1:1 or Group. Only if no pairing exists do they fall into the Taking a Break bucket.</div></div>
+  <div class="di-row"><div class="di-label">Unique counts</div><div class="di-val di-ok">Each advocate appears in exactly one bucket - priority order is: Group facilitator → Paired 1:1 → Waiting to be Paired → Taking a Break</div></div>
+  <div class="di-row"><div class="di-label">Pairing source</div><div class="di-val di-ok">Group facilitator and Paired 1:1 counts are sourced from mom's pairing record - this is the truth for whether pairing happened, regardless of what the advocate's own status says</div></div>
+  <div class="di-row"><div class="di-label">Sub-status fallback</div><div class="di-val">Waiting to be Paired and Taking a Break are sourced from the advocate's own sub-status - only used when no active pairing is found on mom's side</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known workaround</div><div class="di-val di-flag">Some advocates are set to Active status with a Taking a Break sub-status as a system workaround. Mom's pairing record takes precedence - if a pairing exists on mom's side they are correctly classified as Paired 1:1 or Group. Only if no pairing exists do they fall into the Taking a Break bucket.</div></div>
   <div class="di-row"><div class="di-label">⚠ Pending</div><div class="di-val di-flag">Group facilitator count and sub-status values need confirmation with live data before this section is finalized</div></div>
-  <div class="di-row"><div class="di-label">Multiple counts</div><div class="di-val">One advocate may appear in multiple Q1 Activity counts — an advocate who trained and was approved in Q1 appears in both. These are independent events, not a funnel.</div></div>
-  <div class="di-row"><div class="di-label">Became active</div><div class="di-val">Advocates whose active status began during Q1 — not advocates already active before Q1 started</div></div>
-  <div class="di-row"><div class="di-label">Became inactive</div><div class="di-val">Advocates who stepped down during Q1 only — does not include anyone already inactive before Q1 started</div></div>
+  <div class="di-row"><div class="di-label">Multiple counts</div><div class="di-val">One advocate may appear in multiple Q1 Activity counts - an advocate who trained and was approved in Q1 appears in both. These are independent events, not a funnel.</div></div>
+  <div class="di-row"><div class="di-label">Became active</div><div class="di-val">Advocates whose active status began during Q1 - not advocates already active before Q1 started</div></div>
+  <div class="di-row"><div class="di-label">Became inactive</div><div class="di-val">Advocates who stepped down during Q1 only - does not include anyone already inactive before Q1 started</div></div>
 </div></details>
       </div>
     </div>
@@ -873,18 +1022,18 @@
 </div><!-- /tab-kpis -->
 
 <!-- ══════════════════════════════════════════
-     TAB 2 — END OF Q1 SNAPSHOT
+     TAB 2 - END OF Q1 SNAPSHOT
 ════════════════════════════════════════════ -->
 
 
 <!-- ══════════════════════════════════════════
-     TAB 3 — FSS DEEP DIVE
+     TAB 3 - FSS DEEP DIVE
 ════════════════════════════════════════════ -->
 <div id="tab-fss" class="tab-panel">
 
   <!-- FWA ACTIVITY STRIP -->
   <div class="section-group">
-    <div class="section-label">Assessment Activity — Q1 2026
+    <div class="section-label">Assessment Activity - Q1 2026
       <span class="anchor-note">Assessment submission date falls Jan 1–Mar 31</span>
     </div>
     <div class="status-count-wrap" style="padding:16px 24px;">
@@ -902,7 +1051,7 @@
         <div class="status-card">
           <div class="sc-label">Never Assessed</div>
           <div class="sc-value">46</div>
-          <div class="sc-note">No assessment on record — excluded from all KPIs</div>
+          <div class="sc-note">No assessment on record - excluded from all KPIs</div>
         </div>
       </div>
     </div>
@@ -910,7 +1059,7 @@
 
   <!-- GOAL PROGRESS -->
   <div class="section-group">
-    <div class="section-label">Coverage — Progress Toward 80% Goal
+    <div class="section-label">Coverage - Progress Toward 80% Goal
       <span class="anchor-note">Active moms as of Mar 31 · current = assessment within last 3 months · 212 active moms</span>
     </div>
     <div class="panel" style="padding:24px;">
@@ -941,9 +1090,9 @@
         <span>✗ Never assessed: <strong style="color:var(--red)">46</strong></span>
       </div>
       <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">3-month window</div><div class="di-val di-ok">ĒMA launched its new system in December 2025 — 3 months is the right window for Q1. This will expand to 6 months in future quarters.</div></div>
+  <div class="di-row"><div class="di-label">3-month window</div><div class="di-val di-ok">ĒMA launched its new system in December 2025 - 3 months is the right window for Q1. This will expand to 6 months in future quarters.</div></div>
   <div class="di-row"><div class="di-label">Who counts</div><div class="di-val">212 active moms as of Mar 31 is the denominator for the 80% goal</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A minor edit to any part of an assessment resets its date — some moms marked "current" may not have had a full re-assessment. Coordinators should verify before crediting.</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A minor edit to any part of an assessment resets its date - some moms marked "current" may not have had a full re-assessment. Coordinators should verify before crediting.</div></div>
   <div class="di-row"><div class="di-label">46 never assessed</div><div class="di-val di-flag">These moms must have an initial assessment completed before they can count toward any KPI</div></div>
 </div></details>
     </div>
@@ -951,8 +1100,8 @@
 
   <!-- COVERAGE BY POPULATION -->
   <div class="section-group">
-    <div class="section-label">Coverage — By Population
-      <span class="anchor-note">As of Mar 31 · same action for both groups — access differs</span>
+    <div class="section-label">Coverage - By Population
+      <span class="anchor-note">As of Mar 31 · same action for both groups - access differs</span>
     </div>
     <div class="two-col">
 
@@ -966,14 +1115,14 @@
           <div style="background:var(--green);height:10px;border-radius:4px;width:51%;"></div>
         </div>
         <div class="status-row"><span class="sr-label">✓ Current</span><span class="sr-val" style="color:var(--green);">43</span></div>
-        <div class="status-row"><span class="sr-label">⚠ Overdue — 3–6 months</span><span class="sr-val" style="color:var(--yellow);">14</span></div>
-        <div class="status-row"><span class="sr-label">⚠ Critical — over 6 months</span><span class="sr-val" style="color:var(--red);">7</span></div>
+        <div class="status-row"><span class="sr-label">⚠ Overdue - 3–6 months</span><span class="sr-val" style="color:var(--yellow);">14</span></div>
+        <div class="status-row"><span class="sr-label">⚠ Critical - over 6 months</span><span class="sr-val" style="color:var(--red);">7</span></div>
         <div class="status-row"><span class="sr-label">✗ Never assessed</span><span class="sr-val" style="color:var(--red);">20</span></div>
         <details class="kpi-detail" style="margin-top:12px;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Action</div><div class="di-val">Advocate schedules assessment as part of the regular session cadence — highest access of any group</div></div>
+  <div class="di-row"><div class="di-label">Action</div><div class="di-val">Advocate schedules assessment as part of the regular session cadence - highest access of any group</div></div>
   <div class="di-row"><div class="di-label">21 past window</div><div class="di-val di-flag">Overdue + critical moms are excluded from KPI 1 and 2 until updated</div></div>
   <div class="di-row"><div class="di-label">20 never assessed</div><div class="di-val di-flag">Must complete an initial assessment before they can count toward any KPI</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-warn">Dates based on last save — a minor edit resets the date without a full re-assessment</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-warn">Dates based on last save - a minor edit resets the date without a full re-assessment</div></div>
 </div></details>
       </div>
 
@@ -987,13 +1136,13 @@
           <div style="background:var(--green);height:10px;border-radius:4px;width:61%;"></div>
         </div>
         <div class="status-row"><span class="sr-label">✓ Current</span><span class="sr-val" style="color:var(--green);">78</span></div>
-        <div class="status-row"><span class="sr-label">⚠ Overdue — 3–6 months</span><span class="sr-val" style="color:var(--yellow);">17</span></div>
-        <div class="status-row"><span class="sr-label">⚠ Critical — over 6 months</span><span class="sr-val" style="color:var(--red);">7</span></div>
+        <div class="status-row"><span class="sr-label">⚠ Overdue - 3–6 months</span><span class="sr-val" style="color:var(--yellow);">17</span></div>
+        <div class="status-row"><span class="sr-label">⚠ Critical - over 6 months</span><span class="sr-val" style="color:var(--red);">7</span></div>
         <div class="status-row"><span class="sr-label">✗ Never assessed</span><span class="sr-val" style="color:var(--red);">26</span></div>
         <details class="kpi-detail" style="margin-top:12px;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Action</div><div class="di-val">Coordinator reaches out to schedule — requires a direct program touchpoint</div></div>
+  <div class="di-row"><div class="di-label">Action</div><div class="di-val">Coordinator reaches out to schedule - requires a direct program touchpoint</div></div>
   <div class="di-row"><div class="di-label">26 never assessed</div><div class="di-val di-flag">These moms cannot count toward any KPI until an initial assessment is done</div></div>
-  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-warn">Dates based on last save — a minor edit resets the date without a full re-assessment</div></div>
+  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-warn">Dates based on last save - a minor edit resets the date without a full re-assessment</div></div>
 </div></details>
       </div>
 
@@ -1004,13 +1153,13 @@
 </div><!-- /tab-fss -->
 
 <!-- ══════════════════════════════════════════
-     TAB 4 — AFFILIATE COMPARISON
+     TAB 4 - AFFILIATE COMPARISON
 ════════════════════════════════════════════ -->
 <div id="tab-affiliates" class="tab-panel">
 
   <!-- SUMMARY STRIP -->
   <div class="section-group">
-    <div class="section-label">Referral Summary — Q1 2026
+    <div class="section-label">Referral Summary - Q1 2026
       <span class="anchor-note">Date anchor: referral submitted date falls Jan 1–Mar 31, 2026</span>
     </div>
     <div class="status-count-wrap" style="padding:20px 24px;">
@@ -1033,7 +1182,7 @@
         <div class="status-card">
           <div class="sc-label">Still Pending</div>
           <div class="sc-value">6</div>
-          <div class="sc-note">May still convert — not counted in rate</div>
+          <div class="sc-note">May still convert - not counted in rate</div>
         </div>
         <div class="status-card">
           <div class="sc-label">Did Not Engage</div>
@@ -1042,10 +1191,10 @@
         </div>
       </div>
       <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">How conversion is counted</div><div class="di-val di-ok">Converted = referral status is "Engaged In Program" — intake completed</div></div>
-  <div class="di-row"><div class="di-label">Pending</div><div class="di-val">Status is "Prospect" or "Prospect Intake Scheduled" — appointment may still happen. Not a failed referral.</div></div>
-  <div class="di-row"><div class="di-label">Did not convert</div><div class="di-val di-warn">Status is "Did Not Engage In Program" — includes: unable to contact, client declined, ineligible, duplicate referral, or referred to another program. These are closed and excluded from the pending count.</div></div>
-  <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">Conversion rate = Engaged In Program ÷ all referrals received (excluding duplicates). Pending referrals are shown separately — not included in the rate.</div></div>
+  <div class="di-row"><div class="di-label">How conversion is counted</div><div class="di-val di-ok">Converted = referral status is "Engaged In Program" - intake completed</div></div>
+  <div class="di-row"><div class="di-label">Pending</div><div class="di-val">Status is "Prospect" or "Prospect Intake Scheduled" - appointment may still happen. Not a failed referral.</div></div>
+  <div class="di-row"><div class="di-label">Did not convert</div><div class="di-val di-warn">Status is "Did Not Engage In Program" - includes: unable to contact, client declined, ineligible, duplicate referral, or referred to another program. These are closed and excluded from the pending count.</div></div>
+  <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">Conversion rate = Engaged In Program ÷ all referrals received (excluding duplicates). Pending referrals are shown separately - not included in the rate.</div></div>
 </div></details>
     </div>
   </div>
@@ -1128,19 +1277,19 @@
       </table>
     </div>
     <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">⚠ Sample data</div><div class="di-val di-flag">The referral source categories shown here are placeholders — real category names will be confirmed before this report is finalized</div></div>
-  <div class="di-row"><div class="di-label">⚠ Data quality</div><div class="di-val di-flag">The referral agency field in Trellis is a free-text input, not a dropdown — live data is expected to contain misspellings and inconsistent entries for the same agency (e.g. "DCF", "Dept. of Children & Families", "Department of Children and Families"). RD will need to normalize these before source groupings are reliable.</div></div>
-  <div class="di-row"><div class="di-label">Missing sources</div><div class="di-val di-ok">Any referral with no source on record will be shown as "Unknown / Not Recorded" — not quietly left out of the count</div></div>
+  <div class="di-row"><div class="di-label">⚠ Sample data</div><div class="di-val di-flag">The referral source categories shown here are placeholders - real category names will be confirmed before this report is finalized</div></div>
+  <div class="di-row"><div class="di-label">⚠ Data quality</div><div class="di-val di-flag">The referral agency field in Trellis is a free-text input, not a dropdown - live data is expected to contain misspellings and inconsistent entries for the same agency (e.g. "DCF", "Dept. of Children & Families", "Department of Children and Families"). RD will need to normalize these before source groupings are reliable.</div></div>
+  <div class="di-row"><div class="di-label">Missing sources</div><div class="di-val di-ok">Any referral with no source on record will be shown as "Unknown / Not Recorded" - not quietly left out of the count</div></div>
 </div></details>
   </div>
 
   <!-- BAR CHART: REFERRALS BY SOURCE -->
   <div class="section-group">
-    <div class="section-label">Referral Volume by Source — Visual
+    <div class="section-label">Referral Volume by Source - Visual
       <span class="anchor-note">Bar length = referrals received · filled = converted to intake · gray = still pending · pending not included in conversion rate</span>
     </div>
     <div class="panel">
-      <h3>Referrals Received vs. Intakes Completed — Q1 2026</h3>
+      <h3>Referrals Received vs. Intakes Completed - Q1 2026</h3>
       <div style="margin-top:16px;">
 
         <!-- DCF/CPS: 12 received, 10 converted -->
@@ -1248,7 +1397,7 @@
 
         <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
   <div class="di-row"><div class="di-label">Scale</div><div class="di-val">Bar width = referrals received ÷ max source volume · fill proportion = conversion rate</div></div>
-  <div class="di-row"><div class="di-label">Rule</div><div class="di-val di-ok">Pending (gray) = referral received but no intake yet — may convert in a later period</div></div>
+  <div class="di-row"><div class="di-label">Rule</div><div class="di-val di-ok">Pending (gray) = referral received but no intake yet - may convert in a later period</div></div>
 </div></details>
       </div>
     </div>
@@ -1257,13 +1406,13 @@
 </div><!-- /tab-affiliates -->
 
 <!-- ══════════════════════════════════════════
-     TAB 5 — TRACK OVERSIGHT
+     TAB 5 - TRACK OVERSIGHT
 ════════════════════════════════════════════ -->
 <div id="tab-track" class="tab-panel">
 
   <!-- STALLED MOMS SUMMARY -->
   <div class="section-group">
-    <div class="section-label">Stalled Moms — Track Session Progress
+    <div class="section-label">Stalled Moms - Track Session Progress
       <span class="anchor-note">Stalled = no held track or support session note in 14+ days while in active pairing · as of March 31, 2026 · action list for coordinators</span>
     </div>
     <div class="stalled-summary">
@@ -1275,30 +1424,30 @@
       <div class="stalled-card warn">
         <div class="st-label">Stalled 14–20 Days</div>
         <div class="st-val">21</div>
-        <div class="st-sub">No held session in 14–20 days — follow up</div>
+        <div class="st-sub">No held session in 14–20 days - follow up</div>
       </div>
       <div class="stalled-card hot">
         <div class="st-label">Stalled 21–30 Days</div>
         <div class="st-val">11</div>
-        <div class="st-sub">Overdue — coordinator action needed</div>
+        <div class="st-sub">Overdue - coordinator action needed</div>
       </div>
       <div class="stalled-card crit">
         <div class="st-label">Stalled 30+ Days</div>
         <div class="st-val">9</div>
-        <div class="st-sub">Critical — supervisor review needed</div>
+        <div class="st-sub">Critical - supervisor review needed</div>
       </div>
     </div>
     <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
   <div class="di-row"><div class="di-label">What "stalled" means</div><div class="di-val">No session was held with this mom in the last 14 days, while she still has an active advocate pairing</div></div>
-  <div class="di-row"><div class="di-label">Who is included</div><div class="di-val di-ok">Only moms who are currently active in the program — moms who have left are removed from this count from the day they became inactive</div></div>
-  <div class="di-row"><div class="di-label">Reschedule Flag</div><div class="di-val di-warn">Moms with 2+ planned sessions and no subsequent held session flagged separately — indicates cancellation/no-show pattern</div></div>
+  <div class="di-row"><div class="di-label">Who is included</div><div class="di-val di-ok">Only moms who are currently active in the program - moms who have left are removed from this count from the day they became inactive</div></div>
+  <div class="di-row"><div class="di-label">Reschedule Flag</div><div class="di-val di-warn">Moms with 2+ planned sessions and no subsequent held session flagged separately - indicates cancellation/no-show pattern</div></div>
 </div></details>
   </div>
 
 
     <!-- TRACK COMPLETIONS OVERVIEW -->
   <div class="section-group">
-    <div class="section-label">Track Completions — Q1 2026
+    <div class="section-label">Track Completions - Q1 2026
       <span class="anchor-note">Track status set in Q1 · excludes same-day close/reopen duplicates (track-type change workaround)</span>
     </div>
     <div class="two-col">
@@ -1306,29 +1455,29 @@
       <!-- Completion breakdown -->
       <div class="panel">
         <h3>Completion Status Breakdown</h3>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--green);font-weight:600;">Completed — Full Track</span><span class="fr-val">11</span></div>
-        <div class="fidelity-row"><span class="fr-label">Completed — Without Support Sessions</span><span class="fr-val">4</span></div>
-        <div class="fidelity-row"><span class="fr-label">Completed — Without Post Assessment</span><span class="fr-val">3</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--green);font-weight:600;">Completed - Full Track</span><span class="fr-val">11</span></div>
+        <div class="fidelity-row"><span class="fr-label">Completed - Without Support Sessions</span><span class="fr-val">4</span></div>
+        <div class="fidelity-row"><span class="fr-label">Completed - Without Post Assessment</span><span class="fr-val">3</span></div>
         <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
         <div class="fidelity-row" style="font-weight:700;"><span class="fr-label">Total Completions</span><span class="fr-val">18</span></div>
         <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete — Track Requirements Unmet</span><span class="fr-val">6</span></div>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete — Client Choice</span><span class="fr-val">4</span></div>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete — Relocated</span><span class="fr-val">2</span></div>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete — Did Not Initiate Sessions</span><span class="fr-val">3</span></div>
-        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete — Other</span><span class="fr-val">1</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete - Track Requirements Unmet</span><span class="fr-val">6</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete - Client Choice</span><span class="fr-val">4</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete - Relocated</span><span class="fr-val">2</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete - Did Not Initiate Sessions</span><span class="fr-val">3</span></div>
+        <div class="fidelity-row"><span class="fr-label" style="color:var(--red);">Incomplete - Other</span><span class="fr-val">1</span></div>
         <div style="border-top:2px solid var(--border);margin:6px 0;"></div>
         <div class="fidelity-row" style="font-weight:700;"><span class="fr-label">Total Incompletes</span><span class="fr-val">16</span></div>
         <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
   <div class="di-row"><div class="di-label">KPI 3 eligibility</div><div class="di-val di-ok">A completion counts toward KPI 3 only if the mom has both a start-of-track and end-of-track assessment on file, and the end assessment was done after the start assessment</div></div>
-  <div class="di-row"><div class="di-label">What's excluded</div><div class="di-val di-warn">A small number of records are excluded where a track was closed and immediately reopened the same day — this is a known system workaround for changing track types, not a real exit</div></div>
-  <div class="di-row"><div class="di-label">Exit reasons</div><div class="di-val di-ok">ĒMA uses specific, meaningful exit reasons — Track Requirements Unmet / Client Choice / Relocated / Did Not Initiate / Other. "Discharged" is not used.</div></div>
+  <div class="di-row"><div class="di-label">What's excluded</div><div class="di-val di-warn">A small number of records are excluded where a track was closed and immediately reopened the same day - this is a known system workaround for changing track types, not a real exit</div></div>
+  <div class="di-row"><div class="di-label">Exit reasons</div><div class="di-val di-ok">ĒMA uses specific, meaningful exit reasons - Track Requirements Unmet / Client Choice / Relocated / Did Not Initiate / Other. "Discharged" is not used.</div></div>
 </div></details>
       </div>
 
       <!-- Incomplete reasons visual -->
       <div class="panel">
-        <h3>Incomplete Reasons — Q1 2026</h3>
+        <h3>Incomplete Reasons - Q1 2026</h3>
         <div style="margin-top:8px;">
           <div style="margin-bottom:12px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
@@ -1377,8 +1526,8 @@
           </div>
         </div>
         <details class="kpi-detail" style="margin-top:12px;"><summary>Data integrity notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Requirements Unmet</div><div class="di-val di-warn">The most common exit reason — worth reviewing whether these reflect genuine departures or cases where session documentation is incomplete</div></div>
-  <div class="di-row"><div class="di-label">Did Not Initiate</div><div class="di-val di-warn">3 moms completed intake but never began their track — may indicate a gap between when families are enrolled and when they actually start</div></div>
+  <div class="di-row"><div class="di-label">Requirements Unmet</div><div class="di-val di-warn">The most common exit reason - worth reviewing whether these reflect genuine departures or cases where session documentation is incomplete</div></div>
+  <div class="di-row"><div class="di-label">Did Not Initiate</div><div class="di-val di-warn">3 moms completed intake but never began their track - may indicate a gap between when families are enrolled and when they actually start</div></div>
 </div></details>
       </div>
     </div>
@@ -1386,7 +1535,7 @@
 
   <!-- SESSION COUNTS BY TRACK -->
   <div class="section-group">
-    <div class="section-label">Session Counts — Active Moms In Track
+    <div class="section-label">Session Counts - Active Moms In Track
       <span class="anchor-note">Average sessions held per mom · track sessions vs. support sessions · all active pairings as of Mar 31</span>
     </div>
 
@@ -1431,17 +1580,17 @@
           </tr>
           <tr style="font-weight:700;background:#f9f9f9;">
             <td>All Tracks</td>
-            <td>143</td><td>—</td>
+            <td>143</td><td>-</td>
             <td>4.3</td><td>1.3</td><td>5.6</td>
-            <td>—</td>
+            <td>-</td>
           </tr>
         </tbody>
       </table>
     <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">What this shows</div><div class="di-val di-ok">For each mom actively in a track, how many sessions have been held so far — active moms only</div></div>
+  <div class="di-row"><div class="di-label">What this shows</div><div class="di-val di-ok">For each mom actively in a track, how many sessions have been held so far - active moms only</div></div>
   <div class="di-row"><div class="di-label">How % complete is calculated</div><div class="di-val">Sessions held so far ÷ total sessions required (NPP = 10, EP = 8, RR = 4)</div></div>
-  <div class="di-row"><div class="di-label">Track comparison</div><div class="di-val">RR moms are closest to completion on average — this is expected since RR is only 4 sessions. NPP and EP are comparable at roughly halfway through.</div></div>
-  <div class="di-row"><div class="di-label">⚠ Pending confirmation</div><div class="di-val di-flag">Session counts are sample data — to be confirmed with live data before sharing externally</div></div>
+  <div class="di-row"><div class="di-label">Track comparison</div><div class="di-val">RR moms are closest to completion on average - this is expected since RR is only 4 sessions. NPP and EP are comparable at roughly halfway through.</div></div>
+  <div class="di-row"><div class="di-label">⚠ Pending confirmation</div><div class="di-val di-flag">Session counts are sample data - to be confirmed with live data before sharing externally</div></div>
 </div></details>
 
     </div>
@@ -1451,7 +1600,7 @@
 
       <!-- Track vs Support session split -->
       <div class="panel">
-        <h3>Track Sessions vs. Support Sessions — All Active Moms</h3>
+        <h3>Track Sessions vs. Support Sessions - All Active Moms</h3>
         <div style="margin-top:16px;">
           <div style="margin-bottom:6px;font-size:12px;color:var(--mid);">Total held sessions across all active moms in Q1</div>
           <!-- Track sessions: 143 moms × 4.3 avg = ~615 -->
@@ -1479,7 +1628,7 @@
             </div>
           </div>
           <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">Track sessions</div><div class="di-val">The core learning sessions that follow the curriculum — each one corresponds to a specific lesson in the program</div></div>
+  <div class="di-row"><div class="di-label">Track sessions</div><div class="di-val">The core learning sessions that follow the curriculum - each one corresponds to a specific lesson in the program</div></div>
   <div class="di-row"><div class="di-label">Support sessions</div><div class="di-val">Additional check-ins, resource connections, or advocate-initiated contacts outside the core curriculum</div></div>
 </div></details>
         </div>
@@ -1487,7 +1636,7 @@
 
       <!-- 1:1 vs Group split -->
       <div class="panel">
-        <h3>Session Format — 1:1 vs. Group</h3>
+        <h3>Session Format - 1:1 vs. Group</h3>
         <div style="margin-top:16px;">
           <div style="margin-bottom:6px;font-size:12px;color:var(--mid);">All held sessions (track + support) · Q1 · 143 active moms</div>
           <!-- 1:1: ~82% -->
@@ -1523,9 +1672,9 @@
             </div>
           </div>
           <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
-  <div class="di-row"><div class="di-label">⚠ Pending</div><div class="di-val di-flag">Session format split (1:1 vs. group) and group facilitator count are estimates — to be confirmed with live data</div></div>
-  <div class="di-row"><div class="di-label">Track vs support</div><div class="di-val">Track sessions make up roughly 76% of all held sessions — support session cadence may vary by advocate and is worth monitoring separately</div></div>
-  <div class="di-row"><div class="di-label">Note</div><div class="di-val di-warn">Group session moms may have a different session cadence — compare completion rates 1:1 vs. group when sample size permits</div></div>
+  <div class="di-row"><div class="di-label">⚠ Pending</div><div class="di-val di-flag">Session format split (1:1 vs. group) and group facilitator count are estimates - to be confirmed with live data</div></div>
+  <div class="di-row"><div class="di-label">Track vs support</div><div class="di-val">Track sessions make up roughly 76% of all held sessions - support session cadence may vary by advocate and is worth monitoring separately</div></div>
+  <div class="di-row"><div class="di-label">Note</div><div class="di-val di-warn">Group session moms may have a different session cadence - compare completion rates 1:1 vs. group when sample size permits</div></div>
 </div></details>
         </div>
       </div>
@@ -1542,15 +1691,15 @@
 <div id="tab-checklist" class="tab-panel">
 
   <div style="background:var(--yellow-light);border:1px solid var(--yellow);border-radius:8px;padding:14px 18px;margin-bottom:28px;font-size:13px;color:#7a5010;">
-    <strong>This tab is temporary</strong> — it tracks what needs to be confirmed or completed before this dashboard is shared externally. Remove this tab once all blockers are resolved.
+    <strong>This tab is temporary</strong> - it tracks what needs to be confirmed or completed before this dashboard is shared externally. Remove this tab once all blockers are resolved.
     &nbsp;·&nbsp; <strong>Blockers</strong> = must resolve before sharing &nbsp;·&nbsp; <strong>Confirm with RD</strong> = needs field/query validation &nbsp;·&nbsp; <strong>Nice to have</strong> = improves accuracy but not blocking
   </div>
 
   <div class="checklist-section">
-    <h3>🔴 Cristina — Action Required Before Handing to RD</h3>
+    <h3>🔴 Cristina - Action Required Before Handing to RD</h3>
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Validate</div>
+      <div class="ci-tag blocker">Cristina - Validate</div>
       <div class="ci-body">
         <div class="ci-title">KPI 1: Validate Family Preservation Rate calculation against expected methodology</div>
         <div class="ci-detail">Before live data is published, Cristina must confirm the KPI 1 calculation is correct: unit = child profiles (not moms), denominator = children linked to moms with a valid in-window FWA, numerator = children where family is intact (no permanent custody removal). Validate the child-level query output against known cases to confirm the logic matches what ĒMA intends to report.</div>
@@ -1559,18 +1708,18 @@
     </div>
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Validate</div>
+      <div class="ci-tag blocker">Cristina - Validate</div>
       <div class="ci-body">
         <div class="ci-title">Validate Child Welfare Prevention count and $38,850 impact figure</div>
-        <div class="ci-detail">The Children card shows a "Child Welfare Prevention" count and an estimated impact value (count × $38,850). Before publishing: (1) confirm the count is sourced correctly from the Child Welfare area of the FWA — not the FSS composite, (2) confirm $38,850 is the current approved per-child impact figure ĒMA uses for reporting, (3) confirm the framing as "estimated prevention value — not a hard claim" is sufficient for the audience seeing this number.</div>
+        <div class="ci-detail">The Children card shows a "Child Welfare Prevention" count and an estimated impact value (count × $38,850). Before publishing: (1) confirm the count is sourced correctly from the Child Welfare area of the FWA - not the FSS composite, (2) confirm $38,850 is the current approved per-child impact figure ĒMA uses for reporting, (3) confirm the framing as "estimated prevention value - not a hard claim" is sufficient for the audience seeing this number.</div>
         <div class="ci-owner">Owner: Cristina</div>
       </div>
     </div>
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Validate</div>
+      <div class="ci-tag blocker">Cristina - Validate</div>
       <div class="ci-body">
-        <div class="ci-title">KPI 2: Validate Family Stability Score calculation against FSS guidance — known discrepancies flagged by Jean</div>
+        <div class="ci-title">KPI 2: Validate Family Stability Score calculation against FSS guidance - known discrepancies flagged by Jean</div>
         <div class="ci-detail">Jean identified discrepancies in FSS score calculations that need to be reconciled against the expected FSS guidance before any KPI 2 figure is published. Cristina needs to: (1) obtain the FSS scoring methodology/guidance document, (2) compare it against how scores are being computed from the assessment response data, (3) confirm the 10-domain composite is being calculated correctly (Child Welfare domain excluded by design). Do not publish KPI 2 until this validation is complete.</div>
         <div class="ci-owner">Owner: Cristina</div>
       </div>
@@ -1579,10 +1728,10 @@
 
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Review</div>
+      <div class="ci-tag blocker">Cristina - Review</div>
       <div class="ci-body">
         <div class="ci-title">Review Track Oversight tab for accuracy and completeness</div>
-        <div class="ci-detail">The Track Oversight tab has not been reviewed since structural changes were made to other tabs. Before handing to RD: (1) confirm the stalled moms definition and thresholds (14 / 21 / 30 days) are correct, (2) confirm completion status breakdown categories match what ĒMA actually tracks in Trellis — specifically the sub-status values (Full Track, Without Support Sessions, Without Post Assessment, and the incomplete reasons), (3) confirm the session depth section reflects the right split between track and support sessions, (4) confirm the track-by-track breakdown structure is what HQ wants to see for Q1.</div>
+        <div class="ci-detail">The Track Oversight tab has not been reviewed since structural changes were made to other tabs. Before handing to RD: (1) confirm the stalled moms definition and thresholds (14 / 21 / 30 days) are correct, (2) confirm completion status breakdown categories match what ĒMA actually tracks in Trellis - specifically the sub-status values (Full Track, Without Support Sessions, Without Post Assessment, and the incomplete reasons), (3) confirm the session depth section reflects the right split between track and support sessions, (4) confirm the track-by-track breakdown structure is what HQ wants to see for Q1.</div>
         <div class="ci-owner">Owner: Cristina</div>
       </div>
     </div>
@@ -1592,20 +1741,20 @@
       <div class="ci-body">
         <div class="ci-title">Intake date: confirm AuditLog coverage with RD and validate data sufficiency</div>
         <div class="ci-detail">
-          Intake date is used in referral conversion, families served, and KPI denominators. Two populations exist with fundamentally different data availability — these must be handled separately and never conflated.<br><br>
-          <strong>Step 1 — Preferred source (Trellis-era moms only):</strong> Derive intake date from AuditLog — first timestamp where Mom.prospect_status transitioned to the 'Engaged In Program' value. AuditLog confirmed to exist (332,961 rows, covers Nov 2025–Feb 2026, table field confirmed). <strong>⚠ Still needed from RD:</strong> (a) confirm the exact prospect_status enum value for 'Engaged In Program' (Mom.prospect_status values in data dictionary show 'prospect' and 'prospect_intake_scheduled' — the intake value is not visible in min/max), (b) confirm AuditLog reliably captures prospect_status field changes.<br><br>
-          <strong>Step 2 — PS-migrated moms:</strong> Moms migrated from PromiseServes have no FWA at intake in Trellis and no reliable intake date field. These moms cannot have a valid Trellis-based intake date and should be excluded from any calculation requiring one. Surface excluded count explicitly — do not silently drop.<br><br>
-          <strong>Step 3 — Fallback if AuditLog is insufficient:</strong> If AuditLog coverage is incomplete, document the gap and hold intake-dependent calculations for that population rather than substituting an unreliable field.
+          Intake date is used in referral conversion, families served, and KPI denominators. Two populations exist with fundamentally different data availability - these must be handled separately and never conflated.<br><br>
+          <strong>Step 1 - Preferred source (Trellis-era moms only):</strong> Derive intake date from AuditLog - first timestamp where Mom.prospect_status transitioned to the 'Engaged In Program' value. AuditLog confirmed to exist (332,961 rows, covers Nov 2025–Feb 2026, table field confirmed). <strong>⚠ Still needed from RD:</strong> (a) confirm the exact prospect_status enum value for 'Engaged In Program' (Mom.prospect_status values in data dictionary show 'prospect' and 'prospect_intake_scheduled' - the intake value is not visible in min/max), (b) confirm AuditLog reliably captures prospect_status field changes.<br><br>
+          <strong>Step 2 - PS-migrated moms:</strong> Moms migrated from PromiseServes have no FWA at intake in Trellis and no reliable intake date field. These moms cannot have a valid Trellis-based intake date and should be excluded from any calculation requiring one. Surface excluded count explicitly - do not silently drop.<br><br>
+          <strong>Step 3 - Fallback if AuditLog is insufficient:</strong> If AuditLog coverage is incomplete, document the gap and hold intake-dependent calculations for that population rather than substituting an unreliable field.
         </div>
         <div class="ci-owner">Owner: Cristina + RD Hill</div>
       </div>
     </div>
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Validate</div>
+      <div class="ci-tag blocker">Cristina - Validate</div>
       <div class="ci-body">
         <div class="ci-title">Once intake date source is confirmed: re-validate all intake-dependent calculations across the full report</div>
-        <div class="ci-detail">Intake date is a cross-cutting dependency. Once the AuditLog source is confirmed and RD validates coverage, every calculation that touches intake date must be re-checked before publishing. This includes: (1) Families Served — active-during-period logic, (2) Referral conversion rate — referral date vs. intake date, (3) Q1 Activity counts — Intakes Completed figure, (4) KPI denominators — any KPI that uses intake as the starting point. Confirm each is pulling from the same confirmed intake date source and not mixing sources across calculations.</div>
+        <div class="ci-detail">Intake date is a cross-cutting dependency. Once the AuditLog source is confirmed and RD validates coverage, every calculation that touches intake date must be re-checked before publishing. This includes: (1) Families Served - active-during-period logic, (2) Referral conversion rate - referral date vs. intake date, (3) Q1 Activity counts - Intakes Completed figure, (4) KPI denominators - any KPI that uses intake as the starting point. Confirm each is pulling from the same confirmed intake date source and not mixing sources across calculations.</div>
         <div class="ci-owner">Owner: Cristina</div>
       </div>
     </div>
@@ -1613,14 +1762,14 @@
   </div>
 
   <div class="checklist-section">
-    <h3>🔴 Blockers — RD Action Required</h3>
+    <h3>🔴 Blockers - RD Action Required</h3>
 
     <div class="checklist-item nice">
       <div class="ci-tag nice">Complete</div>
       <div class="ci-body">
         <div class="ci-title" style="text-decoration:line-through;">Referral conversion rate: confirm "not converted" status in Trellis</div>
-        <div class="ci-detail">Confirmed 4/9/2026. Trellis has explicit statuses: <code>prospect_status = 'did_not_engage_in_program'</code> (1,378 moms) is the "not converted" status. Sub-reasons available via <code>referral_sub_status</code>: client_declined_services (17), unable_to_contact (59), duplicate_referral (18), ineligible_for_program (8), referred_to_alternate_program (7). Conversion formula: <code>engaged_in_program / (engaged_in_program + did_not_engage_in_program)</code> — excludes <code>prospect</code> (still pending, 118 moms).</div>
-        <div class="ci-owner">Owner: RD Hill — DONE</div>
+        <div class="ci-detail">Confirmed 4/9/2026. Trellis has explicit statuses: <code>prospect_status = 'did_not_engage_in_program'</code> (1,378 moms) is the "not converted" status. Sub-reasons available via <code>referral_sub_status</code>: client_declined_services (17), unable_to_contact (59), duplicate_referral (18), ineligible_for_program (8), referred_to_alternate_program (7). Conversion formula: <code>engaged_in_program / (engaged_in_program + did_not_engage_in_program)</code> - excludes <code>prospect</code> (still pending, 118 moms).</div>
+        <div class="ci-owner">Owner: RD Hill - DONE</div>
       </div>
     </div>
 
@@ -1628,8 +1777,8 @@
       <div class="ci-tag nice">Complete</div>
       <div class="ci-body">
         <div class="ci-title" style="text-decoration:line-through;">Referral source: confirm field name and pull raw values</div>
-        <div class="ci-detail">Confirmed 4/9/2026. Field: <code>Mom.agency_id → Agency.name</code>. Top sources: Hope Women's Center (294), Self-Referred (233), Childnet (169), North Broward Bureau (81), Bravely (66), Avail (65), CPS (53), DCF (40), Hamilton County JFS (39). 53.5% of moms have no agency linked — shown as "Unknown / Not Recorded." Two entries are raw UUIDs (bad data). Now wired to live API via <code>/api/report-data</code> referral_sources.</div>
-        <div class="ci-owner">Owner: RD Hill — DONE</div>
+        <div class="ci-detail">Confirmed 4/9/2026. Field: <code>Mom.agency_id → Agency.name</code>. Top sources: Hope Women's Center (294), Self-Referred (233), Childnet (169), North Broward Bureau (81), Bravely (66), Avail (65), CPS (53), DCF (40), Hamilton County JFS (39). 53.5% of moms have no agency linked - shown as "Unknown / Not Recorded." Two entries are raw UUIDs (bad data). Now wired to live API via <code>/api/report-data</code> referral_sources.</div>
+        <div class="ci-owner">Owner: RD Hill - DONE</div>
       </div>
     </div>
 
@@ -1638,15 +1787,15 @@
       <div class="ci-body">
         <div class="ci-title" style="text-decoration:line-through;">Replace sample data with live Trellis data</div>
         <div class="ci-detail">All dashboard values now pull live from Railway PostgreSQL via <code>/api/report-data</code>. KPI gauges, entity cards, FWA currency, referral sources, stall buckets, track completions, session depth, and affiliate breakdowns are all wired. Completed 4/9/2026.</div>
-        <div class="ci-owner">Owner: RD Hill — DONE</div>
+        <div class="ci-owner">Owner: RD Hill - DONE</div>
       </div>
     </div>
 
     <div class="checklist-item confirm">
       <div class="ci-tag confirm">Cristina</div>
       <div class="ci-body">
-        <div class="ci-title">Cost Per Family — needs finance input</div>
-        <div class="ci-detail">Q1 program spend is not in Trellis. Finance must provide the figure. Confirm scope: direct program costs only, or fully loaded? Once received, RD can add it to the API. Currently removed from dashboard per Cristina's decision — calculated outside this report.</div>
+        <div class="ci-title">Cost Per Family - needs finance input</div>
+        <div class="ci-detail">Q1 program spend is not in Trellis. Finance must provide the figure. Confirm scope: direct program costs only, or fully loaded? Once received, RD can add it to the API. Currently removed from dashboard per Cristina's decision - calculated outside this report.</div>
         <div class="ci-owner">Owner: Cristina (finance request)</div>
       </div>
     </div>
@@ -1654,7 +1803,7 @@
     <div class="checklist-item confirm">
       <div class="ci-tag confirm">Cristina</div>
       <div class="ci-body">
-        <div class="ci-title">Service Connection Rate — connected_* fields empty in Trellis</div>
+        <div class="ci-title">Service Connection Rate - connected_* fields empty in Trellis</div>
         <div class="ci-detail">The <code>connected_*</code> boolean fields on the Mom record are all unpopulated (0 across all 9 fields for active moms). Only 14 ServiceReferral records exist. This metric cannot be reported until Trellis data entry catches up. Deferred to live coordinator dashboards per Cristina's decision.</div>
         <div class="ci-owner">Owner: Cristina (data entry / Trellis workflow)</div>
       </div>
@@ -1674,12 +1823,12 @@
   <div class="checklist-section">
     <h3>📄 Methodology Reference</h3>
     <div style="background:var(--light);border:1px solid var(--border);border-radius:8px;padding:14px 18px;font-size:13px;color:var(--mid);">
-      Full query specs and methodology for every measure in this report have been moved to a separate reference document: <strong>Trellis_Query_Specs_Reference.md</strong> — stored in the project folder alongside this file. Use it when building the live dashboard to ensure all calculations stay consistent with Q1.
+      Full query specs and methodology for every measure in this report have been moved to a separate reference document: <strong>Trellis_Query_Specs_Reference.md</strong> - stored in the project folder alongside this file. Use it when building the live dashboard to ensure all calculations stay consistent with Q1.
     </div>
   </div>
 
   <div class="checklist-section">
-    <h3>🟢 Nice to Have — Improves Accuracy, Not Blocking</h3>
+    <h3>🟢 Nice to Have - Improves Accuracy, Not Blocking</h3>
 
     <div class="checklist-item nice">
       <div class="ci-tag nice">Nice to have</div>
@@ -1700,12 +1849,12 @@
     </div>
 
     <div class="checklist-item blocker">
-      <div class="ci-tag blocker">Cristina — Validate</div>
+      <div class="ci-tag blocker">Cristina - Validate</div>
       <div class="ci-body">
         <div class="ci-title">Validate "Small sample size" warning renders correctly in per-affiliate views once live data is added</div>
-        <div class="ci-detail">The warning logic is built into the dashboard — any affiliate segment with fewer than 30 eligible data points automatically shows the amber "Small sample size" badge. Once live data is wired in and affiliate views are built for Q2, Cristina should visually confirm: (1) the badge appears on segments with n&lt;30, (2) it does not appear on segments with n≥30, (3) the Data Integrity Notes expand correctly with the plain-language explanation.</div>
+        <div class="ci-detail">The warning logic is built into the dashboard - any affiliate segment with fewer than 30 eligible data points automatically shows the amber "Small sample size" badge. Once live data is wired in and affiliate views are built for Q2, Cristina should visually confirm: (1) the badge appears on segments with n&lt;30, (2) it does not appear on segments with n≥30, (3) the Data Integrity Notes expand correctly with the plain-language explanation.</div>
         <div style="margin-top:14px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px 20px;">
-          <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:12px;font-family:'Oswald',sans-serif;">Expected appearance — reference</div>
+          <div style="font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:12px;font-family:'Oswald',sans-serif;">Expected appearance - reference</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
             <div style="background:var(--light);border:1px solid var(--border);border-radius:6px;padding:14px;">
@@ -1742,7 +1891,7 @@
                 <div style="margin-top:6px;border:0.5px solid var(--border);border-radius:6px;overflow:hidden;font-size:11px;">
                   <div style="background:#fef3e8;border-bottom:1px solid #f2a136;padding:8px 10px;display:flex;gap:8px;">
                     <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#7a5010;width:70px;flex-shrink:0;padding-top:1px;">⚠ Small Sample</span>
-                    <span style="color:#7a5010;">Only 12 moms in this location — results may shift significantly as more families are served. Use as a directional indicator only.</span>
+                    <span style="color:#7a5010;">Only 12 moms in this location - results may shift significantly as more families are served. Use as a directional indicator only.</span>
                   </div>
                   <div style="padding:6px 10px;display:flex;gap:8px;border-bottom:0.5px solid var(--border);">
                     <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);width:70px;flex-shrink:0;padding-top:1px;">Source</span>
@@ -1750,7 +1899,7 @@
                   </div>
                   <div style="padding:6px 10px;display:flex;gap:8px;">
                     <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);width:70px;flex-shrink:0;padding-top:1px;">Excluded</span>
-                    <span style="color:var(--dark);">2 moms excluded — no FWA on record</span>
+                    <span style="color:var(--dark);">2 moms excluded - no FWA on record</span>
                   </div>
                 </div>
               </details>
@@ -1758,18 +1907,18 @@
 
           </div>
         </div>
-        <div class="ci-owner">Owner: Cristina — Q2 validation</div>
+        <div class="ci-owner">Owner: Cristina - Q2 validation</div>
       </div>
     </div>
 
   </div>
 
   <div class="checklist-section">
-    <h3>✅ Resolved — Decisions Made</h3>
+    <h3>✅ Resolved - Decisions Made</h3>
     <div class="checklist-item nice">
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
-        <div class="ci-title">Data integrity toggles audited — FWA tab cleaned up</div>
+        <div class="ci-title">Data integrity toggles audited - FWA tab cleaned up</div>
         <div class="ci-detail">FWA Data Integrity tab reviewed and simplified: redundant goal banner removed, "Expiring Next Quarter" forward-looking card removed, full status table removed, descriptions stripped from population cards, re-engagement note removed from integrity toggle. Remaining toggles across all tabs reviewed for plain language and consistency.</div>
         <div class="ci-owner">Resolved: Cristina</div>
       </div>
@@ -1787,8 +1936,8 @@
     <div class="checklist-item nice">
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
-        <div class="ci-title">Intake definition confirmed — consistent across all calculations except track start</div>
-        <div class="ci-detail">Intake = the event when a referral converts to an enrolled client (Referral status = "Engaged In Program"). This definition applies consistently to: referral conversion tracking, families served, and KPI denominators. Track start is a separate subsequent event — a mom can be at intake status before she begins a track. These two events must never be conflated in queries.</div>
+        <div class="ci-title">Intake definition confirmed - consistent across all calculations except track start</div>
+        <div class="ci-detail">Intake = the event when a referral converts to an enrolled client (Referral status = "Engaged In Program"). This definition applies consistently to: referral conversion tracking, families served, and KPI denominators. Track start is a separate subsequent event - a mom can be at intake status before she begins a track. These two events must never be conflated in queries.</div>
         <div class="ci-owner">Confirmed: Cristina</div>
       </div>
     </div>
@@ -1797,7 +1946,7 @@
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
         <div class="ci-title">In a Track source confirmed: pairing table only</div>
-        <div class="ci-detail">In a Track must be sourced from the Pairing table only (pairing active during Q1). Mom.status alone is not reliable for this count — pairings can be active while Mom.status has changed. Resolved in prior data pull with RD.</div>
+        <div class="ci-detail">In a Track must be sourced from the Pairing table only (pairing active during Q1). Mom.status alone is not reliable for this count - pairings can be active while Mom.status has changed. Resolved in prior data pull with RD.</div>
         <div class="ci-owner">Confirmed: Cristina + RD Hill</div>
       </div>
     </div>
@@ -1805,8 +1954,8 @@
     <div class="checklist-item nice">
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
-        <div class="ci-title">Service Connection Rate removed from Q1 — deferred to live dashboards</div>
-        <div class="ci-detail">Service Connection Rate is a named KPI target but Trellis does not yet have sufficient data to report it — only 14 ServiceReferral records exist and connected_* fields on the Mom record are unpopulated. It is not required for Katrina's investor report. Removed from Q1. Connected services (ServiceReferral) and flagged needs (BenevolenceNeed) will both be surfaced in the live coordinator dashboards where coordinators can see and act on them in real time.</div>
+        <div class="ci-title">Service Connection Rate removed from Q1 - deferred to live dashboards</div>
+        <div class="ci-detail">Service Connection Rate is a named KPI target but Trellis does not yet have sufficient data to report it - only 14 ServiceReferral records exist and connected_* fields on the Mom record are unpopulated. It is not required for Katrina's investor report. Removed from Q1. Connected services (ServiceReferral) and flagged needs (BenevolenceNeed) will both be surfaced in the live coordinator dashboards where coordinators can see and act on them in real time.</div>
         <div class="ci-owner">Resolved: Cristina</div>
       </div>
     </div>
@@ -1815,22 +1964,28 @@
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
         <div class="ci-title">Affiliate/location breakdown views deferred to Q2 report</div>
-        <div class="ci-detail">All affiliate-level breakdown sections have been removed from the Q1 report — FWA coverage by location, stalled moms by affiliate, and session depth by affiliate. The Q1 report shows HQ-level totals only. Affiliate views to be designed properly for Q2 once: (1) live data is confirmed, (2) n&lt;30 warning logic is validated against real segment sizes, (3) affiliate assignment field in Trellis is confirmed with RD, and (4) definition decisions (intake date, FWA window) are locked.</div>
-        <div class="ci-owner">Owner: Cristina — Q2 planning</div>
+        <div class="ci-detail">All affiliate-level breakdown sections have been removed from the Q1 report - FWA coverage by location, stalled moms by affiliate, and session depth by affiliate. The Q1 report shows HQ-level totals only. Affiliate views to be designed properly for Q2 once: (1) live data is confirmed, (2) n&lt;30 warning logic is validated against real segment sizes, (3) affiliate assignment field in Trellis is confirmed with RD, and (4) definition decisions (intake date, FWA window) are locked.</div>
+        <div class="ci-owner">Owner: Cristina - Q2 planning</div>
       </div>
     </div>
 
     <div class="checklist-item nice">
       <div class="ci-tag nice">Resolved</div>
       <div class="ci-body">
-        <div class="ci-title">Cost Per Family removed — calculated outside this dashboard</div>
-        <div class="ci-detail">Cost Per Family requires Q1 program spend from finance which is not in Trellis. Removed from the dashboard — to be calculated separately outside this report.</div>
+        <div class="ci-title">Cost Per Family removed - calculated outside this dashboard</div>
+        <div class="ci-detail">Cost Per Family requires Q1 program spend from finance which is not in Trellis. Removed from the dashboard - to be calculated separately outside this report.</div>
         <div class="ci-owner">Resolved: Cristina</div>
       </div>
     </div>
 
   </div>
 </div><!-- /tab-checklist -->
+
+<!-- FOOTER -->
+<footer class="report-footer">
+  <div class="footer-brand">ĒMA - Every Mother's Advocate</div>
+  <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+</footer>
 
 </div><!-- /dashboard -->
 
@@ -1847,12 +2002,51 @@
   }
 
   /* ── Auth helpers ─────────────────────────────────────────────── */
+
+  /* RD: remove DEMO_USERS before production deploy */
+  var DEMO_USERS = {
+    'demo':  { username: 'demo',  firstName: 'Cristina', lastName: 'R.',      role: 'administrator' },
+    'coord': { username: 'coord', firstName: 'Sarah',    lastName: 'M.',       role: 'coordinator'   },
+    'super': { username: 'super', firstName: 'Laura',    lastName: 'K.',       role: 'supervisor'    }
+  };
+  var ROLE_LABELS = {
+    'administrator': 'HQ Admin',
+    'coordinator':   'Coordinator',
+    'supervisor':    'Supervisor'
+  };
+  var _demoMode = false;
+
+  function applyDemoSession(user) {
+    /* Show the dashboard with static placeholder data - no API calls */
+    _demoMode = true;
+    var display = user.firstName + ' ' + user.lastName;
+    var roleLabel = ROLE_LABELS[user.role] || user.role;
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('bannerUserInfo').textContent =
+      'Signed in as ' + display + ' (' + roleLabel + ') - Demo';
+    var topnavEl = document.getElementById('topnavUserInfo');
+    if (topnavEl) topnavEl.textContent = display + ' (Demo)';
+    /* Show affiliate slicer for admin/supervisor */
+    if (user.role === 'administrator' || user.role === 'supervisor') {
+      document.getElementById('affiliateSlicerWrap').style.display = '';
+    }
+  }
+
   async function doLogin() {
     var errEl = document.getElementById('loginError');
     errEl.textContent = '';
-    var username = document.getElementById('loginUsername').value.trim();
+    var username = document.getElementById('loginUsername').value.trim().toLowerCase();
     var password = document.getElementById('loginPassword').value;
     if (!username || !password) { errEl.textContent = 'Enter username and password'; return; }
+
+    /* Demo shortcut - check before hitting the API */
+    /* RD: remove this block before production deploy */
+    if (DEMO_USERS[username] && password === 'demo') {
+      applyDemoSession(DEMO_USERS[username]);
+      return;
+    }
+
     try {
       var res = await fetch('/api/login', {
         method: 'POST',
@@ -1868,11 +2062,21 @@
       document.getElementById('dashboard').classList.remove('hidden');
       initDashboard();
     } catch (e) {
-      errEl.textContent = 'Network error — try again';
+      errEl.textContent = 'API unavailable - use demo/coord/super (password: demo)';
     }
   }
 
   async function doLogout() {
+    /* Demo mode: just reset the overlay without a server call or redirect */
+    if (_demoMode) {
+      _demoMode = false;
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('loginOverlay').classList.remove('hidden');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginError').textContent = '';
+      return;
+    }
     try { await fetch('/api/logout', { method: 'POST' }); } catch (e) { /* ignore */ }
     window.location.href = '/';
   }
@@ -1895,6 +2099,9 @@
         var display = (me.firstName || me.username || 'User') + (me.lastName ? ' ' + me.lastName : '');
         document.getElementById('bannerUserInfo').textContent =
           'Signed in as ' + display + ' (' + role + ')';
+        // RD: also populate top nav user display
+        var topnavEl = document.getElementById('topnavUserInfo');
+        if (topnavEl) topnavEl.textContent = display;
       } catch (e) { console.error('User info parse failed:', e); }
     }
 
@@ -2006,7 +2213,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // TAB 1 — KPI GAUGES: Render from live data
+    // TAB 1 - KPI GAUGES: Render from live data
     // ════════════════════════════════════════════════════════
     var kpiDefs = [
       { key: 'kpi1', label: 'KPI 1', anchorTpl: '{num} of {den} eligible children intact \u00B7 {excl} children excluded (no valid FWA)' },
@@ -2019,7 +2226,7 @@
       if (!card) return;
       var kd = kpis[def.key];
       if (!kd || kd.rate === null || kd.rate === undefined) {
-        // No data — show pending
+        // No data - show pending
         card.classList.remove('on-track', 'close', 'below');
         var badge = card.querySelector('.kpi-badge');
         if (badge) { badge.className = 'kpi-badge pending'; badge.textContent = 'Pending Data'; }
@@ -2072,7 +2279,7 @@
     });
 
     // ════════════════════════════════════════════════════════
-    // TAB 1 — FAMILIES / CHILDREN / ADVOCATES (Cristina's new layout)
+    // TAB 1 - FAMILIES / CHILDREN / ADVOCATES (Cristina's new layout)
     // Update the big headline numbers in entity header blocks
     // ════════════════════════════════════════════════════════
     var familiesServed = snap.families_served || 0;
@@ -2120,7 +2327,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // TAB 2 — FWA DATA INTEGRITY
+    // TAB 2 - FWA DATA INTEGRITY
     // ════════════════════════════════════════════════════════
     var fwaCurrency = fss.fwa_currency || {};
     var fwaCurrent = fwaCurrency.current_0_90 || 0;
@@ -2217,7 +2424,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // TAB 3 — REFERRALS
+    // TAB 3 - REFERRALS
     // ════════════════════════════════════════════════════════
     var tabAff = document.getElementById('tab-affiliates');
     if (tabAff && data.referral_sources && data.referral_sources.length > 0) {
@@ -2233,7 +2440,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // TAB 4 — TRACK OVERSIGHT: Stall buckets
+    // TAB 4 - TRACK OVERSIGHT: Stall buckets
     // ════════════════════════════════════════════════════════
     var stallBuckets = track.stall_buckets || {};
     setStalledCard('progressing', fmt(stallBuckets.progressing || 0));
@@ -2310,7 +2517,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // META — Update period in header subtitle if available
+    // META - Update period in header subtitle if available
     // ════════════════════════════════════════════════════════
     if (meta.period) {
       var subtitle = document.querySelector('.header .subtitle');
@@ -2337,7 +2544,7 @@
     });
 
     // ════════════════════════════════════════════════════════
-    // §1 — FAMILIES ENTITY CARD SUB-STATS (inline-styled card in tab-kpis)
+    // §1 - FAMILIES ENTITY CARD SUB-STATS (inline-styled card in tab-kpis)
     // ════════════════════════════════════════════════════════
     if (tab1) {
       // The families card is the first card in the Program Status section
@@ -2345,7 +2552,7 @@
       var familyCards = tab1.querySelectorAll('div[style*="background:var(--white)"][style*="border-radius:12px"]');
       var familiesCard = familyCards.length >= 1 ? familyCards[0] : null;
       if (familiesCard) {
-        // "Active During Q1" stacked bar legend — update the inline numbers
+        // "Active During Q1" stacked bar legend - update the inline numbers
         var activeBarLegend = familiesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] > div');
         if (activeBarLegend.length >= 2) {
           // In Track legend
@@ -2368,7 +2575,7 @@
           }
         }
 
-        // "As of March 31" — three 24px numbers: active, in track, membership community
+        // "As of March 31" - three 24px numbers: active, in track, membership community
         var asOfSection = familiesCard.querySelectorAll('div[style*="padding:16px 0"][style*="border-bottom"]');
         var marchSection = asOfSection.length >= 2 ? asOfSection[1] : null;
         if (marchSection) {
@@ -2379,7 +2586,7 @@
           if (marchNums.length >= 3) marchNums[2].textContent = fmt(membershipCommunity);
         }
 
-        // "Q1 Activity" — three 24px numbers: Referrals Received, Intakes Completed, Track Completions
+        // "Q1 Activity" - three 24px numbers: Referrals Received, Intakes Completed, Track Completions
         var activityGrids = familiesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:repeat(3"]');
         var q1Grid = activityGrids.length >= 1 ? activityGrids[0] : null;
         if (q1Grid) {
@@ -2391,7 +2598,7 @@
       }
 
       // ════════════════════════════════════════════════════════
-      // §2 — CHILDREN ENTITY CARD SUB-STATS
+      // §2 - CHILDREN ENTITY CARD SUB-STATS
       // ════════════════════════════════════════════════════════
       var childrenCard = familyCards.length >= 2 ? familyCards[1] : null;
       if (childrenCard) {
@@ -2419,7 +2626,7 @@
       }
 
       // ════════════════════════════════════════════════════════
-      // §3 — ADVOCATES ENTITY CARD SUB-STATS
+      // §3 - ADVOCATES ENTITY CARD SUB-STATS
       // ════════════════════════════════════════════════════════
       var advocatesCard = familyCards.length >= 3 ? familyCards[2] : null;
       if (advocatesCard) {
@@ -2436,7 +2643,7 @@
           return 0;
         }
 
-        // "Active During Q1" — stacked bar + legend with 4 segments
+        // "Active During Q1" - stacked bar + legend with 4 segments
         // Group facilitators, Paired 1:1, Waiting to be paired, Taking a break
         var advBarLegend = advocatesCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:repeat(4"] > div');
         if (advBarLegend.length >= 4) {
@@ -2466,7 +2673,7 @@
           }
         }
 
-        // "As of March 31" — four 24px numbers
+        // "As of March 31" - four 24px numbers
         var advMarchSection = advocatesCard.querySelectorAll('div[style*="padding:16px 0"][style*="border-bottom"]');
         var advMarch = advMarchSection.length >= 2 ? advMarchSection[1] : null;
         if (advMarch) {
@@ -2477,7 +2684,7 @@
           if (advMarchNums.length >= 4) advMarchNums[3].textContent = fmt(getPipeCount(pipeBySubStatus, 'break'));
         }
 
-        // "Q1 Activity" — five 24px numbers: Application Received, Trained, Approved, Became Active, Became Inactive
+        // "Q1 Activity" - five 24px numbers: Application Received, Trained, Approved, Became Active, Became Inactive
         // We can map from pipeline.by_status if available
         var advActivityGrid = advocatesCard.querySelector('div[style*="display:grid"][style*="grid-template-columns:repeat(5"]');
         if (advActivityGrid && pipeByStatus.length > 0) {
@@ -2494,7 +2701,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // §6 — TAB 3 (REFERRALS) — SOURCE TABLE AND BAR CHART
+    // §6 - TAB 3 (REFERRALS) - SOURCE TABLE AND BAR CHART
     // ════════════════════════════════════════════════════════
     if (tabAff) {
       var refSrcTable = tabAff.querySelectorAll('.affiliate-table-wrap table');
@@ -2592,7 +2799,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // §7 — TAB 4 (TRACK) — STALL BY AFFILIATE TABLE
+    // §7 - TAB 4 (TRACK) - STALL BY AFFILIATE TABLE
     // ════════════════════════════════════════════════════════
     var stallByAffiliate = data.stall_by_affiliate || [];
     if (stallByAffiliate.length > 0) {
@@ -2660,7 +2867,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // §8 — TAB 4 (TRACK) — COMPLETION BREAKDOWN DETAILS (all .fr-val)
+    // §8 - TAB 4 (TRACK) - COMPLETION BREAKDOWN DETAILS (all .fr-val)
     // ════════════════════════════════════════════════════════
     if (tce) {
       var tabTrackEl2 = document.getElementById('tab-track');
@@ -2686,7 +2893,7 @@
               else if (lt.indexOf('did not initiate') !== -1 || lt.indexOf('no advocate') !== -1) frVal.textContent = tce.incomplete_no_advocate || 0;
               else if (lt.indexOf('total incompletes') !== -1) frVal.textContent = tce.total_incompletes || 0;
               else if (lt.indexOf('incomplete') !== -1 && lt.indexOf('other') !== -1) {
-                // "Other" incomplete — compute as remainder
+                // "Other" incomplete - compute as remainder
                 var knownIncompletes = (tce.incomplete_achieved_outcomes || 0) + (tce.incomplete_priorities_shifted || 0) + (tce.incomplete_extended_wait || 0) + (tce.incomplete_no_advocate || 0);
                 frVal.textContent = Math.max(0, (tce.total_incompletes || 0) - knownIncompletes);
               }
@@ -2734,7 +2941,7 @@
     }
 
     // ════════════════════════════════════════════════════════
-    // §9 — TAB 4 (TRACK) — SESSION SPLIT BARS (Track vs Support, 1:1 vs Group)
+    // §9 - TAB 4 (TRACK) - SESSION SPLIT BARS (Track vs Support, 1:1 vs Group)
     // ════════════════════════════════════════════════════════
     var tabTrackEl3 = document.getElementById('tab-track');
     if (tabTrackEl3) {

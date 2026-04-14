@@ -713,6 +713,77 @@ router.get('/', async (req, res) => {
     const kpi3Improved = kpi3.rows[0]?.improved || 0;
     const kpi3Rate = kpi3WithData > 0 ? Math.round(1000 * kpi3Improved / kpi3WithData) / 10 : null;
 
+    // ─── Intake Date (derived from AuditLog) ─────────────────
+
+    // Intake date methodology: derived from AuditLog prospect_status = 'engaged_in_program'
+    // Excludes PS-migrated moms (Nov 30 / Dec 17 2025 batches)
+    // Link-based intakes use first blank updated_by_name row after coordinator's engaged event
+    const intakeData = await pool.query(`
+      WITH first_engaged AS (
+        SELECT
+          data->>'id' AS mom_id,
+          MIN(created_at) AS coordinator_engaged_date
+        FROM "AuditLog"
+        WHERE "table" = 'Mom'
+          AND action = 'Update'
+          AND data->>'prospect_status' = 'engaged_in_program'
+        GROUP BY data->>'id'
+      ),
+      organic_only AS (
+        SELECT *
+        FROM first_engaged
+        WHERE DATE_TRUNC('day', coordinator_engaged_date)
+          NOT IN ('2025-11-30', '2025-12-17')
+      ),
+      first_self_complete AS (
+        SELECT
+          a.data->>'id' AS mom_id,
+          MIN(a.created_at) AS self_complete_date
+        FROM "AuditLog" a
+        JOIN organic_only oo ON oo.mom_id = a.data->>'id'
+        WHERE a."table" = 'Mom'
+          AND a.action = 'Update'
+          AND a.data->>'prospect_status' = 'engaged_in_program'
+          AND (a.data->>'updated_by_name' IS NULL OR a.data->>'updated_by_name' = '')
+          AND a.created_at > oo.coordinator_engaged_date
+          AND EXTRACT(HOUR FROM a.created_at AT TIME ZONE 'America/New_York') NOT IN (5, 6)
+        GROUP BY a.data->>'id'
+      ),
+      intake_dates AS (
+        SELECT
+          oo.mom_id,
+          CASE
+            WHEN fsc.self_complete_date IS NOT NULL THEN fsc.self_complete_date
+            ELSE oo.coordinator_engaged_date
+          END AS best_intake_date,
+          CASE
+            WHEN fsc.self_complete_date IS NOT NULL THEN 'link_based'
+            ELSE 'coordinator_led'
+          END AS intake_method
+        FROM organic_only oo
+        LEFT JOIN first_self_complete fsc ON fsc.mom_id = oo.mom_id
+      )
+      SELECT
+        COUNT(*)::int AS total_trellis_intakes,
+        SUM(CASE WHEN intake_method = 'coordinator_led' THEN 1 ELSE 0 END)::int AS coordinator_led,
+        SUM(CASE WHEN intake_method = 'link_based' THEN 1 ELSE 0 END)::int AS link_based,
+        SUM(CASE WHEN best_intake_date >= '${PERIOD_START}' AND best_intake_date <= '${PERIOD_END} 23:59:59' THEN 1 ELSE 0 END)::int AS intakes_in_period
+      FROM intake_dates id
+      JOIN "Mom" m ON m."id" = id.mom_id
+      WHERE m."deleted_at" = 0
+        ${affWhere}
+    `, affParams);
+
+    // Count PS-migrated moms (excluded from intake calculations)
+    const psMigrated = await pool.query(`
+      SELECT COUNT(DISTINCT data->>'id')::int AS count
+      FROM "AuditLog"
+      WHERE "table" = 'Mom'
+        AND action = 'Update'
+        AND data->>'prospect_status' = 'engaged_in_program'
+        AND DATE_TRUNC('day', created_at) IN ('2025-11-30', '2025-12-17')
+    `);
+
     // ─── Build response envelope ────────────────────────────
 
     res.json({
@@ -747,6 +818,10 @@ router.get('/', async (req, res) => {
         moms_no_child_records: momsNoChildren.rows[0].count,
         children_welfare_involvement: childWelfareInvolvement.rows[0].count,
         families_expanded: familiesServedExpanded.rows[0],
+        intake: {
+          ...(intakeData.rows[0] || {}),
+          ps_migrated: psMigrated.rows[0]?.count || 0,
+        },
       },
 
       // Tab 3: FSS Deep Dive

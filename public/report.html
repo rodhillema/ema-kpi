@@ -107,6 +107,34 @@
     }
     .hidden { display: none !important; }
 
+    /* Loading state — hides content until API data renders */
+    .dashboard-loading .header,
+    .dashboard-loading .tab-nav,
+    .dashboard-loading .tab-panel,
+    .dashboard-loading .sample-banner { visibility: hidden; height: 0; overflow: hidden; }
+    .dashboard-loading .report-topnav { visibility: visible; }
+    .loading-overlay {
+      display: none;
+      text-align: center;
+      padding: 120px 20px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+    .dashboard-loading .loading-overlay { display: block; }
+    .loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* HEADER */
     .header { background: var(--red); color: var(--white); padding: 20px 32px 16px; }
     .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -630,7 +658,12 @@
 <!-- ══════════════════════════════════════════
      DASHBOARD - hidden until authenticated
 ════════════════════════════════════════════ -->
-<div id="dashboard" class="hidden">
+<div id="dashboard" class="hidden dashboard-loading">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  Loading report data from Trellis...
+</div>
 
 <!-- ══════════════════════════════════════════
      HUB-ALIGNED TOP NAV
@@ -2116,11 +2149,17 @@
         window.__EMA_DATA__ = data;
         populateAffiliateFilter(data.affiliates || []);
         renderDashboard(data);
-      } catch (e) { console.error('Report data parse failed:', e); }
+        // Remove loading state — show the dashboard content
+        document.getElementById('dashboard').classList.remove('dashboard-loading');
+      } catch (e) {
+        console.error('Report data parse failed:', e);
+        document.getElementById('dashboard').classList.remove('dashboard-loading');
+      }
     } else if (dataRes) {
       var errText = '';
       try { errText = await dataRes.text(); } catch(e) {}
       console.error('Report data error:', dataRes.status, errText);
+      document.getElementById('dashboard').classList.remove('dashboard-loading');
     }
   }
 

@@ -642,7 +642,7 @@
     <span class="topnav-hub">Impact Hub</span>
   </div>
   <div class="topnav-right">
-    <a href="/hub" class="topnav-link">&#8592; Back to Hub</a>
+    <a href="/" class="topnav-link">&#8592; Back to Hub</a>
     <div class="topnav-sep"></div>
     <a href="https://trellis.com/login" class="topnav-link" target="_blank">Go to Trellis &#8594;</a>
     <div class="topnav-sep"></div>
@@ -669,7 +669,7 @@
       </div>
       <div id="affiliateSlicerWrap" style="display:none;">
         <label>Affiliate</label><br/>
-        <select id="affiliateFilter">
+        <select id="affiliateFilter" style="min-width:200px;">
           <option value="all">All Affiliates</option>
         </select>
       </div>
@@ -2102,6 +2102,10 @@
         // RD: also populate top nav user display
         var topnavEl = document.getElementById('topnavUserInfo');
         if (topnavEl) topnavEl.textContent = display;
+        // Show affiliate slicer for admin/supervisor immediately
+        if (role === 'administrator' || role === 'supervisor') {
+          document.getElementById('affiliateSlicerWrap').style.display = '';
+        }
       } catch (e) { console.error('User info parse failed:', e); }
     }
 
@@ -2112,14 +2116,11 @@
         window.__EMA_DATA__ = data;
         populateAffiliateFilter(data.affiliates || []);
         renderDashboard(data);
-
-        // Only show affiliate slicer AFTER it's populated, and only for admin/supervisor
-        if (role === 'administrator' || role === 'supervisor') {
-          document.getElementById('affiliateSlicerWrap').style.display = '';
-        }
       } catch (e) { console.error('Report data parse failed:', e); }
     } else if (dataRes) {
-      console.error('Report data error:', dataRes.status);
+      var errText = '';
+      try { errText = await dataRes.text(); } catch(e) {}
+      console.error('Report data error:', dataRes.status, errText);
     }
   }
 

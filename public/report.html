@@ -2304,10 +2304,11 @@
       // Update badge
       var badge = card.querySelector('.kpi-badge');
       if (badge) {
-        badge.className = 'kpi-badge ' + status.replace('-', '-');
-        if (status === 'on-track') badge.textContent = 'On Track \u2713';
-        else if (status === 'close') badge.textContent = 'Close \u2014 within 5%';
-        else badge.textContent = 'Below Target';
+        badge.className = 'kpi-badge';
+        badge.classList.add(status);
+        if (status === 'on-track') { badge.textContent = 'On Track \u2713'; }
+        else if (status === 'close') { badge.textContent = 'Close \u2014 within 5%'; }
+        else { badge.textContent = 'Below Target'; }
       }
 
       // Update anchor text below formula

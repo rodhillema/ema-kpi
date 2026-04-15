@@ -43,6 +43,42 @@ router.get('/', async (req, res) => {
     const affWhereUser = isOrgWide ? '' : `AND u."affiliateId" = $1`;
     const affParams = isOrgWide ? [] : [affiliateFilter];
 
+    // ─── Intake Date CTE (reusable SQL fragment) ────────────
+    // Derived from AuditLog per intake_date_methodology.md
+    // Excludes PS-migrated moms (Nov 30 / Dec 17 2025 batches)
+    const INTAKE_CTE = `
+      first_engaged AS (
+        SELECT data->>'id' AS mom_id, MIN(created_at) AS coordinator_engaged_date
+        FROM "AuditLog"
+        WHERE "table" = 'Mom' AND action = 'Update'
+          AND data->>'prospect_status' = 'engaged_in_program'
+        GROUP BY data->>'id'
+      ),
+      organic_only AS (
+        SELECT * FROM first_engaged
+        WHERE DATE_TRUNC('day', coordinator_engaged_date) NOT IN ('2025-11-30', '2025-12-17')
+      ),
+      first_self_complete AS (
+        SELECT a.data->>'id' AS mom_id, MIN(a.created_at) AS self_complete_date
+        FROM "AuditLog" a
+        JOIN organic_only oo ON oo.mom_id = a.data->>'id'
+        WHERE a."table" = 'Mom' AND a.action = 'Update'
+          AND a.data->>'prospect_status' = 'engaged_in_program'
+          AND (a.data->>'updated_by_name' IS NULL OR a.data->>'updated_by_name' = '')
+          AND a.created_at > oo.coordinator_engaged_date
+          AND EXTRACT(HOUR FROM a.created_at AT TIME ZONE 'America/New_York') NOT IN (5, 6)
+        GROUP BY a.data->>'id'
+      ),
+      intake_dates AS (
+        SELECT oo.mom_id,
+          CASE WHEN fsc.self_complete_date IS NOT NULL THEN fsc.self_complete_date
+               ELSE oo.coordinator_engaged_date END AS best_intake_date,
+          CASE WHEN fsc.self_complete_date IS NOT NULL THEN 'link_based'
+               ELSE 'coordinator_led' END AS intake_method
+        FROM organic_only oo
+        LEFT JOIN first_self_complete fsc ON fsc.mom_id = oo.mom_id
+      )`;
+
     // ─── TAB 1: KPIs & Status ───────────────────────────────
     const momStatusCounts = await pool.query(`
       SELECT m."status"::text AS status, COUNT(*)::int AS count
@@ -415,6 +451,7 @@ router.get('/', async (req, res) => {
     // ─── NEW: Referral Sources ──────────────────────────────
 
     const referralSources = await pool.query(`
+      WITH ${INTAKE_CTE}
       SELECT
         m."referral_type_c"::text AS referral_source,
         COUNT(*)::int AS referrals_received,
@@ -433,9 +470,10 @@ router.get('/', async (req, res) => {
           )
         THEN 1 ELSE 0 END)::int AS pending
       FROM "Mom" m
+      JOIN intake_dates id ON id.mom_id = m."id"
       WHERE m."deleted_at" = 0
-        AND m."date_entered" >= '${PERIOD_START}'
-        AND m."date_entered" <= '${PERIOD_END} 23:59:59'
+        AND id.best_intake_date >= '${PERIOD_START}'
+        AND id.best_intake_date <= '${PERIOD_END} 23:59:59'
         ${affWhere}
       GROUP BY m."referral_type_c"::text
       ORDER BY referrals_received DESC
@@ -570,11 +608,12 @@ router.get('/', async (req, res) => {
     // ─── NEW: Families Served Expanded ──────────────────────
 
     const familiesServedExpanded = await pool.query(`
+      WITH ${INTAKE_CTE}
       SELECT
         COUNT(DISTINCT CASE WHEN m."status"::text = 'active'
         THEN m."id" END)::int AS total_active_moms,
-        COUNT(DISTINCT CASE WHEN m."date_entered" >= '${PERIOD_START}'
-            AND m."date_entered" <= '${PERIOD_END} 23:59:59'
+        COUNT(DISTINCT CASE WHEN id.best_intake_date >= '${PERIOD_START}'
+            AND id.best_intake_date <= '${PERIOD_END} 23:59:59'
         THEN m."id" END)::int AS new_intakes_in_period,
         COUNT(DISTINCT CASE WHEN m."status"::text = 'active'
             AND EXISTS (
@@ -585,6 +624,7 @@ router.get('/', async (req, res) => {
             )
         THEN m."id" END)::int AS active_at_end_of_period
       FROM "Mom" m
+      LEFT JOIN intake_dates id ON id.mom_id = m."id"
       WHERE m."deleted_at" = 0
         ${affWhere}
     `, affParams);

@@ -38,6 +38,16 @@ router.get('/', async (req, res) => {
     }
     const isOrgWide = ORG_WIDE_ROLES.includes(role) && !req.query.affiliate_id;
 
+    // Look up selected affiliate name (when admin picks a different affiliate)
+    let affiliateName = req.session.user.affiliateName;
+    if (ORG_WIDE_ROLES.includes(role) && req.query.affiliate_id) {
+      const affNameResult = await pool.query(
+        `SELECT "name" FROM "Affiliate" WHERE "id" = $1 AND "deleted_at" = 0 LIMIT 1`,
+        [req.query.affiliate_id]
+      );
+      affiliateName = affNameResult.rows[0]?.name || 'Unknown Affiliate';
+    }
+
     // Build WHERE clause for affiliate scoping
     const affWhere = isOrgWide ? '' : `AND m."affiliate_id" = $1`;
     const affWhereUser = isOrgWide ? '' : `AND u."affiliateId" = $1`;
@@ -833,7 +843,7 @@ router.get('/', async (req, res) => {
         period_end: PERIOD_END,
         role: role,
         affiliate_id: isOrgWide ? null : affiliateFilter,
-        affiliate_name: isOrgWide ? 'All Affiliates' : req.session.user.affiliateName,
+        affiliate_name: isOrgWide ? 'All Affiliates' : affiliateName,
         generated_at: new Date().toISOString(),
       },
 

@@ -105,8 +105,10 @@ WHERE ur."user_id" = $1
 ### Affiliate Scoping by Role
 - `coordinator`: filter all queries `WHERE affiliate_id = session.user.affiliate_id`
 - `staff_advocate`: same as coordinator — affiliate-scoped
-- `supervisor`: TBD — confirm with RD whether supervisor is affiliate-scoped or org-wide
+- `supervisor`: affiliate-scoped (same as coordinator) — confirmed April 2026
 - `administrator`: no affiliate filter; frontend renders affiliate slicer dropdown in header
+- `champion` with `affiliateId`: affiliate-scoped (like coordinator)
+- `champion` without `affiliateId` (null): org-wide (like administrator, sees slicer)
 
 ### Whitelist (Optional Layer)
 Hardcoded list at top of `middleware/auth.js`. Check username before any DB query.

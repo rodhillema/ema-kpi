@@ -178,8 +178,9 @@ async function checkAuth() {
     const res = await fetch('/api/me');
     if (!res.ok) { window.location.href = '/'; return; }
     const data = await res.json();
-    if (data.role !== 'administrator') { window.location.href = '/'; return; }
-    currentUser = data;
+    const user = data.user || data;
+    if (user.role !== 'administrator') { window.location.href = '/'; return; }
+    currentUser = user;
     loadAffiliates();
     loadChampions();
   } catch {

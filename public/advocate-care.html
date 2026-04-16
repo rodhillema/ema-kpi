@@ -316,6 +316,9 @@ thead tr th.c-chev{background:var(--green)!important}
       <!-- TOOLBAR -->
       <div class="toolbar">
         <div class="toolbar-title">Advocates</div>
+        <select id="affiliateSlicer" style="display:none;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:0.5px;color:var(--dark);background:var(--white);cursor:pointer;" onchange="loadAdvocates()">
+          <option value="">All Affiliates</option>
+        </select>
         <div class="srch">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input type="text" id="search" placeholder="Search name, email, phone…" oninput="render()">
@@ -521,12 +524,32 @@ const TODAY = new Date("2026-04-14");
 var ADVOCATES = [];
 async function loadAdvocates() {
   try {
-    var res = await fetch('/api/advocates');
+    var url = '/api/advocates';
+    var sel = document.getElementById('affiliateSlicer');
+    if (sel && sel.value) url += '?affiliate_id=' + encodeURIComponent(sel.value);
+    var res = await fetch(url);
     if (res.ok) {
       ADVOCATES = await res.json();
       render();
     }
   } catch (e) { console.error('Failed to load advocates:', e); }
+}
+async function loadAffiliateSlicer() {
+  try {
+    var res = await fetch('/api/report-data');
+    if (!res.ok) return;
+    var data = await res.json();
+    var affiliates = data.affiliates || [];
+    if (affiliates.length === 0) return;
+    var sel = document.getElementById('affiliateSlicer');
+    sel.style.display = '';
+    affiliates.forEach(function(a) {
+      var opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.name;
+      sel.appendChild(opt);
+    });
+  } catch (e) { /* non-fatal */ }
 }
 
 // SAMPLE DATA (demo mode fallback)
@@ -993,6 +1016,7 @@ function applySession(u){
       if(d.user){
         if(d.user.role==='champion'){window.location.href='/';return;}
         applySession(d.user);
+        if(d.user.role==='administrator'||d.user.role==='supervisor') await loadAffiliateSlicer();
         await loadAdvocates();
       }
     }
@@ -1010,7 +1034,7 @@ async function doLogin(){
     const d=await r.json();
     if(!r.ok){errEl.textContent=d.error||"Login failed";errEl.className="login-err show";return;}
     const mr=await fetch("/api/me");
-    if(mr.ok){const md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);await loadAdvocates();}}
+    if(mr.ok){const md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);if(md.user.role==='administrator'||md.user.role==='supervisor')await loadAffiliateSlicer();await loadAdvocates();}}
   }catch(x){
     errEl.textContent="API unavailable. Demo mode: demo / coord / super (password: demo)";
     errEl.className="login-err show";

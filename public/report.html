@@ -1268,18 +1268,18 @@
       <th>Rate</th>
      </tr>
     </thead>
-    <tbody>
+    <tbody id="learningProgressBody">
      <tr>
-      <td><strong>NPP</strong> <span class="n-warn" style="cursor:help;">Interpret with caution<span class="tip">10 valid assessment pairs this quarter. Rates based on fewer than 20 pairs can shift noticeably as more moms complete the track. The direction is meaningful but the exact percentage may not yet be stable.</span></span></td>
-      <td>8</td><td>10</td><td><strong>80%</strong></td>
+      <td><strong>NPP</strong></td>
+      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
      </tr>
      <tr>
-      <td><strong>EP</strong> <span class="n-warn" style="cursor:help;background:var(--red-light);border-color:var(--red);color:var(--red-dark);">Too few to interpret<span class="tip">Only 5 valid assessment pairs this quarter. With this few moms, one result in either direction would change the rate by 20 points. This number shows something is happening but should not be read as a reliable rate yet.</span></span></td>
-      <td>3</td><td>5</td><td><strong>60%</strong></td>
+      <td><strong>EP</strong></td>
+      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
      </tr>
      <tr>
-      <td><strong>RR</strong> <span class="n-warn" style="cursor:help;background:var(--red-light);border-color:var(--red);color:var(--red-dark);">Too few to interpret<span class="tip">Only 3 valid assessment pairs this quarter. With 3 moms, the rate could be anywhere from 33% to 100% depending on one result. Do not use this figure for any comparison or trend analysis yet.</span></span></td>
-      <td>2</td><td>3</td><td><strong>67%</strong></td>
+      <td><strong>RR</strong></td>
+      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
      </tr>
     </tbody>
    </table>
@@ -1298,74 +1298,13 @@
  <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 24px;">
   <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin-bottom:18px;font-family:'Oswald',sans-serif;">Average Sessions per Completed Track</h3>
 
-  <!-- Each row: track name, full-width bar with relative sizing, numbers to the right.
-       Bars use flex proportional to session counts. All three bars are on the same
-       relative scale — NPP total bar width = 100% of container, EP and RR scale down.
-       We achieve this by wrapping each bar in a container whose max-width is proportional.
-       NPP max = 6.7 sessions (5.1+1.6). EP = 5.0 (3.9+1.1). RR = 3.3 (2.5+0.8).
-       NPP anchor = 100%. EP = 5.0/6.7 = 74.6%. RR = 3.3/6.7 = 49.3%.
-       Red dashed marker = number of curriculum lessons / NPP anchor:
-         NPP 10 req / (6.7 total × scale) — marker sits at 10/6.7 = 149% → clipped, so cap at 100% since 5.1+1.6 < 10
-         Actually markers show how close to required the avg completed got.
-         Simplest: show marker at (required / NPP_required) × 100% of the NPP-width container.
-         NPP: 10/10 = 100%. EP: 8/10 = 80%. RR: 4/10 = 40%. -->
-
-  <!-- NPP row -->
-  <div style="margin-bottom:20px;">
-   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-    <span style="font-size:14px;font-weight:700;color:var(--dark);">Nurturing Parenting (NPP)</span>
-    <span style="font-size:12px;color:var(--mid);">5.1 track &nbsp;&middot;&nbsp; 1.6 support</span>
-   </div>
-   <div style="position:relative;">
-    <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;">
-     <div style="background:var(--green);flex:51;"></div>
-     <div style="background:var(--yellow);flex:16;"></div>
-     <div style="flex:33;"></div>
-    </div>
-    <!-- Curriculum lessons marker: 10 lessons = 100% of bar -->
-    <div style="position:absolute;top:0;left:100%;width:2px;height:20px;border-left:2px dashed var(--red);transform:translateX(-2px);"></div>
-    <div style="font-size:9px;color:var(--red);text-align:right;margin-top:2px;">10 curriculum lessons</div>
-   </div>
+  <!-- Session bars rendered by JS from completions_by_track data -->
+  <div id="avgSessionsBars">
+   <div style="padding:24px 0;text-align:center;color:var(--mid);font-style:italic;font-size:13px;">Pending — per-track completed session averages not yet available from API</div>
   </div>
 
-  <!-- EP row: total avg = 5.0, scaled to 5.0/6.7 = 74.6% width -->
-  <div style="margin-bottom:20px;">
-   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-    <span style="font-size:14px;font-weight:700;color:var(--dark);">Empowered Parenting (EP)</span>
-    <span style="font-size:12px;color:var(--mid);">3.9 track &nbsp;&middot;&nbsp; 1.1 support</span>
-   </div>
-   <div style="position:relative;width:74.6%;">
-    <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;">
-     <div style="background:var(--green);flex:39;"></div>
-     <div style="background:var(--yellow);flex:11;"></div>
-     <div style="flex:24;"></div>
-    </div>
-    <!-- Curriculum lessons marker: 8 lessons = 8/10 = 80% of NPP width = 80/74.6 = 107% → cap, show at right edge -->
-    <div style="position:absolute;top:0;right:0;width:2px;height:20px;border-left:2px dashed var(--red);"></div>
-    <div style="font-size:9px;color:var(--red);text-align:right;margin-top:2px;">8 curriculum lessons</div>
-   </div>
-  </div>
-
-  <!-- RR row: total avg = 3.3, scaled to 3.3/6.7 = 49.3% width -->
-  <div style="margin-bottom:16px;">
-   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-    <span style="font-size:14px;font-weight:700;color:var(--dark);">Roadmap to Resilience (RR)</span>
-    <span style="font-size:12px;color:var(--mid);">2.5 track &nbsp;&middot;&nbsp; 0.8 support</span>
-   </div>
-   <div style="position:relative;width:49.3%;">
-    <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;">
-     <div style="background:var(--green);flex:25;"></div>
-     <div style="background:var(--yellow);flex:8;"></div>
-     <div style="flex:7;"></div>
-    </div>
-    <!-- Curriculum lessons marker: 4 lessons = 4/10 = 40% of NPP width = 40/49.3 = 81% of this bar -->
-    <div style="position:absolute;top:0;left:81.1%;width:2px;height:20px;border-left:2px dashed var(--red);"></div>
-    <div style="font-size:9px;color:var(--red);margin-top:2px;margin-left:81.1%;">4 curriculum lessons</div>
-   </div>
-  </div>
-
-  <!-- Legend -->
-  <div style="display:flex;gap:20px;margin-top:4px;font-size:11px;color:var(--mid);flex-wrap:wrap;">
+  <!-- Legend (shown once JS populates bars) -->
+  <div id="avgSessionsLegend" style="display:none;gap:20px;margin-top:4px;font-size:11px;color:var(--mid);flex-wrap:wrap;">
    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:2px;background:var(--green);flex-shrink:0;"></div>Track sessions (curriculum)</div>
    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:2px;background:var(--yellow);flex-shrink:0;"></div>Support sessions (relational check-ins)</div>
    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:2px;border-top:2px dashed var(--red);flex-shrink:0;"></div>Number of track curriculum lessons</div>
@@ -2187,6 +2126,13 @@
      }
      return 0;
     }
+    // Exact-match variant — prevents 'paired' matching 'waiting_to_be_paired'
+    function getPipeCountExact(arr, key) {
+     for (var p = 0; p < arr.length; p++) {
+      if ((arr[p].advocate_status || arr[p].advocate_sub_status || '').toLowerCase() === key.toLowerCase()) return arr[p].count || 0;
+     }
+     return 0;
+    }
 
     // "Active During Q1" - stacked bar + legend with 4 segments
     // Group facilitators, Paired 1:1, Waiting to be paired, Taking a break
@@ -2230,16 +2176,21 @@
     }
 
     // "Q1 Activity" - five 24px numbers: Application Received, Trained, Approved, Became Active, Became Inactive
-    // We can map from pipeline.by_status if available
+    // These are TOTAL pipeline counts (not Q1-scoped) — best available from advocate_pipeline.by_sub_status
     var advActivityGrid = advocatesCard.querySelector('div[style*="display:grid"][style*="grid-template-columns:repeat(5"]');
-    if (advActivityGrid && pipeByStatus.length > 0) {
+    if (advActivityGrid && pipeBySubStatus.length > 0) {
      var advQ1Nums = advActivityGrid.querySelectorAll('div[style*="font-size:24px"]');
      if (advQ1Nums.length >= 5) {
-      advQ1Nums[0].textContent = fmt(getPipeCount(pipeByStatus, 'applied') || getPipeCount(pipeByStatus, 'application'));
-      advQ1Nums[1].textContent = fmt(getPipeCount(pipeByStatus, 'trained') || getPipeCount(pipeByStatus, 'training'));
-      advQ1Nums[2].textContent = fmt(getPipeCount(pipeByStatus, 'approved'));
-      advQ1Nums[3].textContent = fmt(getPipeCount(pipeByStatus, 'active'));
-      advQ1Nums[4].textContent = fmt(getPipeCount(pipeByStatus, 'inactive') || getPipeCount(pipeByStatus, 'stepped'));
+      // Application Received → Interested + In_Training (prospects in pipeline)
+      advQ1Nums[0].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'interested') + getPipeCountExact(pipeBySubStatus, 'in_training'));
+      // Trained → In_Training
+      advQ1Nums[1].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'in_training'));
+      // Approved → Training_Completed
+      advQ1Nums[2].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'training_completed'));
+      // Became Active → Waiting_To_Be_Paired + Paired (active advocates)
+      advQ1Nums[3].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'waiting_to_be_paired') + getPipeCountExact(pipeBySubStatus, 'paired'));
+      // Became Inactive → Taking_A_Break
+      advQ1Nums[4].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'taking_a_break'));
      }
     }
    }

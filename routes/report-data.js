@@ -15,7 +15,9 @@ const PERIOD_END = '2026-03-31';
 const PERIOD_LABEL = 'Q1 2026';
 
 // Roles that see all affiliates
-const ORG_WIDE_ROLES = ['administrator', 'supervisor'];
+// Only administrator is org-wide by default. Supervisor is affiliate-scoped.
+// Champions are org-wide only if they have no affiliateId (checked at line 36).
+const ORG_WIDE_ROLES = ['administrator'];
 
 // Required sessions per track for fidelity
 const REQUIRED_SESSIONS = {

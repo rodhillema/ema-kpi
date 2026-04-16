@@ -474,6 +474,7 @@ router.get('/', async (req, res) => {
           AND p."status"::text = 'pairing_complete'
           AND p."completed_on" >= '${PERIOD_START}'
           AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
           AND m."deleted_at" = 0
           ${affWhere}
         GROUP BY t."title", p."complete_reason_sub_status"::text, p."incomplete_reason_sub_status"::text
@@ -508,6 +509,7 @@ router.get('/', async (req, res) => {
           AND p."status"::text = 'pairing_complete'
           AND p."completed_on" >= '${PERIOD_START}'
           AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
           AND m."deleted_at" = 0
           ${affWhere}
       `, affParams),
@@ -522,6 +524,7 @@ router.get('/', async (req, res) => {
           AND p."complete_reason_sub_status" IS NOT NULL
           AND p."completed_on" >= '${PERIOD_START}'
           AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
           AND m."deleted_at" = 0
           ${affWhere}
         GROUP BY p."advocacy_type"::text
@@ -539,6 +542,7 @@ router.get('/', async (req, res) => {
         WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
           AND p."completed_on" >= '${PERIOD_START}'
           AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
           AND m."deleted_at" = 0
           ${affWhere}
         GROUP BY t."title", t."language_type"::text
@@ -555,6 +559,7 @@ router.get('/', async (req, res) => {
           WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
             AND p."complete_reason_sub_status" IS NOT NULL
             AND p."completed_on" >= '${PERIOD_START}' AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
             AND m."deleted_at" = 0 ${affWhere}
         ),
         with_scores AS (

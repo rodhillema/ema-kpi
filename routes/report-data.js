@@ -682,8 +682,13 @@ router.get('/', async (req, res) => {
       // ─── KPI Calculations ────────────────────────────────────
 
       // KPI 1 — Family Preservation Rate (target 85%)
-      // Denominator: children linked to active moms with FWA in last 90 days
-      // Numerator: of those, children NOT permanently removed
+      // Denominator: all children linked to active moms with valid in-window FWA
+      // Numerator: ONLY children with Prevention % impact:
+      //   - prevented_from_cps_involvement
+      //   - prevented_from_foster_care_placement
+      // Everything else (prevented_from_permanent_removal, temporary_removal,
+      // permanent_removal) is in denominator but NOT numerator.
+      // Reference: Family Preservation Impact methodology
       pool.query(`
         WITH moms_with_current_fwa AS (
           SELECT ar."momId"
@@ -696,7 +701,7 @@ router.get('/', async (req, res) => {
         )
         SELECT
           COUNT(c."id")::int AS denominator,
-          SUM(CASE WHEN c."family_preservation_impact" IS DISTINCT FROM 'permanent_removal' THEN 1 ELSE 0 END)::int AS numerator
+          SUM(CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN 1 ELSE 0 END)::int AS numerator
         FROM "Child" c
         JOIN moms_with_current_fwa f ON f."momId" = c."mom_id"
         WHERE c."deleted_at" = 0

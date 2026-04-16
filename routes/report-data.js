@@ -119,6 +119,8 @@ router.get('/', async (req, res) => {
       fwaCurrencyByAffiliate,
       trackCompletions,
       trackCompletionsExpanded,
+      completionsByFormat,
+      completionsByTrack,
       sessionDepth,
       sessionsByTrack,
       referralSources,
@@ -509,6 +511,37 @@ router.get('/', async (req, res) => {
           ${affWhere}
       `, affParams),
 
+      // ─── Completions by delivery format (1:1 vs group) ─────
+      pool.query(`
+        SELECT p."advocacy_type"::text AS advocacy_type, COUNT(*)::int AS count
+        FROM "Pairing" p
+        JOIN "Mom" m ON m."id" = p."momId"
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
+          AND p."completed_on" >= '${PERIOD_START}'
+          AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND m."deleted_at" = 0
+          ${affWhere}
+        GROUP BY p."advocacy_type"::text
+      `, affParams),
+
+      // ─── Completions by track + language ────────────────────
+      pool.query(`
+        SELECT t."title" AS track_title, t."language_type"::text AS language,
+          COUNT(*)::int AS total_closed,
+          SUM(CASE WHEN p."complete_reason_sub_status" IS NOT NULL THEN 1 ELSE 0 END)::int AS completed,
+          SUM(CASE WHEN p."incomplete_reason_sub_status" IS NOT NULL THEN 1 ELSE 0 END)::int AS incomplete
+        FROM "Pairing" p
+        JOIN "Track" t ON t."id" = p."trackId"
+        JOIN "Mom" m ON m."id" = p."momId"
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
+          AND p."completed_on" >= '${PERIOD_START}'
+          AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND m."deleted_at" = 0
+          ${affWhere}
+        GROUP BY t."title", t."language_type"::text
+        ORDER BY total_closed DESC
+      `, affParams),
+
       // Session depth per active pairing (for fidelity check)
       pool.query(`
         SELECT
@@ -566,31 +599,19 @@ router.get('/', async (req, res) => {
       // ─── NEW: Referral Sources ──────────────────────────────
 
       pool.query(`
-        WITH ${INTAKE_CTE}
         SELECT
-          m."referral_type_c"::text AS referral_source,
+          COALESCE(a."name", 'Unknown / Not Recorded') AS referral_source,
           COUNT(*)::int AS referrals_received,
-          SUM(CASE WHEN EXISTS (
-              SELECT 1 FROM "Pairing" p
-              WHERE p."momId" = m."id"
-                AND p."deleted_at" = 0
-                AND p."status"::text IN ('paired', 'pairing_complete')
-            )
-          THEN 1 ELSE 0 END)::int AS intakes_completed,
-          SUM(CASE WHEN NOT EXISTS (
-              SELECT 1 FROM "Pairing" p
-              WHERE p."momId" = m."id"
-                AND p."deleted_at" = 0
-                AND p."status"::text IN ('paired', 'pairing_complete')
-            )
-          THEN 1 ELSE 0 END)::int AS pending
+          SUM(CASE WHEN m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS intakes_completed,
+          SUM(CASE WHEN m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
+          SUM(CASE WHEN m."prospect_status"::text IN ('prospect', 'prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending
         FROM "Mom" m
-        JOIN intake_dates id ON id.mom_id = m."id"
+        LEFT JOIN "Agency" a ON a."id" = m."agency_id"
         WHERE m."deleted_at" = 0
-          AND id.best_intake_date >= '${PERIOD_START}'
-          AND id.best_intake_date <= '${PERIOD_END} 23:59:59'
+          AND m."created_at" >= '${PERIOD_START}'
+          AND m."created_at" <= '${PERIOD_END} 23:59:59'
           ${affWhere}
-        GROUP BY m."referral_type_c"::text
+        GROUP BY COALESCE(a."name", 'Unknown / Not Recorded')
         ORDER BY referrals_received DESC
       `, affParams),
 
@@ -955,6 +976,8 @@ router.get('/', async (req, res) => {
         stall_buckets: stallBuckets.rows[0],
         track_completions: trackCompletions.rows,
         track_completions_expanded: trackCompletionsExpanded.rows[0],
+        completions_by_format: completionsByFormat.rows,
+        completions_by_track: completionsByTrack.rows,
         session_depth: sessionDepth.rows,
         sessions_by_track: sessionsByTrack.rows,
         required_sessions: REQUIRED_SESSIONS,

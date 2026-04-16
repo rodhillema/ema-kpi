@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  Section 2 · Trellis Live · Advocate Care Report             ║
+     ║  Sub-page of hub.html. Session shared via cookie on same     ║
+     ║  domain. Nav/footer match hub.html exactly.                  ║
+     ║                                                              ║
+     ║  RD INTEGRATION POINTS:                                      ║
+     ║  · Replace ADVOCATES array with live query results            ║
+     ║  · Confirm data refresh cadence for freshness label           ║
+     ║  · Champions should NOT access this route (Section 2).        ║
+     ║    If role=champion, redirect to hub.html.                    ║
+     ║  · See separate V1 rollout to-do list for full task list.     ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advocate Care Report · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* body default = login overlay visible · body.logged-in = portal-view visible */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fff3dc;
+  --pink:#f9ece8;--lpink:#fdf7f3;
+  --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
+  --faint:#f4f6f3;--white:#fff;
+}
+html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
+
+/* ── LOGIN OVERLAY ── */
+.login-view{display:flex;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.logged-in .login-view{display:none}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:5px}
+.field input{width:100%;font-family:'Lato',sans-serif;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--dark);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green)}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;box-shadow:0 2px 8px rgba(236,72,47,.2);transition:background .15s,transform .1s}
+.login-btn:hover{background:var(--red-dk);transform:translateY(-1px)}
+.login-trellis{display:flex;align-items:center;justify-content:center;margin-top:16px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;transition:color .15s}
+.login-trellis:hover{color:var(--green)}
+
+/* ── PORTAL VIEW ── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+
+/* ── NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{height:30px;width:auto;display:block}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;position:relative}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 22px;min-width:0}
+
+/* ── REPORT HEADER (Style C: warm cream + red-orange accent) ── */
+.report-hdr{background:var(--lpink);border-bottom:2px solid var(--red);padding:14px 26px;margin:0 -26px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rh-title{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark)}
+.rh-fresh{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--red);border-radius:20px;padding:3px 10px;white-space:nowrap;position:relative;cursor:help}
+
+/* ── FRESHNESS TOOLTIP (on Live pill) ── */
+.rh-fresh .fresh-tip{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:500;width:240px;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:9px 11px;box-shadow:0 4px 14px rgba(0,0,0,.12);font-size:11px;font-weight:400;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.5;white-space:normal;letter-spacing:0;text-transform:none}
+.rh-fresh:hover .fresh-tip,.rh-fresh:focus .fresh-tip{display:block}
+
+/* ── MISMATCH TOOLTIP ── */
+.sub-flag{position:relative;cursor:help}
+.sub-flag .flag-tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:500;width:220px;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.12);font-size:11px;font-style:normal;color:var(--dark);line-height:1.5;white-space:normal}
+.sub-flag:hover .flag-tip,.sub-flag:focus .flag-tip{display:block}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin:14px 0;flex-wrap:wrap}
+.toolbar-title{font-family:'Oswald',sans-serif;font-weight:300;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);flex:1}
+.srch{position:relative}
+.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--mid);fill:none;pointer-events:none;stroke-width:2}
+.srch input{font-family:'Lato',sans-serif;font-size:13px;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--dark);width:210px}
+.srch input:focus{outline:none;border-color:var(--green)}
+.active-count{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:.6px;color:var(--mid)}
+.clear-btn{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);background:none;border:1px solid var(--border);border-radius:5px;padding:6px 11px;cursor:pointer;transition:all .15s;display:none}
+.clear-btn.show{display:inline-block}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+.export-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--green);border:none;border-radius:5px;padding:7px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.export-btn:hover{background:var(--red)}
+.export-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── ACKNOWLEDGMENT OF RESPONSIBILITY MODAL (red design, matches circumstances report) ── */
+.aor-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
+.aor-overlay.show{display:flex}
+.aor-box{background:var(--white);border-radius:12px;padding:32px;width:100%;max-width:460px;box-shadow:0 12px 48px rgba(0,0,0,.18)}
+.aor-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);margin-bottom:6px}
+.aor-subtitle{font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:20px}
+.aor-ack{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-radius:8px;padding:14px;margin-bottom:20px}
+.aor-ack-title{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--red-dk);margin-bottom:8px}
+.aor-ack p{font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:6px}
+.aor-ack p:last-child{margin-bottom:0}
+.aor-confirm-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;cursor:pointer}
+.aor-confirm-row input{margin-top:2px;accent-color:var(--green);width:16px;height:16px;flex-shrink:0;cursor:pointer}
+.aor-confirm-row span{font-size:12px;color:var(--dark);line-height:1.5}
+.aor-actions{display:flex;gap:10px;justify-content:flex-end}
+.aor-cancel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--mid);background:none;border:1.5px solid var(--border);border-radius:6px;padding:9px 20px;cursor:pointer;transition:all .15s}
+.aor-cancel:hover{border-color:var(--dark);color:var(--dark)}
+.aor-confirm{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--white);background:var(--red);border:none;border-radius:6px;padding:9px 20px;cursor:pointer;opacity:.4;pointer-events:none;transition:all .15s}
+.aor-confirm.ready{opacity:1;pointer-events:auto}
+.aor-confirm.ready:hover{background:var(--red-dk)}
+
+/* ── FILTER PILLS ── */
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:24px;padding:0;margin-bottom:6px}
+.fpill{display:flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;background:var(--yellow-lt);color:#6d3a00;border:1px solid rgba(242,161,54,.35);border-radius:20px;padding:3px 8px 3px 10px;white-space:nowrap}
+.fpill button{background:none;border:none;cursor:pointer;color:#6d3a00;font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.6}
+.fpill button:hover{opacity:1}
+
+/* ── METRICS ── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+.metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 15px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative}
+.metric:hover{border-color:var(--green)}
+.metric.active{background:var(--green);border-color:var(--green)}
+.metric.active .metric-lbl{color:var(--green-lt);opacity:.75}
+.metric.active .metric-val{color:#fff}
+.metric.active .metric-sub{color:var(--green-lt);opacity:.6}
+.metric-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:3px}
+.metric-val{font-family:'Oswald',sans-serif;font-size:24px;font-weight:400;color:var(--green);line-height:1}
+.metric-sub{font-size:11px;color:var(--mid);margin-top:2px}
+
+/* ── TABLE ── */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:visible;position:relative}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+thead tr th{background:var(--green);font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green-lt);padding:10px 10px;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.07);position:relative}
+thead tr th:last-child{border-right:none}
+.th-inner{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.th-sort{cursor:pointer;display:flex;align-items:center;gap:3px;flex:1}
+.th-sort:hover{color:#fff}
+.th-sort.sorted{color:var(--yellow)}
+.arr{font-size:9px;opacity:.5}
+.th-sort.sorted .arr{opacity:1}
+.th-ficon{width:18px;height:18px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
+.th-ficon:hover{background:rgba(255,255,255,.15)}
+.th-ficon svg{width:9px;height:9px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:1.5;pointer-events:none}
+.th-ficon.on{background:rgba(242,161,54,.25);border-color:rgba(242,161,54,.5)}
+.th-ficon.on svg{stroke:var(--yellow)}
+.pop{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:170px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.pop.open{display:block}
+.pop-lbl{font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:8px}
+.pop select,.pop input[type=text],.pop input[type=date]{width:100%;font-family:'Lato',sans-serif;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none}
+.pop select:focus,.pop input:focus{border-color:var(--green)}
+.pop-clear{margin-top:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.pop-clear:hover{color:var(--red)}
+.chips{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
+.chip-opt{display:flex;align-items:center;gap:8px;font-family:'Lato',sans-serif;font-size:13px;color:var(--mid);cursor:pointer;padding:4px 6px;border-radius:5px;transition:background .1s}
+.chip-opt:hover{background:var(--faint);color:var(--dark)}
+.chip-opt:has(input:checked){color:var(--dark)}
+.chip-opt input[type=checkbox]{margin:0;accent-color:var(--green);cursor:pointer;width:13px;height:13px;flex-shrink:0}
+.date-range{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.date-range-row{display:flex;flex-direction:column;gap:3px}
+.date-range-lbl{font-size:11px;color:var(--mid);font-family:'Lato',sans-serif}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.c-sub{overflow:visible;position:relative}
+tr:last-child td{border-bottom:none}
+tr.dr{cursor:pointer;transition:background .1s}
+tr.dr:hover td{background:var(--lpink)}
+tr.dr.sel td{background:var(--pink)}
+.badge{display:inline-block;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.b-active{background:#d4ede4;color:#0d4a33}
+.b-prospect{background:var(--green-lt);color:var(--green)}
+.b-inactive{background:#fde8e5;color:#8b2212}
+.b-didnot{background:#eee;color:#666}
+.b-bday{background:var(--yellow);color:#3d2200}
+.cl{color:var(--green);text-decoration:none;font-size:12px}
+.cl:hover{text-decoration:underline}
+.no-results{padding:40px;text-align:center;color:var(--mid);font-size:13px;font-family:'Oswald',sans-serif;font-weight:300;letter-spacing:.5px}
+.sub-mismatch{font-style:italic;color:#b85d00}
+.copy-cell{display:flex;align-items:center;gap:5px;min-width:0}
+.copy-cell a{color:var(--green);text-decoration:none;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.copy-cell a:hover{text-decoration:underline}
+.copy-btn{flex-shrink:0;opacity:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:opacity .15s,background .15s;padding:0}
+.copy-btn svg{width:11px;height:11px;stroke:var(--mid);fill:none;stroke-width:1.8;pointer-events:none}
+.copy-btn:hover{background:var(--faint);border-color:var(--green)}
+.copy-btn:hover svg{stroke:var(--green)}
+.copy-btn.copied{opacity:1!important;background:var(--green-lt);border-color:var(--green)}
+.copy-btn.copied svg{stroke:var(--green)}
+tr.dr:hover .copy-btn{opacity:1}
+tr.dr.sel .copy-btn{opacity:1}
+.row-chevron{display:flex;align-items:center;justify-content:flex-end}
+.chev-btn{opacity:0;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:opacity .15s,background .15s,border-color .15s;flex-shrink:0}
+.chev-btn svg{width:12px;height:12px;stroke:var(--mid);fill:none;stroke-width:2;pointer-events:none}
+.chev-btn:hover{background:var(--green);border-color:var(--green)}
+.chev-btn:hover svg{stroke:#fff}
+tr.dr:hover .chev-btn{opacity:1}
+tr.dr.sel .chev-btn{opacity:1;background:var(--green);border-color:var(--green)}
+tr.dr.sel .chev-btn svg{stroke:#fff}
+.c-chev{width:36px;padding-left:0;padding-right:8px}
+thead tr th.c-chev{background:var(--green)!important}
+.c-name{width:14%}.c-status{width:9%}.c-sub{width:14%}
+.c-bday{width:9%}.c-email{width:16%}.c-phone{width:11%}
+.c-note{width:9%}.c-coord{width:auto}
+
+/* ── DRAWER ── */
+.drawer{position:fixed;top:58px;right:0;width:430px;height:calc(100vh - 58px);background:#fff;border-left:1px solid var(--border);overflow-y:auto;transform:translateX(100%);transition:transform .28s ease;z-index:200;box-shadow:-8px 0 30px rgba(0,0,0,.12)}
+.drawer.open{transform:translateX(0)}
+.d-top{background:var(--green);padding:18px 22px 16px;position:sticky;top:0;z-index:1}
+.d-close{position:absolute;top:12px;right:14px;background:none;border:1px solid rgba(255,255,255,.22);border-radius:4px;color:rgba(255,255,255,.6);font-size:12px;padding:3px 9px;cursor:pointer;font-family:'Lato',sans-serif;transition:all .15s}
+.d-close:hover{background:rgba(255,255,255,.1);color:#fff}
+.d-name{font-family:'Shrikhand',serif;font-size:20px;color:#fff;line-height:1.1;margin-bottom:4px}
+.d-sl{font-family:'Oswald',sans-serif;font-weight:300;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--green-lt);opacity:.85}
+.d-body{padding:18px 22px}
+.d-sec{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.d-sec:last-child{border-bottom:none;margin-bottom:0}
+.d-sec-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1.1px;color:var(--mid);margin-bottom:10px}
+.d-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.d-mi{background:var(--faint);border-radius:6px;padding:9px 11px}
+.d-mi-lbl{font-size:10px;color:var(--mid);margin-bottom:2px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.7px}
+.d-mi-val{font-size:16px;font-weight:400;color:var(--green);font-family:'Oswald',sans-serif}
+.d-cr{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.d-cr:last-child{border-bottom:none}
+.d-cl{font-size:11px;color:var(--mid);width:52px;flex-shrink:0}
+.d-cv a{color:var(--green);text-decoration:none}
+.d-cv a:hover{text-decoration:underline}
+.d-note{font-size:13px;line-height:1.75;color:var(--dark);background:var(--lpink);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:10px 13px}
+.d-note-dt{font-size:11px;color:var(--mid);margin-bottom:6px}
+.pr{display:grid;grid-template-columns:1fr auto;gap:6px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.pr:last-child{border-bottom:none}
+.pr-type{font-size:10px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.6px;color:var(--mid)}
+.pr-out{color:var(--mid);font-size:11px}
+.pr-out.curr{color:var(--green);font-weight:700;font-family:'Oswald',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.src-note{font-size:11px;color:var(--mid);margin-top:8px;line-height:1.5}
+
+/* ── FOOTER ── */
+.footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.footer-brand{opacity:.8}
+.footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
+.footer-integrity:hover{color:var(--white)}
+
+@media(max-width:860px){.nav{padding:0 16px}.main{padding:0 16px 22px}}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN OVERLAY ────────────────────────────────────────────────────
+     This overlay appears only on direct access without a session.
+     If user arrived via hub.html, /api/me returns a valid session
+     and this overlay is hidden immediately on page load.
+     ─────────────────────────────────────────────────────────────────── -->
+<div class="login-view">
+  <div class="login-box">
+    <img src="data:image/png;base64,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"
+ alt="ĒMA" class="login-logo">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Sign in with your Trellis credentials</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="your.name@ema.org" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
+    <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
+    <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Open Trellis Platform</a>
+  </div>
+</div>
+
+<!-- ── PORTAL VIEW (visible once session confirmed) ─────────────────── -->
+<div class="portal-view">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="/" class="nav-logo-link">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo">
+        <div class="nav-hub">Impact Hub</div>
+      </a>
+    </div>
+    <div class="nav-right">
+      <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
+      <div class="nav-sep"></div>
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar">?</div>
+        <div>
+          <div class="nav-name" id="nav-name">Loading</div>
+          <div class="nav-role" id="nav-role"></div>
+        </div>
+        <div class="nav-sep"></div>
+        <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <div class="main" id="mainPanel">
+
+      <!-- REPORT HEADER -->
+      <div class="report-hdr" id="reportHdr">
+        <div class="rh-title">Advocate Care Report</div>
+        <div class="rh-fresh" id="freshLabel" tabindex="0">Live
+          <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="toolbar-title">Advocates</div>
+        <div class="srch">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search" placeholder="Search name, email, phone…" oninput="render()">
+        </div>
+        <span class="active-count" id="activeCount"></span>
+        <button class="clear-btn" id="clearBtn" onclick="clearAll()">&#x2715; Clear all filters</button>
+        <button class="export-btn" onclick="requestExport()" title="Export filtered results as CSV">
+          <svg viewBox="0 0 16 16"><path d="M8 2v8M4 7l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v2h12v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export CSV
+        </button>
+      </div>
+
+      <div class="metrics" id="metricsBar"></div>
+
+      <div class="filter-pills" id="filterPills"></div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="c-name">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-name" onclick="setSort('name')">Name <span class="arr" id="arr-name">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-name" onclick="togglePop('name',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-name">
+                    <div class="pop-lbl">Name contains</div>
+                    <input type="text" id="pf-name" placeholder="e.g. Renata" oninput="syncPop('name');render()">
+                    <button class="pop-clear" onclick="clearPop('name')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-status">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-status" onclick="setSort('status')">Status <span class="arr" id="arr-status">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-status" onclick="togglePop('status',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-status">
+                    <div class="pop-lbl">Status</div>
+                    <div class="chips">
+                      <label class="chip-opt"><input type="checkbox" value="Active" onchange="updateSubOptions();render()"> Active</label>
+                      <label class="chip-opt"><input type="checkbox" value="Prospect" onchange="updateSubOptions();render()"> Prospect</label>
+                      <label class="chip-opt"><input type="checkbox" value="Inactive" onchange="updateSubOptions();render()"> Inactive</label>
+                      <label class="chip-opt"><input type="checkbox" value="Did Not Onboard" onchange="updateSubOptions();render()"> Did Not Onboard</label>
+                    </div>
+                    <button class="pop-clear" onclick="clearPop('status')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-sub">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-sub" onclick="setSort('sub')">Sub-status <span class="arr" id="arr-sub">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-sub" onclick="togglePop('sub',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-sub">
+                    <div class="pop-lbl">Sub-status</div>
+                    <div class="chips" id="sub-chips"></div>
+                    <button class="pop-clear" onclick="clearPop('sub')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-bday">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-bday" onclick="setSort('bday')">Birthday <span class="arr" id="arr-bday">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-bday" onclick="togglePop('bday',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-bday">
+                    <div class="pop-lbl">Birthday window</div>
+                    <select id="pf-bday" onchange="bdayModeChange()">
+                      <option value="">Any time</option>
+                      <option value="14">Next 14 days</option>
+                      <option value="30">Next 30 days</option>
+                      <option value="thismonth">This month</option>
+                      <option value="custom">Custom range…</option>
+                    </select>
+                    <div class="date-range" id="bday-custom" style="display:none">
+                      <div class="date-range-row"><div class="date-range-lbl">From (month/day)</div><input type="date" id="pf-bday-from" oninput="render()"></div>
+                      <div class="date-range-row"><div class="date-range-lbl">To (month/day)</div><input type="date" id="pf-bday-to" oninput="render()"></div>
+                    </div>
+                    <button class="pop-clear" onclick="clearPop('bday')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-email">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-email" onclick="setSort('email')">Email <span class="arr" id="arr-email">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-email" onclick="togglePop('email',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-email">
+                    <div class="pop-lbl">Email contains</div>
+                    <input type="text" id="pf-email" placeholder="e.g. @gmail" oninput="syncPop('email');render()">
+                    <button class="pop-clear" onclick="clearPop('email')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-phone">
+                <div class="th-inner">
+                  <span>Phone</span>
+                  <div class="th-ficon" id="fi-phone" onclick="togglePop('phone',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-phone">
+                    <div class="pop-lbl">Phone contains</div>
+                    <input type="text" id="pf-phone" placeholder="e.g. 954" oninput="syncPop('phone');render()">
+                    <button class="pop-clear" onclick="clearPop('phone')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-note">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-note" onclick="setSort('note')">Last note <span class="arr" id="arr-note">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-note" onclick="togglePop('note',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-note">
+                    <div class="pop-lbl">Note recency</div>
+                    <select id="pf-note" onchange="render()">
+                      <option value="">Any</option>
+                      <option value="overdue">Overdue (&gt;14 days)</option>
+                      <option value="recent">Recent (&lt;7 days)</option>
+                    </select>
+                    <button class="pop-clear" onclick="clearPop('note')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th class="c-coord">
+                <div class="th-inner">
+                  <span class="th-sort" id="s-coord" onclick="setSort('coord')">Coordinator <span class="arr" id="arr-coord">&#x2195;</span></span>
+                  <div class="th-ficon" id="fi-coord" onclick="togglePop('coord',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2"/></svg></div>
+                  <div class="pop" id="pop-coord">
+                    <div class="pop-lbl">Coordinator</div>
+                    <div class="chips" id="coord-chips"></div>
+                    <button class="pop-clear" onclick="clearPop('coord')">Clear</button>
+                  </div>
+                </div>
+              </th>
+              <th style="width:36px;background:var(--green);border-right:none;"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /main -->
+
+    <!-- DRAWER -->
+    <aside class="drawer" id="drawer">
+      <div class="d-top">
+        <button class="d-close" onclick="closeDrawer()">&#x2715; Close</button>
+        <div class="d-name" id="d-name"></div>
+        <div class="d-sl" id="d-sl"></div>
+      </div>
+      <div class="d-body">
+        <div class="d-sec">
+          <div class="d-sec-lbl">At a glance</div>
+          <div class="d-meta" id="d-meta"></div>
+        </div>
+        <div class="d-sec">
+          <div class="d-sec-lbl">Contact</div>
+          <div id="d-contact"></div>
+        </div>
+        <div class="d-sec">
+          <div class="d-sec-lbl">Latest coordinator note</div>
+          <div class="d-note-dt" id="d-note-dt"></div>
+          <div class="d-note" id="d-note"></div>
+        </div>
+        <div class="d-sec">
+          <div class="d-sec-lbl">Pairing history</div>
+          <div id="d-pairings"></div>
+          <div class="src-note">Pairings are pulled from the mom's record. When there's a conflict between an advocate's profile and a mom's profile, we use the mom's pairing first.</div>
+        </div>
+      </div>
+    </aside>
+
+  </div><!-- /layout -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">ĒMA · Every Mother's Advocate</div>
+    <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+  </div>
+
+<!-- ── ACKNOWLEDGMENT OF RESPONSIBILITY MODAL (red design) ────────────────── -->
+<div class="aor-overlay" id="aorOverlay">
+  <div class="aor-box">
+    <div class="aor-title">Export Advocate List</div>
+    <div class="aor-subtitle">This export contains protected health information (PHI) and personally identifiable information (PII) about program participants. It is subject to HIPAA and ĒMA data use policies.</div>
+    <div class="aor-ack">
+      <div class="aor-ack-title">Acknowledgment of Responsibility</div>
+      <p>This export contains confidential advocate information. You are authorized to access this data for program purposes only.</p>
+      <p>You must not share this file with unauthorized parties, use it for purposes outside of ĒMA program activities, or store it on unsecured personal devices.</p>
+      <p>Any suspected breach must be reported immediately to your supervisor and ĒMA leadership.</p>
+    </div>
+    <label class="aor-confirm-row">
+      <input type="checkbox" id="aorCheckbox" onchange="document.getElementById('aorConfirm').classList.toggle('ready',this.checked)">
+      <span>I acknowledge my responsibility for the safe handling of this data and confirm I am authorized to export it for ĒMA program use.</span>
+    </label>
+    <div class="aor-actions">
+      <button class="aor-cancel" onclick="closeAor()">Cancel</button>
+      <button class="aor-confirm" id="aorConfirm" onclick="confirmExport()">Download CSV</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /portal-view -->
+
+
+<script>
+const TODAY = new Date("2026-04-14");
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+var ADVOCATES = [];
+async function loadAdvocates() {
+  try {
+    var res = await fetch('/api/advocates');
+    if (res.ok) {
+      ADVOCATES = await res.json();
+      render();
+    }
+  } catch (e) { console.error('Failed to load advocates:', e); }
+}
+
+// SAMPLE DATA (demo mode fallback)
+const SAMPLE_ADVOCATES = [
+  {id:1,name:"Renata Voss",initials:"RV",ac:"#d4ede4",tc:"#0d4a33",
+   status:"Active",sub:"Paired",birthday:"1992-04-18",
+   email:"renata.voss@email.com",phone:"(954) 555-0112",coordinator:"Cristina G.",
+   monthsActive:14,totalPairings:3,activePairings:1,
+   latestNoteDate:"2026-04-01",
+   latestNote:"Renata is doing well with her current pairing. Checked in on session frequency; she confirmed meeting weekly. Flagged that her mom has missed two sessions but Renata is staying engaged and following up warmly. No concerns at this time.",
+   pairings:[
+     {mom:"Mom A",type:"1:1",start:"Jan 2025",end:"Jun 2025",outcome:"Completed Full Track"},
+     {mom:"Mom B",type:"1:1",start:"Jul 2025",end:"Nov 2025",outcome:"Client Choice"},
+     {mom:"Mom C",type:"1:1",start:"Feb 2026",end:"Present",outcome:"active"},
+   ]},
+  {id:2,name:"Deja Holloway",initials:"DH",ac:"#ecefe1",tc:"#123939",
+   status:"Active",sub:"Paired",birthday:"1995-06-02",
+   email:"deja.holloway@email.com",phone:"(954) 555-0183",coordinator:"Cristina G.",
+   monthsActive:7,totalPairings:2,activePairings:2,
+   latestNoteDate:"2026-03-28",
+   latestNote:"Deja took on her second pairing this month. She reached out proactively to ask clarifying questions about managing two moms, which showed self-awareness. Reminded her of the two-week check-in cadence. Will monitor capacity.",
+   pairings:[
+     {mom:"Mom D",type:"1:1",start:"Oct 2025",end:"Present",outcome:"active"},
+     {mom:"Mom E",type:"1:1",start:"Mar 2026",end:"Present",outcome:"active"},
+   ]},
+  {id:3,name:"Priya Menon",initials:"PM",ac:"#fde8e5",tc:"#8b2212",
+   status:"Active",sub:"Waiting to be Paired",birthday:"1988-04-03",
+   email:"priya.menon@email.com",phone:"(786) 555-0244",coordinator:"Charnelle B.",
+   monthsActive:22,totalPairings:6,activePairings:0,
+   latestNoteDate:"2026-04-05",
+   latestNote:"Priya completed her most recent pairing last month and celebrated her two-year milestone together. She is enthusiastic and ready for her next match. Bringing to staffing this week.",
+   pairings:[
+     {mom:"Mom F",type:"1:1",start:"Jun 2024",end:"Oct 2024",outcome:"Completed Full Track"},
+     {mom:"Mom G",type:"1:1",start:"Nov 2024",end:"Mar 2025",outcome:"Completed Full Track"},
+     {mom:"Mom H",type:"1:1",start:"Apr 2025",end:"Aug 2025",outcome:"Completed Full Track"},
+     {mom:"Mom I",type:"1:1",start:"Sep 2025",end:"Dec 2025",outcome:"Completed without Post Assessment"},
+     {mom:"Mom J",type:"1:1",start:"Jan 2026",end:"Feb 2026",outcome:"Relocated"},
+     {mom:"Mom K",type:"Group",start:"Feb 2026",end:"Mar 2026",outcome:"Completed Full Track"},
+   ]},
+  {id:4,name:"Tamara Osei",initials:"TO",ac:"#ecefe1",tc:"#123939",
+   status:"Prospect",sub:"In Training",birthday:"1999-08-14",
+   email:"tamara.osei@email.com",phone:"(305) 555-0177",coordinator:"Charnelle B.",
+   monthsActive:1,totalPairings:0,activePairings:0,
+   latestNoteDate:"2026-04-08",
+   latestNote:"Tamara is about halfway through training. Very engaged and submitted all pre-work on time. Background check initiated. Anticipate moving to Pending Final Steps within two weeks.",
+   pairings:[]},
+  {id:5,name:"Lila Guerrero",initials:"LG",ac:"#fff3e0",tc:"#6d3a00",
+   status:"Inactive",sub:"Taking a Break",birthday:"1990-04-27",
+   email:"lila.guerrero@email.com",phone:"(954) 555-0198",coordinator:"Cristina G.",
+   monthsActive:10,totalPairings:3,activePairings:0,
+   latestNoteDate:"2026-03-15",
+   latestNote:"Lila requested a pause after her last pairing closed. She mentioned needing time for a personal transition. Asked her to check back in May. No concerns about long-term re-engagement; she remains enthusiastic about the mission.",
+   pairings:[
+     {mom:"Mom L",type:"1:1",start:"Jul 2025",end:"Oct 2025",outcome:"Completed Full Track"},
+     {mom:"Mom M",type:"1:1",start:"Nov 2025",end:"Jan 2026",outcome:"Completed Full Track"},
+     {mom:"Mom N",type:"1:1",start:"Feb 2026",end:"Mar 2026",outcome:"Client Choice"},
+   ]},
+  {id:6,name:"Chinwe Eze",initials:"CE",ac:"#d4ede4",tc:"#0d4a33",
+   status:"Active",sub:"Paired",birthday:"1986-07-09",
+   email:"chinwe.eze@email.com",phone:"(954) 555-0221",coordinator:"Charnelle B.",
+   monthsActive:18,totalPairings:5,activePairings:2,
+   latestNoteDate:"2026-04-06",
+   latestNote:"Chinwe continues to manage two concurrent pairings with consistency and care. Both moms are progressing well. Noted exceptional Trellis documentation this cycle and recognized her verbally; she appreciated it.",
+   pairings:[
+     {mom:"Mom O",type:"1:1",start:"Oct 2024",end:"Feb 2025",outcome:"Completed Full Track"},
+     {mom:"Mom P",type:"Group",start:"Mar 2025",end:"Jul 2025",outcome:"Completed Full Track"},
+     {mom:"Mom Q",type:"1:1",start:"Aug 2025",end:"Dec 2025",outcome:"Completed without Support Sessions"},
+     {mom:"Mom R",type:"1:1",start:"Jan 2026",end:"Present",outcome:"active"},
+     {mom:"Mom S",type:"Group",start:"Feb 2026",end:"Present",outcome:"active"},
+   ]},
+  {id:7,name:"Aisha Bankole",initials:"AB",ac:"#fde8e5",tc:"#8b2212",
+   status:"Did Not Onboard",sub:"Unable to Contact",birthday:"1997-11-22",
+   email:"aisha.bankole@email.com",phone:"(561) 555-0104",coordinator:"Cristina G.",
+   monthsActive:0,totalPairings:0,activePairings:0,
+   latestNoteDate:"2026-03-20",
+   latestNote:"Made three attempts to reach Aisha after training completion with no response via email or phone. Marked as Unable to Contact per protocol. File closed.",
+   pairings:[]},
+];
+
+// "Taking a Break" appears under both Active (known coordinator workaround) and Inactive
+const SUB_BY_STATUS = {
+  "Active":          ["Paired","Waiting to be Paired","Taking a Break"],
+  "Prospect":        ["In Training","Training Completed","Pending Final Steps"],
+  "Inactive":        ["Taking a Break","Unresponsive","No Longer Interested","Relocated"],
+  "Did Not Onboard": ["Advocate Denied","Unable to Contact","No Longer Interested"],
+};
+const ALL_SUBS = [...new Set(Object.values(SUB_BY_STATUS).flat())];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function dbu(s){const b=new Date(s);let n=new Date(TODAY.getFullYear(),b.getMonth(),b.getDate());if(n<TODAY)n.setFullYear(TODAY.getFullYear()+1);return Math.ceil((n-TODAY)/86400000)}
+function dsa(s){return Math.floor((TODAY-new Date(s))/86400000)}
+function fmtS(s){return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+function fmtL(s){return new Date(s).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+function trunc(s,n){return s.length>n?s.slice(0,n)+"…":s}
+function sBadge(s){const m={"Active":"b-active","Prospect":"b-prospect","Inactive":"b-inactive","Did Not Onboard":"b-didnot"};return`<span class="badge ${m[s]||''}">${s}</span>`}
+
+function deriveSub(a){
+  if(a.status!=="Active")return{sub:a.sub,mismatch:false};
+  if(a.sub==="Paired"&&a.activePairings===0)return{sub:"Waiting to be Paired",mismatch:true};
+  if(a.sub==="Waiting to be Paired"&&a.activePairings>0)return{sub:"Paired",mismatch:true};
+  return{sub:a.sub,mismatch:false};
+}
+
+// Populate coordinator checkboxes from data
+(function(){
+  const coords=[...new Set(ADVOCATES.map(a=>a.coordinator))].sort();
+  const chips=document.getElementById("coord-chips");
+  coords.forEach(c=>{
+    const lbl=document.createElement("label");
+    lbl.className="chip-opt";
+    lbl.innerHTML=`<input type="checkbox" value="${c}" onchange="render()"> ${c}`;
+    chips.appendChild(lbl);
+  });
+})();
+
+// ── CASCADING SUB-STATUS ─────────────────────────────────────────────────────
+function updateSubOptions(){
+  const sel=getChecked("status");
+  const allowed=sel.length?[...new Set(sel.flatMap(s=>SUB_BY_STATUS[s]||[]))]:ALL_SUBS;
+  const container=document.getElementById("pop-sub").querySelector(".chips");
+  const wasChecked=new Set(getChecked("sub"));
+  container.innerHTML=allowed.map(sub=>`<label class="chip-opt"><input type="checkbox" value="${sub}" onchange="render()" ${wasChecked.has(sub)?"checked":""}> ${sub}</label>`).join("");
+}
+
+// ── POPOVER STATE ────────────────────────────────────────────────────────────
+let openPop=null;
+function togglePop(key,e){
+  e.stopPropagation();
+  const el=document.getElementById("pop-"+key);
+  const wasOpen=openPop===key;
+  closeAllPops();
+  if(!wasOpen){el.classList.add("open");openPop=key}
+}
+function closeAllPops(){
+  document.querySelectorAll(".pop").forEach(p=>p.classList.remove("open"));
+  openPop=null;
+}
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".pop")&&!e.target.closest(".th-ficon"))closeAllPops();
+});
+function syncPop(key){}
+function clearPop(key){
+  const el=document.getElementById("pop-"+key);
+  el.querySelectorAll("input[type=text],input[type=date]").forEach(i=>i.value="");
+  el.querySelectorAll("input[type=checkbox]").forEach(i=>i.checked=false);
+  el.querySelectorAll("select").forEach(i=>i.value="");
+  if(key==="bday")document.getElementById("bday-custom").style.display="none";
+  if(key==="status"){updateSubOptions();}
+  render();
+}
+function bdayModeChange(){
+  const val=document.getElementById("pf-bday").value;
+  document.getElementById("bday-custom").style.display=val==="custom"?"flex":"none";
+  render();
+}
+
+// ── FILTER READING ───────────────────────────────────────────────────────────
+function getChecked(popId){return[...document.querySelectorAll(`#pop-${popId} input[type=checkbox]:checked`)].map(i=>i.value)}
+function getFilters(){
+  const bdayVal=document.getElementById("pf-bday").value||"";
+  return{
+    q:       (document.getElementById("search").value||"").toLowerCase(),
+    name:    (document.getElementById("pf-name").value||"").toLowerCase(),
+    status:  getChecked("status"),
+    sub:     getChecked("sub"),
+    bday:    bdayVal,
+    bdayFrom:bdayVal==="custom"?(document.getElementById("pf-bday-from").value||""):"",
+    bdayTo:  bdayVal==="custom"?(document.getElementById("pf-bday-to").value||""):"",
+    email:   (document.getElementById("pf-email").value||"").toLowerCase(),
+    phone:   document.getElementById("pf-phone").value||"",
+    note:    document.getElementById("pf-note").value||"",
+    coord:   getChecked("coord"),
+  };
+}
+function hasAnyFilter(f){return f.q||f.name||f.status.length||f.sub.length||f.bday||f.email||f.phone||f.note||f.coord.length||activeCards.size>0}
+
+// ── SORT + CARD FILTERS ──────────────────────────────────────────────────────
+let sortCol="name",sortDir=1,openId=null;
+function setSort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render()}
+const activeCards=new Set();
+function toggleCard(key){activeCards.has(key)?activeCards.delete(key):activeCards.add(key);render()}
+
+// ── FILTER + SORT ────────────────────────────────────────────────────────────
+function getFiltered(){
+  const f=getFilters();
+  let list=ADVOCATES.filter(a=>{
+    if(f.q&&!a.name.toLowerCase().includes(f.q)&&!a.email.toLowerCase().includes(f.q)&&!a.phone.includes(f.q))return false;
+    if(f.name&&!a.name.toLowerCase().includes(f.name))return false;
+    if(f.status.length&&!f.status.includes(a.status))return false;
+    if(f.sub.length&&!f.sub.includes(deriveSub(a).sub))return false;
+    if(f.email&&!a.email.toLowerCase().includes(f.email))return false;
+    if(f.phone&&!a.phone.includes(f.phone))return false;
+    if(f.coord.length&&!f.coord.includes(a.coordinator))return false;
+    if(f.bday&&f.bday!=="custom"){
+      const d=dbu(a.birthday);
+      if(f.bday==="14"&&d>14)return false;
+      if(f.bday==="30"&&d>30)return false;
+      if(f.bday==="thismonth"&&new Date(a.birthday).getMonth()!==TODAY.getMonth())return false;
+    }
+    if(f.bday==="custom"&&(f.bdayFrom||f.bdayTo)){
+      const b=new Date(a.birthday);
+      const bmd=b.getMonth()*100+b.getDate();
+      if(f.bdayFrom){const fr=new Date(f.bdayFrom);const frmd=fr.getMonth()*100+fr.getDate();if(bmd<frmd)return false;}
+      if(f.bdayTo){const to=new Date(f.bdayTo);const tomd=to.getMonth()*100+to.getDate();if(bmd>tomd)return false;}
+    }
+    if(f.note){
+      const age=dsa(a.latestNoteDate);
+      if(f.note==="overdue"&&age<=14)return false;
+      if(f.note==="recent"&&age>=7)return false;
+    }
+    if(activeCards.has("active")&&a.status!=="Active")return false;
+    if(activeCards.has("paired")&&deriveSub(a).sub!=="Paired")return false;
+    if(activeCards.has("bdays30")&&dbu(a.birthday)>30)return false;
+    if(activeCards.has("overdue")&&dsa(a.latestNoteDate)<=14)return false;
+    return true;
+  });
+  list.sort((a,b)=>{
+    if(sortCol==="name")  return sortDir*a.name.localeCompare(b.name);
+    if(sortCol==="status")return sortDir*a.status.localeCompare(b.status);
+    if(sortCol==="sub")   return sortDir*a.sub.localeCompare(b.sub);
+    if(sortCol==="email") return sortDir*a.email.localeCompare(b.email);
+    if(sortCol==="coord") return sortDir*a.coordinator.localeCompare(b.coordinator);
+    if(sortCol==="bday")  return sortDir*(dbu(a.birthday)-dbu(b.birthday));
+    if(sortCol==="note")  return sortDir*(dsa(a.latestNoteDate)-dsa(b.latestNoteDate));
+    return 0;
+  });
+  return list;
+}
+
+function clearAll(){
+  document.getElementById("search").value="";
+  ["pf-name","pf-email","pf-phone"].forEach(id=>document.getElementById(id).value="");
+  ["pf-bday","pf-note"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("bday-custom").style.display="none";
+  document.querySelectorAll("#coord-chips input[type=checkbox]").forEach(i=>i.checked=false);
+  document.querySelectorAll(".pop input[type=checkbox]").forEach(i=>i.checked=false);
+  updateSubOptions();
+  activeCards.clear();
+  render();
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  const f=getFilters();
+  const list=getFiltered();
+
+  ["name","status","sub","bday","email","note","coord"].forEach(col=>{
+    const s=document.getElementById("s-"+col);
+    const a=document.getElementById("arr-"+col);
+    if(!s||!a)return;
+    s.classList.toggle("sorted",sortCol===col);
+    a.textContent=sortCol===col?(sortDir===1?"\u2191":"\u2193"):"\u2195";
+  });
+
+  let iconState={name:!!f.name,status:f.status.length>0,sub:f.sub.length>0,bday:!!f.bday,email:!!f.email,phone:!!f.phone,note:!!f.note,coord:f.coord.length>0};
+  Object.entries(iconState).forEach(([k,on])=>{const el=document.getElementById("fi-"+k);if(el)el.classList.toggle("on",on)});
+
+  let pills=document.getElementById("filterPills");
+  let pillDefs=[];
+  if(f.name)  pillDefs.push({label:"Name: "+f.name,       clear:()=>{document.getElementById("pf-name").value="";render()}});
+  f.status.forEach(v=>pillDefs.push({label:"Status: "+v,  clear:()=>{document.querySelector(`#pop-status input[value="${v}"]`).checked=false;render()}}));
+  f.sub.forEach(v=>   pillDefs.push({label:"Sub: "+v,     clear:()=>{document.querySelector(`#pop-sub input[value="${v}"]`).checked=false;render()}}));
+  if(f.bday)  pillDefs.push({label:"Birthday: "+document.getElementById("pf-bday").selectedOptions[0].text,clear:()=>{document.getElementById("pf-bday").value="";render()}});
+  if(f.email) pillDefs.push({label:"Email: "+f.email,     clear:()=>{document.getElementById("pf-email").value="";render()}});
+  if(f.phone) pillDefs.push({label:"Phone: "+f.phone,     clear:()=>{document.getElementById("pf-phone").value="";render()}});
+  if(f.note)  pillDefs.push({label:"Note: "+document.getElementById("pf-note").selectedOptions[0].text,clear:()=>{document.getElementById("pf-note").value="";render()}});
+  f.coord.forEach(v=>pillDefs.push({label:"Coordinator: "+v,clear:()=>{document.querySelector(`#coord-chips input[value="${v}"]`).checked=false;render()}}));
+  let cardLabels={active:"Active advocates",paired:"Currently paired",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
+  activeCards.forEach(k=>pillDefs.push({label:cardLabels[k],clear:()=>{activeCards.delete(k);render()}}));
+  pills.innerHTML=pillDefs.map((p,i)=>`<div class="fpill">${p.label}<button onclick="pillClear(${i})">\u2715</button></div>`).join("");
+  window._pillClearFns=pillDefs.map(p=>p.clear);
+
+  document.getElementById("clearBtn").classList.toggle("show",!!hasAnyFilter(f));
+  document.getElementById("activeCount").textContent=`${list.length} of ${ADVOCATES.length}`;
+
+  let active=ADVOCATES.filter(a=>a.status==="Active").length;
+  let paired=ADVOCATES.filter(a=>deriveSub(a).sub==="Paired").length;
+  let bdays30=ADVOCATES.filter(a=>dbu(a.birthday)<=30).length;
+  let overdue=ADVOCATES.filter(a=>dsa(a.latestNoteDate)>14).length;
+  let mCards=[
+    {key:"active",  lbl:"Active advocates",    val:active,  sub:`of ${ADVOCATES.length} total`},
+    {key:"paired",  lbl:"Currently paired",    val:paired,  sub:"active \u00b7 mom's pairing record"},
+    {key:"bdays30", lbl:"Birthdays in 30 days",val:bdays30, sub:"upcoming milestones"},
+    {key:"overdue", lbl:"Note overdue",         val:overdue, sub:"no note in >14 days"},
+  ];
+  document.getElementById("metricsBar").innerHTML=mCards.map(c=>`
+    <div class="metric${activeCards.has(c.key)?" active":""}" onclick="toggleCard('${c.key}')" title="Click to filter table">
+      <div class="metric-lbl">${c.lbl}</div>
+      <div class="metric-val">${c.val}</div>
+      <div class="metric-sub">${c.sub}</div>
+    </div>`).join("");
+
+  const tbody=document.getElementById("tableBody");
+  if(!list.length){tbody.innerHTML=`<tr><td colspan="9" class="no-results">No advocates match the current filters.</td></tr>`;return;}
+  tbody.innerHTML=list.map(a=>{
+    let days=dbu(a.birthday);
+    let age=dsa(a.latestNoteDate);
+    let bdaySoon=days<=30;
+    let noteWarn=age>14;
+    return`<tr class="dr${openId===a.id?" sel":""}" onclick="openDrawer(${a.id})">
+      <td style="font-weight:700;">${a.name}</td>
+      <td>${sBadge(a.status)}</td>
+      <td class="c-sub" style="font-size:12px;">${(()=>{const d=deriveSub(a);return d.mismatch?`<span class="sub-mismatch sub-flag" tabindex="0">${d.sub} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>`:`<span style="color:var(--mid)">${d.sub}</span>`})()}</td>
+      <td style="font-size:12px;">${fmtS(a.birthday)}${bdaySoon?` <span class="badge b-bday">${days}d</span>`:""}</td>
+      <td><div class="copy-cell">
+        <a href="mailto:${a.email}" onclick="event.stopPropagation()">${a.email}</a>
+        <button class="copy-btn" onclick="copyVal(event,'${a.email}',this)" title="Copy email">
+          <svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2H3.5A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>
+        </button>
+      </div></td>
+      <td><div class="copy-cell">
+        <a href="tel:${a.phone}" onclick="event.stopPropagation()" style="color:var(--mid)">${a.phone}</a>
+        <button class="copy-btn" onclick="copyVal(event,'${a.phone}',this)" title="Copy phone">
+          <svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2H3.5A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>
+        </button>
+      </div></td>
+      <td style="font-size:12px;color:${noteWarn?"var(--yellow)":"var(--mid)"};">${age}d ago</td>
+      <td style="font-size:12px;color:var(--mid);">${a.coordinator}</td>
+      <td><div class="row-chevron"><button class="chev-btn" onclick="event.stopPropagation();openDrawer(${a.id})" title="Open details">
+        <svg viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button></div></td>
+    </tr>`;
+  }).join("");
+}
+
+function pillClear(i){window._pillClearFns[i]&&window._pillClearFns[i]()}
+
+// ── DRAWER ───────────────────────────────────────────────────────────────────
+function openDrawer(id){
+  openId=id;
+  const a=ADVOCATES.find(x=>x.id===id);
+  document.getElementById("d-name").textContent=a.name;
+  const derived=deriveSub(a);
+  document.getElementById("d-sl").textContent=`${a.status} \u00b7 ${derived.sub}${derived.mismatch?" (corrected from mom's record)":""} \u00b7 ${a.monthsActive} mo \u00b7 ${a.coordinator}`;
+  const days=dbu(a.birthday);
+  document.getElementById("d-meta").innerHTML=`
+    <div class="d-mi"><div class="d-mi-lbl">Total pairings</div><div class="d-mi-val">${a.totalPairings}</div></div>
+    <div class="d-mi"><div class="d-mi-lbl">Active pairings</div><div class="d-mi-val">${a.activePairings}</div></div>
+    <div class="d-mi"><div class="d-mi-lbl">Months active</div><div class="d-mi-val">${a.monthsActive}</div></div>
+    <div class="d-mi"><div class="d-mi-lbl">Birthday</div><div class="d-mi-val" style="font-size:14px;">${fmtS(a.birthday)}${days<=30?` <span style="font-size:11px;color:var(--yellow)">(${days}d)</span>`:""}</div></div>`;
+  document.getElementById("d-contact").innerHTML=`
+    <div class="d-cr"><div class="d-cl">Email</div><div class="d-cv"><a href="mailto:${a.email}">${a.email}</a></div></div>
+    <div class="d-cr"><div class="d-cl">Phone</div><div class="d-cv"><a href="tel:${a.phone}">${a.phone}</a></div></div>
+    <div class="d-cr"><div class="d-cl">Coordinator</div><div class="d-cv">${a.coordinator}</div></div>`;
+  document.getElementById("d-note-dt").textContent=fmtL(a.latestNoteDate);
+  document.getElementById("d-note").textContent=a.latestNote;
+  document.getElementById("d-pairings").innerHTML=a.pairings.length
+    ?a.pairings.map(p=>`<div class="pr"><div><div style="font-weight:700;font-size:13px;">${p.mom}</div><div class="pr-type">${p.type} \u00b7 ${p.start} \u2013 ${p.end}</div></div><div class="pr-out${p.outcome==="active"?" curr":""}">${p.outcome==="active"?"Active":p.outcome}</div></div>`).join("")
+    :`<div style="font-size:13px;color:var(--mid);font-style:italic;">No pairings on record yet.</div>`;
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("mainPanel").classList.add("drawer-open");
+  render();
+}
+function closeDrawer(){
+  openId=null;
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("mainPanel").classList.remove("drawer-open");
+  render();
+}
+
+// ── COPY ─────────────────────────────────────────────────────────────────────
+function copyVal(e,val,btn){
+  e.stopPropagation();
+  navigator.clipboard.writeText(val).then(()=>{
+    btn.classList.add("copied");
+    const orig=btn.innerHTML;
+    btn.innerHTML='<svg viewBox="0 0 16 16" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    setTimeout(()=>{btn.classList.remove("copied");btn.innerHTML=orig},1400);
+  });
+}
+
+// ── EXPORT (IDENTIFIED DATA, GATED) ──────────────────────────────────────────
+function requestExport(){
+  const list=getFiltered();
+  if(!list.length){alert("No advocates to export with the current filters.");return;}
+  const cb=document.getElementById("aorCheckbox");
+  cb.checked=false;
+  document.getElementById("aorConfirm").classList.remove("ready");
+  document.getElementById("aorOverlay").classList.add("show");
+}
+function closeAor(){
+  document.getElementById("aorOverlay").classList.remove("show");
+}
+function confirmExport(){
+  closeAor();
+  const list=getFiltered();
+
+  // INTEGRATION: POST audit payload to /api/export-audit
+  const auditPayload={
+    user: document.getElementById("nav-name")?.textContent||"unknown",
+    role: document.getElementById("nav-role")?.textContent||"unknown",
+    timestamp: new Date().toISOString(),
+    recordCount: list.length,
+    recordIds: list.map(a=>a.id),
+    filters: {
+      search: document.getElementById("search")?.value||"",
+    }
+  };
+  console.log("[AUDIT] Identified data export:", auditPayload);
+
+  // Post audit to server
+  fetch('/api/export-audit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      timestamp: new Date().toISOString(),
+      recordCount: list.length,
+      recordIds: list.map(a => a.id),
+      filters: {
+        search: document.getElementById("search")?.value||"",
+      }
+    })
+  }).catch(e => console.error('Audit log failed:', e));
+
+  // Build CSV
+  const hdr=["Name","Status","Sub-status","Birthday","Email","Phone","Last Note Date","Days Since Note","Coordinator","Months Active","Total Pairings","Active Pairings"];
+  const rows=[hdr];
+  list.forEach(a=>{
+    const d=deriveSub(a);
+    rows.push([
+      a.name,
+      a.status,
+      d.sub+(d.mismatch?" (corrected)":""),
+      a.birthday,
+      a.email,
+      a.phone,
+      a.latestNoteDate,
+      dsa(a.latestNoteDate),
+      a.coordinator,
+      a.monthsActive,
+      a.totalPairings,
+      a.activePairings
+    ]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download="advocate-care-report-"+TODAY.toISOString().slice(0,10)+".csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── SESSION ──────────────────────────────────────────────────────────────────
+const ROLE_LABELS={"coordinator":"Coordinator","supervisor":"Supervisor","champion":"Champion","administrator":"HQ Admin"};
+const DEMO_USERS={"demo":{role:"administrator",firstName:"Cristina",lastName:"R."},"coord":{role:"coordinator",firstName:"Sarah",lastName:"M."},"super":{role:"supervisor",firstName:"Laura",lastName:"K."}};
+
+function applySession(u){
+  document.body.classList.add("logged-in");
+  const av=document.getElementById("nav-avatar");
+  const nm=document.getElementById("nav-name");
+  const rl=document.getElementById("nav-role");
+  if(nm)nm.textContent=(u.firstName||"")+" "+(u.lastName||"");
+  if(rl)rl.textContent=ROLE_LABELS[u.role]||u.role;
+  if(av)av.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
+}
+
+(async function(){
+  try{
+    const r=await fetch("/api/me");
+    if(r.ok){
+      const d=await r.json();
+      if(d.user){
+        if(d.user.role==='champion'){window.location.href='/';return;}
+        applySession(d.user);
+        await loadAdvocates();
+      }
+    }
+  }catch(x){}
+})();
+
+async function doLogin(){
+  const errEl=document.getElementById("login-err");
+  errEl.className="login-err";
+  const u=document.getElementById("login-user").value.trim().toLowerCase();
+  const p=document.getElementById("login-pass").value;
+  if(DEMO_USERS[u]&&p==="demo"){applySession(DEMO_USERS[u]);ADVOCATES=SAMPLE_ADVOCATES;render();return;}
+  try{
+    const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(!r.ok){errEl.textContent=d.error||"Login failed";errEl.className="login-err show";return;}
+    const mr=await fetch("/api/me");
+    if(mr.ok){const md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);await loadAdvocates();}}
+  }catch(x){
+    errEl.textContent="API unavailable. Demo mode: demo / coord / super (password: demo)";
+    errEl.className="login-err show";
+  }
+}
+
+document.getElementById("btn-signout").addEventListener("click",async function(ev){
+  ev.preventDefault();
+  try { await fetch("/api/logout", { method: "POST" }); } catch(e) {}
+  window.location.href = "/";
+});
+
+document.getElementById("login-user").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();document.getElementById("login-pass").focus();}});
+document.getElementById("login-pass").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();doLogin();}});
+
+updateSubOptions();
+render();
+</script>
+</body>
+</html>

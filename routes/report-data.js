@@ -121,6 +121,8 @@ router.get('/', async (req, res) => {
       trackCompletionsExpanded,
       completionsByFormat,
       completionsByTrack,
+      learningProgressByTrack,
+      avgSessionsPerTrack,
       sessionDepth,
       sessionsByTrack,
       referralSources,
@@ -543,6 +545,76 @@ router.get('/', async (req, res) => {
           ${affWhere}
         GROUP BY t."title", t."language_type"::text
         ORDER BY total_closed DESC
+      `, affParams),
+
+      // ─── Learning Progress by Track (pre/post improvement per track group) ──
+      pool.query(`
+        WITH completions AS (
+          SELECT p."id" AS pairing_id, p."momId", t."title" AS track_title
+          FROM "Pairing" p
+          JOIN "Track" t ON t."id" = p."trackId"
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
+            AND p."complete_reason_sub_status" IS NOT NULL
+            AND p."completed_on" >= '${PERIOD_START}' AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND m."deleted_at" = 0 ${affWhere}
+        ),
+        with_scores AS (
+          SELECT c.pairing_id, c.track_title,
+            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
+             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+             WHERE ar."momId" = c."momId" AND ar."type"::text = 'pre' AND ar."deleted_at" = 0
+               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS pre_avg,
+            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
+             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+             WHERE ar."momId" = c."momId" AND ar."type"::text = 'post' AND ar."deleted_at" = 0
+               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS post_avg
+          FROM completions c
+        )
+        SELECT
+          CASE
+            WHEN track_title ILIKE '%nurturing%' OR track_title ILIKE '%crianza con%' THEN 'NPP'
+            WHEN track_title ILIKE '%empowered%' OR track_title ILIKE '%crianza empoderada%' THEN 'EP'
+            WHEN track_title ILIKE '%roadmap%' OR track_title ILIKE '%ruta%' THEN 'RR'
+            ELSE 'Other'
+          END AS track_group,
+          COUNT(DISTINCT pairing_id)::int AS total_completions,
+          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL THEN pairing_id END)::int AS valid_pairs,
+          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL AND post_avg > pre_avg THEN pairing_id END)::int AS improved
+        FROM with_scores
+        GROUP BY 1 ORDER BY 1
+      `, affParams),
+
+      // ─── Average Sessions per Completed Track ──────────────
+      pool.query(`
+        SELECT
+          CASE
+            WHEN t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%' THEN 'NPP'
+            WHEN t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%' THEN 'EP'
+            WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%ruta%' THEN 'RR'
+            ELSE 'Other'
+          END AS track_group,
+          COUNT(DISTINCT p."id")::int AS completed_tracks,
+          ROUND(AVG(track_sess.cnt)::numeric, 1)::float AS avg_track_sessions,
+          ROUND(AVG(support_sess.cnt)::numeric, 1)::float AS avg_support_sessions
+        FROM "Pairing" p
+        JOIN "Track" t ON t."id" = p."trackId"
+        JOIN "Mom" m ON m."id" = p."momId"
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*)::int AS cnt FROM "Session" s
+          WHERE s."pairing_id" = p."id" AND s."deleted_at" = 0
+            AND s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session'
+        ) track_sess ON true
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*)::int AS cnt FROM "Session" s
+          WHERE s."pairing_id" = p."id" AND s."deleted_at" = 0
+            AND s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session'
+        ) support_sess ON true
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
+          AND p."complete_reason_sub_status" IS NOT NULL
+          AND p."completed_on" >= '${PERIOD_START}' AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+          AND m."deleted_at" = 0 ${affWhere}
+        GROUP BY 1 ORDER BY 1
       `, affParams),
 
       // Session depth per active pairing (for fidelity check)
@@ -1019,6 +1091,8 @@ router.get('/', async (req, res) => {
         track_completions_expanded: trackCompletionsExpanded.rows[0],
         completions_by_format: completionsByFormat.rows,
         completions_by_track: completionsByTrack.rows,
+        learning_progress_by_track: learningProgressByTrack.rows,
+        avg_sessions_per_track: avgSessionsPerTrack.rows,
         session_depth: sessionDepth.rows,
         sessions_by_track: sessionsByTrack.rows,
         required_sessions: REQUIRED_SESSIONS,

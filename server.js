@@ -39,6 +39,19 @@ app.use('/api/advocates', require('./routes/advocates'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
 app.use('/api/champion', require('./routes/champion-auth'));
 
+// Lightweight affiliate list — used by slicers (fast, no KPI queries)
+app.get('/api/affiliates', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 ORDER BY "name"`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Affiliates lookup error:', err);
+    res.status(500).json({ error: 'Failed to load affiliates' });
+  }
+});
+
 // Advocate lookup — queries shared User table (same DB as Reset Tool)
 app.get('/api/advocate-lookup/:id', async (req, res) => {
   try {

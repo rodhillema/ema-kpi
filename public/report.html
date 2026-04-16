@@ -1295,20 +1295,6 @@
 
  </div>
 
- <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 24px;">
-  <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin-bottom:18px;font-family:'Oswald',sans-serif;">Average Sessions per Completed Track</h3>
-  <div style="padding:20px 0;text-align:center;color:var(--mid);font-size:13px;line-height:1.6;">
-   <div style="font-size:11px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--yellow);margin-bottom:8px;">Deferred to Q2</div>
-   The majority of Q1 completed tracks are from moms who were migrated from the previous system (PromiseServes) in December 2025. Session recording practices differed between systems, making per-track session averages unreliable for this quarter. This section will be available starting Q2 2026 when all completions are from Trellis-native tracks.
-  </div>
-  <details class="kpi-detail" style="margin-top:14px;">
-   <summary>Data integrity notes</summary>
-   <div class="kd-body">
-    <div class="di-row"><div class="di-label">Lesson marker</div><div class="di-val">The dashed line shows how many curriculum lessons are in that track. When a bar ends before the marker, it may mean fewer sessions were recorded than expected — worth a documentation check.</div></div>
-    <div class="di-row"><div class="di-label">NPP note</div><div class="di-val di-warn">NPP is in phase-out. Lower counts may reflect program timing rather than disengagement.</div></div>
-   </div>
-  </details>
- </div>
 </div>
 
  </div>
@@ -1870,8 +1856,13 @@
      }
      var langLegends = langContainer.querySelectorAll('span[style*="font-weight:700"]');
      if (langLegends.length >= 2) {
-      langLegends[0].textContent = engPct + '%';
-      langLegends[1].textContent = spaPct + '%';
+      langLegends[0].innerHTML = engCount + ' \u00B7 ' + engPct + '%';
+      langLegends[1].innerHTML = spaCount + ' \u00B7 ' + spaPct + '%';
+     }
+     // Validation: language total should match total closed tracks
+     var totalClosedFromTce = (tce.total_completions || 0) + (tce.total_incompletes || 0);
+     if (totalLang !== totalClosedFromTce && totalLang > 0) {
+      console.warn('[DATA] Language split total (' + totalLang + ') does not match total closed tracks (' + totalClosedFromTce + ')');
      }
      break;
     }

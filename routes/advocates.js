@@ -21,6 +21,13 @@ router.get('/', async (req, res) => {
     const conditions = [
       'u."advocate_status" IS NOT NULL',
       'u."deleted_at" = 0',
+      // Exclude staff: users who have coordinator, supervisor, staff_advocate, or administrator roles
+      `NOT EXISTS (
+        SELECT 1 FROM "UserRole" ur2
+        JOIN "Role" r2 ON r2."id" = ur2."role_id"
+        WHERE ur2."user_id" = u."id" AND ur2."deleted_at" = 0
+          AND r2."key" IN ('coordinator', 'supervisor', 'staff_advocate', 'administrator')
+      )`,
     ];
     const params = [];
     let paramIdx = 1;
@@ -59,7 +66,7 @@ router.get('/', async (req, res) => {
     const whereClause = conditions.join(' AND ');
 
     const mainQuery = `
-      SELECT
+      SELECT DISTINCT ON (u."id")
         u."id",
         u."firstName",
         u."lastName",
@@ -89,7 +96,7 @@ router.get('/', async (req, res) => {
         LIMIT 1
       ) ln ON true
       WHERE ${whereClause}
-      ORDER BY u."lastName" ASC, u."firstName" ASC
+      ORDER BY u."id", u."lastName" ASC, u."firstName" ASC
     `;
 
     const { rows } = await pool.query(mainQuery, params);

@@ -79,7 +79,7 @@ app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/quarterly/q1-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname, 'public', 'advocate-care.html')));
-app.get('/integrity', (req, res) => res.status(200).send('<html><body style="font-family:Lato,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#5A5A5A"><h2>Data Integrity — Coming Soon</h2></body></html>'));
+app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
 
 app.listen(PORT, () => {
   console.log(`ĒMA KPI Dashboard running on port ${PORT}`);

@@ -55,6 +55,13 @@ body.logged-in .login-view{display:none}
 /* ── PORTAL VIEW ── */
 .portal-view{display:none;flex-direction:column;min-height:100vh}
 body.logged-in .portal-view{display:flex}
+/* Loading state */
+.adv-loading .main{visibility:hidden;height:0;overflow:hidden}
+.adv-loading .nav{visibility:visible}
+.adv-loading-overlay{display:none;text-align:center;padding:120px 20px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)}
+.adv-loading .adv-loading-overlay{display:block}
+.adv-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── NAV ── */
 .nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
@@ -279,7 +286,8 @@ thead tr th.c-chev{background:var(--green)!important}
 </div>
 
 <!-- ── PORTAL VIEW (visible once session confirmed) ─────────────────── -->
-<div class="portal-view">
+<div class="portal-view adv-loading">
+  <div class="adv-loading-overlay"><div class="adv-spinner"></div>Loading advocate data...</div>
 
   <!-- NAV -->
   <nav class="nav">
@@ -536,6 +544,7 @@ async function loadAdvocates() {
     var res = await fetch(url);
     if (res.ok) {
       ADVOCATES = await res.json();
+      document.querySelector('.portal-view').classList.remove('adv-loading');
       render();
     }
   } catch (e) { console.error('Failed to load advocates:', e); }
@@ -640,10 +649,10 @@ const SAMPLE_ADVOCATES = [
 
 // "Taking a Break" appears under both Active (known coordinator workaround) and Inactive
 const SUB_BY_STATUS = {
-  "Active":          ["Paired","Waiting to be Paired","Taking a Break"],
-  "Prospect":        ["In Training","Training Completed","Pending Final Steps"],
-  "Inactive":        ["Taking a Break","Unresponsive","No Longer Interested","Relocated"],
-  "Did Not Onboard": ["Advocate Denied","Unable to Contact","No Longer Interested"],
+  "Active":          ["Paired","Waiting To Be Paired","Taking A Break"],
+  "Prospect":        ["Interested","In Training","Training Completed","Pending Final Steps"],
+  "Inactive":        ["Taking A Break","Unresponsive","No Longer Interested","Relocated"],
+  "Did Not Onboard": ["Advocate Denied","Unable To Contact","No Longer Interested Onboard"],
 };
 const ALL_SUBS = [...new Set(Object.values(SUB_BY_STATUS).flat())];
 
@@ -834,10 +843,11 @@ function render(){
   document.getElementById("clearBtn").classList.toggle("show",!!hasAnyFilter(f));
   document.getElementById("activeCount").textContent=`${list.length} of ${ADVOCATES.length}`;
 
-  let active=ADVOCATES.filter(a=>a.status==="Active").length;
-  let paired=ADVOCATES.filter(a=>deriveSub(a).sub==="Paired").length;
-  let bdays30=ADVOCATES.filter(a=>dbu(a.birthday)<=30).length;
-  let overdue=ADVOCATES.filter(a=>dsa(a.latestNoteDate)>14).length;
+  let activeAdvocates=ADVOCATES.filter(a=>a.status==="Active");
+  let active=activeAdvocates.length;
+  let paired=activeAdvocates.filter(a=>deriveSub(a).sub==="Paired").length;
+  let bdays30=activeAdvocates.filter(a=>a.birthday&&dbu(a.birthday)<=30).length;
+  let overdue=activeAdvocates.filter(a=>a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
   let mCards=[
     {key:"active",  lbl:"Active advocates",    val:active,  sub:`of ${ADVOCATES.length} total`},
     {key:"paired",  lbl:"Currently paired",    val:paired,  sub:"active \u00b7 mom's pairing record"},
@@ -875,8 +885,8 @@ function render(){
           <svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2H3.5A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>
         </button>
       </div></td>
-      <td style="font-size:12px;color:${noteWarn?"var(--yellow)":"var(--mid)"};">${age}d ago</td>
-      <td style="font-size:12px;color:var(--mid);">${a.coordinator}</td>
+      <td style="font-size:12px;color:${noteWarn?"var(--yellow)":"var(--mid)"};">${a.latestNoteDate?(age<0?"Today":age+"d ago"):"No notes"}</td>
+      <td style="font-size:12px;color:var(--mid);">${a.coordinator||"Unassigned"}</td>
       <td><div class="row-chevron"><button class="chev-btn" onclick="event.stopPropagation();openDrawer('${a.id}')" title="Open details">
         <svg viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button></div></td>

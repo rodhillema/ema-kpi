@@ -1944,12 +1944,15 @@
 
    // ── Learning Progress by Track table
    var lpData = track.learning_progress_by_track || [];
+   // Sort: NPP first, EP second, RR third (match Completion Rate table order)
+   var trackOrder = { 'NPP': 1, 'EP': 2, 'RR': 3 };
+   lpData.sort(function(a, b) { return (trackOrder[a.track_group] || 99) - (trackOrder[b.track_group] || 99); });
    var lpBody = document.getElementById('learningProgressBody');
    if (lpBody && lpData.length > 0) {
     var lpHtml = '';
     lpData.forEach(function(r) {
      var rate = r.valid_pairs > 0 ? Math.round(r.improved / r.valid_pairs * 100) + '%' : '\u2014';
-     var nWarn = r.valid_pairs < 20 ? ' <span class="n-warn" style="cursor:help;font-size:10px;">n<20</span>' : '';
+     var nWarn = r.valid_pairs < 20 ? ' <span class="n-warn" style="cursor:help;font-size:10px;">Interpret with caution<span class="tip">Fewer than 20 assessment pairs this quarter. Rates based on small numbers can shift noticeably as more moms complete the track. The direction is meaningful but the exact percentage may not yet be stable.</span></span>' : '';
      lpHtml += '<tr><td><strong>' + r.track_group + '</strong>' + nWarn + '</td>';
      lpHtml += '<td>' + r.improved + '</td>';
      lpHtml += '<td>' + r.valid_pairs + '</td>';
@@ -2081,7 +2084,7 @@
   var N_THRESHOLD = 30;
   function nWarnBadge(n) {
    if (n == null || n >= N_THRESHOLD) return '';
-   return '<span class="n-warn">Small sample size</span>';
+   return '<span class="n-warn">Interpret with caution<span class="tip">This figure is based on a small number of records. The direction is meaningful but the exact number may shift as more data comes in.</span></span>';
   }
   document.querySelectorAll('[data-n]').forEach(function(el) {
    var n = parseInt(el.getAttribute('data-n'), 10);

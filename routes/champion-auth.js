@@ -11,6 +11,37 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { sendResetEmail } = require('../lib/email');
 
+// GET /api/champion/verify-token?token=xxx&type=invite|reset
+// Returns champion info (username, firstName) if token is valid — for displaying on set-password page
+router.get('/verify-token', async (req, res) => {
+  try {
+    const { token, type } = req.query;
+    if (!token) return res.status(400).json({ error: 'Token required' });
+
+    const tokenCol = type === 'reset' ? 'resetToken' : 'inviteToken';
+    const expiryCol = type === 'reset' ? 'resetExpiresAt' : 'inviteExpiresAt';
+
+    const result = await pool.query(
+      `SELECT "username", "firstName", "lastName", "email"
+       FROM "ChampionUser"
+       WHERE "${tokenCol}" = $1
+         AND "${expiryCol}" > NOW()
+         AND "deleted_at" = 0
+       LIMIT 1`,
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired link' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Token verify error:', err);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
 // POST /api/champion/set-password
 // Accepts invite token + new password, activates the champion account
 router.post('/set-password', async (req, res) => {

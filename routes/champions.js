@@ -73,10 +73,11 @@ router.post('/', async (req, res) => {
     const champion = rows[0];
 
     // Send invite email (fire-and-forget — don't block response on email delivery)
-    sendInviteEmail({ email, firstName, inviteToken }).catch(err => {
+    sendInviteEmail({ email, firstName, username, inviteToken }).catch(err => {
       console.error('Failed to send invite email to', email, err);
     });
 
+    console.log(`[AUDIT] Champion created: ${username} (${email}) by ${req.session.user.username}`);
     res.status(201).json(champion);
   } catch (err) {
     if (err.code === '23505') {
@@ -145,10 +146,34 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Champion not found or already disabled' });
     }
 
+    console.log(`[AUDIT] Champion disabled: ${id} by ${req.session.user.username}`);
     res.json({ success: true });
   } catch (err) {
     console.error('Error disabling champion:', err);
     res.status(500).json({ error: 'Failed to disable champion' });
+  }
+});
+
+// DELETE /:id/permanent — Permanently delete champion (hard delete)
+router.delete('/:id/permanent', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { rows } = await pool.query(`
+      DELETE FROM "ChampionUser"
+      WHERE "id" = $1
+      RETURNING "username", "email"
+    `, [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Champion not found' });
+    }
+
+    console.log(`[AUDIT] Champion permanently deleted: ${rows[0].username} (${rows[0].email}) by ${req.session.user.username}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting champion:', err);
+    res.status(500).json({ error: 'Failed to delete champion' });
   }
 });
 
@@ -163,18 +188,20 @@ router.post('/:id/resend-invite', async (req, res) => {
       UPDATE "ChampionUser"
       SET "inviteToken" = $1, "inviteExpiresAt" = $2
       WHERE "id" = $3 AND "deleted_at" = 0
-      RETURNING "email", "firstName"
+      RETURNING "email", "firstName", "username"
     `, [inviteToken, inviteExpiresAt, id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Champion not found' });
     }
 
-    const { email, firstName } = rows[0];
+    const { email, firstName, username } = rows[0];
 
-    sendInviteEmail({ email, firstName, inviteToken }).catch(err => {
+    sendInviteEmail({ email, firstName, username, inviteToken }).catch(err => {
       console.error('Failed to resend invite email to', email, err);
     });
+
+    console.log(`[AUDIT] Invite resent: ${username} (${email}) by ${req.session.user.username}`);
 
     res.json({ success: true });
   } catch (err) {

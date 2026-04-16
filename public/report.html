@@ -1547,10 +1547,21 @@
    if (!card) return;
    var kd = kpis[def.key];
    if (!kd || kd.rate === null || kd.rate === undefined) {
-    // No data - show pending
+    // No data - show pending and reset gauge
     card.classList.remove('on-track', 'close', 'below');
     var badge = card.querySelector('.kpi-badge');
-    if (badge) { badge.className = 'kpi-badge pending'; badge.textContent = 'Pending Data'; }
+    if (badge) { badge.className = 'kpi-badge pending'; badge.textContent = 'No Data for This Affiliate'; }
+    var svg = card.querySelector('svg');
+    if (svg) {
+     var texts = svg.querySelectorAll('text');
+     if (texts.length >= 1) texts[0].textContent = '\u2014';
+     if (texts.length >= 2) texts[1].textContent = 'no eligible data';
+     var circles = svg.querySelectorAll('circle');
+     if (circles.length >= 3) circles[2].setAttribute('stroke-dasharray', '0 376.9');
+     if (circles.length >= 4) circles[3].setAttribute('stroke-dasharray', '0 376.9');
+    }
+    var anchor = card.querySelector('.kpi-anchor-sm');
+    if (anchor) anchor.textContent = 'No moms with current FWA data for this affiliate';
     return;
    }
 

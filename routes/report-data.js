@@ -63,6 +63,8 @@ router.get('/', async (req, res) => {
     // ─── Intake Date CTE (reusable SQL fragment) ────────────
     // Derived from AuditLog per intake_date_methodology.md
     // Excludes PS-migrated moms (Nov 30 / Dec 17 2025 batches)
+    // V2: Uses WellnessAssessment.completed_ahead to detect link-based intakes
+    // instead of AuditLog blank updated_by_name rows (V1 approach)
     const INTAKE_CTE = `
       first_engaged AS (
         SELECT data->>'id' AS mom_id, MIN(created_at) AS coordinator_engaged_date
@@ -75,27 +77,21 @@ router.get('/', async (req, res) => {
         SELECT * FROM first_engaged
         WHERE DATE_TRUNC('day', coordinator_engaged_date) NOT IN ('2025-11-30', '2025-12-17')
       ),
-      first_self_complete AS (
-        SELECT
-          a.data->>'id' AS mom_id,
-          MIN(a.created_at) AS self_complete_date
-        FROM "AuditLog" a
-        JOIN organic_only oo ON oo.mom_id = a.data->>'id'
-        WHERE a."table" = 'Mom' AND a.action = 'Update'
-          AND a.data->>'prospect_status' = 'engaged_in_program'
-          AND (a.data->>'updated_by_name' IS NULL OR a.data->>'updated_by_name' = '')
-          AND a.created_at > oo.coordinator_engaged_date
-          AND EXTRACT(HOUR FROM a.created_at AT TIME ZONE 'America/New_York') NOT IN (5, 6)
-        GROUP BY a.data->>'id'
+      fwa_status AS (
+        SELECT DISTINCT ON ("mom_id") "mom_id", "completed_ahead", "completed_date"
+        FROM "WellnessAssessment"
+        WHERE "deleted_at" = 0
+        ORDER BY "mom_id", "created_at" ASC
       ),
       intake_dates AS (
         SELECT oo.mom_id,
-          CASE WHEN fsc.self_complete_date IS NOT NULL THEN fsc.self_complete_date
+          CASE WHEN fs."completed_ahead" = true AND fs."completed_date" IS NOT NULL
+               THEN fs."completed_date"
                ELSE oo.coordinator_engaged_date END AS best_intake_date,
-          CASE WHEN fsc.self_complete_date IS NOT NULL THEN 'link_based'
+          CASE WHEN fs."completed_ahead" = true THEN 'link_based'
                ELSE 'coordinator_led' END AS intake_method
         FROM organic_only oo
-        LEFT JOIN first_self_complete fsc ON fsc.mom_id = oo.mom_id
+        LEFT JOIN fwa_status fs ON fs."mom_id" = oo.mom_id
       )`;
 
     // ─── Run all independent queries in parallel ────────────
@@ -920,54 +916,9 @@ router.get('/', async (req, res) => {
 
       // ─── Intake Date (derived from AuditLog) ─────────────────
 
-      // Intake date methodology: derived from AuditLog prospect_status = 'engaged_in_program'
-      // Excludes PS-migrated moms (Nov 30 / Dec 17 2025 batches)
-      // Link-based intakes use first blank updated_by_name row after coordinator's engaged event
+      // Intake date V2: uses WellnessAssessment.completed_ahead for link-based detection
       pool.query(`
-        WITH first_engaged AS (
-          SELECT
-            data->>'id' AS mom_id,
-            MIN(created_at) AS coordinator_engaged_date
-          FROM "AuditLog"
-          WHERE "table" = 'Mom'
-            AND action = 'Update'
-            AND data->>'prospect_status' = 'engaged_in_program'
-          GROUP BY data->>'id'
-        ),
-        organic_only AS (
-          SELECT *
-          FROM first_engaged
-          WHERE DATE_TRUNC('day', coordinator_engaged_date)
-            NOT IN ('2025-11-30', '2025-12-17')
-        ),
-        first_self_complete AS (
-          SELECT
-            a.data->>'id' AS mom_id,
-            MIN(a.created_at) AS self_complete_date
-          FROM "AuditLog" a
-          JOIN organic_only oo ON oo.mom_id = a.data->>'id'
-          WHERE a."table" = 'Mom'
-            AND a.action = 'Update'
-            AND a.data->>'prospect_status' = 'engaged_in_program'
-            AND (a.data->>'updated_by_name' IS NULL OR a.data->>'updated_by_name' = '')
-            AND a.created_at > oo.coordinator_engaged_date
-            AND EXTRACT(HOUR FROM a.created_at AT TIME ZONE 'America/New_York') NOT IN (5, 6)
-          GROUP BY a.data->>'id'
-        ),
-        intake_dates AS (
-          SELECT
-            oo.mom_id,
-            CASE
-              WHEN fsc.self_complete_date IS NOT NULL THEN fsc.self_complete_date
-              ELSE oo.coordinator_engaged_date
-            END AS best_intake_date,
-            CASE
-              WHEN fsc.self_complete_date IS NOT NULL THEN 'link_based'
-              ELSE 'coordinator_led'
-            END AS intake_method
-          FROM organic_only oo
-          LEFT JOIN first_self_complete fsc ON fsc.mom_id = oo.mom_id
-        )
+        WITH ${INTAKE_CTE}
         SELECT
           COUNT(*)::int AS total_trellis_intakes,
           SUM(CASE WHEN intake_method = 'coordinator_led' THEN 1 ELSE 0 END)::int AS coordinator_led,

@@ -182,20 +182,24 @@ router.get('/', async (req, res) => {
       const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
       // Correct sub-status mismatches
-      const status = r.status;
-      const subStatus = r.subStatus;
+      // Format enum values: "Did_Not_Onboard" → "Did Not Onboard"
+      function fmtEnum(val) {
+        if (!val) return '';
+        return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+      const status = fmtEnum(r.status);
+      const subStatus = fmtEnum(r.subStatus);
       const activePairings = r.activePairings;
       const activeGroups = r.activeGroups;
       let correctedSubStatus = subStatus;
       let mismatch = false;
       if (status === 'Active' && subStatus === 'Paired') {
-        // Check if they actually have an active 1:1 pairing OR active group
         if (activePairings === 0 && activeGroups === 0) {
-          correctedSubStatus = 'Waiting_To_Be_Paired';
+          correctedSubStatus = 'Waiting To Be Paired';
           mismatch = true;
         }
       }
-      if (status === 'Active' && subStatus === 'Waiting_To_Be_Paired') {
+      if (status === 'Active' && (subStatus === 'Waiting To Be Paired' || subStatus === 'Waiting_To_Be_Paired')) {
         if (activePairings > 0 || activeGroups > 0) {
           correctedSubStatus = 'Paired';
           mismatch = true;
@@ -206,7 +210,7 @@ router.get('/', async (req, res) => {
         id: r.id,
         name: `${firstName} ${lastName}`.trim(),
         initials,
-        status: r.status,
+        status: status,
         subStatus: correctedSubStatus,
         sub: correctedSubStatus,  // frontend uses 'sub' field name
         mismatchFlag: mismatch,

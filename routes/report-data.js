@@ -128,6 +128,7 @@ router.get('/', async (req, res) => {
       advocateSubStatus,
       childWelfareInvolvement,
       familiesServedExpanded,
+      advocateActiveBreakdown,
       advocateQ1Activity,
       kpi1,
       kpi1Excluded,
@@ -755,6 +756,41 @@ router.get('/', async (req, res) => {
         ORDER BY u."advocate_sub_status"::text
       `, affParams),
 
+      // ─── Advocate Active Breakdown (priority-based unique count) ──
+      // Each advocate counted once in priority order:
+      // 1. Group Facilitator (has active AdvocacyGroup)
+      // 2. Paired 1:1 (has active pairing on mom's side, not already Group)
+      // 3. Waiting to be Paired (sub-status + no pairing)
+      // 4. Taking a Break (Active + Taking a Break + no pairing)
+      pool.query(`
+        WITH active_advocates AS (
+          SELECT u."id"
+          FROM "User" u
+          WHERE u."deleted_at" = 0
+            AND u."advocate_status"::text = 'Active'
+            AND NOT EXISTS (SELECT 1 FROM "UserRole" ur JOIN "Role" r ON r."id" = ur."role_id"
+                            WHERE ur."user_id" = u."id" AND ur."deleted_at" = 0
+                            AND r."key" IN ('coordinator','supervisor','staff_advocate','administrator'))
+            ${affWhereUser}
+        ),
+        categorized AS (
+          SELECT u."id",
+            u."advocate_sub_status"::text AS sub_status,
+            EXISTS (SELECT 1 FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."state"::text = 'active' AND ag."deleted_at" = 0) AS has_group,
+            EXISTS (SELECT 1 FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."status"::text = 'paired' AND p."deleted_at" = 0) AS has_pairing
+          FROM "User" u
+          JOIN active_advocates aa ON aa."id" = u."id"
+        )
+        SELECT
+          SUM(CASE WHEN has_group THEN 1 ELSE 0 END)::int AS group_facilitators,
+          SUM(CASE WHEN NOT has_group AND has_pairing THEN 1 ELSE 0 END)::int AS paired_one_to_one,
+          SUM(CASE WHEN NOT has_group AND NOT has_pairing AND sub_status = 'Waiting_To_Be_Paired' THEN 1 ELSE 0 END)::int AS waiting_to_be_paired,
+          SUM(CASE WHEN NOT has_group AND NOT has_pairing AND sub_status = 'Taking_A_Break' THEN 1 ELSE 0 END)::int AS taking_a_break,
+          SUM(CASE WHEN NOT has_group AND NOT has_pairing AND sub_status NOT IN ('Waiting_To_Be_Paired','Taking_A_Break') THEN 1 ELSE 0 END)::int AS other,
+          COUNT(*)::int AS total_active
+        FROM categorized
+      `, affParams),
+
       // ─── Advocate Q1 Activity (from AuditLog — true event-based) ──
       pool.query(`
         WITH first_sub_transitions AS (
@@ -1079,6 +1115,7 @@ router.get('/', async (req, res) => {
       advocacy_type_split: advocacyTypeSplit.rows,
 
       // Advocate pipeline
+      advocate_active_breakdown: advocateActiveBreakdown.rows[0] || {},
       advocate_q1_activity: advocateQ1Activity.rows[0] || {},
       advocate_pipeline: {
         by_status: advocatePipeline.rows,

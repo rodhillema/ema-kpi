@@ -2163,10 +2163,17 @@
     }
   }
 
+  var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
   function populateAffiliateFilter(affiliates) {
     var sel = document.getElementById('affiliateFilter');
     // Keep the "All Affiliates" default, clear the rest
     while (sel.options.length > 1) { sel.remove(1); }
+    // Add "All except Broward" option for HQ
+    var exOpt = document.createElement('option');
+    exOpt.value = 'exclude-broward';
+    exOpt.textContent = 'All Affiliates except \u0112MA Broward';
+    sel.appendChild(exOpt);
+    // Add individual affiliates
     affiliates.forEach(function(aff) {
       var opt = document.createElement('option');
       opt.value = aff.id || aff.affiliate_id || aff.name;
@@ -2179,7 +2186,8 @@
   document.getElementById('affiliateFilter').addEventListener('change', async function() {
     var val = this.value;
     var url = '/api/report-data';
-    if (val && val !== 'all') { url += '?affiliate_id=' + encodeURIComponent(val); }
+    if (val === 'exclude-broward') { url += '?exclude_affiliate_id=' + BROWARD_ID; }
+    else if (val && val !== 'all') { url += '?affiliate_id=' + encodeURIComponent(val); }
     try {
       var res = await fetch(url);
       if (res.ok) {

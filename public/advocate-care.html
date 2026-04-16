@@ -522,11 +522,13 @@ const TODAY = new Date("2026-04-14");
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
 var ADVOCATES = [];
+var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
 async function loadAdvocates() {
   try {
     var url = '/api/advocates';
     var sel = document.getElementById('affiliateSlicer');
-    if (sel && sel.value) url += '?affiliate_id=' + encodeURIComponent(sel.value);
+    if (sel && sel.value === 'exclude-broward') url += '?exclude_affiliate_id=' + BROWARD_ID;
+    else if (sel && sel.value) url += '?affiliate_id=' + encodeURIComponent(sel.value);
     var res = await fetch(url);
     if (res.ok) {
       ADVOCATES = await res.json();
@@ -542,6 +544,10 @@ async function loadAffiliateSlicer() {
     if (affiliates.length === 0) return;
     var sel = document.getElementById('affiliateSlicer');
     sel.style.display = '';
+    var exOpt = document.createElement('option');
+    exOpt.value = 'exclude-broward';
+    exOpt.textContent = 'All Affiliates except \u0112MA Broward';
+    sel.appendChild(exOpt);
     affiliates.forEach(function(a) {
       var opt = document.createElement('option');
       opt.value = a.id;

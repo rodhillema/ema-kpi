@@ -463,8 +463,8 @@
    .report-header{padding:16px 20px 12px}
   }
   /* ── Loading state ──────────────────────────────────────── */
-  .dashboard-loading .header, .dashboard-loading .tab-nav, .dashboard-loading .tab-panel, .dashboard-loading .sample-banner { visibility: hidden; height: 0; overflow: hidden; }
-  .dashboard-loading .nav { visibility: visible; }
+  .dashboard-loading .tab-nav, .dashboard-loading .tab-panel, .dashboard-loading .sample-banner { visibility: hidden; height: 0; overflow: hidden; }
+  .dashboard-loading .nav, .dashboard-loading .header { visibility: visible; }
   .loading-overlay { display: none; text-align: center; padding: 120px 20px; font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 300; letter-spacing: 1px; text-transform: uppercase; color: var(--mid); }
   .dashboard-loading .loading-overlay { display: block; }
   .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
@@ -524,12 +524,6 @@
 <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
 </div></div></nav>
 
-<!-- ── Loading overlay (hidden once data renders) ──────────── -->
-<div class="loading-overlay">
- <div class="loading-spinner"></div>
- Loading dashboard&hellip;
-</div>
-
 <!-- ── REPORT HEADER (Option A: Green title bar) ─────────── -->
 <!--
  Cristina: Three options are included in CSS. Option A (green bar) is active.
@@ -557,6 +551,12 @@
    </div>
   </div>
  </div>
+</div>
+
+<!-- ── Loading overlay (below header, hidden once data renders) ── -->
+<div class="loading-overlay">
+ <div class="loading-spinner"></div>
+ Loading dashboard&hellip;
 </div>
 
 <!-- TAB NAV -->

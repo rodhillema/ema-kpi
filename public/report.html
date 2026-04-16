@@ -1930,6 +1930,51 @@
     }
    }
 
+   // ── Learning Progress by Track table
+   var lpData = track.learning_progress_by_track || [];
+   var lpBody = document.getElementById('learningProgressBody');
+   if (lpBody && lpData.length > 0) {
+    var lpHtml = '';
+    lpData.forEach(function(r) {
+     var rate = r.valid_pairs > 0 ? Math.round(r.improved / r.valid_pairs * 100) + '%' : '\u2014';
+     var nWarn = r.valid_pairs < 20 ? ' <span class="n-warn" style="cursor:help;font-size:10px;">n<20</span>' : '';
+     lpHtml += '<tr><td><strong>' + r.track_group + '</strong>' + nWarn + '</td>';
+     lpHtml += '<td>' + r.improved + '</td>';
+     lpHtml += '<td>' + r.valid_pairs + '</td>';
+     lpHtml += '<td><strong>' + rate + '</strong></td></tr>';
+    });
+    lpBody.innerHTML = lpHtml;
+   }
+
+   // ── Average Sessions per Completed Track
+   var asData = track.avg_sessions_per_track || [];
+   var asBars = document.getElementById('avgSessionsBars');
+   if (asBars && asData.length > 0) {
+    var maxSess = 0;
+    asData.forEach(function(r) { var t = (r.avg_track_sessions || 0) + (r.avg_support_sessions || 0); if (t > maxSess) maxSess = t; });
+    if (maxSess === 0) maxSess = 1;
+    var asHtml = '';
+    asData.forEach(function(r) {
+     var trackS = r.avg_track_sessions || 0;
+     var supportS = r.avg_support_sessions || 0;
+     var total = trackS + supportS;
+     var trackPct = maxSess > 0 ? Math.round(trackS / maxSess * 100) : 0;
+     var supportPct = maxSess > 0 ? Math.round(supportS / maxSess * 100) : 0;
+     asHtml += '<div style="margin-bottom:16px;">';
+     asHtml += '<div style="font-size:12px;font-weight:600;color:var(--dark);margin-bottom:6px;">' + r.track_group + '</div>';
+     asHtml += '<div style="display:flex;align-items:center;gap:8px;">';
+     asHtml += '<div style="flex:1;background:var(--border);border-radius:4px;height:20px;display:flex;overflow:hidden;">';
+     asHtml += '<div style="background:var(--green);width:' + trackPct + '%;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;"><span style="font-size:10px;color:white;font-weight:700;">' + trackS.toFixed(1) + '</span></div>';
+     asHtml += '<div style="background:var(--yellow);width:' + supportPct + '%;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;"><span style="font-size:10px;color:var(--dark);font-weight:700;">' + supportS.toFixed(1) + '</span></div>';
+     asHtml += '</div>';
+     asHtml += '<span style="font-size:11px;color:var(--mid);min-width:100px;">' + trackS.toFixed(1) + ' track \u00B7 ' + supportS.toFixed(1) + ' support</span>';
+     asHtml += '</div></div>';
+    });
+    asBars.innerHTML = asHtml;
+    var asLegend = document.getElementById('avgSessionsLegend');
+    if (asLegend) asLegend.style.display = '';
+   }
+
    // ── How Tracks Completed panel
    for (var hi = 0; hi < completionPanels.length; hi++) {
     var hh3 = completionPanels[hi].querySelector('h3');

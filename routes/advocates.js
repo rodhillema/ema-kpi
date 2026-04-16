@@ -91,8 +91,8 @@ router.get('/', async (req, res) => {
     const pairingsQuery = `
       SELECT
         p."advocateUserId",
-        m."firstName" AS "momFirstName",
-        m."lastName" AS "momLastName",
+        m."first_name" AS "momFirstName",
+        m."last_name" AS "momLastName",
         p."status"::text AS "status",
         t."title" AS "trackTitle"
       FROM "Pairing" p

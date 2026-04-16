@@ -2175,22 +2175,17 @@
      if (advMarchNums.length >= 4) advMarchNums[3].textContent = fmt(getPipeCount(pipeBySubStatus, 'break'));
     }
 
-    // "Q1 Activity" - five 24px numbers: Application Received, Trained, Approved, Became Active, Became Inactive
-    // These are TOTAL pipeline counts (not Q1-scoped) — best available from advocate_pipeline.by_sub_status
+    // "Q1 Activity" - five 24px numbers from AuditLog (true Q1-scoped event-based counts)
+    var advQ1 = data.advocate_q1_activity || {};
     var advActivityGrid = advocatesCard.querySelector('div[style*="display:grid"][style*="grid-template-columns:repeat(5"]');
-    if (advActivityGrid && pipeBySubStatus.length > 0) {
+    if (advActivityGrid) {
      var advQ1Nums = advActivityGrid.querySelectorAll('div[style*="font-size:24px"]');
      if (advQ1Nums.length >= 5) {
-      // Application Received → Interested + In_Training (prospects in pipeline)
-      advQ1Nums[0].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'interested') + getPipeCountExact(pipeBySubStatus, 'in_training'));
-      // Trained → In_Training
-      advQ1Nums[1].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'in_training'));
-      // Approved → Training_Completed
-      advQ1Nums[2].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'training_completed'));
-      // Became Active → Waiting_To_Be_Paired + Paired (active advocates)
-      advQ1Nums[3].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'waiting_to_be_paired') + getPipeCountExact(pipeBySubStatus, 'paired'));
-      // Became Inactive → Taking_A_Break
-      advQ1Nums[4].textContent = fmt(getPipeCountExact(pipeBySubStatus, 'taking_a_break'));
+      advQ1Nums[0].textContent = fmt(advQ1.applications || 0);
+      advQ1Nums[1].textContent = fmt(advQ1.trained || 0);
+      advQ1Nums[2].textContent = fmt(advQ1.approved || 0);
+      advQ1Nums[3].textContent = fmt(advQ1.became_active || 0);
+      advQ1Nums[4].textContent = fmt(advQ1.became_inactive || 0);
      }
     }
    }

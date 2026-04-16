@@ -240,7 +240,25 @@ Pairing.incomplete_reason_sub_status: 'achieved_outcomes', 'extended_wait', 'no_
 - Roadmap to Resilience: 4 sessions
 
 ### Advocate Count
-- Source: pairing table via advocate user ID — not coordinator/staff user ID
+- 1:1 advocates: `Pairing.advocateUserId` — not coordinator/staff user ID
+- Group facilitators: `AdvocacyGroup.advocateId` — separate table, `state` enum: active/completed/deleted/planned
+- Union both for total active advocate count
+- `_AdvocateToCoordinator` join table: `A` = advocate user ID, `B` = coordinator user ID
+
+### Advocate Sub-Status Correction (deriveSub)
+- `Active + Paired` with no active pairing AND no active group → corrected to `Waiting_To_Be_Paired` (mismatch flagged)
+- `Active + Waiting_To_Be_Paired` with active pairing OR active group → corrected to `Paired` (mismatch flagged)
+- Correction applied server-side in `/api/advocates` — not client-side
+
+### Confirmed Advocate Enum Values
+```
+User.advocate_status:     'Active', 'Did_Not_Onboard', 'Inactive', 'Prospect'
+User.advocate_sub_status: 'Interested', 'In_Training', 'Training_Completed', 'Waiting_To_Be_Paired', 
+                          'Paired', 'Pending_Final_Steps', 'Taking_A_Break', 'Relocated',
+                          'No_Longer_Interested', 'No_Longer_Interested_Onboard',
+                          'Unable_To_Contact', 'Unresponsive', 'Advocate_Denied'
+AdvocacyGroup.state:      'active', 'completed', 'deleted', 'planned'
+```
 
 ### Children Impact
 - Count children belonging to Active moms (active-during-period logic)

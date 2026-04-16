@@ -599,12 +599,12 @@ router.get('/', async (req, res) => {
         JOIN "Mom" m ON m."id" = p."momId"
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS cnt FROM "Session" s
-          WHERE s."pairing_id" = p."id" AND s."deleted_at" = 0
+          WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
             AND s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session'
         ) track_sess ON true
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS cnt FROM "Session" s
-          WHERE s."pairing_id" = p."id" AND s."deleted_at" = 0
+          WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
             AND s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session'
         ) support_sess ON true
         WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'

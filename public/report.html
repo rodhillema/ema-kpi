@@ -2210,8 +2210,10 @@
     }
 
     // "Q1 Activity" - five 24px numbers from AuditLog (true Q1-scoped event-based counts)
+    // Find the grid with 5 columns anywhere in tab1 (there's only one such grid — advocates Q1 activity)
     var advQ1 = data.advocate_q1_activity || {};
-    var advActivityGrid = advocatesCard.querySelector('div[style*="display:grid"][style*="grid-template-columns:repeat(5"]');
+    var allGrids5 = tab1.querySelectorAll('div[style*="grid-template-columns:repeat(5"]');
+    var advActivityGrid = allGrids5.length > 0 ? allGrids5[allGrids5.length - 1] : null;
     if (advActivityGrid) {
      var advQ1Nums = advActivityGrid.querySelectorAll('div[style*="font-size:24px"]');
      if (advQ1Nums.length >= 5) {

@@ -1754,10 +1754,18 @@
    if (refWrap) {
     setStatusCardValue(refWrap, 'Total Referrals', fmt(totalReferrals));
     setStatusCardValue(refWrap, 'Engaged in Program', fmt(totalIntakes));
-    var totalResolved = totalIntakes + (data.referral_sources.reduce(function(acc, r) { return acc + (r.did_not_engage || 0); }, 0));
+    var totalResolved = totalIntakes + totalDidNotEngage;
     var convRate = totalResolved > 0 ? Math.round(totalIntakes / totalResolved * 100) : 0;
     setStatusCardValue(refWrap, 'Conversion Rate', convRate + '%');
     setStatusCardValue(refWrap, 'Still Pending', fmt(totalPending));
+    setStatusCardValue(refWrap, 'Did Not Engage', fmt(totalDidNotEngage));
+    // Update the conversion rate note
+    var convNote = refWrap.querySelectorAll('.sc-note');
+    for (var ni = 0; ni < convNote.length; ni++) {
+     if (convNote[ni].textContent.indexOf('engaged') !== -1 && convNote[ni].textContent.indexOf('resolved') !== -1) {
+      convNote[ni].textContent = totalIntakes + ' engaged \u00F7 ' + totalResolved + ' resolved (engaged + did not engage) \u00B7 pending excluded';
+     }
+    }
    }
   }
 

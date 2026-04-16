@@ -285,6 +285,7 @@ function actionButtons(c) {
   } else if (c.status === 'disabled') {
     btns.push(`<button class="btn btn-sm btn-green" onclick="enableChampion('${c.id}')">Enable</button>`);
   }
+  btns.push(`<button class="btn btn-sm" style="background:#f4f6f8;color:#888;border:1px solid #ddd;" onclick="deleteChampion('${c.id}','${esc(c.username)}')">Delete</button>`);
   return btns.join('');
 }
 
@@ -355,6 +356,22 @@ async function enableChampion(id) {
     const data = await res.json();
     if (!res.ok) { showAlert('error', data.error || 'Failed to enable'); return; }
     showAlert('success', 'Champion re-enabled');
+    loadChampions();
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+// ── Permanently Delete Champion ─────────────────────────
+async function deleteChampion(id, username) {
+  if (!confirm('PERMANENTLY delete ' + username + '? This cannot be undone.')) return;
+  if (!confirm('Are you sure? This will remove all data for ' + username + '.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/${id}/permanent`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to delete'); return; }
+    showAlert('success', 'Champion permanently deleted');
     loadChampions();
   } catch (err) {
     showAlert('error', 'Network error');

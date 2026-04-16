@@ -36,8 +36,8 @@ router.get('/', async (req, res) => {
     const isOrgWide = role === 'administrator' || (role === 'champion' && !user.affiliateId);
 
     if (role === 'coordinator') {
-      // Coordinator sees only their own advocates via the join table
-      conditions.push(`atc."B" = $${paramIdx}`);
+      // Coordinator sees advocates they've written notes about
+      conditions.push(`EXISTS (SELECT 1 FROM "CoordinatorNote" cn WHERE cn."advocate_id" = u."id" AND cn."coordinator_id" = $${paramIdx} AND cn."deleted_at" = 0)`);
       params.push(user.id);
       paramIdx++;
     } else if (role === 'supervisor' || role === 'staff_advocate') {
@@ -77,24 +77,26 @@ router.get('/', async (req, res) => {
         u."advocate_sub_status"::text AS "subStatus",
         u."created_at",
         u."affiliateId",
-        coord."firstName" AS "coordFirstName",
-        coord."lastName" AS "coordLastName",
-        (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."deleted_at" = '0') AS "totalPairings",
-        (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."status"::text = 'paired' AND p."deleted_at" = '0') AS "activePairings",
+        lnc."coordFirstName",
+        lnc."coordLastName",
+        (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."deleted_at" = 0) AS "totalPairings",
+        (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."status"::text = 'paired' AND p."deleted_at" = 0) AS "activePairings",
         (SELECT COUNT(*)::int FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."deleted_at" = 0) AS "totalGroups",
         (SELECT COUNT(*)::int FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."state"::text = 'active' AND ag."deleted_at" = 0) AS "activeGroups",
-        ln."latestNoteDate",
-        ln."latestNote"
+        lnc."latestNoteDate",
+        lnc."latestNote"
       FROM "User" u
-      LEFT JOIN "_AdvocateToCoordinator" atc ON atc."A" = u."id"
-      LEFT JOIN "User" coord ON coord."id" = atc."B"
       LEFT JOIN LATERAL (
-        SELECT cn."created_at" AS "latestNoteDate", cn."description" AS "latestNote"
+        SELECT cn."created_at" AS "latestNoteDate",
+               cn."description" AS "latestNote",
+               coord."firstName" AS "coordFirstName",
+               coord."lastName" AS "coordLastName"
         FROM "CoordinatorNote" cn
-        WHERE cn."advocate_id" = u."id" AND cn."deleted_at" = '0'
+        LEFT JOIN "User" coord ON coord."id" = cn."coordinator_id"
+        WHERE cn."advocate_id" = u."id" AND cn."deleted_at" = 0
         ORDER BY cn."created_at" DESC
         LIMIT 1
-      ) ln ON true
+      ) lnc ON true
       WHERE ${whereClause}
       ORDER BY u."id", u."lastName" ASC, u."firstName" ASC
     `;
@@ -206,6 +208,7 @@ router.get('/', async (req, res) => {
         initials,
         status: r.status,
         subStatus: correctedSubStatus,
+        sub: correctedSubStatus,  // frontend uses 'sub' field name
         mismatchFlag: mismatch,
         birthday: r.date_of_birth || null,
         email: r.email || null,

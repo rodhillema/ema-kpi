@@ -2060,8 +2060,8 @@
       'Signed in as ' + display + ' (' + roleLabel + ') - Demo';
     var topnavEl = document.getElementById('topnavUserInfo');
     if (topnavEl) topnavEl.textContent = display + ' (Demo)';
-    /* Show affiliate slicer for admin/supervisor */
-    if (user.role === 'administrator' || user.role === 'supervisor') {
+    /* Show affiliate slicer for admin and org-wide champions only (supervisor is affiliate-scoped) */
+    if (user.role === 'administrator' || (user.role === 'champion' && !user.affiliateId)) {
       document.getElementById('affiliateSlicerWrap').style.display = '';
     }
   }
@@ -2135,8 +2135,8 @@
         // RD: also populate top nav user display
         var topnavEl = document.getElementById('topnavUserInfo');
         if (topnavEl) topnavEl.textContent = display;
-        // Show affiliate slicer for admin/supervisor immediately
-        if (role === 'administrator' || role === 'supervisor') {
+        // Show affiliate slicer for admin and org-wide champions only
+        if (role === 'administrator' || (role === 'champion' && !me.affiliateId)) {
           document.getElementById('affiliateSlicerWrap').style.display = '';
         }
       } catch (e) { console.error('User info parse failed:', e); }

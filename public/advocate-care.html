@@ -1021,7 +1021,7 @@ function applySession(u){
       if(d.user){
         if(d.user.role==='champion'){window.location.href='/';return;}
         applySession(d.user);
-        if(d.user.role==='administrator'||d.user.role==='supervisor') loadAffiliateSlicer();
+        if(d.user.role==='administrator'||(d.user.role==='champion'&&!d.user.affiliateId)) loadAffiliateSlicer();
         loadAdvocates();
       }
     }

@@ -2198,15 +2198,16 @@
      }
     }
 
-    // "As of March 31" - four 24px numbers
+    // "As of March 31" - four 24px numbers (priority-based unique count per Cristina methodology)
+    var advBreakdown = data.advocate_active_breakdown || {};
     var advMarchSection = advocatesCard.querySelectorAll('div[style*="padding:16px 0"][style*="border-bottom"]');
     var advMarch = advMarchSection.length >= 2 ? advMarchSection[1] : null;
     if (advMarch) {
      var advMarchNums = advMarch.querySelectorAll('span[style*="font-size:24px"]');
-     if (advMarchNums.length >= 1) advMarchNums[0].textContent = fmt(groupAdvocates);
-     if (advMarchNums.length >= 2) advMarchNums[1].textContent = fmt(oneToOneAdvocates);
-     if (advMarchNums.length >= 3) advMarchNums[2].textContent = fmt(getPipeCount(pipeBySubStatus, 'waiting'));
-     if (advMarchNums.length >= 4) advMarchNums[3].textContent = fmt(getPipeCount(pipeBySubStatus, 'break'));
+     if (advMarchNums.length >= 1) advMarchNums[0].textContent = fmt(advBreakdown.group_facilitators || 0);
+     if (advMarchNums.length >= 2) advMarchNums[1].textContent = fmt(advBreakdown.paired_one_to_one || 0);
+     if (advMarchNums.length >= 3) advMarchNums[2].textContent = fmt(advBreakdown.waiting_to_be_paired || 0);
+     if (advMarchNums.length >= 4) advMarchNums[3].textContent = fmt(advBreakdown.taking_a_break || 0);
     }
 
     // "Q1 Activity" - five 24px numbers from AuditLog (true Q1-scoped event-based counts)

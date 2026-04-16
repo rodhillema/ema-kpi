@@ -521,7 +521,8 @@ thead tr th.c-chev{background:var(--green)!important}
 
 
 <script>
-const TODAY = new Date("2026-04-14");
+const TODAY = new Date();
+TODAY.setHours(0, 0, 0, 0); // normalize to start of day
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
 var ADVOCATES = [];

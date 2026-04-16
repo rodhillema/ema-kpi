@@ -1016,8 +1016,8 @@ function applySession(u){
       if(d.user){
         if(d.user.role==='champion'){window.location.href='/';return;}
         applySession(d.user);
-        if(d.user.role==='administrator'||d.user.role==='supervisor') await loadAffiliateSlicer();
-        await loadAdvocates();
+        if(d.user.role==='administrator'||d.user.role==='supervisor') loadAffiliateSlicer();
+        loadAdvocates();
       }
     }
   }catch(x){}
@@ -1034,7 +1034,7 @@ async function doLogin(){
     const d=await r.json();
     if(!r.ok){errEl.textContent=d.error||"Login failed";errEl.className="login-err show";return;}
     const mr=await fetch("/api/me");
-    if(mr.ok){const md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);if(md.user.role==='administrator'||md.user.role==='supervisor')await loadAffiliateSlicer();await loadAdvocates();}}
+    if(mr.ok){const md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);if(md.user.role==='administrator'||md.user.role==='supervisor')loadAffiliateSlicer();loadAdvocates();}}
   }catch(x){
     errEl.textContent="API unavailable. Demo mode: demo / coord / super (password: demo)";
     errEl.className="login-err show";

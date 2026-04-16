@@ -35,6 +35,8 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/timelogs', require('./routes/timelogs'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/report-data', requireAuth, requireRole, require('./routes/report-data'));
+app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
+app.use('/api/champion', require('./routes/champion-auth'));
 
 // Advocate lookup — queries shared User table (same DB as Reset Tool)
 app.get('/api/advocate-lookup/:id', async (req, res) => {
@@ -57,6 +59,9 @@ app.get('/api/advocate-lookup/:id', async (req, res) => {
 // Page routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'hub.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/admin/champions', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-champions.html')));
+app.get('/set-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'set-password.html')));
+app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/quarterly/q1-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/advocate-care', (req, res) => res.status(200).send('<html><body style="font-family:Lato,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#5A5A5A"><h2>Advocate Care Report — Coming Soon</h2></body></html>'));

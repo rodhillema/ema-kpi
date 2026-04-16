@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ĒMA — Champion Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#f9ece8;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;
+  --border:#E0E0E0;--bg:#fdf7f3;--white:#fff;
+}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
+
+/* Nav */
+.nav{background:var(--green);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18)}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-title{font-family:'Shrikhand',cursive;font-size:18px;color:var(--white);letter-spacing:.5px}
+.nav-sub{font-family:'Oswald',sans-serif;font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.15)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55);text-decoration:none;padding:5px 11px;border:1px solid rgba(255,255,255,.15);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.3)}
+
+/* Layout */
+.container{max-width:960px;margin:0 auto;padding:32px 24px}
+h1{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);margin-bottom:4px}
+.subtitle{font-family:'Oswald',sans-serif;font-size:12px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:28px}
+
+/* Card */
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px 28px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);margin-bottom:16px}
+
+/* Form */
+.form-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.form-group{flex:1;min-width:180px}
+.form-group label{display:block;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);margin-bottom:5px}
+.form-group input,.form-group select{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 12px;font-family:'Lato',sans-serif;font-size:13px;color:var(--dark);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(236,72,47,.1);background:var(--white)}
+.form-group input::placeholder{color:#c8c8c8}
+
+.btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;border:none;border-radius:7px;padding:10px 22px;cursor:pointer;transition:background .15s,transform .1s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn-primary{background:var(--red);color:var(--white);box-shadow:0 2px 8px rgba(236,72,47,.2)}
+.btn-primary:hover{background:var(--red-dk)}
+.btn-sm{padding:6px 14px;font-size:11px;letter-spacing:1px}
+.btn-yellow{background:var(--yellow);color:var(--white)}
+.btn-yellow:hover{background:#d88f2e}
+.btn-green{background:var(--green);color:var(--white)}
+.btn-green:hover{background:#0e2d2d}
+.btn-danger{background:var(--red-dk);color:var(--white)}
+.btn-danger:hover{background:#a02812}
+.btn-outline{background:transparent;color:var(--mid);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--mid);color:var(--dark)}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+thead th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);text-align:left;padding:10px 12px;border-bottom:2px solid var(--border)}
+tbody td{padding:12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--red-lt)}
+
+/* Badges */
+.badge{display:inline-block;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px}
+.badge-invited{background:#fef3cd;color:#856404}
+.badge-active{background:var(--green-lt);color:var(--green)}
+.badge-disabled{background:var(--red-lt);color:var(--red-dk)}
+
+/* Alerts */
+.alert{padding:12px 16px;border-radius:7px;font-size:13px;margin-bottom:16px;display:none}
+.alert-success{background:var(--green-lt);color:var(--green);border:1px solid rgba(18,57,57,.15)}
+.alert-error{background:var(--red-lt);color:var(--red-dk);border:1px solid rgba(194,48,24,.15)}
+.alert.show{display:block}
+
+/* Empty state */
+.empty{text-align:center;padding:48px 24px;color:var(--light);font-size:14px}
+
+/* Actions cell */
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Loading */
+.loading{text-align:center;padding:32px;color:var(--light);font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-left">
+    <span class="nav-title">ĒMA</span>
+    <span class="nav-sub">Champion Management</span>
+  </div>
+  <div class="nav-right">
+    <a href="/" class="nav-link">Hub</a>
+    <a href="#" class="nav-link" onclick="doLogout()">Sign Out</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>Champion Management</h1>
+  <p class="subtitle">Invite and manage Champion users</p>
+
+  <!-- Alerts -->
+  <div id="alertSuccess" class="alert alert-success"></div>
+  <div id="alertError" class="alert alert-error"></div>
+
+  <!-- Add Champion Form -->
+  <div class="card">
+    <div class="card-title">Invite New Champion</div>
+    <form id="addForm" onsubmit="createChampion(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fFirst">First Name</label>
+          <input type="text" id="fFirst" placeholder="First name" required>
+        </div>
+        <div class="form-group">
+          <label for="fLast">Last Name</label>
+          <input type="text" id="fLast" placeholder="Last name" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fEmail">Email</label>
+          <input type="email" id="fEmail" placeholder="champion@example.org" required>
+        </div>
+        <div class="form-group">
+          <label for="fUsername">Username</label>
+          <input type="text" id="fUsername" placeholder="username" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fAffiliate">Affiliate</label>
+          <select id="fAffiliate">
+            <option value="">Org-wide (no affiliate)</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end">
+          <button type="submit" class="btn btn-primary">Invite Champion</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Champions Table -->
+  <div class="card">
+    <div class="card-title">Champions</div>
+    <div id="tableLoading" class="loading">Loading champions...</div>
+    <div id="tableEmpty" class="empty" style="display:none">No champions found. Invite one above.</div>
+    <table id="championsTable" style="display:none">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Affiliate</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="championsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api/admin/champions';
+let currentUser = null;
+
+// ── Auth check ──────────────────────────────────────────
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/me');
+    if (!res.ok) { window.location.href = '/'; return; }
+    const data = await res.json();
+    if (data.role !== 'administrator') { window.location.href = '/'; return; }
+    currentUser = data;
+    loadAffiliates();
+    loadChampions();
+  } catch {
+    window.location.href = '/';
+  }
+}
+
+// ── Logout ──────────────────────────────────────────────
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/';
+}
+
+// ── Alerts ──────────────────────────────────────────────
+function showAlert(type, msg) {
+  const el = type === 'success' ? document.getElementById('alertSuccess') : document.getElementById('alertError');
+  const other = type === 'success' ? document.getElementById('alertError') : document.getElementById('alertSuccess');
+  other.classList.remove('show');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ── Load Affiliates for dropdown ────────────────────────
+async function loadAffiliates() {
+  try {
+    const res = await fetch('/api/report-data');
+    if (!res.ok) return;
+    const data = await res.json();
+    const sel = document.getElementById('fAffiliate');
+    if (data.affiliates && Array.isArray(data.affiliates)) {
+      data.affiliates.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.name;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load affiliates:', err);
+  }
+}
+
+// ── Load Champions ──────────────────────────────────────
+async function loadChampions() {
+  const loading = document.getElementById('tableLoading');
+  const empty = document.getElementById('tableEmpty');
+  const table = document.getElementById('championsTable');
+  const tbody = document.getElementById('championsBody');
+
+  loading.style.display = 'block';
+  empty.style.display = 'none';
+  table.style.display = 'none';
+
+  try {
+    const res = await fetch(API_BASE);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const champions = await res.json();
+
+    loading.style.display = 'none';
+
+    if (champions.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    champions.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(c.firstName)} ${esc(c.lastName)}</strong><br><span style="font-size:11px;color:var(--light)">${esc(c.username)}</span></td>
+        <td>${esc(c.email)}</td>
+        <td>${c.affiliateName ? esc(c.affiliateName) : '<span style="color:var(--light)">Org-wide</span>'}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td class="actions">${actionButtons(c)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    table.style.display = 'table';
+  } catch (err) {
+    loading.style.display = 'none';
+    showAlert('error', 'Failed to load champions');
+    console.error(err);
+  }
+}
+
+// ── Status badge ────────────────────────────────────────
+function statusBadge(status) {
+  const cls = status === 'active' ? 'badge-active' : status === 'invited' ? 'badge-invited' : 'badge-disabled';
+  return `<span class="badge ${cls}">${esc(status)}</span>`;
+}
+
+// ── Action buttons ──────────────────────────────────────
+function actionButtons(c) {
+  const btns = [];
+  if (c.status === 'invited') {
+    btns.push(`<button class="btn btn-sm btn-yellow" onclick="resendInvite('${c.id}')">Resend Invite</button>`);
+    btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
+  } else if (c.status === 'active') {
+    btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
+  } else if (c.status === 'disabled') {
+    btns.push(`<button class="btn btn-sm btn-green" onclick="enableChampion('${c.id}')">Enable</button>`);
+  }
+  return btns.join('');
+}
+
+// ── Create Champion ─────────────────────────────────────
+async function createChampion(e) {
+  e.preventDefault();
+  const body = {
+    firstName: document.getElementById('fFirst').value.trim(),
+    lastName: document.getElementById('fLast').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    username: document.getElementById('fUsername').value.trim(),
+    affiliateId: document.getElementById('fAffiliate').value || null,
+  };
+
+  try {
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to create champion'); return; }
+    showAlert('success', `Invite sent to ${body.email}`);
+    document.getElementById('addForm').reset();
+    loadChampions();
+  } catch (err) {
+    showAlert('error', 'Network error — could not create champion');
+    console.error(err);
+  }
+}
+
+// ── Resend Invite ───────────────────────────────────────
+async function resendInvite(id) {
+  try {
+    const res = await fetch(`${API_BASE}/${id}/resend-invite`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to resend invite'); return; }
+    showAlert('success', 'Invite resent successfully');
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+// ── Disable Champion ────────────────────────────────────
+async function disableChampion(id) {
+  if (!confirm('Disable this champion? They will lose access.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to disable'); return; }
+    showAlert('success', 'Champion disabled');
+    loadChampions();
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+// ── Enable Champion (re-activate) ───────────────────────
+async function enableChampion(id) {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active' }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to enable'); return; }
+    showAlert('success', 'Champion re-enabled');
+    loadChampions();
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+// ── Escape HTML ─────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ── Init ────────────────────────────────────────────────
+checkAuth();
+</script>
+</body>
+</html>

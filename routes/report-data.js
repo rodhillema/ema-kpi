@@ -32,15 +32,17 @@ router.get('/', async (req, res) => {
     const { role, affiliateId } = req.session.user;
 
     // Determine affiliate filter
+    // Champions with no affiliateId are org-wide (like admin)
+    const isOrgWideRole = ORG_WIDE_ROLES.includes(role) || (role === 'champion' && !affiliateId);
     let affiliateFilter = affiliateId;
-    if (ORG_WIDE_ROLES.includes(role) && req.query.affiliate_id) {
+    if (isOrgWideRole && req.query.affiliate_id) {
       affiliateFilter = req.query.affiliate_id;
     }
-    const isOrgWide = ORG_WIDE_ROLES.includes(role) && !req.query.affiliate_id;
+    const isOrgWide = isOrgWideRole && !req.query.affiliate_id;
 
-    // Look up selected affiliate name (when admin picks a different affiliate)
+    // Look up selected affiliate name (when admin/champion picks a different affiliate)
     let affiliateName = req.session.user.affiliateName;
-    if (ORG_WIDE_ROLES.includes(role) && req.query.affiliate_id) {
+    if (isOrgWideRole && req.query.affiliate_id) {
       const affNameResult = await pool.query(
         `SELECT "name" FROM "Affiliate" WHERE "id" = $1 AND "deleted_at" = 0 LIMIT 1`,
         [req.query.affiliate_id]
@@ -642,7 +644,7 @@ router.get('/', async (req, res) => {
     // ─── Affiliate list (for admin slicer) ──────────────────
 
     let affiliates = [];
-    if (ORG_WIDE_ROLES.includes(role)) {
+    if (isOrgWideRole) {
       affiliates = (await pool.query(`
         SELECT "id", "name" FROM "Affiliate"
         WHERE "deleted_at" = 0

@@ -12,8 +12,8 @@ const pool = require('../db');
 // Approved usernames — these bypass the role check entirely
 const WHITELISTED_USERNAMES = ['rd.hill', 'cristina.galloway'];
 
-// Roles allowed to access the KPI dashboard (coordinator and above)
-const ALLOWED_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator'];
+// Roles allowed to access the KPI dashboard (coordinator and above + champion)
+const ALLOWED_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator', 'champion'];
 
 // Middleware: require authenticated session
 function requireAuth(req, res, next) {
@@ -49,52 +49,99 @@ async function login(req, res) {
       [normalizedUsername]
     );
 
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+    // ── Try Trellis User first ──
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+
+      // 2. Verify password against bcrypt hash
+      const passwordValid = await bcrypt.compare(password, user.passwordHash);
+      if (!passwordValid) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+
+      // 3. Look up role
+      const roleResult = await pool.query(
+        `SELECT r."key"
+         FROM "UserRole" ur
+         JOIN "Role" r ON r."id" = ur."role_id"
+         WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
+         LIMIT 1`,
+        [user.id]
+      );
+
+      const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
+
+      // 4. Access check: whitelisted users bypass role check, others need coordinator+
+      const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
+      if (!isWhitelisted && !ALLOWED_ROLES.includes(roleKey)) {
+        return res.status(403).json({ error: 'Access denied — coordinator role or above required' });
+      }
+
+      // 5. Create session
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: roleKey,
+        affiliateId: user.affiliateId,
+        affiliateName: user.affiliateName,
+      };
+
+      return res.json({
+        success: true,
+        firstName: user.firstName,
+        role: roleKey,
+        affiliateName: user.affiliateName,
+      });
     }
 
-    const user = userResult.rows[0];
-
-    // 2. Verify password against bcrypt hash
-    const passwordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordValid) {
-      return res.status(401).json({ error: 'Invalid username or password' });
-    }
-
-    // 3. Look up role
-    const roleResult = await pool.query(
-      `SELECT r."key"
-       FROM "UserRole" ur
-       JOIN "Role" r ON r."id" = ur."role_id"
-       WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
+    // ── Fallback: try ChampionUser table ──
+    const championResult = await pool.query(
+      `SELECT c."id", c."username", c."firstName", c."lastName", c."passwordHash",
+              c."affiliateId", c."status", a."name" AS "affiliateName"
+       FROM "ChampionUser" c
+       LEFT JOIN "Affiliate" a ON a."id" = c."affiliateId"
+       WHERE LOWER(c."username") = $1 AND c."deleted_at" = 0
        LIMIT 1`,
-      [user.id]
+      [normalizedUsername]
     );
 
-    const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
-
-    // 4. Access check: whitelisted users bypass role check, others need coordinator+
-    const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
-    if (!isWhitelisted && !ALLOWED_ROLES.includes(roleKey)) {
-      return res.status(403).json({ error: 'Access denied — coordinator role or above required' });
+    if (championResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // 5. Create session
+    const champion = championResult.rows[0];
+
+    if (champion.status === 'disabled') {
+      return res.status(403).json({ error: 'Account disabled — contact your administrator' });
+    }
+
+    if (champion.status === 'invited' || !champion.passwordHash) {
+      return res.status(403).json({ error: 'Please complete your account setup using the invite link sent to your email' });
+    }
+
+    const champPasswordValid = await bcrypt.compare(password, champion.passwordHash);
+    if (!champPasswordValid) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Create champion session
     req.session.user = {
-      id: user.id,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: roleKey,
-      affiliateId: user.affiliateId,
-      affiliateName: user.affiliateName,
+      id: champion.id,
+      username: champion.username,
+      firstName: champion.firstName,
+      lastName: champion.lastName,
+      role: 'champion',
+      affiliateId: champion.affiliateId,
+      affiliateName: champion.affiliateName,
     };
 
     res.json({
       success: true,
-      firstName: user.firstName,
-      role: roleKey,
-      affiliateName: user.affiliateName,
+      firstName: champion.firstName,
+      role: 'champion',
+      affiliateName: champion.affiliateName,
     });
   } catch (err) {
     console.error('Login error:', err);

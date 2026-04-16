@@ -1298,17 +1298,9 @@
 
  <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 24px;">
   <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin-bottom:18px;font-family:'Oswald',sans-serif;">Average Sessions per Completed Track</h3>
-
-  <!-- Session bars rendered by JS from completions_by_track data -->
-  <div id="avgSessionsBars">
-   <div style="padding:24px 0;text-align:center;color:var(--mid);font-style:italic;font-size:13px;">Pending — per-track completed session averages not yet available from API</div>
-  </div>
-
-  <!-- Legend (shown once JS populates bars) -->
-  <div id="avgSessionsLegend" style="display:none;gap:20px;margin-top:4px;font-size:11px;color:var(--mid);flex-wrap:wrap;">
-   <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:2px;background:var(--green);flex-shrink:0;"></div>Track sessions (curriculum)</div>
-   <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:2px;background:var(--yellow);flex-shrink:0;"></div>Support sessions (relational check-ins)</div>
-   <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:2px;border-top:2px dashed var(--red);flex-shrink:0;"></div>Number of track curriculum lessons</div>
+  <div style="padding:20px 0;text-align:center;color:var(--mid);font-size:13px;line-height:1.6;">
+   <div style="font-size:11px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--yellow);margin-bottom:8px;">Deferred to Q2</div>
+   The majority of Q1 completed tracks are from moms who were migrated from the previous system (PromiseServes) in December 2025. Session recording practices differed between systems, making per-track session averages unreliable for this quarter. This section will be available starting Q2 2026 when all completions are from Trellis-native tracks.
   </div>
   <details class="kpi-detail" style="margin-top:14px;">
    <summary>Data integrity notes</summary>
@@ -1962,34 +1954,8 @@
     lpBody.innerHTML = lpHtml;
    }
 
-   // ── Average Sessions per Completed Track
-   var asData = track.avg_sessions_per_track || [];
-   var asBars = document.getElementById('avgSessionsBars');
-   if (asBars && asData.length > 0) {
-    var maxSess = 0;
-    asData.forEach(function(r) { var t = (r.avg_track_sessions || 0) + (r.avg_support_sessions || 0); if (t > maxSess) maxSess = t; });
-    if (maxSess === 0) maxSess = 1;
-    var asHtml = '';
-    asData.forEach(function(r) {
-     var trackS = r.avg_track_sessions || 0;
-     var supportS = r.avg_support_sessions || 0;
-     var total = trackS + supportS;
-     var trackPct = maxSess > 0 ? Math.round(trackS / maxSess * 100) : 0;
-     var supportPct = maxSess > 0 ? Math.round(supportS / maxSess * 100) : 0;
-     asHtml += '<div style="margin-bottom:16px;">';
-     asHtml += '<div style="font-size:12px;font-weight:600;color:var(--dark);margin-bottom:6px;">' + r.track_group + '</div>';
-     asHtml += '<div style="display:flex;align-items:center;gap:8px;">';
-     asHtml += '<div style="flex:1;background:var(--border);border-radius:4px;height:20px;display:flex;overflow:hidden;">';
-     asHtml += '<div style="background:var(--green);width:' + trackPct + '%;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;"><span style="font-size:10px;color:white;font-weight:700;">' + trackS.toFixed(1) + '</span></div>';
-     asHtml += '<div style="background:var(--yellow);width:' + supportPct + '%;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;"><span style="font-size:10px;color:var(--dark);font-weight:700;">' + supportS.toFixed(1) + '</span></div>';
-     asHtml += '</div>';
-     asHtml += '<span style="font-size:11px;color:var(--mid);min-width:100px;">' + trackS.toFixed(1) + ' track \u00B7 ' + supportS.toFixed(1) + ' support</span>';
-     asHtml += '</div></div>';
-    });
-    asBars.innerHTML = asHtml;
-    var asLegend = document.getElementById('avgSessionsLegend');
-    if (asLegend) asLegend.style.display = '';
-   }
+   // ── Average Sessions per Completed Track — DEFERRED TO Q2
+   // Q1 data unreliable due to PS-migrated session recording differences
 
    // ── How Tracks Completed panel
    for (var hi = 0; hi < completionPanels.length; hi++) {

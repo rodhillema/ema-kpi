@@ -512,11 +512,13 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Completions by delivery format (1:1 vs group) ─────
+      // Only counts actual completions (not incompletes) — should add up to total_completions
       pool.query(`
         SELECT p."advocacy_type"::text AS advocacy_type, COUNT(*)::int AS count
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
         WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
+          AND p."complete_reason_sub_status" IS NOT NULL
           AND p."completed_on" >= '${PERIOD_START}'
           AND p."completed_on" <= '${PERIOD_END} 23:59:59'
           AND m."deleted_at" = 0

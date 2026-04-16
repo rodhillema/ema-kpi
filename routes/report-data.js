@@ -673,7 +673,10 @@ router.get('/', async (req, res) => {
       pool.query(`
         SELECT
           CASE
-            WHEN a."name" IS NULL OR a."name" ~ '^[0-9a-f]{8}-' THEN 'Unknown / Not Recorded'
+            WHEN a."name" IS NULL AND m."referral_type_c"::text = 'self' THEN 'Self-Referral'
+            WHEN a."name" IS NULL AND m."referral_type_c"::text = 'internal' THEN 'Internal Referral'
+            WHEN a."name" IS NULL THEN 'Not Recorded'
+            WHEN a."name" ~ '^[0-9a-f]{8}-' THEN 'Not Recorded'
             ELSE a."name"
           END AS referral_source,
           COUNT(*)::int AS referrals_received,

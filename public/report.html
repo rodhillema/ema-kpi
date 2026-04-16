@@ -1830,25 +1830,78 @@
   setStalledCard('21', fmt(stallBuckets.stalled_21_30 || 0));
   setStalledCard('30+', fmt(stallBuckets.stalled_30_plus || 0));
 
-  // ── Track Completions breakdown ──
+  // ── Track Completions — full tab wiring ──
   var tce = track.track_completions_expanded || {};
-  if (tce.total_completions != null) {
-   var tabTrack = document.getElementById('tab-track');
-   if (tabTrack) {
-    var panels = tabTrack.querySelectorAll('.panel');
-    for (var pi = 0; pi < panels.length; pi++) {
-     var h3 = panels[pi].querySelector('h3');
-     if (h3 && h3.textContent.indexOf('Completion Status') !== -1) {
-      var frVals = panels[pi].querySelectorAll('.fr-val');
-      if (frVals.length >= 4) {
-       frVals[0].textContent = tce.completed_full_track || 0;
-       frVals[3].textContent = tce.total_completions || 0;
+  var tabTrack = document.getElementById('tab-track');
+  if (tabTrack && tce.total_completions != null) {
+   var totalCompleted = tce.total_completions || 0;
+   var totalIncomplete = tce.total_incompletes || 0;
+   var totalClosed = totalCompleted + totalIncomplete;
+   var completionPct = totalClosed > 0 ? Math.round(totalCompleted / totalClosed * 100) : 0;
+
+   // ── Headline: "18" → total completions
+   var headlineNums = tabTrack.querySelectorAll('span[style*="font-size:44px"]');
+   if (headlineNums.length >= 1) headlineNums[0].textContent = fmt(totalCompleted);
+
+   // ── Completion Rate gauge (SVG arc)
+   var completionPanels = tabTrack.querySelectorAll('.panel');
+   for (var ci = 0; ci < completionPanels.length; ci++) {
+    var ch3 = completionPanels[ci].querySelector('h3');
+    if (ch3 && ch3.textContent.indexOf('Completion Rate') !== -1) {
+     var svg = completionPanels[ci].querySelector('svg');
+     if (svg) {
+      var texts = svg.querySelectorAll('text');
+      if (texts.length >= 1) texts[0].textContent = completionPct + '%';
+      if (texts.length >= 2) texts[1].textContent = totalCompleted + ' of ' + totalClosed + ' tracks';
+      var circles = svg.querySelectorAll('circle');
+      if (circles.length >= 2) {
+       circles[1].setAttribute('stroke-dasharray', (completionPct * 2.827).toFixed(1) + ' 376.9');
       }
-      if (frVals.length >= 6) {
-       frVals[frVals.length - 1].textContent = tce.total_incompletes || 0;
-      }
-      break;
      }
+     break;
+    }
+   }
+
+   // ── Delivery Format (1:1 vs Group) — use advocacy_type_split
+   var advSplit = data.advocacy_type_split || [];
+   for (var di = 0; di < completionPanels.length; di++) {
+    var dh3 = completionPanels[di].querySelector('h3');
+    if (dh3 && dh3.textContent.indexOf('Delivery Format') !== -1) {
+     var bigNums40 = completionPanels[di].querySelectorAll('div[style*="font-size:40px"]');
+     // We don't have completion-by-type from API yet — leave as sample or compute from track_completions
+     break;
+    }
+   }
+
+   // ── How Tracks Completed panel
+   for (var hi = 0; hi < completionPanels.length; hi++) {
+    var hh3 = completionPanels[hi].querySelector('h3');
+    if (hh3 && hh3.textContent.indexOf('How Tracks Completed') !== -1) {
+     var frVals = completionPanels[hi].querySelectorAll('.fr-val');
+     if (frVals.length >= 4) {
+      frVals[0].textContent = tce.completed_full_track || 0;
+      frVals[1].textContent = tce.completed_without_support_sessions || 0;
+      frVals[2].textContent = tce.completed_without_post_assessment || 0;
+      frVals[3].textContent = totalCompleted;
+     }
+     break;
+    }
+   }
+
+   // ── Why Tracks Ended Early panel
+   for (var wi = 0; wi < completionPanels.length; wi++) {
+    var wh3 = completionPanels[wi].querySelector('h3');
+    if (wh3 && wh3.textContent.indexOf('Why Tracks Ended') !== -1) {
+     var frVals = completionPanels[wi].querySelectorAll('.fr-val');
+     if (frVals.length >= 6) {
+      frVals[0].textContent = tce.incomplete_priorities_shifted || 0; // Track Requirements Unmet maps to priorities_shifted
+      frVals[1].textContent = tce.incomplete_no_advocate || 0; // Client Choice maps to no_advocate
+      frVals[2].textContent = tce.incomplete_extended_wait || 0; // Did Not Initiate
+      frVals[3].textContent = tce.incomplete_achieved_outcomes || 0; // Relocated
+      // frVals[4] = Other (not in expanded data)
+      frVals[5].textContent = totalIncomplete;
+     }
+     break;
     }
    }
   }

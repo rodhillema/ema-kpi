@@ -36,8 +36,12 @@ router.get('/', async (req, res) => {
       params.push(user.affiliate_id);
       paramIdx++;
     } else if (role === 'administrator' || role === 'supervisor') {
-      // Optional affiliate filter via query param
-      if (req.query.affiliate_id) {
+      // Optional affiliate filter or exclude via query param
+      if (req.query.exclude_affiliate_id) {
+        conditions.push(`u."affiliateId" != $${paramIdx}`);
+        params.push(req.query.exclude_affiliate_id);
+        paramIdx++;
+      } else if (req.query.affiliate_id) {
         conditions.push(`u."affiliateId" = $${paramIdx}`);
         params.push(req.query.affiliate_id);
         paramIdx++;

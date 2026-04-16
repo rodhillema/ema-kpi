@@ -1683,11 +1683,12 @@
 
    // Referral sources aggregate for Q1 Activity
    var refSources = data.referral_sources || [];
-   var totalReferrals = 0, totalIntakes = 0, totalPending = 0;
+   var totalReferrals = 0, totalIntakes = 0, totalPending = 0, totalDidNotEngage = 0;
    refSources.forEach(function(r) {
     totalReferrals += (r.referrals_received || 0);
     totalIntakes += (r.intakes_completed || 0);
     totalPending += (r.pending || 0);
+    totalDidNotEngage += (r.did_not_engage || 0);
    });
 
    // Track completions from track_oversight
@@ -1862,13 +1863,122 @@
     }
    }
 
-   // ── Delivery Format (1:1 vs Group) — use advocacy_type_split
-   var advSplit = data.advocacy_type_split || [];
+   // ── Delivery Format (1:1 vs Group completions)
+   var compByFormat = track.completions_by_format || [];
+   var oneToOneComp = 0, groupComp = 0;
+   compByFormat.forEach(function(f) {
+    if (f.advocacy_type === 'one_to_one') oneToOneComp = f.count || 0;
+    else if (f.advocacy_type === 'group') groupComp = f.count || 0;
+   });
+   var totalFormatComp = oneToOneComp + groupComp;
+   var o2oPct = totalFormatComp > 0 ? Math.round(oneToOneComp / totalFormatComp * 100) : 0;
+   var grpPct = totalFormatComp > 0 ? 100 - o2oPct : 0;
    for (var di = 0; di < completionPanels.length; di++) {
     var dh3 = completionPanels[di].querySelector('h3');
     if (dh3 && dh3.textContent.indexOf('Delivery Format') !== -1) {
      var bigNums40 = completionPanels[di].querySelectorAll('div[style*="font-size:40px"]');
-     // We don't have completion-by-type from API yet — leave as sample or compute from track_completions
+     if (bigNums40.length >= 2) {
+      bigNums40[0].textContent = oneToOneComp;
+      bigNums40[1].textContent = groupComp;
+     }
+     // Update proportion bar
+     var barSegs = completionPanels[di].querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
+     if (barSegs.length >= 2) {
+      barSegs[0].style.flex = o2oPct || 1;
+      barSegs[1].style.flex = grpPct || 1;
+     }
+     // Update legend percentages
+     var legendSpans = completionPanels[di].querySelectorAll('span[style*="font-weight:700"]');
+     if (legendSpans.length >= 2) {
+      legendSpans[0].textContent = o2oPct + '%';
+      legendSpans[1].textContent = grpPct + '%';
+     }
+     break;
+    }
+   }
+
+   // ── Language Split
+   var compByTrack = track.completions_by_track || [];
+   var engCount = 0, spaCount = 0;
+   compByTrack.forEach(function(t) {
+    if (t.language === 'english') engCount += t.total_closed || 0;
+    else if (t.language === 'spanish') spaCount += t.total_closed || 0;
+   });
+   var totalLang = engCount + spaCount;
+   var engPct = totalLang > 0 ? Math.round(engCount / totalLang * 100) : 0;
+   var spaPct = totalLang > 0 ? 100 - engPct : 0;
+   var langPanel = tabTrack.querySelector('h3');
+   var langPanels = tabTrack.querySelectorAll('h3');
+   for (var li = 0; li < langPanels.length; li++) {
+    if (langPanels[li].textContent.indexOf('Language Split') !== -1) {
+     var langContainer = langPanels[li].parentElement;
+     var langBars = langContainer.querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
+     if (langBars.length >= 2) {
+      langBars[0].style.flex = engPct || 1;
+      langBars[1].style.flex = spaPct || 1;
+     }
+     var langLegends = langContainer.querySelectorAll('span[style*="font-weight:700"]');
+     if (langLegends.length >= 2) {
+      langLegends[0].textContent = engPct + '%';
+      langLegends[1].textContent = spaPct + '%';
+     }
+     break;
+    }
+   }
+
+   // ── Share of Tracks Closed by Type
+   // Group English+Spanish variants: NPP, EP, RR
+   var nppClosed = 0, epClosed = 0, rrClosed = 0;
+   compByTrack.forEach(function(t) {
+    var title = (t.track_title || '').toLowerCase();
+    if (title.indexOf('nurturing') !== -1 || title.indexOf('crianza con') !== -1) nppClosed += t.total_closed || 0;
+    else if (title.indexOf('empowered') !== -1 || title.indexOf('crianza empoderada') !== -1) epClosed += t.total_closed || 0;
+    else if (title.indexOf('roadmap') !== -1 || title.indexOf('ruta') !== -1) rrClosed += t.total_closed || 0;
+   });
+   var totalByType = nppClosed + epClosed + rrClosed;
+   var nppPct = totalByType > 0 ? Math.round(nppClosed / totalByType * 100) : 0;
+   var epPct = totalByType > 0 ? Math.round(epClosed / totalByType * 100) : 0;
+   var rrPct = totalByType > 0 ? 100 - nppPct - epPct : 0;
+   for (var si = 0; si < langPanels.length; si++) {
+    if (langPanels[si].textContent.indexOf('Share of Tracks Closed') !== -1) {
+     var shareContainer = langPanels[si].parentElement;
+     var shareBars = shareContainer.querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
+     if (shareBars.length >= 3) {
+      shareBars[0].style.flex = nppClosed || 1;
+      shareBars[1].style.flex = epClosed || 1;
+      shareBars[2].style.flex = rrClosed || 1;
+     }
+     var shareLegends = shareContainer.querySelectorAll('span[style*="font-weight:700"]');
+     if (shareLegends.length >= 3) {
+      shareLegends[0].textContent = nppClosed + ' \u00B7 ' + nppPct + '%';
+      shareLegends[1].textContent = epClosed + ' \u00B7 ' + epPct + '%';
+      shareLegends[2].textContent = rrClosed + ' \u00B7 ' + rrPct + '%';
+     }
+     break;
+    }
+   }
+
+   // ── Completion Rate by Track table
+   var nppCompleted = 0, epCompleted = 0, rrCompleted = 0;
+   compByTrack.forEach(function(t) {
+    var title = (t.track_title || '').toLowerCase();
+    if (title.indexOf('nurturing') !== -1 || title.indexOf('crianza con') !== -1) nppCompleted += t.completed || 0;
+    else if (title.indexOf('empowered') !== -1 || title.indexOf('crianza empoderada') !== -1) epCompleted += t.completed || 0;
+    else if (title.indexOf('roadmap') !== -1 || title.indexOf('ruta') !== -1) rrCompleted += t.completed || 0;
+   });
+   var compRateTables = tabTrack.querySelectorAll('.affiliate-table-wrap');
+   for (var cri = 0; cri < compRateTables.length; cri++) {
+    var crH3 = compRateTables[cri].querySelector('h3');
+    if (crH3 && crH3.textContent.indexOf('Completion Rate by Track') !== -1) {
+     var crTbody = compRateTables[cri].querySelector('tbody');
+     if (crTbody) {
+      var nppRate = nppClosed > 0 ? Math.round(nppCompleted / nppClosed * 100) + '%' : '\u2014';
+      var epRate = epClosed > 0 ? Math.round(epCompleted / epClosed * 100) + '%' : '\u2014';
+      var rrRate = rrClosed > 0 ? Math.round(rrCompleted / rrClosed * 100) + '%' : '\u2014';
+      crTbody.innerHTML = '<tr><td><strong>Nurturing Parenting (NPP)</strong></td><td>' + nppClosed + '</td><td>' + nppCompleted + '</td><td><strong>' + nppRate + '</strong></td></tr>'
+       + '<tr><td><strong>Empowered Parenting (EP)</strong></td><td>' + epClosed + '</td><td>' + epCompleted + '</td><td><strong>' + epRate + '</strong></td></tr>'
+       + '<tr><td><strong>Roadmap to Resilience (RR)</strong></td><td>' + rrClosed + '</td><td>' + rrCompleted + '</td><td><strong>' + rrRate + '</strong></td></tr>';
+     }
      break;
     }
    }

@@ -122,6 +122,7 @@ router.get('/', async (req, res) => {
       sessionDepth,
       sessionsByTrack,
       referralSources,
+      didNotEngageReasons,
       advocacyTypeSplit,
       advocatePipeline,
       advocateSubStatus,
@@ -671,7 +672,10 @@ router.get('/', async (req, res) => {
 
       pool.query(`
         SELECT
-          COALESCE(a."name", 'Unknown / Not Recorded') AS referral_source,
+          CASE
+            WHEN a."name" IS NULL OR a."name" ~ '^[0-9a-f]{8}-' THEN 'Unknown / Not Recorded'
+            ELSE a."name"
+          END AS referral_source,
           COUNT(*)::int AS referrals_received,
           SUM(CASE WHEN m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS intakes_completed,
           SUM(CASE WHEN m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
@@ -682,8 +686,23 @@ router.get('/', async (req, res) => {
           AND m."created_at" >= '${PERIOD_START}'
           AND m."created_at" <= '${PERIOD_END} 23:59:59'
           ${affWhere}
-        GROUP BY COALESCE(a."name", 'Unknown / Not Recorded')
+        GROUP BY 1
         ORDER BY referrals_received DESC
+      `, affParams),
+
+      // ─── Did Not Engage reasons breakdown ──────────────────
+      pool.query(`
+        SELECT
+          COALESCE(m."referral_sub_status"::text, 'no_reason_recorded') AS reason,
+          COUNT(*)::int AS count
+        FROM "Mom" m
+        WHERE m."deleted_at" = 0
+          AND m."prospect_status"::text = 'did_not_engage_in_program'
+          AND m."created_at" >= '${PERIOD_START}'
+          AND m."created_at" <= '${PERIOD_END} 23:59:59'
+          ${affWhere}
+        GROUP BY m."referral_sub_status"::text
+        ORDER BY count DESC
       `, affParams),
 
       // ─── NEW: Advocacy Type Split ───────────────────────────
@@ -1051,6 +1070,7 @@ router.get('/', async (req, res) => {
 
       // Referral sources
       referral_sources: referralSources.rows,
+      did_not_engage_reasons: didNotEngageReasons.rows,
 
       // Advocacy type split
       advocacy_type_split: advocacyTypeSplit.rows,

@@ -536,10 +536,9 @@ async function loadAdvocates() {
 }
 async function loadAffiliateSlicer() {
   try {
-    var res = await fetch('/api/report-data');
+    var res = await fetch('/api/affiliates');
     if (!res.ok) return;
-    var data = await res.json();
-    var affiliates = data.affiliates || [];
+    var affiliates = await res.json();
     if (affiliates.length === 0) return;
     var sel = document.getElementById('affiliateSlicer');
     sel.style.display = '';

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ĒMA - Data Integrity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;--green:#123939;--green-lt:#ecefe1;--yellow:#f2a136;--dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--border:#E0E0E0;--bg:#fdf7f3;--white:#fff}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;display:flex;flex-direction:column}
+
+/* Nav */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-icon{font-family:'Shrikhand',cursive;font-size:28px;color:var(--white);line-height:1}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* Main content */
+.main{flex:1;display:flex;justify-content:center;padding:48px 24px 80px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;max-width:720px;width:100%;padding:48px 44px;box-shadow:0 2px 16px rgba(0,0,0,.04)}
+.card-title{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);margin-bottom:6px}
+.card-subtitle{font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:32px}
+.section-label{font-family:'Oswald',sans-serif;font-size:12px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:var(--red);margin:28px 0 10px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';height:1px;flex:1;background:var(--border)}
+.section-label:first-of-type{margin-top:0}
+.body-text{font-size:15px;line-height:1.7;color:var(--dark);margin-bottom:16px}
+.body-text:last-child{margin-bottom:0}
+.principle-list{list-style:none;padding:0;margin:0 0 16px}
+.principle-list li{position:relative;padding:10px 0 10px 28px;font-size:15px;line-height:1.6;color:var(--dark);border-bottom:1px solid var(--bg)}
+.principle-list li:last-child{border-bottom:none}
+.principle-list li::before{content:'';position:absolute;left:0;top:18px;width:10px;height:10px;border-radius:50%;background:var(--green)}
+.callout{background:var(--green-lt);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0;font-size:14px;line-height:1.6;color:var(--green)}
+.callout strong{font-weight:700}
+
+/* Footer */
+.footer{background:var(--green);padding:20px 36px;text-align:center;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.6)}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-left">
+    <span class="nav-icon">&#x0113;</span>
+    <span class="nav-hub">IMPACT HUB</span>
+  </div>
+  <div class="nav-right">
+    <a href="/" class="nav-link">&larr; Back to Hub</a>
+    <a href="https://app.trellis.org" target="_blank" class="nav-link">Go to Trellis &rarr;</a>
+    <div class="nav-sep"></div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="navAvatar">--</div>
+      <div>
+        <div class="nav-name" id="navName">...</div>
+        <div class="nav-role" id="navRole">...</div>
+      </div>
+    </div>
+    <button class="nav-signout" id="signOutBtn">Sign Out</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div class="card">
+    <h1 class="card-title">Our Approach to Data Integrity</h1>
+    <p class="card-subtitle">How &#x0112;MA ensures accurate, transparent reporting</p>
+
+    <div class="section-label">Core Principles</div>
+    <ul class="principle-list">
+      <li>We never inflate denominators or credit outcomes without valid, verified data.</li>
+      <li>When data is incomplete or missing, we surface it explicitly rather than silently including or excluding records.</li>
+      <li>Every rate shows both the numerator and the denominator: for example, "X of Y eligible moms have valid FWA data."</li>
+      <li>Families Served is calculated using active-during-period logic, not intake count alone.</li>
+      <li>No individual is counted twice across sections of the same report.</li>
+    </ul>
+
+    <div class="section-label">FWA Timestamp Limitation</div>
+    <p class="body-text">
+      When any single domain in the Family Wellness Assessment (FWA) is updated, the entire submission
+      timestamp changes. This means a record may appear "current" even if only one field was touched.
+    </p>
+    <div class="callout">
+      <strong>Our rule:</strong> We never rely solely on the FWA submission timestamp for currency checks.
+      When FWA coverage is low, we flag it explicitly rather than silently computing a KPI from
+      incomplete data.
+    </div>
+
+    <div class="section-label">Transparency in Reporting</div>
+    <p class="body-text">
+      Every metric in the &#x0112;MA Oversight Dashboard is accompanied by context: the data source, the
+      time window, and any known limitations. If a KPI cannot be computed reliably due to data gaps,
+      we display a clear notice rather than presenting a potentially misleading number.
+    </p>
+    <p class="body-text">
+      Foster care cost estimates (approximately $35,000 - $55,000 per year) are framed as
+      "estimated prevention value" and are never presented as hard claims. DCF reporting is
+      Broward-specific and is never conflated with organization-wide KPI reporting.
+    </p>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">&#x0112;MA &middot; Every Mother's Advocate &middot; Data Integrity</footer>
+
+<script>
+(async function(){
+  try {
+    const res = await fetch('/api/me');
+    if (res.ok) {
+      const u = await res.json();
+      const fn = u.firstName || '';
+      const ln = u.lastName || '';
+      const initials = (fn.charAt(0) + ln.charAt(0)).toUpperCase() || '--';
+      document.getElementById('navAvatar').textContent = initials;
+      document.getElementById('navName').textContent = (fn + ' ' + ln).trim() || u.username;
+      document.getElementById('navRole').textContent = (u.role || '').replace(/_/g, ' ');
+    } else {
+      document.getElementById('navName').textContent = 'Guest';
+      document.getElementById('navRole').textContent = '';
+      document.getElementById('navAvatar').textContent = '--';
+    }
+  } catch(e) {
+    document.getElementById('navName').textContent = 'Guest';
+    document.getElementById('navRole').textContent = '';
+  }
+
+  document.getElementById('signOutBtn').addEventListener('click', async function(){
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/';
+  });
+})();
+</script>
+</body>
+</html>

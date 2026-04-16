@@ -74,6 +74,8 @@ router.get('/', async (req, res) => {
         coord."lastName" AS "coordLastName",
         (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."deleted_at" = '0') AS "totalPairings",
         (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."status"::text = 'paired' AND p."deleted_at" = '0') AS "activePairings",
+        (SELECT COUNT(*)::int FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."deleted_at" = 0) AS "totalGroups",
+        (SELECT COUNT(*)::int FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."state"::text = 'active' AND ag."deleted_at" = 0) AS "activeGroups",
         ln."latestNoteDate",
         ln."latestNote"
       FROM "User" u
@@ -116,6 +118,14 @@ router.get('/', async (req, res) => {
     `;
     const pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
 
+    // Fetch AdvocacyGroup assignments for all returned advocates
+    const groupsQuery = `
+      SELECT ag."advocateId", ag."name" AS "groupName", ag."state"::text AS "status", ag."capacity"
+      FROM "AdvocacyGroup" ag
+      WHERE ag."advocateId" = ANY($1) AND ag."deleted_at" = 0
+    `;
+    const groupsResult = await pool.query(groupsQuery, [advocateIds]);
+
     // Group pairings by advocate ID
     const pairingsByAdvocate = {};
     for (const p of pairingsResult.rows) {
@@ -126,6 +136,19 @@ router.get('/', async (req, res) => {
         momName: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim(),
         status: p.status,
         trackTitle: p.trackTitle || null,
+      });
+    }
+
+    // Merge group results into pairings
+    for (const g of groupsResult.rows) {
+      if (!pairingsByAdvocate[g.advocateId]) {
+        pairingsByAdvocate[g.advocateId] = [];
+      }
+      pairingsByAdvocate[g.advocateId].push({
+        momName: g.groupName,
+        status: g.status,
+        trackTitle: 'Group',
+        isGroup: true,
       });
     }
 
@@ -149,12 +172,34 @@ router.get('/', async (req, res) => {
       const lastName = r.lastName || '';
       const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
+      // Correct sub-status mismatches
+      const status = r.status;
+      const subStatus = r.subStatus;
+      const activePairings = r.activePairings;
+      const activeGroups = r.activeGroups;
+      let correctedSubStatus = subStatus;
+      let mismatch = false;
+      if (status === 'Active' && subStatus === 'Paired') {
+        // Check if they actually have an active 1:1 pairing OR active group
+        if (activePairings === 0 && activeGroups === 0) {
+          correctedSubStatus = 'Waiting_To_Be_Paired';
+          mismatch = true;
+        }
+      }
+      if (status === 'Active' && subStatus === 'Waiting_To_Be_Paired') {
+        if (activePairings > 0 || activeGroups > 0) {
+          correctedSubStatus = 'Paired';
+          mismatch = true;
+        }
+      }
+
       return {
         id: r.id,
         name: `${firstName} ${lastName}`.trim(),
         initials,
         status: r.status,
-        subStatus: r.subStatus,
+        subStatus: correctedSubStatus,
+        mismatchFlag: mismatch,
         birthday: r.date_of_birth || null,
         email: r.email || null,
         phone: r.phone || null,
@@ -164,6 +209,8 @@ router.get('/', async (req, res) => {
         monthsActive,
         totalPairings: r.totalPairings,
         activePairings: r.activePairings,
+        totalGroups: r.totalGroups,
+        activeGroups: r.activeGroups,
         latestNoteDate: r.latestNoteDate || null,
         latestNote: r.latestNote || null,
         pairings: pairingsByAdvocate[r.id] || [],

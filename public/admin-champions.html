@@ -87,6 +87,48 @@ tbody tr:hover{background:var(--red-lt)}
 
 /* Loading */
 .loading{text-align:center;padding:32px;color:var(--light);font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+
+/* Import modal */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-backdrop.show{display:flex}
+.modal{background:var(--white);border-radius:10px;max-width:760px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.2);overflow:hidden}
+.modal-hdr{background:var(--red);padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--white)}
+.modal-close{background:transparent;border:none;color:var(--white);font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.modal-body{padding:24px 28px;max-height:70vh;overflow-y:auto}
+.modal-step{margin-bottom:20px}
+.modal-step-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);margin-bottom:8px}
+.modal-hint{font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:10px}
+.modal-hint a{color:var(--red);text-decoration:none;font-weight:600}
+.modal-hint a:hover{text-decoration:underline}
+.file-drop{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;transition:border-color .15s,background .15s;cursor:pointer}
+.file-drop:hover,.file-drop.drag{border-color:var(--red);background:var(--red-lt)}
+.file-drop-hint{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
+.file-drop-name{font-size:13px;color:var(--dark);margin-top:6px;font-weight:600}
+.preview-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.preview-table th{background:var(--red-lt);font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--mid);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+.preview-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--dark)}
+.preview-table tr.invalid td{background:#fef0ed}
+.preview-table tr.invalid td:first-child{color:var(--red-dk);font-weight:600}
+.validation-summary{font-size:12px;color:var(--mid);margin-top:8px}
+.validation-summary .bad{color:var(--red-dk);font-weight:600}
+.result-row{display:flex;gap:16px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;align-items:center}
+.result-row:last-child{border-bottom:none}
+.result-status{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:12px;white-space:nowrap;min-width:74px;text-align:center}
+.result-created{background:var(--green-lt);color:var(--green)}
+.result-skipped{background:#fef3cd;color:#856404}
+.result-failed{background:var(--red-lt);color:var(--red-dk)}
+.result-created-no-email{background:#fde7cf;color:#875c0f}
+.result-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.result-card{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px;text-align:center}
+.result-card-num{font-family:'Oswald',sans-serif;font-size:24px;font-weight:600;color:var(--green)}
+.result-card-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:var(--mid);margin-top:2px}
+.result-card.created .result-card-num{color:var(--green)}
+.result-card.skipped .result-card-num{color:#856404}
+.result-card.failed .result-card-num{color:var(--red-dk)}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;background:var(--bg);border-top:1px solid var(--border)}
+.import-inline-btn{display:inline-flex;align-items:center;gap:6px}
+.import-inline-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 </style>
 </head>
 <body>
@@ -113,7 +155,13 @@ tbody tr:hover{background:var(--red-lt)}
 
   <!-- Add Champion Form -->
   <div class="card">
-    <div class="card-title">Invite New Champion</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div class="card-title" style="margin-bottom:0;">Invite New Champion</div>
+      <button type="button" class="btn btn-outline btn-sm import-inline-btn" onclick="openImportModal()">
+        <svg viewBox="0 0 16 16"><path d="M8 11V3M4 7l4-4 4 4M2 13h12"/></svg>
+        Import from CSV
+      </button>
+    </div>
     <form id="addForm" onsubmit="createChampion(event)">
       <div class="form-row">
         <div class="form-group">
@@ -147,6 +195,68 @@ tbody tr:hover{background:var(--red-lt)}
         </div>
       </div>
     </form>
+  </div>
+
+  <!-- ── Import Modal ──────────────────────────────────────── -->
+  <div class="modal-backdrop" id="importModal" onclick="if(event.target===this)closeImportModal()">
+    <div class="modal">
+      <div class="modal-hdr">
+        <div class="modal-title" id="modalTitle">Import Champions from CSV</div>
+        <button type="button" class="modal-close" onclick="closeImportModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+
+        <!-- Step 1: Upload -->
+        <div id="importStepUpload">
+          <div class="modal-step">
+            <div class="modal-step-label">Step 1 — Get the template</div>
+            <div class="modal-hint">
+              Download a pre-formatted CSV template, fill in champion details, and save. Columns: <strong>firstName, lastName, email, username, affiliate</strong>. Leave <em>affiliate</em> blank for org-wide champions, or use the affiliate name (e.g., <em>Broward</em>).
+              <br><a href="/api/admin/champions/import-template.csv" download>Download CSV template</a>
+            </div>
+          </div>
+          <div class="modal-step">
+            <div class="modal-step-label">Step 2 — Upload your file</div>
+            <label for="csvFile" class="file-drop" id="fileDrop">
+              <div class="file-drop-hint">Click to choose a CSV file, or drag &amp; drop here</div>
+              <div class="file-drop-name" id="fileDropName"></div>
+            </label>
+            <input type="file" id="csvFile" accept=".csv,text/csv" style="display:none" onchange="handleFileSelect(event)">
+          </div>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div id="importStepPreview" style="display:none;">
+          <div class="modal-step-label" id="previewLabel">Preview — first 5 rows</div>
+          <div class="modal-hint">
+            Review the data before importing. Invalid rows will be skipped automatically.
+            Duplicate emails or usernames (already in the system) will also be skipped.
+          </div>
+          <div style="max-height:280px;overflow:auto;border:1px solid var(--border);border-radius:7px;">
+            <table class="preview-table" id="previewTable"></table>
+          </div>
+          <div class="validation-summary" id="validationSummary"></div>
+        </div>
+
+        <!-- Step 3: Importing -->
+        <div id="importStepRunning" style="display:none;text-align:center;padding:40px 20px;">
+          <div class="loading" style="margin-bottom:6px;">Importing&hellip;</div>
+          <div style="font-size:12px;color:var(--mid);" id="runningHint">Sending invite emails. This may take up to a minute depending on row count.</div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="importStepResults" style="display:none;">
+          <div class="modal-step-label">Import complete</div>
+          <div class="result-summary" id="resultSummary"></div>
+          <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:7px;" id="resultDetails"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer" id="modalFooter">
+        <button type="button" class="btn btn-outline" onclick="closeImportModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="importConfirmBtn" onclick="confirmImport()" disabled>Import &amp; Send Invites</button>
+      </div>
+    </div>
   </div>
 
   <!-- Champions Table -->
@@ -378,6 +488,262 @@ async function deleteChampion(id, username) {
     showAlert('error', 'Network error');
     console.error(err);
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CSV IMPORT
+// ═══════════════════════════════════════════════════════════
+let importParsedRows = null; // array of validated row objects
+
+function openImportModal() {
+  resetImportModal();
+  document.getElementById('importModal').classList.add('show');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('show');
+  resetImportModal();
+}
+
+function resetImportModal() {
+  document.getElementById('importStepUpload').style.display = 'block';
+  document.getElementById('importStepPreview').style.display = 'none';
+  document.getElementById('importStepRunning').style.display = 'none';
+  document.getElementById('importStepResults').style.display = 'none';
+  document.getElementById('modalFooter').style.display = 'flex';
+  document.getElementById('importConfirmBtn').style.display = 'inline-block';
+  document.getElementById('importConfirmBtn').disabled = true;
+  document.getElementById('importConfirmBtn').textContent = 'Import & Send Invites';
+  document.getElementById('modalTitle').textContent = 'Import Champions from CSV';
+  document.getElementById('fileDropName').textContent = '';
+  document.getElementById('csvFile').value = '';
+  importParsedRows = null;
+}
+
+// Drag-and-drop support on the file drop target (wired immediately — script runs at end of body)
+function initFileDrop() {
+  const drop = document.getElementById('fileDrop');
+  if (!drop) return;
+  ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    drop.classList.add('drag');
+  }));
+  ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    drop.classList.remove('drag');
+  }));
+  drop.addEventListener('drop', ev => {
+    const file = ev.dataTransfer.files && ev.dataTransfer.files[0];
+    if (file) processCsvFile(file);
+  });
+}
+initFileDrop();
+
+function handleFileSelect(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (file) processCsvFile(file);
+}
+
+function processCsvFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showAlert('error', 'Please upload a .csv file');
+    return;
+  }
+  document.getElementById('fileDropName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const rows = parseCsv(e.target.result);
+      previewRows(rows);
+    } catch (err) {
+      showAlert('error', 'Failed to parse CSV: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Simple CSV parser — handles quoted fields, commas inside quotes, escaped quotes ("")
+function parseCsv(text) {
+  const rows = [];
+  let cur = [''];
+  let inQuotes = false;
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') { cur[cur.length - 1] += '"'; i += 2; continue; }
+      if (ch === '"') { inQuotes = false; i++; continue; }
+      cur[cur.length - 1] += ch; i++; continue;
+    }
+    if (ch === '"') { inQuotes = true; i++; continue; }
+    if (ch === ',') { cur.push(''); i++; continue; }
+    if (ch === '\r') { i++; continue; }
+    if (ch === '\n') {
+      rows.push(cur);
+      cur = [''];
+      i++; continue;
+    }
+    cur[cur.length - 1] += ch; i++;
+  }
+  if (cur.length > 1 || cur[0] !== '') rows.push(cur);
+  // Filter out fully-empty rows
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+function previewRows(rawRows) {
+  if (rawRows.length < 2) {
+    showAlert('error', 'CSV has no data rows');
+    return;
+  }
+  const header = rawRows[0].map(h => h.trim().toLowerCase());
+  const required = ['firstname', 'lastname', 'email', 'username'];
+  const missing = required.filter(f => !header.includes(f));
+  if (missing.length) {
+    showAlert('error', 'Missing required columns: ' + missing.join(', '));
+    return;
+  }
+  const idx = {
+    firstName: header.indexOf('firstname'),
+    lastName: header.indexOf('lastname'),
+    email: header.indexOf('email'),
+    username: header.indexOf('username'),
+    affiliate: header.indexOf('affiliate'), // -1 if absent
+  };
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const parsed = [];
+  for (let r = 1; r < rawRows.length; r++) {
+    const row = rawRows[r];
+    const obj = {
+      rowNum: r + 1,
+      firstName: (row[idx.firstName] || '').trim(),
+      lastName: (row[idx.lastName] || '').trim(),
+      email: (row[idx.email] || '').trim(),
+      username: (row[idx.username] || '').trim().toLowerCase(),
+      affiliate: idx.affiliate >= 0 ? (row[idx.affiliate] || '').trim() : '',
+    };
+    // Validate
+    const errs = [];
+    if (!obj.firstName) errs.push('missing firstName');
+    if (!obj.lastName) errs.push('missing lastName');
+    if (!obj.email) errs.push('missing email');
+    else if (!emailRegex.test(obj.email)) errs.push('invalid email');
+    if (!obj.username) errs.push('missing username');
+    obj.errors = errs;
+    obj.valid = errs.length === 0;
+    parsed.push(obj);
+  }
+
+  importParsedRows = parsed;
+
+  // Render preview
+  const tbl = document.getElementById('previewTable');
+  const head = '<thead><tr><th>Row</th><th>First</th><th>Last</th><th>Email</th><th>Username</th><th>Affiliate</th><th>Issue</th></tr></thead>';
+  const showRows = parsed.slice(0, 5);
+  const bodyRows = showRows.map(r => `
+    <tr class="${r.valid ? '' : 'invalid'}">
+      <td>${r.rowNum}</td>
+      <td>${esc(r.firstName)}</td>
+      <td>${esc(r.lastName)}</td>
+      <td>${esc(r.email)}</td>
+      <td>${esc(r.username)}</td>
+      <td>${esc(r.affiliate) || '<span style="color:var(--light)">—</span>'}</td>
+      <td>${r.valid ? '<span style="color:#3e8e3e">OK</span>' : '<span style="color:var(--red-dk)">' + esc(r.errors.join(', ')) + '</span>'}</td>
+    </tr>
+  `).join('');
+  tbl.innerHTML = head + '<tbody>' + bodyRows + '</tbody>';
+
+  // Preview label with count
+  document.getElementById('previewLabel').textContent = `Preview — ${parsed.length} row${parsed.length === 1 ? '' : 's'} detected (showing first ${Math.min(5, parsed.length)})`;
+
+  // Validation summary
+  const valid = parsed.filter(r => r.valid).length;
+  const invalid = parsed.length - valid;
+  const sumEl = document.getElementById('validationSummary');
+  sumEl.innerHTML = invalid > 0
+    ? `<span class="bad">${invalid} row${invalid === 1 ? '' : 's'} will be skipped</span> due to validation errors. <strong>${valid}</strong> row${valid === 1 ? '' : 's'} will be imported.`
+    : `All <strong>${valid}</strong> row${valid === 1 ? '' : 's'} look valid and will be imported.`;
+
+  // Show preview step, enable confirm
+  document.getElementById('importStepUpload').style.display = 'none';
+  document.getElementById('importStepPreview').style.display = 'block';
+  document.getElementById('importConfirmBtn').disabled = valid === 0;
+  document.getElementById('importConfirmBtn').textContent = `Import ${valid} Champion${valid === 1 ? '' : 's'}`;
+}
+
+async function confirmImport() {
+  if (!importParsedRows) return;
+  const toImport = importParsedRows.filter(r => r.valid).map(r => ({
+    firstName: r.firstName,
+    lastName: r.lastName,
+    email: r.email,
+    username: r.username,
+    affiliate: r.affiliate,
+  }));
+  if (toImport.length === 0) return;
+
+  document.getElementById('importStepPreview').style.display = 'none';
+  document.getElementById('importStepRunning').style.display = 'block';
+  document.getElementById('importConfirmBtn').disabled = true;
+  document.getElementById('runningHint').textContent = `Sending ${toImport.length} invite email${toImport.length === 1 ? '' : 's'}. This may take up to a minute.`;
+
+  try {
+    const res = await fetch(API_BASE + '/bulk-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ champions: toImport }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showAlert('error', err.error || 'Bulk import failed');
+      closeImportModal();
+      return;
+    }
+    const result = await res.json();
+    showResults(result);
+    loadChampions(); // refresh table
+  } catch (err) {
+    console.error(err);
+    showAlert('error', 'Network error during import');
+    closeImportModal();
+  }
+}
+
+function showResults(result) {
+  document.getElementById('importStepRunning').style.display = 'none';
+  document.getElementById('importStepResults').style.display = 'block';
+  document.getElementById('modalTitle').textContent = 'Import Results';
+  document.getElementById('importConfirmBtn').style.display = 'none';
+  document.querySelector('#modalFooter .btn-outline').textContent = 'Close';
+
+  // Summary cards
+  const sum = document.getElementById('resultSummary');
+  sum.innerHTML = `
+    <div class="result-card"><div class="result-card-num">${result.total}</div><div class="result-card-lbl">Rows Processed</div></div>
+    <div class="result-card created"><div class="result-card-num">${result.created}</div><div class="result-card-lbl">Created</div></div>
+    <div class="result-card skipped"><div class="result-card-num">${result.skipped}</div><div class="result-card-lbl">Skipped</div></div>
+    <div class="result-card failed"><div class="result-card-num">${result.failed}</div><div class="result-card-lbl">Failed</div></div>
+  `;
+
+  // Details
+  const det = document.getElementById('resultDetails');
+  if (!result.details || result.details.length === 0) {
+    det.innerHTML = '<div style="padding:18px;text-align:center;color:var(--light);font-size:13px;">No detail records returned.</div>';
+    return;
+  }
+  // Sort: failed first, then created-no-email, then skipped, then created
+  const order = { failed: 0, 'created-no-email': 1, skipped: 2, created: 3 };
+  const sorted = [...result.details].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  det.innerHTML = sorted.map(d => `
+    <div class="result-row">
+      <div class="result-status result-${d.status}">${d.status === 'created-no-email' ? 'Partial' : d.status}</div>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${esc(d.email || '(no email)')}</div>
+        <div style="color:var(--mid);font-size:12px;">Row ${d.row}: ${esc(d.message || '')}${d.affiliateName ? ' · ' + esc(d.affiliateName) : ''}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 // ── Escape HTML ─────────────────────────────────────────

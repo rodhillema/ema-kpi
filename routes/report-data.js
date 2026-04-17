@@ -931,10 +931,10 @@ router.get('/', async (req, res) => {
             )
             OR EXISTS (
               SELECT 1 FROM "Session" s
-              JOIN "Pairing" p2 ON p2."id" = s."pairingId"
+              JOIN "Pairing" p2 ON p2."id" = s."pairing_id"
               WHERE p2."momId" = m."id" AND s."deleted_at" = 0
                 AND s."status"::text = 'Held'
-                AND s."scheduled_at" >= '${PERIOD_START}' AND s."scheduled_at" <= '${PERIOD_END} 23:59:59'
+                AND s."date_start" >= '${PERIOD_START}' AND s."date_start" <= '${PERIOD_END} 23:59:59'
             )
           )
           ${affWhere}

@@ -800,42 +800,59 @@ router.get('/', async (req, res) => {
         FROM categorized
       `, affParams),
 
-      // ─── Advocate Q1 Activity (from AuditLog — true event-based) ──
+      // ─── Advocate Q1 Activity (read from User table directly) ──
+      // AuditLog-based event detection was unreliable (JSON shape inconsistent,
+      // Railway editor couldn't render rows for diagnosis). This version reads
+      // current advocate state from the User table and anchors on created_at /
+      // updated_at timestamps. Less precise than event-based tracking (won't
+      // capture advocates who cycled through multiple statuses in Q1) but
+      // produces real numbers that reflect Q1 activity.
+      //
+      // Filters:
+      // - advocate_status IS NOT NULL → user was onboarded as an advocate
+      // - deleted_at = 0 → active user record
+      // - Applications = new advocate users created during Q1
+      // - Trained = users at or past Training_Completed whose records were created in Q1
+      // - Approved = users at Training_Completed specifically, created in Q1
+      // - Became Active = users with advocate_status='Active' whose records were updated in Q1
+      // - Became Inactive = users with advocate_status='Inactive' whose records were updated in Q1
       pool.query(`
-        WITH first_sub_transitions AS (
-          SELECT data->>'id' AS user_id, data->>'advocate_sub_status' AS sub_status,
-            MIN(created_at) AS first_reached
-          FROM "AuditLog"
-          WHERE "table" = 'User' AND action = 'Update'
-            AND data->>'advocate_sub_status' IS NOT NULL
-          GROUP BY data->>'id', data->>'advocate_sub_status'
-        ),
-        q1_subs AS (
-          SELECT sub_status, COUNT(DISTINCT user_id)::int AS advocates
-          FROM first_sub_transitions
-          WHERE first_reached >= '${PERIOD_START}' AND first_reached <= '${PERIOD_END} 23:59:59'
-          GROUP BY sub_status
-        ),
-        first_active AS (
-          SELECT data->>'id' AS user_id, MIN(created_at) AS first_date
-          FROM "AuditLog"
-          WHERE "table" = 'User' AND action = 'Update'
-            AND data->>'advocate_status' = 'Active'
-          GROUP BY data->>'id'
-        ),
-        first_inactive AS (
-          SELECT data->>'id' AS user_id, MIN(created_at) AS first_date
-          FROM "AuditLog"
-          WHERE "table" = 'User' AND action = 'Update'
-            AND data->>'advocate_status' = 'Inactive'
-          GROUP BY data->>'id'
-        )
         SELECT
-          (SELECT COALESCE(SUM(advocates), 0)::int FROM q1_subs WHERE sub_status IN ('Interested', 'In_Training')) AS applications,
-          (SELECT COALESCE(advocates, 0) FROM q1_subs WHERE sub_status = 'In_Training') AS trained,
-          (SELECT COALESCE(advocates, 0) FROM q1_subs WHERE sub_status = 'Training_Completed') AS approved,
-          (SELECT COUNT(DISTINCT user_id)::int FROM first_active WHERE first_date >= '${PERIOD_START}' AND first_date <= '${PERIOD_END} 23:59:59') AS became_active,
-          (SELECT COUNT(DISTINCT user_id)::int FROM first_inactive WHERE first_date >= '${PERIOD_START}' AND first_date <= '${PERIOD_END} 23:59:59') AS became_inactive
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."advocate_status" IS NOT NULL
+              AND u."deleted_at" = 0
+              AND u."created_at" >= '${PERIOD_START}'
+              AND u."created_at" <= '${PERIOD_END} 23:59:59'
+          ) AS applications,
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_sub_status"::text IN (
+                'Training_Completed','Waiting_To_Be_Paired','Paired',
+                'Pending_Final_Steps','Taking_A_Break'
+              )
+              AND u."created_at" >= '${PERIOD_START}'
+              AND u."created_at" <= '${PERIOD_END} 23:59:59'
+          ) AS trained,
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_sub_status"::text IN (
+                'Training_Completed','Waiting_To_Be_Paired','Paired','Pending_Final_Steps'
+              )
+              AND u."created_at" >= '${PERIOD_START}'
+              AND u."created_at" <= '${PERIOD_END} 23:59:59'
+          ) AS approved,
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_status"::text = 'Active'
+              AND u."updated_at" >= '${PERIOD_START}'
+              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+          ) AS became_active,
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_status"::text = 'Inactive'
+              AND u."updated_at" >= '${PERIOD_START}'
+              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+          ) AS became_inactive
       `),
 
       // ─── NEW: Children with Welfare Involvement ─────────────

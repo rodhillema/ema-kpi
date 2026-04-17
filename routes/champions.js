@@ -433,7 +433,7 @@ router.post('/:id/send-password-reset', async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE "ChampionUser"
        SET "resetToken" = $1,
-           "resetExpiresAt" = NOW() + INTERVAL '1 hour'
+           "resetExpiresAt" = NOW() + INTERVAL '48 hours'
        WHERE "id" = $2 AND "deleted_at" = 0
        RETURNING "email", "firstName", "username", "status"`,
       [resetToken, id]

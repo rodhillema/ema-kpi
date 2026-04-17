@@ -168,7 +168,7 @@ router.post('/forgot-password', async (req, res) => {
       await pool.query(
         `UPDATE "ChampionUser"
          SET "resetToken" = $1,
-             "resetExpiresAt" = NOW() + INTERVAL '1 hour'
+             "resetExpiresAt" = NOW() + INTERVAL '48 hours'
          WHERE "id" = $2`,
         [resetToken, champion.id]
       );

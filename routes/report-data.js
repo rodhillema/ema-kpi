@@ -29,6 +29,48 @@ const REQUIRED_SESSIONS = {
   'Hoja de ruta hacia la resiliencia RR': 4,
 };
 
+// ─── In-memory response cache ────────────────────────────────
+// Keyed by (affiliate scope) — NOT per-user — because scoping is deterministic
+// from role + affiliateId + filters. Two users with the same effective scope
+// share the same cached response.
+// TTL: 10 minutes. Admin can bypass with ?refresh=true.
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const responseCache = new Map(); // key: string → { data, expires }
+let cacheHits = 0;
+let cacheMisses = 0;
+
+function buildCacheKey(isOrgWide, affiliateFilter, excludeAffiliateId) {
+  if (excludeAffiliateId) return `exclude:${excludeAffiliateId}`;
+  if (isOrgWide) return 'all';
+  return `aff:${affiliateFilter}`;
+}
+
+function cacheGet(key) {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function cacheSet(key, data) {
+  responseCache.set(key, { data, expires: Date.now() + CACHE_TTL_MS });
+  // Cap total entries (simple LRU-ish: if > 50, drop oldest)
+  if (responseCache.size > 50) {
+    const firstKey = responseCache.keys().next().value;
+    responseCache.delete(firstKey);
+  }
+}
+
+// Expose a way to bust the cache (e.g. when data mutations happen)
+function cacheBust() {
+  responseCache.clear();
+  console.log('[REPORT-CACHE] Cache cleared');
+}
+router.cacheBust = cacheBust;
+
 router.get('/', async (req, res) => {
   try {
     const { role, affiliateId } = req.session.user;
@@ -42,6 +84,23 @@ router.get('/', async (req, res) => {
       affiliateFilter = req.query.affiliate_id;
     }
     const isOrgWide = isOrgWideRole && !req.query.affiliate_id && !excludeAffiliateId;
+
+    // ─── Cache check ────────────────────────────────────────
+    const cacheKey = buildCacheKey(isOrgWide, affiliateFilter, excludeAffiliateId);
+    const bypassCache = req.query.refresh === 'true';
+    if (!bypassCache) {
+      const cached = cacheGet(cacheKey);
+      if (cached) {
+        cacheHits++;
+        res.setHeader('X-Report-Cache', 'HIT');
+        if (cacheHits % 10 === 0) {
+          console.log(`[REPORT-CACHE] ${cacheHits} hits / ${cacheMisses} misses (hit ratio ${Math.round(100 * cacheHits / (cacheHits + cacheMisses))}%)`);
+        }
+        return res.json(cached);
+      }
+    }
+    cacheMisses++;
+    res.setHeader('X-Report-Cache', bypassCache ? 'BYPASS' : 'MISS');
 
     // Build WHERE clause for affiliate scoping
     let affWhere, affWhereUser, affParams;
@@ -1048,7 +1107,7 @@ router.get('/', async (req, res) => {
 
     // ─── Build response envelope ────────────────────────────
 
-    res.json({
+    const responsePayload = {
       meta: {
         period: PERIOD_LABEL,
         period_start: PERIOD_START,
@@ -1129,7 +1188,11 @@ router.get('/', async (req, res) => {
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,
-    });
+    };
+
+    // Store in cache, then send
+    cacheSet(cacheKey, responsePayload);
+    res.json(responsePayload);
 
   } catch (err) {
     console.error('Report data error:', err);

@@ -11,10 +11,21 @@ const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { sendInviteEmail, sendResetEmail } = require('../lib/email');
 
-// Middleware: require administrator role
+// Whitelist — only these usernames can access Champion Management, even among administrators
+// Add additional usernames here if you later want to delegate this capability
+const CHAMPION_ADMIN_WHITELIST = ['rd.hill'];
+
+// Middleware: require administrator role AND whitelisted username
 function requireAdmin(req, res, next) {
-  if (req.session.user && req.session.user.role === 'administrator') return next();
-  res.status(403).json({ error: 'Access denied — administrator role required' });
+  const u = req.session.user;
+  if (!u || u.role !== 'administrator') {
+    return res.status(403).json({ error: 'Access denied — administrator role required' });
+  }
+  const uname = (u.username || '').toLowerCase();
+  if (!CHAMPION_ADMIN_WHITELIST.includes(uname)) {
+    return res.status(403).json({ error: 'Access denied — Champion Management is restricted' });
+  }
+  next();
 }
 
 // Apply auth + admin check to all routes

@@ -83,7 +83,8 @@ tbody tr:hover{background:var(--red-lt)}
 .empty{text-align:center;padding:48px 24px;color:var(--light);font-size:14px}
 
 /* Actions cell */
-.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;white-space:nowrap}
+.actions .btn-sm{padding:6px 11px;font-size:10.5px;letter-spacing:.8px}
 
 /* Loading */
 .loading{text-align:center;padding:32px;color:var(--light);font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
@@ -395,7 +396,7 @@ function actionButtons(c) {
     btns.push(`<button class="btn btn-sm btn-yellow" onclick="resendInvite('${c.id}')">Resend Invite</button>`);
     btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
   } else if (c.status === 'active') {
-    btns.push(`<button class="btn btn-sm btn-yellow" onclick="sendPasswordReset('${c.id}','${esc(c.email)}')">Send Password Reset</button>`);
+    btns.push(`<button class="btn btn-sm btn-yellow" onclick="sendPasswordReset('${c.id}','${esc(c.email)}')">Reset Password</button>`);
     btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
   } else if (c.status === 'disabled') {
     btns.push(`<button class="btn btn-sm btn-green" onclick="enableChampion('${c.id}')">Enable</button>`);

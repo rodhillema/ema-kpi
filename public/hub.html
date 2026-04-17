@@ -261,7 +261,7 @@ body.show-forgot #forgot-form{display:block}
 <div class="rrow-soon-t">Data Integrity Reports</div>
 <div class="rrow-soon-r"><div class="rb rb-soon">HQ Admin</div></div>
 </div>
-<a href="/admin/champions" class="type-row vis-a" style="border-left-color:var(--dark);text-decoration:none;cursor:pointer;margin-top:5px">
+<a href="/admin/champions" id="championMgmtLink" class="type-row vis-a" style="border-left-color:var(--dark);text-decoration:none;cursor:pointer;margin-top:5px">
 <div class="type-row-body"><div class="type-row-t">Champion Management</div></div>
 <div class="type-row-r"><div class="rb rb-ready">Manage</div><div class="rarr">&#8594;</div></div>
 </a>
@@ -289,6 +289,12 @@ if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
 if(r)r.textContent=L[u.role]||u.role;
 if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
 if(w)w.textContent="Welcome back, "+(u.firstName||"");
+// Champion Management visibility — gated to specific usernames (not all admins)
+var CHAMPION_MGMT_ALLOWED=["rd.hill"];
+var champLink=document.getElementById("championMgmtLink");
+if(champLink&&!CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
+  champLink.style.display="none";
+}
 // Affiliate scope display
 var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
 if(scope&&scopeVal){

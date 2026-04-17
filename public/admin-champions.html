@@ -291,6 +291,9 @@ async function checkAuth() {
     const data = await res.json();
     const user = data.user || data;
     if (user.role !== 'administrator') { window.location.href = '/'; return; }
+    // Whitelist check — mirrors backend. Adjust if you add more users.
+    const ALLOWED = ['rd.hill'];
+    if (!ALLOWED.includes((user.username || '').toLowerCase())) { window.location.href = '/'; return; }
     currentUser = user;
     loadAffiliates();
     loadChampions();

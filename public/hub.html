@@ -61,6 +61,9 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 .nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
 .nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
 .nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
 .nav-user{display:flex;align-items:center;gap:10px}
 .nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
 .nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
@@ -144,6 +147,11 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 <div class="nav-hub">Impact Hub</div>
 </div>
 <div class="nav-right">
+<div class="nav-scope" id="nav-scope" style="display:none;">
+<div class="nav-scope-lbl">Viewing</div>
+<div class="nav-scope-val" id="nav-scope-val">—</div>
+</div>
+<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
 <a href="https://trellis.ema.org/login" class="nav-link nav-trellis" target="_blank">Go to Trellis &#8594;</a>
 <div class="nav-sep nav-trellis"></div>
 <div class="nav-user">
@@ -262,6 +270,14 @@ if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
 if(r)r.textContent=L[u.role]||u.role;
 if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
 if(w)w.textContent="Welcome back, "+(u.firstName||"");
+// Affiliate scope display
+var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
+if(scope&&scopeVal){
+var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
+scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+scope.style.display="";
+if(scopeSep)scopeSep.style.display="";
+}
 }
 async function doLogin(){
 var e=document.getElementById("login-err");e.className="login-err";

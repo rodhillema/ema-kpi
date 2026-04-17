@@ -73,6 +73,9 @@ body.logged-in .portal-view{display:flex}
 .nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
 .nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
 .nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
 .nav-user{display:flex;align-items:center;gap:10px}
 .nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
 .nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
@@ -140,16 +143,16 @@ body.logged-in .portal-view{display:flex}
 .fpill button:hover{opacity:1}
 
 /* ── METRICS ── */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
-.metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 15px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
+.metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative;min-width:0}
 .metric:hover{border-color:var(--green)}
 .metric.active{background:var(--green);border-color:var(--green)}
 .metric.active .metric-lbl{color:var(--green-lt);opacity:.75}
 .metric.active .metric-val{color:#fff}
 .metric.active .metric-sub{color:var(--green-lt);opacity:.6}
-.metric-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:3px}
-.metric-val{font-family:'Oswald',sans-serif;font-size:24px;font-weight:400;color:var(--green);line-height:1}
-.metric-sub{font-size:11px;color:var(--mid);margin-top:2px}
+.metric-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric-val{font-family:'Oswald',sans-serif;font-size:22px;font-weight:400;color:var(--green);line-height:1}
+.metric-sub{font-size:10.5px;color:var(--mid);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── TABLE ── */
 .table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:visible;position:relative}
@@ -298,6 +301,11 @@ thead tr th.c-chev{background:var(--green)!important}
       </a>
     </div>
     <div class="nav-right">
+      <div class="nav-scope" id="nav-scope" style="display:none;">
+        <div class="nav-scope-lbl">Viewing</div>
+        <div class="nav-scope-val" id="nav-scope-val">—</div>
+      </div>
+      <div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
       <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
       <div class="nav-sep"></div>
       <div class="nav-user">
@@ -545,9 +553,23 @@ async function loadAdvocates() {
     if (res.ok) {
       ADVOCATES = await res.json();
       document.querySelector('.portal-view').classList.remove('adv-loading');
+      updateNavScope();
       render();
     }
   } catch (e) { console.error('Failed to load advocates:', e); }
+}
+function updateNavScope() {
+  var scopeVal = document.getElementById('nav-scope-val');
+  if (!scopeVal) return;
+  var sel = document.getElementById('affiliateSlicer');
+  if (!sel || sel.style.display === 'none') return; // coordinators/supervisors keep role-based scope
+  if (sel.value === 'exclude-broward') scopeVal.textContent = 'All except \u0112MA Broward';
+  else if (sel.value && sel.value !== 'all') {
+    var opt = sel.options[sel.selectedIndex];
+    scopeVal.textContent = opt ? opt.textContent : 'All Affiliates';
+  } else {
+    scopeVal.textContent = 'All Affiliates';
+  }
 }
 async function loadAffiliateSlicer() {
   try {
@@ -780,6 +802,7 @@ function getFiltered(){
     }
     if(activeCards.has("active")&&a.status!=="Active")return false;
     if(activeCards.has("paired")&&deriveSub(a).sub!=="Paired")return false;
+    if(activeCards.has("break")&&a.sub!=="Taking A Break"&&a.sub!=="Taking a Break")return false;
     if(activeCards.has("bdays30")&&dbu(a.birthday)>30)return false;
     if(activeCards.has("overdue")&&dsa(a.latestNoteDate)<=14)return false;
     return true;
@@ -835,7 +858,7 @@ function render(){
   if(f.phone) pillDefs.push({label:"Phone: "+f.phone,     clear:()=>{document.getElementById("pf-phone").value="";render()}});
   if(f.note)  pillDefs.push({label:"Note: "+document.getElementById("pf-note").selectedOptions[0].text,clear:()=>{document.getElementById("pf-note").value="";render()}});
   f.coord.forEach(v=>pillDefs.push({label:"Coordinator: "+v,clear:()=>{document.querySelector(`#coord-chips input[value="${v}"]`).checked=false;render()}}));
-  let cardLabels={active:"Active advocates",paired:"Currently paired",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
+  let cardLabels={active:"Active advocates",paired:"Currently paired",break:"Taking a Break",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
   activeCards.forEach(k=>pillDefs.push({label:cardLabels[k],clear:()=>{activeCards.delete(k);render()}}));
   pills.innerHTML=pillDefs.map((p,i)=>`<div class="fpill">${p.label}<button onclick="pillClear(${i})">\u2715</button></div>`).join("");
   window._pillClearFns=pillDefs.map(p=>p.clear);
@@ -843,16 +866,20 @@ function render(){
   document.getElementById("clearBtn").classList.toggle("show",!!hasAnyFilter(f));
   document.getElementById("activeCount").textContent=`${list.length} of ${ADVOCATES.length}`;
 
-  let activeAdvocates=ADVOCATES.filter(a=>a.status==="Active");
-  let active=activeAdvocates.length;
-  let paired=activeAdvocates.filter(a=>deriveSub(a).sub==="Paired").length;
-  let bdays30=activeAdvocates.filter(a=>a.birthday&&dbu(a.birthday)<=30).length;
-  let overdue=activeAdvocates.filter(a=>a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
+  // "In scope" = active advocates OR anyone on a break (regardless of status)
+  // Taking a Break may be Active+TAB (workaround) or Inactive+TAB
+  let inScope=ADVOCATES.filter(a=>a.status==="Active"||a.sub==="Taking A Break"||a.sub==="Taking a Break");
+  let active=ADVOCATES.filter(a=>a.status==="Active").length;
+  let paired=inScope.filter(a=>deriveSub(a).sub==="Paired").length;
+  let takingBreak=ADVOCATES.filter(a=>a.sub==="Taking A Break"||a.sub==="Taking a Break").length;
+  let bdays30=inScope.filter(a=>a.birthday&&dbu(a.birthday)<=30).length;
+  let overdue=inScope.filter(a=>a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
   let mCards=[
-    {key:"active",  lbl:"Active advocates",    val:active,  sub:`of ${ADVOCATES.length} total`},
-    {key:"paired",  lbl:"Currently paired",    val:paired,  sub:"active \u00b7 mom's pairing record"},
-    {key:"bdays30", lbl:"Birthdays in 30 days",val:bdays30, sub:"upcoming milestones"},
-    {key:"overdue", lbl:"Note overdue",         val:overdue, sub:"no note in >14 days"},
+    {key:"active",  lbl:"Active advocates",     val:active,      sub:`of ${ADVOCATES.length} total`},
+    {key:"paired",  lbl:"Currently paired",     val:paired,      sub:"active \u00b7 mom's pairing record"},
+    {key:"break",   lbl:"Taking a Break",       val:takingBreak, sub:"re-engage \u00b7 any status"},
+    {key:"bdays30", lbl:"Birthdays in 30 days", val:bdays30,     sub:"upcoming milestones"},
+    {key:"overdue", lbl:"Note overdue",          val:overdue,     sub:"no note in >14 days"},
   ];
   document.getElementById("metricsBar").innerHTML=mCards.map(c=>`
     <div class="metric${activeCards.has(c.key)?" active":""}" onclick="toggleCard('${c.key}')" title="Click to filter table">
@@ -1025,6 +1052,16 @@ function applySession(u){
   if(nm)nm.textContent=(u.firstName||"")+" "+(u.lastName||"");
   if(rl)rl.textContent=ROLE_LABELS[u.role]||u.role;
   if(av)av.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
+  // Affiliate scope display
+  const scope=document.getElementById("nav-scope");
+  const scopeVal=document.getElementById("nav-scope-val");
+  const scopeSep=document.getElementById("nav-scope-sep");
+  if(scope&&scopeVal){
+    const isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
+    scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+    scope.style.display="";
+    if(scopeSep)scopeSep.style.display="";
+  }
 }
 
 (async function(){

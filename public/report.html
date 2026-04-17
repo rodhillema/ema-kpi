@@ -58,6 +58,9 @@
   .nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
   .nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
   .nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+  .nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+  .nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .nav-scope-val{font-size:12px;font-weight:600}
   .nav-user{display:flex;align-items:center;gap:10px}
   .nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
   .nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
@@ -514,6 +517,11 @@
 <a href="/" style="display:flex;align-items:center;gap:14px;text-decoration:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo"><div class="nav-hub">Impact Hub</div></a>
 </div>
 <div class="nav-right">
+<div class="nav-scope" id="nav-scope" style="display:none;">
+<div class="nav-scope-lbl">Viewing</div>
+<div class="nav-scope-val" id="nav-scope-val">—</div>
+</div>
+<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
 <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
 <div class="nav-sep"></div>
 <!-- RD: User info populated by applySession() -->
@@ -646,10 +654,10 @@
     <details class="kpi-detail">
      <summary>Data integrity notes</summary>
      <div class="kd-body">
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">52 moms who had both a starting assessment on file and a current one within the last 3 months - we need both to measure change</div></div>
+ <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who had both a starting assessment on file and a current one within the last 3 months — we need both to measure change</div></div>
  <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's combined score across 10 life areas from her starting point to her most recent assessment</div></div>
- <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately - it feeds into KPI 1, not this score</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">23 moms who are missing either a starting or current assessment - they appear in the FWA Data Integrity tab for coordinator follow-up</div></div>
+ <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately — it feeds into KPI 1, not this score</div></div>
+ <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms who are missing either a starting or current assessment — they appear in the FWA Data Integrity tab for coordinator follow-up</div></div>
  <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 - there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date - so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
 </div>
@@ -1083,6 +1091,7 @@
    <details class="kpi-detail" style="margin-top:12px;">
     <summary>Data integrity notes</summary>
     <div class="kd-body">
+     <div class="di-row"><div class="di-label">How it's counted</div><div class="di-val">These counts are based on each mom's track record individually. One group facilitator leading a group of 6 moms will appear as 6 tracks here, because each mom's experience is counted separately. This is intentional — it reflects the number of moms served, not the number of facilitators.</div></div>
     </div>
    </details>
   </div>
@@ -1177,7 +1186,6 @@
    <details class="kpi-detail" style="margin-top:10px;">
     <summary>Data integrity notes</summary>
     <div class="kd-body">
-     <div class="di-row"><div class="di-label">Requirements Unmet</div><div class="di-val di-warn">The most common exit reason. Worth reviewing whether these reflect genuine departures or cases where session documentation is incomplete.</div></div>
      <div class="di-row"><div class="di-label">Did Not Initiate</div><div class="di-val di-warn">These moms enrolled in the program but never attended a first session. May indicate a gap between when a mom signs up and when her first session is scheduled.</div></div>
     </div>
    </details>
@@ -1313,7 +1321,7 @@
 <!-- ── SHARED FOOTER (identical to hub.html) ──────────────── -->
 <div class="footer">
 <div class="footer-brand">ĒMA - Every Mother's Advocate</div>
-<a href="integrity.html" class="footer-integrity">Our approach to data integrity &#8594;</a>
+<a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
 </div>
 </div><!-- /portal-view -->
 
@@ -1341,8 +1349,16 @@
   if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
   if(r)r.textContent=L[u.role]||u.role;
   if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
+  /* Affiliate scope display in nav */
+  var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
+  var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
+  if(scope&&scopeVal){
+   scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+   scope.style.display="";
+   if(scopeSep)scopeSep.style.display="";
+  }
   /* Show affiliate slicer only for administrator or org-wide champion */
-  if (u.role === 'administrator' || (u.role === 'champion' && !u.affiliateId)) {
+  if (isOrgWide) {
    document.getElementById('affiliateSlicerWrap').style.display = '';
   }
   /* RD: Once session is valid, load dashboard data */
@@ -1451,6 +1467,17 @@
     var data = await res.json();
     window.__EMA_DATA__ = data;
     renderDashboard(data);
+    // Update nav scope to reflect current filter
+    var scopeVal = document.getElementById('nav-scope-val');
+    if (scopeVal) {
+     if (val === 'exclude-broward') scopeVal.textContent = 'All except \u0112MA Broward';
+     else if (val && val !== 'all') {
+      var opt = this.options[this.selectedIndex];
+      scopeVal.textContent = opt ? opt.textContent : 'All Affiliates';
+     } else {
+      scopeVal.textContent = 'All Affiliates';
+     }
+    }
    }
   } catch (e) { /* fetch failed, non-fatal */ }
  });

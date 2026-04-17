@@ -35,8 +35,9 @@ html{font-size:14px}
 body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
 
 /* ── LOGIN OVERLAY ── */
-.login-view{display:flex;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
-body.logged-in .login-view{display:none}
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none !important}
 .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
 .login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
 .login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
@@ -56,8 +57,8 @@ body.logged-in .login-view{display:none}
 .portal-view{display:none;flex-direction:column;min-height:100vh}
 body.logged-in .portal-view{display:flex}
 /* Loading state */
-.adv-loading .main{visibility:hidden;height:0;overflow:hidden}
-.adv-loading .nav{visibility:visible}
+.adv-loading .toolbar,.adv-loading .metrics,.adv-loading .filter-pills,.adv-loading .table-wrap{visibility:hidden;height:0;overflow:hidden;margin:0;padding:0}
+.adv-loading .nav,.adv-loading .report-hdr{visibility:visible}
 .adv-loading-overlay{display:none;text-align:center;padding:120px 20px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)}
 .adv-loading .adv-loading-overlay{display:block}
 .adv-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
@@ -290,7 +291,6 @@ thead tr th.c-chev{background:var(--green)!important}
 
 <!-- ── PORTAL VIEW (visible once session confirmed) ─────────────────── -->
 <div class="portal-view adv-loading">
-  <div class="adv-loading-overlay"><div class="adv-spinner"></div>Loading advocate data...</div>
 
   <!-- NAV -->
   <nav class="nav">
@@ -331,6 +331,9 @@ thead tr th.c-chev{background:var(--green)!important}
           <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
         </div>
       </div>
+
+      <!-- Loading overlay (below header, hidden once data renders) -->
+      <div class="adv-loading-overlay"><div class="adv-spinner"></div>Loading advocate data&hellip;</div>
 
       <!-- TOOLBAR -->
       <div class="toolbar">
@@ -1076,9 +1079,11 @@ function applySession(u){
         applySession(d.user);
         if(d.user.role==='administrator'||(d.user.role==='champion'&&!d.user.affiliateId)) loadAffiliateSlicer();
         loadAdvocates();
+        return;
       }
     }
-  }catch(x){}
+    document.body.classList.add("show-login");
+  }catch(x){document.body.classList.add("show-login");}
 })();
 
 async function doLogin(){

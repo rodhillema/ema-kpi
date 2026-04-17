@@ -25,9 +25,10 @@
   body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: var(--light-pink); color: var(--dark); font-size: 14px; line-height: 1.5; }
 
   /* ── HUB LOGIN / PORTAL PATTERN ─────────────────────────── */
-  .login-view{display:flex;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px}
+  .login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px}
+  body.show-login .login-view{display:flex}
   .portal-view{display:none;flex-direction:column;min-height:100vh}
-  body.logged-in .login-view{display:none}
+  body.logged-in .login-view{display:none !important}
   body.logged-in .portal-view{display:flex}
   .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
   .login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
@@ -1386,7 +1387,7 @@
 
  /* ── Auto-check session on page load ───────────────────────── */
  /* RD: If user logged into hub and clicks through, /api/me returns their session */
- (async function(){try{var r=await fetch("/api/me");if(r.ok){var d=await r.json();if(d.user)applySession(d.user);}}catch(x){}})();
+ (async function(){try{var r=await fetch("/api/me");if(r.ok){var d=await r.json();if(d.user){applySession(d.user);return;}}document.body.classList.add("show-login");}catch(x){document.body.classList.add("show-login");}})();
 
  /* ── Sign out handler ──────────────────────────────────────── */
  /* RD: POST to /api/logout, redirect back to hub */

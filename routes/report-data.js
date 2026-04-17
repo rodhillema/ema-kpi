@@ -941,25 +941,33 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // KPI 2 — FSS Improvement Rate (target 70%)
-      // Moms with a pre/post assessment pair where the POST is dated in Q1 (+grace).
-      // Improvement = post composite score > pre composite score.
+      // Moms who have a post assessment dated in Q1 (+ grace), paired with their
+      // pre assessment. Improvement = mom's overall post composite > overall pre composite.
       //
       // PERIOD-ANCHORED on the post assessment date since post is when improvement
       // is "realized" for reporting. Pre can be from before Q1 (baseline intake).
       // Does NOT require mom.status='active' now — moms who had a Q1 post-assessment
       // are counted whether or not they're currently in an active pairing.
       pool.query(`
-        WITH mom_scores AS (
+        WITH moms_with_q1_post AS (
+          SELECT DISTINCT ar."momId"
+          FROM "AssessmentResult" ar
+          JOIN "Mom" m ON m."id" = ar."momId"
+          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND ar."type"::text = 'post'
+            AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
+            AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
+            ${affWhere}
+        ),
+        mom_scores AS (
           SELECT ar."momId", ar."type"::text AS atype,
-            COALESCE(ar."completedAt", ar."lastSaved") AS assessment_date,
             AVG(arqr."intResponse")::numeric(10,2) AS avg_score
           FROM "AssessmentResult" ar
           JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
-          JOIN "Mom" m ON m."id" = ar."momId"
-          WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0 AND m."deleted_at" = 0
+          WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0
             AND arqr."intResponse" IS NOT NULL
-            ${affWhere}
-          GROUP BY ar."momId", ar."type"::text, ar."completedAt", ar."lastSaved"
+            AND ar."momId" IN (SELECT "momId" FROM moms_with_q1_post)
+          GROUP BY ar."momId", ar."type"::text
         ),
         paired AS (
           SELECT pre."momId",
@@ -968,8 +976,6 @@ router.get('/', async (req, res) => {
           FROM mom_scores pre
           JOIN mom_scores post ON pre."momId" = post."momId" AND post.atype = 'post'
           WHERE pre.atype = 'pre'
-            AND post.assessment_date >= '${PERIOD_START}'
-            AND post.assessment_date <= '${PERIOD_GRACE_END} 23:59:59'
         )
         SELECT
           COUNT(*)::int AS denominator,

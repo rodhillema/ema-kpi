@@ -53,13 +53,6 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 .login-btn:focus-visible{box-shadow:0 0 0 3px rgba(236,72,47,.3)}
 .login-trellis{display:flex;align-items:center;justify-content:center;margin-top:16px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;transition:color .15s}
 .login-trellis:hover{color:var(--green)}
-.login-forgot{display:block;text-align:center;margin-top:12px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;cursor:pointer;background:none;border:none;padding:0;width:100%;transition:color .15s}
-.login-forgot:hover{color:var(--red)}
-.login-ok{background:#eff7ef;border:1px solid #cfe2cf;border-left:3px solid #3e8e3e;border-radius:6px;padding:10px 12px;font-size:12px;color:#1f5a1f;margin-bottom:14px;line-height:1.5;display:none}
-.login-ok.show{display:block}
-#forgot-form{display:none}
-body.show-forgot #login-form{display:none}
-body.show-forgot #forgot-form{display:block}
 .nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
 .nav-left{display:flex;align-items:center;gap:14px}
 .nav-logo{height:30px;width:auto;display:block}
@@ -141,22 +134,10 @@ body.show-forgot #forgot-form{display:block}
 <div class="login-title">Impact Hub</div>
 <div class="login-sub">Sign in with your Trellis credentials</div>
 <div class="login-err" id="login-err"></div>
-
-<div id="login-form">
 <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="your.name@ema.org" autocomplete="username"></div>
 <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
 <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
 <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Open Trellis Platform</a>
-<button class="login-forgot" type="button" onclick="showForgot()">Forgot password?</button>
-</div>
-
-<div id="forgot-form">
-<div class="login-ok" id="forgot-ok">If an account exists for that email, a reset link has been sent. Check your inbox (and spam folder). The link expires in 1 hour.</div>
-<div class="login-sub" style="text-align:left;margin-bottom:18px;">Enter your email and we'll send you a link to reset your password.<br><br><em style="color:var(--light);font-size:11px;">Note: Only Champion accounts can reset passwords here. For Trellis accounts, reset via Trellis.</em></div>
-<div class="field"><label>Email</label><input id="forgot-email" type="email" placeholder="you@example.org" autocomplete="email"></div>
-<button class="login-btn" type="button" onclick="doForgot()">Send Reset Link</button>
-<button class="login-forgot" type="button" onclick="showLogin()">&larr; Back to sign in</button>
-</div>
 </div></div>
 
 <div class="portal-view">
@@ -320,20 +301,6 @@ document.getElementById("btn-signout").addEventListener("click", async function(
 });
 document.getElementById("login-user").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();document.getElementById("login-pass").focus();}});
 document.getElementById("login-pass").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();doLogin();}});
-function showForgot(){document.body.classList.add("show-forgot");document.getElementById("login-err").className="login-err";document.getElementById("forgot-ok").className="login-ok";setTimeout(function(){document.getElementById("forgot-email").focus();},50);}
-function showLogin(){document.body.classList.remove("show-forgot");document.getElementById("login-err").className="login-err";document.getElementById("forgot-ok").className="login-ok";}
-async function doForgot(){
-var e=document.getElementById("login-err"),ok=document.getElementById("forgot-ok");
-e.className="login-err";ok.className="login-ok";
-var email=document.getElementById("forgot-email").value.trim();
-if(!email){e.textContent="Enter your email";e.className="login-err show";return;}
-try{
-var r=await fetch("/api/champion/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
-if(r.ok){ok.className="login-ok show";document.getElementById("forgot-email").value="";}
-else{var d=await r.json();e.textContent=d.error||"Request failed";e.className="login-err show";}
-}catch(x){e.textContent="Request failed — please try again";e.className="login-err show";}
-}
-document.getElementById("forgot-email").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();doForgot();}});
 document.querySelectorAll("[data-toggle]").forEach(function(row){
 row.addEventListener("click",function(){
 var sub=document.getElementById(this.getAttribute("data-toggle"));

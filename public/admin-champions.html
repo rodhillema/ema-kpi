@@ -395,6 +395,7 @@ function actionButtons(c) {
     btns.push(`<button class="btn btn-sm btn-yellow" onclick="resendInvite('${c.id}')">Resend Invite</button>`);
     btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
   } else if (c.status === 'active') {
+    btns.push(`<button class="btn btn-sm btn-yellow" onclick="sendPasswordReset('${c.id}','${esc(c.email)}')">Send Password Reset</button>`);
     btns.push(`<button class="btn btn-sm btn-danger" onclick="disableChampion('${c.id}')">Disable</button>`);
   } else if (c.status === 'disabled') {
     btns.push(`<button class="btn btn-sm btn-green" onclick="enableChampion('${c.id}')">Enable</button>`);
@@ -438,6 +439,20 @@ async function resendInvite(id) {
     const data = await res.json();
     if (!res.ok) { showAlert('error', data.error || 'Failed to resend invite'); return; }
     showAlert('success', 'Invite resent successfully');
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+// ── Send Password Reset (admin-triggered) ───────────────
+async function sendPasswordReset(id, email) {
+  if (!confirm('Send a password reset email to ' + email + '?\n\nThey will receive a branded ĒMA email with a link to set a new password. The link expires in 1 hour.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/${id}/send-password-reset`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to send password reset'); return; }
+    showAlert('success', 'Password reset email sent to ' + email);
   } catch (err) {
     showAlert('error', 'Network error');
     console.error(err);

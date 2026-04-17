@@ -740,7 +740,7 @@
 
     <!-- Q1 Activity -->
     <div style="padding:16px 0;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">event date falls Jan 1–Mar 31</span></div>
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1–Mar 31</span></div>
      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
       <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Referrals Received</div>
@@ -838,7 +838,7 @@
 
     <!-- Q1 Activity -->
     <div style="padding:16px 0;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">event date falls Jan 1–Mar 31</span></div>
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1–Mar 31</span></div>
      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
       <div style="padding:8px 12px 8px 0;border-right:1px solid var(--border);">
        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Application Received</div>
@@ -877,8 +877,10 @@
  <div class="di-row"><div class="di-label">⚠ Known workaround</div><div class="di-val di-flag">Some advocates are set to Active status with a Taking a Break sub-status as a system workaround. Mom's pairing record takes precedence - if a pairing exists on mom's side they are correctly classified as Paired 1:1 or Group. Only if no pairing exists do they fall into the Taking a Break bucket.</div></div>
  <div class="di-row"><div class="di-label">⚠ Pending</div><div class="di-val di-flag">Group facilitator count and sub-status values need confirmation with live data before this section is finalized</div></div>
  <div class="di-row"><div class="di-label">Multiple counts</div><div class="di-val">One advocate may appear in multiple Q1 Activity counts - an advocate who trained and was approved in Q1 appears in both. These are independent events, not a funnel.</div></div>
- <div class="di-row"><div class="di-label">Became active</div><div class="di-val">Advocates whose active status began during Q1 - not advocates already active before Q1 started</div></div>
- <div class="di-row"><div class="di-label">Became inactive</div><div class="di-val">Advocates who stepped down during Q1 only - does not include anyone already inactive before Q1 started</div></div>
+ <div class="di-row"><div class="di-label">Application / Trained / Approved</div><div class="di-val">Counts advocate user records created during Q1 whose current sub-status falls in each bucket. "Application Received" = any new advocate record. "Trained" / "Approved" = records currently past the training/approval step.</div></div>
+ <div class="di-row"><div class="di-label">Became active</div><div class="di-val">Advocate users whose record was last updated during Q1 and whose current status is Active — a reasonable proxy for "became active in Q1" without event-history tracking</div></div>
+ <div class="di-row"><div class="di-label">Became inactive</div><div class="di-val">Same logic — records last updated in Q1 whose current status is Inactive</div></div>
+ <div class="di-row"><div class="di-label">⚠ Methodology limitation</div><div class="di-val di-flag">These counts are derived from the current User record state anchored to created_at / updated_at timestamps, not from event history. This means an advocate who cycled through multiple states in Q1 (e.g., Active → Inactive → Active) would be counted only by their current state and most recent update. Event-based counts require reliable AuditLog access, which is not currently feasible.</div></div>
 </div></details>
    </div>
   </div>

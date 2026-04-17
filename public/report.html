@@ -583,7 +583,7 @@
  <!-- KPI SCORECARDS -->
  <div class="section-group">
   <div class="section-label">Core KPIs - Q1 2026
-   <span class="anchor-note">KPI 1 &amp; 2: 3-month assessment window (system launched December 2025) · KPI 3: track completion date in Q1 · Expand each card for data integrity notes</span>
+   <span class="anchor-note">All three KPIs anchored to Q1 2026 (Jan 1 – Mar 31) with a 30-day post-period grace window for late entries. Pre-Trellis PromiseServes migration data is excluded — only current Trellis assessments (EP, RR; AAPI pending) count. Expand each card for data integrity notes.</span>
   </div>
   <div class="kpi-grid">
 
@@ -617,12 +617,13 @@
     <details class="kpi-detail">
      <summary>Data integrity notes</summary>
      <div class="kd-body">
- <div class="di-row"><div class="di-label">What we count</div><div class="di-val di-ok">Each child belonging to an active mom counts as one data point, not the mom herself</div></div>
+ <div class="di-row"><div class="di-label">What we count</div><div class="di-val di-ok">Each child belonging to a mom with a Q1 assessment on file counts as one data point, not the mom herself</div></div>
  <div class="di-row"><div class="di-label">Preserved means</div><div class="di-val">Children whose Family Preservation Impact falls in the Prevention %: Prevented from CPS Involvement (stayed home, no CW contact), Prevented from Foster Care Placement (had CW involvement but stayed home), or Prevented from Permanent Removal (was in foster care but reunified)</div></div>
  <div class="di-row"><div class="di-label">Not preserved</div><div class="di-val">Children in Temporary Removal (currently in foster care/kinship) or Permanent Removal (will not return). These are the Out of Care % and are excluded from the numerator</div></div>
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Children whose moms had a completed Family Wellbeing Assessment within the last 3 months as of March 31</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Children whose moms don't yet have a current assessment on file. They show up in the FWA Data Integrity tab so coordinators can follow up</div></div>
- <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025. There isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
+ <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Children whose moms had a Family Wellbeing Assessment logged between Jan 1 and Apr 30, 2026 (Q1 + 30-day grace for late entries) using the current Trellis assessment templates</div></div>
+ <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Children whose moms don't yet have a Q1 assessment on file in Trellis. Current-system assessments have been entered sparingly since Trellis migration — coordinator follow-up needed.</div></div>
+ <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">Pre-migration PromiseServes assessment records are excluded from this KPI. Only assessments completed in the current Trellis system (EP, RR, future AAPI) count toward Q1 reporting.</div></div>
+ <div class="di-row"><div class="di-label">Period-anchored</div><div class="di-val">Numbers reflect activity during Q1 2026 specifically, not a rolling window from today. The same Q1 view will yield the same numbers whether viewed in April or next year.</div></div>
  <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date, so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
 </div>
     </details>
@@ -650,17 +651,18 @@
      </svg>
     </div>
     <div class="kpi-badge on-track">On Track ✓</div>
-    <div class="eff-formula">Moms with FSS Improvement ÷ Moms with Valid 3-Mo FWA Pair</div>
-    <div class="kpi-anchor-sm">37 of 52 moms show composite FSS improvement &nbsp;·&nbsp; 23 moms excluded (no valid FWA pair)</div>
+    <div class="eff-formula">Moms with FSS Improvement ÷ Moms Completing a Q1 Pairing with Pre &amp; Post</div>
+    <div class="kpi-anchor-sm">37 of 52 moms show composite FSS improvement &nbsp;·&nbsp; 23 moms excluded (missing pre or post in current Trellis templates)</div>
     <details class="kpi-detail">
      <summary>Data integrity notes</summary>
      <div class="kd-body">
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who had both a starting assessment on file and a current one within the last 3 months — we need both to measure change</div></div>
- <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's combined score across 10 life areas from her starting point to her most recent assessment</div></div>
+ <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track pairing during Q1 2026 AND have both a pre and a post assessment on file from the current Trellis system</div></div>
+ <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's combined score across life-area questions between her pre and post assessments</div></div>
  <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately — it feeds into KPI 1, not this score</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms who are missing either a starting or current assessment — they appear in the FWA Data Integrity tab for coordinator follow-up</div></div>
- <div class="di-row"><div class="di-label">Why 3 months?</div><div class="di-val">ĒMA launched its new system in December 2025 - there isn't yet enough history to use a 6-month window. This will expand in future quarters.</div></div>
- <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date - so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
+ <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms completing tracks without both a pre and post on file in Trellis — particularly NPP completers, since AAPI (NPP's assessment) doesn't yet have a Trellis template to log results against</div></div>
+ <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">PromiseServes migration records (pre-Trellis) are excluded. Only pre/post assessments entered through current Trellis templates (EP, RR) count.</div></div>
+ <div class="di-row"><div class="di-label">Anchor date</div><div class="di-val">Pairing.completed_on between Jan 1 and Mar 31, 2026. Assessment dates themselves are not required to fall in Q1 — only the track completion.</div></div>
+ <div class="di-row"><div class="di-label">⚠ Current reporting gap</div><div class="di-val di-flag">Coordinators have entered only ~60 non-legacy assessments org-wide since Trellis launched in December. Most Q1 completions lack the current-system pre/post data this KPI requires. Rebuilding this pathway is in progress.</div></div>
 </div>
     </details>
    </div>
@@ -688,15 +690,17 @@
     </div>
     <div class="kpi-badge on-track">On Track ✓</div>
     <div class="eff-formula">Completions where post composite &gt; pre composite ÷ Completions with valid pre &amp; post pair</div>
-    <div class="kpi-anchor-sm">13 of 18 eligible completions show improvement &nbsp;·&nbsp; NPP: 8/10 · EP: 3/5 · RR: 2/3 &nbsp;·&nbsp; excludes missing or inverted score pairs</div>
+    <div class="kpi-anchor-sm">13 of 18 eligible completions show improvement &nbsp;·&nbsp; EP and RR tracks only (NPP pending AAPI template)</div>
     <details class="kpi-detail">
      <summary>Data integrity notes</summary>
      <div class="kd-body">
- <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's total score between her start-of-track assessment and her end-of-track assessment - even one point up counts</div></div>
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track in Q1 and have both a start and end assessment on file - each track counts separately</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms with a missing start or end assessment, and a small number of records with data entry issues where the end date was recorded before the start date - all excluded counts are shown alongside this KPI</div></div>
- <div class="di-row"><div class="di-label">Each track is its own score</div><div class="di-val">NPP, EP, and RR each use their own assessment - a mom completing two tracks counts twice, once per track</div></div>
- <div class="di-row"><div class="di-label">Not related to FWA</div><div class="di-val di-ok">This KPI uses track learning assessments only - completely separate from the Family Wellbeing Assessment used in KPI 1 and KPI 2</div></div>
+ <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's total score between her start-of-track assessment and her end-of-track assessment — even one point up counts</div></div>
+ <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track pairing in Q1 2026 AND have both a pre and post assessment on file from current Trellis templates (EP Pre/Post, RR Pre/Post). Each track counts separately.</div></div>
+ <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">NPP completers: AAPI (the NPP assessment instrument) does not yet have a Trellis template, so NPP completions cannot be scored here until that's addressed. Also excluded: any completion missing a pre or post, and records with pre/post dates out of order.</div></div>
+ <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">PromiseServes migration records (pre-Trellis) are excluded. Only pre/post assessments entered through current Trellis templates count.</div></div>
+ <div class="di-row"><div class="di-label">Anchor date</div><div class="di-val">Pairing.completed_on between Jan 1 and Mar 31, 2026. Assessment dates themselves are not required to fall in Q1 — only the track completion.</div></div>
+ <div class="di-row"><div class="di-label">Not related to FWA</div><div class="di-val di-ok">This KPI uses track learning assessments only — separate from the Family Wellbeing Assessment used in KPI 1 and KPI 2.</div></div>
+ <div class="di-row"><div class="di-label">⚠ Current reporting gap</div><div class="di-val di-flag">Same data capture issue as KPI 2 — Trellis-era pre/post assessments are sparse. NPP (the largest track) produces no Trellis assessments at all until AAPI is added as a template.</div></div>
 </div>
     </details>
    </div>

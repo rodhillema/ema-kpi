@@ -117,19 +117,22 @@ router.get('/', async (req, res) => {
         m."first_name" AS "momFirstName",
         m."last_name" AS "momLastName",
         p."status"::text AS "status",
-        t."title" AS "trackTitle"
+        t."title" AS "trackTitle",
+        p."created_at" AS "startDate",
+        p."completed_on" AS "endDate"
       FROM "Pairing" p
       LEFT JOIN "Mom" m ON m."id" = p."momId"
       LEFT JOIN "Track" t ON t."id" = p."trackId"
       WHERE p."advocateUserId" = ANY($1)
-        AND p."deleted_at" = '0'
-      ORDER BY p."advocateUserId", p."status"::text ASC
+        AND p."deleted_at" = 0
+      ORDER BY p."advocateUserId", p."created_at" DESC
     `;
     const pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
 
     // Fetch AdvocacyGroup assignments for all returned advocates
     const groupsQuery = `
-      SELECT ag."advocateId", ag."name" AS "groupName", ag."state"::text AS "status", ag."capacity"
+      SELECT ag."advocateId", ag."name" AS "groupName", ag."state"::text AS "status",
+        ag."capacity", ag."start_date" AS "startDate", ag."completed_date" AS "endDate"
       FROM "AdvocacyGroup" ag
       WHERE ag."advocateId" = ANY($1) AND ag."deleted_at" = 0
     `;
@@ -137,11 +140,32 @@ router.get('/', async (req, res) => {
 
     // Group pairings by advocate ID
     const pairingsByAdvocate = {};
+    // Format dates as "MMM D, YYYY"
+    function fmtDate(d) {
+      if (!d) return '—';
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return '—';
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    // Map pairing status → outcome label
+    function mapOutcome(status) {
+      if (status === 'paired') return 'active';
+      if (status === 'pairing_complete') return 'Completed';
+      if (status === 'waiting_to_be_paired') return 'Waiting';
+      return status || '—';
+    }
+
     for (const p of pairingsResult.rows) {
       if (!pairingsByAdvocate[p.advocateUserId]) {
         pairingsByAdvocate[p.advocateUserId] = [];
       }
       pairingsByAdvocate[p.advocateUserId].push({
+        mom: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim() || 'Unknown',
+        type: p.trackTitle || '1:1',
+        start: fmtDate(p.startDate),
+        end: p.endDate ? fmtDate(p.endDate) : 'ongoing',
+        outcome: mapOutcome(p.status),
+        // Keep original for back-compat
         momName: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim(),
         status: p.status,
         trackTitle: p.trackTitle || null,
@@ -154,6 +178,11 @@ router.get('/', async (req, res) => {
         pairingsByAdvocate[g.advocateId] = [];
       }
       pairingsByAdvocate[g.advocateId].push({
+        mom: g.groupName || 'Group',
+        type: 'Group',
+        start: fmtDate(g.startDate),
+        end: g.endDate ? fmtDate(g.endDate) : 'ongoing',
+        outcome: g.status === 'active' ? 'active' : (g.status === 'completed' ? 'Completed' : g.status),
         momName: g.groupName,
         status: g.status,
         trackTitle: 'Group',

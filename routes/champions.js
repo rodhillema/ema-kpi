@@ -177,6 +177,207 @@ router.delete('/:id/permanent', async (req, res) => {
   }
 });
 
+// GET /import-template.csv — Download a blank CSV template for bulk import
+router.get('/import-template.csv', (req, res) => {
+  const csv = [
+    'firstName,lastName,email,username,affiliate',
+    'Jane,Doe,jane.doe@example.org,jane.doe,Broward',
+    'John,Smith,john.smith@example.org,john.smith,',
+  ].join('\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="champion-import-template.csv"');
+  res.send(csv);
+});
+
+// POST /bulk-import — Bulk create champions from CSV data + send invites
+// Body: { champions: [{ firstName, lastName, email, username, affiliate }, ...] }
+// affiliate is a name string or UUID — resolved server-side; blank = org-wide
+router.post('/bulk-import', async (req, res) => {
+  try {
+    const { champions } = req.body;
+    if (!Array.isArray(champions) || champions.length === 0) {
+      return res.status(400).json({ error: 'champions array is required' });
+    }
+    if (champions.length > 500) {
+      return res.status(400).json({ error: 'Import limited to 500 rows per batch' });
+    }
+
+    // Load all affiliates once for name matching
+    const { rows: affiliates } = await pool.query(
+      `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0`
+    );
+    const affiliatesByName = {};
+    const affiliatesById = {};
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const a of affiliates) {
+      affiliatesByName[a.name.toLowerCase().trim()] = a.id;
+      affiliatesById[a.id] = a.name;
+    }
+
+    const results = {
+      total: champions.length,
+      created: 0,
+      skipped: 0,
+      failed: 0,
+      details: [], // [{ row, status, email, message, affiliateName }]
+    };
+
+    const isEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+    for (let i = 0; i < champions.length; i++) {
+      const row = champions[i];
+      const rowNum = i + 2; // account for header row
+      const firstName = (row.firstName || '').trim();
+      const lastName = (row.lastName || '').trim();
+      const email = (row.email || '').trim().toLowerCase();
+      const username = (row.username || '').trim().toLowerCase();
+      const affiliateRaw = (row.affiliate || '').trim();
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !username) {
+        results.failed++;
+        results.details.push({
+          row: rowNum,
+          status: 'failed',
+          email,
+          message: 'Missing required field (firstName, lastName, email, or username)',
+        });
+        continue;
+      }
+      if (!isEmail(email)) {
+        results.failed++;
+        results.details.push({
+          row: rowNum,
+          status: 'failed',
+          email,
+          message: 'Invalid email format',
+        });
+        continue;
+      }
+
+      // Resolve affiliate (optional — blank means org-wide)
+      let affiliateId = null;
+      let affiliateName = null;
+      if (affiliateRaw) {
+        if (uuidRegex.test(affiliateRaw)) {
+          // Provided a UUID
+          if (affiliatesById[affiliateRaw]) {
+            affiliateId = affiliateRaw;
+            affiliateName = affiliatesById[affiliateRaw];
+          } else {
+            results.failed++;
+            results.details.push({
+              row: rowNum,
+              status: 'failed',
+              email,
+              message: `Affiliate UUID not found: ${affiliateRaw}`,
+            });
+            continue;
+          }
+        } else {
+          // Match by name (case-insensitive)
+          const key = affiliateRaw.toLowerCase();
+          if (affiliatesByName[key]) {
+            affiliateId = affiliatesByName[key];
+            affiliateName = affiliatesById[affiliateId]; // canonical name
+          } else {
+            // Unknown affiliate — skip the row with an error
+            results.failed++;
+            results.details.push({
+              row: rowNum,
+              status: 'failed',
+              email,
+              message: `Affiliate not found: "${affiliateRaw}"`,
+            });
+            continue;
+          }
+        }
+      }
+
+      // Check for existing champion (email or username)
+      try {
+        const dupCheck = await pool.query(
+          `SELECT "id", "email", "username" FROM "ChampionUser"
+           WHERE (LOWER("email") = $1 OR LOWER("username") = $2) AND "deleted_at" = 0
+           LIMIT 1`,
+          [email, username]
+        );
+        if (dupCheck.rows.length > 0) {
+          results.skipped++;
+          results.details.push({
+            row: rowNum,
+            status: 'skipped',
+            email,
+            message: 'Already exists (email or username in use)',
+          });
+          continue;
+        }
+
+        // Create champion + invite token
+        const inviteToken = crypto.randomBytes(32).toString('hex');
+        const inviteExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+        await pool.query(
+          `INSERT INTO "ChampionUser" (
+            "email", "username", "firstName", "lastName",
+            "affiliateId", "status", "inviteToken", "inviteExpiresAt",
+            "deleted_at", "created_at"
+          )
+          VALUES ($1, $2, $3, $4, $5, 'invited', $6, $7, 0, NOW())`,
+          [email, username, firstName, lastName, affiliateId, inviteToken, inviteExpiresAt]
+        );
+
+        // Send invite email (small delay between sends to be gentle on SendGrid)
+        try {
+          await sendInviteEmail({ email, firstName, username, inviteToken });
+        } catch (emailErr) {
+          console.error(`[IMPORT] Email failed for ${email}:`, emailErr.message);
+          // Record partial success — champion created, email failed
+          results.details.push({
+            row: rowNum,
+            status: 'created-no-email',
+            email,
+            message: 'Champion created but invite email failed to send — use Resend Invite',
+            affiliateName,
+          });
+          results.created++;
+          // Continue to next row with small delay anyway
+          await new Promise(r => setTimeout(r, 200));
+          continue;
+        }
+
+        results.created++;
+        results.details.push({
+          row: rowNum,
+          status: 'created',
+          email,
+          message: 'Created + invited',
+          affiliateName,
+        });
+
+        // Small delay between sends
+        await new Promise(r => setTimeout(r, 200));
+      } catch (rowErr) {
+        console.error(`[IMPORT] Row ${rowNum} failed:`, rowErr);
+        results.failed++;
+        results.details.push({
+          row: rowNum,
+          status: 'failed',
+          email,
+          message: rowErr.code === '23505' ? 'Database duplicate (email or username)' : 'Database error',
+        });
+      }
+    }
+
+    console.log(`[AUDIT] Bulk import by ${req.session.user.username}: ${results.created} created, ${results.skipped} skipped, ${results.failed} failed of ${results.total} rows`);
+
+    res.json(results);
+  } catch (err) {
+    console.error('Bulk import error:', err);
+    res.status(500).json({ error: 'Bulk import failed' });
+  }
+});
+
 // POST /:id/resend-invite — Resend invite email with fresh token
 router.post('/:id/resend-invite', async (req, res) => {
   try {

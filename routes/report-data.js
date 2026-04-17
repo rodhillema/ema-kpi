@@ -941,22 +941,26 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // KPI 2 — FSS Improvement Rate (target 70%)
-      // Moms who have a post assessment dated in Q1 (+ grace), paired with their
-      // pre assessment. Improvement = mom's overall post composite > overall pre composite.
+      // Moms who completed a Pairing in Q1, having both pre and post assessments
+      // (any date). Improvement = mom's overall post composite > overall pre composite.
       //
-      // PERIOD-ANCHORED on the post assessment date since post is when improvement
-      // is "realized" for reporting. Pre can be from before Q1 (baseline intake).
-      // Does NOT require mom.status='active' now — moms who had a Q1 post-assessment
-      // are counted whether or not they're currently in an active pairing.
+      // Anchored on Pairing.completed_on (same as KPI 3) since very few raw
+      // 'post' AssessmentResults are actually dated in Q1 — the bulk of post
+      // assessments pre-date the track completion by weeks or months.
+      // This matches the denominator of KPI 3 so both measures are talking about
+      // the same cohort of Q1 track completers.
+      // Does NOT require mom.status='active' now — moms who completed a track
+      // in Q1 are counted whether or not they're currently in an active pairing.
       pool.query(`
-        WITH moms_with_q1_post AS (
-          SELECT DISTINCT ar."momId"
-          FROM "AssessmentResult" ar
-          JOIN "Mom" m ON m."id" = ar."momId"
-          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
-            AND ar."type"::text = 'post'
-            AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
-            AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
+        WITH q1_completers AS (
+          SELECT DISTINCT p."momId"
+          FROM "Pairing" p
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."complete_reason_sub_status" IS NOT NULL
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
             ${affWhere}
         ),
         mom_scores AS (
@@ -966,7 +970,7 @@ router.get('/', async (req, res) => {
           JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
           WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0
             AND arqr."intResponse" IS NOT NULL
-            AND ar."momId" IN (SELECT "momId" FROM moms_with_q1_post)
+            AND ar."momId" IN (SELECT "momId" FROM q1_completers)
           GROUP BY ar."momId", ar."type"::text
         ),
         paired AS (

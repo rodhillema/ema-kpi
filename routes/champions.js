@@ -422,4 +422,47 @@ router.post('/:id/resend-invite', async (req, res) => {
   }
 });
 
+// POST /:id/send-password-reset — Admin-triggered password reset email for an active champion
+// Generates a reset token (1-hour expiry) and sends the branded reset email.
+// Used when a champion forgets their password — replaces the self-service forgot-password flow.
+router.post('/:id/send-password-reset', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    const { rows } = await pool.query(
+      `UPDATE "ChampionUser"
+       SET "resetToken" = $1,
+           "resetExpiresAt" = NOW() + INTERVAL '1 hour'
+       WHERE "id" = $2 AND "deleted_at" = 0
+       RETURNING "email", "firstName", "username", "status"`,
+      [resetToken, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Champion not found' });
+    }
+
+    const { email, firstName, username, status } = rows[0];
+
+    if (status === 'invited') {
+      return res.status(400).json({ error: 'Champion has not yet activated their account — use Resend Invite instead' });
+    }
+    if (status === 'disabled') {
+      return res.status(400).json({ error: 'Champion is disabled — re-enable before sending a reset' });
+    }
+
+    sendResetEmail({ email, firstName, resetToken }).catch(err => {
+      console.error('Failed to send reset email to', email, err);
+    });
+
+    console.log(`[AUDIT] Password reset sent: ${username} (${email}) by ${req.session.user.username}`);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error sending password reset:', err);
+    res.status(500).json({ error: 'Failed to send password reset' });
+  }
+});
+
 module.exports = router;

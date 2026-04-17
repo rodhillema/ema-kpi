@@ -12,6 +12,10 @@ const pool = require('../db');
 // Q1 2026 reporting window
 const PERIOD_START = '2026-01-01';
 const PERIOD_END = '2026-03-31';
+// Grace window for late FWA / assessment entries after period close.
+// Accommodates situations where an assessment happens at or near the end of Q1
+// but isn't logged into Trellis until early Q2.
+const PERIOD_GRACE_END = '2026-04-30';
 const PERIOD_LABEL = 'Q1 2026';
 
 // Roles that see all affiliates
@@ -875,60 +879,87 @@ router.get('/', async (req, res) => {
       // ─── KPI Calculations ────────────────────────────────────
 
       // KPI 1 — Family Preservation Rate (target 85%)
-      // Denominator: all children linked to active moms with valid in-window FWA
+      // Denominator: children linked to moms who had at least one FWA logged during Q1 (+ 30-day grace).
       // Numerator: ONLY children with Prevention % impact:
       //   - prevented_from_cps_involvement
       //   - prevented_from_foster_care_placement
       // Everything else (prevented_from_permanent_removal, temporary_removal,
       // permanent_removal) is in denominator but NOT numerator.
+      //
+      // PERIOD-ANCHORED: counts are stable regardless of when the Q1 report is viewed.
+      // Does NOT require mom.status='active' now — moms who were active during Q1 are included
+      // even if they have since gone inactive.
       // Reference: Family Preservation Impact methodology
       pool.query(`
-        WITH moms_with_current_fwa AS (
-          SELECT ar."momId"
+        WITH moms_with_period_fwa AS (
+          SELECT DISTINCT ar."momId"
           FROM "AssessmentResult" ar
           JOIN "Mom" m ON m."id" = ar."momId"
-          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0 AND m."status"::text = 'active'
+          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
+            AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
             ${affWhere}
-          GROUP BY ar."momId"
-          HAVING EXTRACT(DAY FROM NOW() - GREATEST(MAX(ar."completedAt"), MAX(ar."lastSaved"))) <= 90
         )
         SELECT
           COUNT(c."id")::int AS denominator,
           SUM(CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN 1 ELSE 0 END)::int AS numerator
         FROM "Child" c
-        JOIN moms_with_current_fwa f ON f."momId" = c."mom_id"
+        JOIN moms_with_period_fwa f ON f."momId" = c."mom_id"
         WHERE c."deleted_at" = 0
       `, affParams),
 
-      // Count children excluded (active moms with no valid FWA)
+      // Count children excluded (moms served during Q1 but had no Q1-valid FWA)
+      // "Served during Q1" = had an active pairing or held session at any point in Q1,
+      // OR their intake_date falls in Q1.
       pool.query(`
         SELECT COUNT(c."id")::int AS count
         FROM "Child" c
         JOIN "Mom" m ON m."id" = c."mom_id"
-        WHERE c."deleted_at" = 0 AND m."deleted_at" = 0 AND m."status"::text = 'active'
+        WHERE c."deleted_at" = 0 AND m."deleted_at" = 0
           AND NOT EXISTS (
             SELECT 1 FROM "AssessmentResult" ar
             WHERE ar."momId" = m."id" AND ar."deleted_at" = 0
-            GROUP BY ar."momId"
-            HAVING EXTRACT(DAY FROM NOW() - GREATEST(MAX(ar."completedAt"), MAX(ar."lastSaved"))) <= 90
+              AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
+              AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
+          )
+          AND (
+            EXISTS (
+              SELECT 1 FROM "Pairing" p
+              WHERE p."momId" = m."id" AND p."deleted_at" = 0
+                AND p."created_at" <= '${PERIOD_END} 23:59:59'
+                AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            )
+            OR EXISTS (
+              SELECT 1 FROM "Session" s
+              JOIN "Pairing" p2 ON p2."id" = s."pairingId"
+              WHERE p2."momId" = m."id" AND s."deleted_at" = 0
+                AND s."status"::text = 'Held'
+                AND s."scheduled_at" >= '${PERIOD_START}' AND s."scheduled_at" <= '${PERIOD_END} 23:59:59'
+            )
           )
           ${affWhere}
       `, affParams),
 
       // KPI 2 — FSS Improvement Rate (target 70%)
-      // Moms with pre+post assessment where composite improved
+      // Moms with a pre/post assessment pair where the POST is dated in Q1 (+grace).
+      // Improvement = post composite score > pre composite score.
+      //
+      // PERIOD-ANCHORED on the post assessment date since post is when improvement
+      // is "realized" for reporting. Pre can be from before Q1 (baseline intake).
+      // Does NOT require mom.status='active' now — moms who had a Q1 post-assessment
+      // are counted whether or not they're currently in an active pairing.
       pool.query(`
         WITH mom_scores AS (
           SELECT ar."momId", ar."type"::text AS atype,
+            COALESCE(ar."completedAt", ar."lastSaved") AS assessment_date,
             AVG(arqr."intResponse")::numeric(10,2) AS avg_score
           FROM "AssessmentResult" ar
           JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
           JOIN "Mom" m ON m."id" = ar."momId"
           WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0 AND m."deleted_at" = 0
-            AND m."status"::text = 'active'
             AND arqr."intResponse" IS NOT NULL
             ${affWhere}
-          GROUP BY ar."momId", ar."type"::text
+          GROUP BY ar."momId", ar."type"::text, ar."completedAt", ar."lastSaved"
         ),
         paired AS (
           SELECT pre."momId",
@@ -937,6 +968,8 @@ router.get('/', async (req, res) => {
           FROM mom_scores pre
           JOIN mom_scores post ON pre."momId" = post."momId" AND post.atype = 'post'
           WHERE pre.atype = 'pre'
+            AND post.assessment_date >= '${PERIOD_START}'
+            AND post.assessment_date <= '${PERIOD_GRACE_END} 23:59:59'
         )
         SELECT
           COUNT(*)::int AS denominator,

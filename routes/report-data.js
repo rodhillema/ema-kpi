@@ -886,6 +886,9 @@ router.get('/', async (req, res) => {
       // Everything else (prevented_from_permanent_removal, temporary_removal,
       // permanent_removal) is in denominator but NOT numerator.
       //
+      // EXCLUDES PromiseServes Legacy data (pre-Trellis migration records).
+      // Only current-system assessments (EP, RR, future AAPI templates) count.
+      //
       // PERIOD-ANCHORED: counts are stable regardless of when the Q1 report is viewed.
       // Does NOT require mom.status='active' now — moms who were active during Q1 are included
       // even if they have since gone inactive.
@@ -895,7 +898,9 @@ router.get('/', async (req, res) => {
           SELECT DISTINCT ar."momId"
           FROM "AssessmentResult" ar
           JOIN "Mom" m ON m."id" = ar."momId"
+          JOIN "Assessment" a ON a."id" = ar."assessmentId"
           WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND a."name" NOT ILIKE '%Legacy%'
             AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
             AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
             ${affWhere}
@@ -908,7 +913,8 @@ router.get('/', async (req, res) => {
         WHERE c."deleted_at" = 0
       `, affParams),
 
-      // Count children excluded (moms served during Q1 but had no Q1-valid FWA)
+      // Count children excluded (moms served during Q1 but had no Q1-valid FWA
+      // in a current Trellis template — Legacy PS assessments don't count)
       // "Served during Q1" = had an active pairing or held session at any point in Q1,
       // OR their intake_date falls in Q1.
       pool.query(`
@@ -918,7 +924,9 @@ router.get('/', async (req, res) => {
         WHERE c."deleted_at" = 0 AND m."deleted_at" = 0
           AND NOT EXISTS (
             SELECT 1 FROM "AssessmentResult" ar
+            JOIN "Assessment" a ON a."id" = ar."assessmentId"
             WHERE ar."momId" = m."id" AND ar."deleted_at" = 0
+              AND a."name" NOT ILIKE '%Legacy%'
               AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
               AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
           )
@@ -942,15 +950,13 @@ router.get('/', async (req, res) => {
 
       // KPI 2 — FSS Improvement Rate (target 70%)
       // Moms who completed a Pairing in Q1, having both pre and post assessments
-      // (any date). Improvement = mom's overall post composite > overall pre composite.
+      // from current Trellis templates (EP, RR, future AAPI). PromiseServes Legacy
+      // assessments are explicitly excluded — they're pre-Trellis data migrated in,
+      // not representative of Q1 program activity.
       //
-      // Anchored on Pairing.completed_on (same as KPI 3) since very few raw
-      // 'post' AssessmentResults are actually dated in Q1 — the bulk of post
-      // assessments pre-date the track completion by weeks or months.
-      // This matches the denominator of KPI 3 so both measures are talking about
-      // the same cohort of Q1 track completers.
-      // Does NOT require mom.status='active' now — moms who completed a track
-      // in Q1 are counted whether or not they're currently in an active pairing.
+      // Anchored on Pairing.completed_on to match KPI 3's cohort. Post assessment
+      // date is not directly filtered because assessment-date capture has been
+      // unreliable since migration; Pairing.completed_on is the reliable Q1 anchor.
       pool.query(`
         WITH q1_completers AS (
           SELECT DISTINCT p."momId"
@@ -968,7 +974,9 @@ router.get('/', async (req, res) => {
             AVG(arqr."intResponse")::numeric(10,2) AS avg_score
           FROM "AssessmentResult" ar
           JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
+          JOIN "Assessment" a ON a."id" = ar."assessmentId"
           WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0
+            AND a."name" NOT ILIKE '%Legacy%'
             AND arqr."intResponse" IS NOT NULL
             AND ar."momId" IN (SELECT "momId" FROM q1_completers)
           GROUP BY ar."momId", ar."type"::text
@@ -988,7 +996,8 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // KPI 3 — Learning Progress (target 70%)
-      // Track completions in Q1 with pre/post improvement
+      // Track completions in Q1 with pre/post improvement.
+      // EXCLUDES PromiseServes Legacy assessments — only current Trellis templates count.
       pool.query(`
         WITH completions AS (
           SELECT p."id" AS pairing_id, p."momId", p."trackId"
@@ -1005,11 +1014,15 @@ router.get('/', async (req, res) => {
           SELECT c.pairing_id,
             (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
              JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+             JOIN "Assessment" a ON a."id" = ar."assessmentId"
              WHERE ar."momId" = c."momId" AND ar."type"::text = 'pre' AND ar."deleted_at" = 0
+               AND a."name" NOT ILIKE '%Legacy%'
                AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS pre_avg,
             (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
              JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+             JOIN "Assessment" a ON a."id" = ar."assessmentId"
              WHERE ar."momId" = c."momId" AND ar."type"::text = 'post' AND ar."deleted_at" = 0
+               AND a."name" NOT ILIKE '%Legacy%'
                AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS post_avg
           FROM completions c
         )

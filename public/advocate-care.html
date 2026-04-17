@@ -776,12 +776,13 @@ function toggleCard(key){activeCards.has(key)?activeCards.delete(key):activeCard
 function getFiltered(){
   const f=getFilters();
   let list=ADVOCATES.filter(a=>{
-    if(f.q&&!a.name.toLowerCase().includes(f.q)&&!a.email.toLowerCase().includes(f.q)&&!a.phone.includes(f.q))return false;
-    if(f.name&&!a.name.toLowerCase().includes(f.name))return false;
+    const nm=(a.name||"").toLowerCase(), em=(a.email||"").toLowerCase(), ph=(a.phone||"");
+    if(f.q&&!nm.includes(f.q)&&!em.includes(f.q)&&!ph.includes(f.q))return false;
+    if(f.name&&!nm.includes(f.name))return false;
     if(f.status.length&&!f.status.includes(a.status))return false;
     if(f.sub.length&&!f.sub.includes(deriveSub(a).sub))return false;
-    if(f.email&&!a.email.toLowerCase().includes(f.email))return false;
-    if(f.phone&&!a.phone.includes(f.phone))return false;
+    if(f.email&&!em.includes(f.email))return false;
+    if(f.phone&&!ph.includes(f.phone))return false;
     if(f.coord.length&&!f.coord.includes(a.coordinator))return false;
     if(f.bday&&f.bday!=="custom"){
       const d=dbu(a.birthday);
@@ -808,11 +809,12 @@ function getFiltered(){
     return true;
   });
   list.sort((a,b)=>{
-    if(sortCol==="name")  return sortDir*a.name.localeCompare(b.name);
-    if(sortCol==="status")return sortDir*a.status.localeCompare(b.status);
-    if(sortCol==="sub")   return sortDir*a.sub.localeCompare(b.sub);
-    if(sortCol==="email") return sortDir*a.email.localeCompare(b.email);
-    if(sortCol==="coord") return sortDir*a.coordinator.localeCompare(b.coordinator);
+    const s=(v)=>v==null?"":String(v);
+    if(sortCol==="name")  return sortDir*s(a.name).localeCompare(s(b.name));
+    if(sortCol==="status")return sortDir*s(a.status).localeCompare(s(b.status));
+    if(sortCol==="sub")   return sortDir*s(a.sub).localeCompare(s(b.sub));
+    if(sortCol==="email") return sortDir*s(a.email).localeCompare(s(b.email));
+    if(sortCol==="coord") return sortDir*s(a.coordinator).localeCompare(s(b.coordinator));
     if(sortCol==="bday")  return sortDir*(dbu(a.birthday)-dbu(b.birthday));
     if(sortCol==="note")  return sortDir*(dsa(a.latestNoteDate)-dsa(b.latestNoteDate));
     return 0;

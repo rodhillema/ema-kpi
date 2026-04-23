@@ -188,36 +188,46 @@ router.delete('/:id/permanent', async (req, res) => {
   }
 });
 
-// GET /export-referral-partners.csv — Full export of Agency referral partners with data-quality flags
-// Whitelisted admin only. One-off tool for cleaning up duplicate / UUID-named / blank agency records.
+// GET /export-referral-partners.csv — Export of Agency referral partners with data-quality flags
+// Whitelisted admin only. Scoped to agencies with at least 1 referral since Jan 1 2026
+// (skips PromiseServes Legacy-era agencies no longer in use).
+// Set ?all=true to include legacy-only agencies too.
 router.get('/export-referral-partners.csv', async (req, res) => {
   try {
+    const includeLegacy = req.query.all === 'true';
+    const havingClause = includeLegacy
+      ? ''
+      : `HAVING SUM(CASE WHEN m."created_at" >= '2026-01-01' THEN 1 ELSE 0 END) > 0`;
+
     const { rows } = await pool.query(`
       WITH agency_stats AS (
         SELECT
           a."id" AS agency_id,
           a."name" AS agency_name,
           COUNT(m."id")::int AS total_referrals_lifetime,
+          SUM(CASE WHEN m."created_at" >= '2026-01-01' THEN 1 ELSE 0 END)::int AS referrals_since_2026,
           SUM(CASE WHEN m."created_at" >= '2026-01-01' AND m."created_at" <= '2026-03-31 23:59:59' THEN 1 ELSE 0 END)::int AS q1_2026_referrals,
-          SUM(CASE WHEN m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS engaged,
-          SUM(CASE WHEN m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
-          SUM(CASE WHEN m."prospect_status"::text IN ('prospect','prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending,
-          STRING_AGG(DISTINCT aff."name", '; ' ORDER BY aff."name") AS affiliates_that_used_it
+          SUM(CASE WHEN m."created_at" >= '2026-01-01' AND m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS engaged_2026,
+          SUM(CASE WHEN m."created_at" >= '2026-01-01' AND m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage_2026,
+          SUM(CASE WHEN m."created_at" >= '2026-01-01' AND m."prospect_status"::text IN ('prospect','prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending_2026,
+          STRING_AGG(DISTINCT CASE WHEN m."created_at" >= '2026-01-01' THEN aff."name" END, '; ' ORDER BY CASE WHEN m."created_at" >= '2026-01-01' THEN aff."name" END) AS affiliates_using_in_2026
         FROM "Agency" a
         LEFT JOIN "Mom" m ON m."agency_id" = a."id" AND m."deleted_at" = 0
         LEFT JOIN "Affiliate" aff ON aff."id" = m."affiliate_id"
         WHERE a."deleted_at" = 0
         GROUP BY a."id", a."name"
+        ${havingClause}
       )
       SELECT
         agency_id AS id_token,
         agency_name,
-        total_referrals_lifetime,
+        referrals_since_2026,
         q1_2026_referrals,
-        engaged,
-        did_not_engage,
-        pending,
-        affiliates_that_used_it,
+        engaged_2026,
+        did_not_engage_2026,
+        pending_2026,
+        total_referrals_lifetime,
+        affiliates_using_in_2026,
         CASE WHEN agency_name ~ '^[0-9a-f]{8}-' THEN 'UUID placeholder - needs rename'
              WHEN agency_name IS NULL OR TRIM(agency_name) = '' THEN 'Blank - needs rename'
              WHEN LENGTH(TRIM(agency_name)) < 4 THEN 'Suspiciously short - likely data entry issue'
@@ -225,7 +235,7 @@ router.get('/export-referral-partners.csv', async (req, res) => {
         END AS data_quality_flag,
         LOWER(TRIM(REGEXP_REPLACE(COALESCE(agency_name,''), '[^a-zA-Z0-9]', '', 'g'))) AS normalized_for_dedup
       FROM agency_stats
-      ORDER BY total_referrals_lifetime DESC, agency_name;
+      ORDER BY referrals_since_2026 DESC, agency_name;
     `);
 
     // CSV escape: wrap field in quotes; escape embedded quotes by doubling them
@@ -237,9 +247,9 @@ router.get('/export-referral-partners.csv', async (req, res) => {
     };
 
     const header = [
-      'id_token','agency_name','total_referrals_lifetime','q1_2026_referrals',
-      'engaged','did_not_engage','pending','affiliates_that_used_it',
-      'data_quality_flag','normalized_for_dedup',
+      'id_token','agency_name','referrals_since_2026','q1_2026_referrals',
+      'engaged_2026','did_not_engage_2026','pending_2026','total_referrals_lifetime',
+      'affiliates_using_in_2026','data_quality_flag','normalized_for_dedup',
     ];
 
     const lines = [header.join(',')];

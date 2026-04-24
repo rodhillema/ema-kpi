@@ -36,8 +36,27 @@ app.use('/api/timelogs', require('./routes/timelogs'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/report-data', requireAuth, requireRole, require('./routes/report-data'));
 app.use('/api/advocates', require('./routes/advocates'));
+app.use('/api/mom-status', require('./routes/mom-status'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
 app.use('/api/champion', require('./routes/champion-auth'));
+
+// Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.
+// Both pages POST { timestamp, recordCount, recordIds, filters } here on CSV export.
+// Logged to Railway console for compliance; kept intentionally lightweight (no DB write yet).
+app.post('/api/export-audit', requireAuth, express.json(), (req, res) => {
+  try {
+    const user = req.session.user;
+    const { timestamp, recordCount, recordIds, filters } = req.body || {};
+    const source = req.get('referer') || 'unknown';
+    console.log(`[EXPORT-AUDIT] ${user.username} (${user.role}) exported ${recordCount || 0} records at ${timestamp || new Date().toISOString()} from ${source}`);
+    console.log(`[EXPORT-AUDIT] Filters: ${JSON.stringify(filters || {})}`);
+    console.log(`[EXPORT-AUDIT] Record IDs: ${JSON.stringify(recordIds || [])}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Export audit error:', err);
+    res.status(500).json({ error: 'Audit log failed' });
+  }
+});
 
 // Lightweight affiliate list — used by slicers (fast, no KPI queries)
 app.get('/api/affiliates', requireAuth, async (req, res) => {
@@ -79,6 +98,7 @@ app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/quarterly/q1-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname, 'public', 'advocate-care.html')));
+app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mom-status-report.html')));
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
 
 app.listen(PORT, () => {

@@ -131,7 +131,7 @@
   .report-header .rh-controls select option{background:var(--green);color:white;font-family:'Lato',sans-serif}
 
   /* ── SHARED FOOTER (red-orange) ──────────────────────────── */
-  .footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+  .footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;margin-top:auto;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
   .footer-brand{opacity:.8}
   .footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
   .footer-integrity:hover{color:var(--white)}
@@ -149,7 +149,16 @@
 
   /* TAB PANELS */
   .tab-panel { display: none; padding: 28px 32px; }
-  .tab-panel.active { display: block; }
+  /* flex: 1 0 auto forces the active panel to grow and fill any
+     remaining vertical space inside the flex-column portal-view.
+     Combined with .portal-view { min-height: 100vh } and
+     .footer { margin-top: auto }, this guarantees the footer
+     lands at the viewport bottom even when content is short
+     (sparse tabs, loading states, short-content tabs at wide
+     viewport widths). Without this, margin-top: auto alone is
+     unreliable when the panel's natural height is close to but
+     not exceeding 100vh. */
+  .tab-panel.active { display: block; flex: 1 0 auto; }
   .tab-panel.active .checklist-item { display: flex; }
   .tab-panel:not(.active) { overflow: hidden; height: 0; padding: 0; margin: 0; }
 
@@ -506,7 +515,6 @@
   /* ── Zebra-striping on tables ─────────────────────────────── */
   .stalled-affiliate-table tbody tr:nth-child(even) td { background: #faf9f7; }
   .stalled-affiliate-table tbody tr:hover td { background: var(--light); }
-  .affiliate-table-wrap tbody tr:nth-child(even) td { background: #faf9f7; }
   .affiliate-table-wrap tbody tr:hover td { background: var(--light); }
 
 
@@ -1156,7 +1164,458 @@
   .tab-panel.active .hero-card:nth-child(4) { animation-delay: 0.24s; }
   .tab-panel.active .hero-card:nth-child(5) { animation-delay: 0.32s; }
 
+  /* ── DEMOGRAPHICS TAB ────────────────────────────────────── */
+  .demo-intro {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 12.5px;
+    color: var(--mid);
+    line-height: 1.55;
+  }
+  .demo-intro strong { color: var(--dark); font-weight: 600; }
+  .demo-intro .di-meta { margin-top: 6px; font-size: 11px; color: #888; }
+
+  .panel-n {
+    margin: -4px 0 14px 0;
+    font-size: 11.5px;
+    color: #888;
+    font-family: 'Lato', sans-serif;
+    font-style: italic;
+    letter-spacing: 0.1px;
+  }
+  .panel-n strong { color: var(--dark); font-weight: 600; font-style: normal; }
+
+  /* Donut chart */
+  .donut-wrap {
+    position: relative;
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 22px;
+    align-items: center;
+  }
+  .donut-svg { width: 160px; height: 160px; display: block; }
+  .donut-svg circle.dn-track { fill: none; stroke: var(--light); stroke-width: 28; }
+  .donut-svg circle.dn-slice {
+    fill: none; stroke-width: 28;
+    transition: stroke-width 0.15s, opacity 0.15s;
+    cursor: default;
+  }
+  .donut-svg circle.dn-slice:hover { stroke-width: 32; }
+  .donut-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .donut-legend .dl-row {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+  }
+  .donut-legend .dl-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .donut-legend .dl-label { color: var(--dark); }
+  .donut-legend .dl-pct {
+    font-family: 'Oswald', sans-serif; font-weight: 600;
+    color: var(--dark); min-width: 32px; text-align: right;
+  }
+
+  /* Vertical donut layout: legend stacks under the donut.
+     Used when paired with a taller sibling so the donut panel
+     doesn't leave a big empty area below the donut. */
+  .donut-wrap.vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    gap: 14px;
+  }
+  .donut-wrap.vertical .donut-legend {
+    width: 100%;
+    max-width: 320px;
+  }
+
+    /* Donut hover tooltip */
+  .dn-tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--dark); color: var(--white);
+    font-family: 'Lato', sans-serif; font-size: 12px;
+    padding: 8px 11px; border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    opacity: 0; transform: translate(-50%, -110%);
+    transition: opacity 0.12s; z-index: 9999;
+    white-space: nowrap; line-height: 1.35;
+  }
+  .dn-tooltip.show { opacity: 1; }
+  .dn-tooltip .dnt-label { font-weight: 600; margin-bottom: 2px; }
+  .dn-tooltip .dnt-meta {
+    font-size: 11px; opacity: 0.88;
+    font-family: 'Oswald', sans-serif; letter-spacing: 0.4px;
+  }
+  .dn-tooltip .dnt-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle;
+  }
+
+  /* Horizontal bar list */
+  .hbar-list { display: flex; flex-direction: column; gap: 10px; }
+  .hbar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 50px;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .hbar-label { color: var(--dark); }
+  .hbar-track {
+    background: var(--light); border-radius: 4px;
+    height: 14px; overflow: hidden;
+  }
+  .hbar-fill { height: 100%; border-radius: 4px; transition: opacity 0.15s; }
+  .hbar-row:hover .hbar-fill { opacity: 0.85; }
+  .hbar-meta {
+    font-family: 'Oswald', sans-serif; font-weight: 600;
+    color: var(--dark); font-size: 11.5px; text-align: right;
+  }
+  .hbar-foot {
+    margin-top: 10px;
+    font-size: 10.5px; color: #888; font-style: italic;
+  }
+
+  /* SVG bar chart with axis grid */
+  .demo-bar-svg { width: 100%; height: 240px; display: block; overflow: visible; }
+  .demo-bar-svg .grid-line { stroke: var(--border); stroke-width: 1; shape-rendering: crispEdges; }
+  .demo-bar-svg .axis-label {
+    font-family: 'Oswald', sans-serif; font-size: 10.5px;
+    fill: #999; letter-spacing: 0.5px;
+  }
+  .demo-bar-svg .bar-rect { transition: opacity 0.15s; cursor: default; }
+  .demo-bar-svg .bar-rect:hover { opacity: 0.82; }
+  .demo-bar-svg .bar-pct {
+    font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600;
+    fill: var(--dark); text-anchor: middle;
+  }
+  .demo-bar-svg .bar-cat-label {
+    font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    fill: var(--mid); text-anchor: middle;
+  }
+
+  .dn-tooltip .dnt-extra {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    font-size: 11px;
+    opacity: 0.92;
+    font-family: 'Lato', sans-serif;
+    letter-spacing: 0;
+  }
+  /* Learning Progress by Track - curriculum-color row stripes (matches Closed-by-Track donut) */
+  #learningProgressBody td.lp-curriculum {
+    border-left: 4px solid var(--border);
+    padding-left: 12px;
+  }
+  #learningProgressBody tr[data-track="NPP"] td.lp-curriculum { border-left-color: #123939; }
+  #learningProgressBody tr[data-track="EP"]  td.lp-curriculum { border-left-color: #ec482f; }
+  #learningProgressBody tr[data-track="RR"]  td.lp-curriculum { border-left-color: #f2a136; }
+
+    /* Per-curriculum rates table - hoverable rate cells */
+  #learningProgressBody .lp-rate { font-size: 14px; }
+  #learningProgressBody .rate-cell {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: default;
+    transition: background 0.12s;
+  }
+  #learningProgressBody .rate-cell:hover { background: var(--light-pink); }
+
+    /* Per-curriculum rates table: icon-only n-warn (overrides loud pill) */
+  #learningProgressBody .n-warn {
+    background: transparent;
+    padding: 0;
+    margin-left: 8px;
+    font-size: 0;          /* hide pill text label; only icon shows */
+    line-height: 1;
+    vertical-align: middle;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #learningProgressBody .n-warn::before {
+    content: "\26A0";       /* ⚠ */
+    font-size: 13px;
+    color: #b8791e;
+    line-height: 1;
+  }
+  #learningProgressBody .n-warn.crit::before { color: var(--red-dark); }
+  #learningProgressBody .n-warn:hover { background: rgba(0,0,0,0.04); }
+  /* Tip popover position adjustment for the small icon */
+  #learningProgressBody .n-warn .tip {
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: 'Lato', sans-serif;
+    font-weight: 400;
+    color: var(--dark);
+  }
+
+    /* Referral source rows: color stripe matches donut slice */
+  #refSourceTable .rs-source {
+    border-left: 4px solid var(--border);
+    padding-left: 12px;
+  }
+  #refSourceTable tr[data-source="dcf"]   .rs-source { border-left-color: #123939; }
+  #refSourceTable tr[data-source="self"]  .rs-source { border-left-color: #ec482f; }
+  #refSourceTable tr[data-source="comm"]  .rs-source { border-left-color: #f2a136; }
+  #refSourceTable tr[data-source="hosp"]  .rs-source { border-left-color: #5e7d7d; }
+  #refSourceTable tr[data-source="other"] .rs-source { border-left-color: #f4a08a; }
+
+    /* Top ZIPs table - clean, no banding */
+  .zip-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  .zip-table th {
+    text-align: left; padding: 6px 8px;
+    font-family: 'Oswald', sans-serif; font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--mid); border-bottom: 1px solid var(--border);
+  }
+  .zip-table td { padding: 7px 8px; border-bottom: 1px solid #f0eee9; color: var(--dark); }
+  .zip-table tbody tr:last-child td { border-bottom: none; }
+  .zip-table td:first-child { color: var(--mid); font-family: 'Oswald', sans-serif; font-size: 11px; width: 28px; }
+  .zip-table td:nth-child(4) { font-family: 'Oswald', sans-serif; font-weight: 600; text-align: right; width: 60px; }
+
+    .map-reset-btn {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--mid);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .map-reset-btn:hover { background: white; color: var(--dark); }
+  .map-hint {
+    position: absolute;
+    bottom: 10px; left: 12px;
+    background: rgba(255,255,255,0.85);
+    padding: 4px 9px;
+    border-radius: 12px;
+    font-family: 'Lato', sans-serif;
+    font-size: 10.5px;
+    font-style: italic;
+    color: var(--mid);
+    transition: opacity 0.6s;
+    pointer-events: none;
+  }
+
+    /* Tab title: Shrikhand 30px green, paired with .tab-intro below.
+     font-weight: 400 is LOAD-BEARING — Shrikhand ships with only one
+     weight (400). Without this override, <h2> inherits the browser
+     default bold, browser synthesizes bold by thickening strokes, and
+     the title renders visibly fuzzy. Keep the explicit 400. No
+     font-style: italic here either — Shrikhand has its own native
+     slant and explicit italic would synthesize further distortion. */
+  .tab-title {
+    font-family: 'Shrikhand', serif;
+    font-weight: 400;
+    font-size: 30px;
+    color: var(--green);
+    line-height: 1.1;
+    margin: 4px 0 6px 0;
+    letter-spacing: 0.3px;
+  }
+  /* Entity card split: donut left / activity right */
+  .entity-split {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) 1.2fr;
+    gap: 28px;
+    align-items: stretch;
+    padding: 0 6px;
+  }
+  /* Vertical divider between the two halves */
+  .entity-split > div + div {
+    border-left: 1px solid #f0ece5;
+    padding-left: 28px;
+  }
+  .entity-split .es-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--mid);
+    font-family: 'Oswald', sans-serif;
+    margin-bottom: 16px;
+  }
+  .entity-split .es-section-label .es-meta {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10px;
+    color: #aaa;
+    font-style: italic;
+    margin-left: 6px;
+  }
+  /* Stacked Q1 Activity stats: each row = Shrikhand number + label inline */
+  .entity-q1-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .entity-q1-stack-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .entity-q1-stack-row .eqs-num {
+    font-family: 'Shrikhand', serif;
+    font-size: 26px;
+    color: var(--dark);
+    line-height: 1;
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+  .entity-q1-stack-row .eqs-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--mid);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+  @media (max-width: 900px) {
+    .entity-split { grid-template-columns: 1fr; }
+    .entity-split > div + div { border-left: none; padding-left: 0; border-top: 1px solid #f0ece5; padding-top: 18px; }
+  }
+
+    /* Consistent tab intro: one line per tab, italic, no box.
+     Replaces the heavier .demo-intro panel on Demographics/Service Area. */
+  .tab-intro {
+    margin: 0 0 22px 0;
+    font-family: 'Lato', sans-serif;
+    font-size: 13.5px;
+    color: var(--mid);
+    font-style: italic;
+    line-height: 1.5;
+    max-width: 720px;
+  }
+  .tab-intro strong {
+    color: var(--dark);
+    font-weight: 600;
+    font-style: normal;
+  }
+
+    /* Geographic choropleth map */
+  #geoMapContainer {
+    position: relative;
+    width: 100%;
+    background: #fafaf6;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 380px;
+  }
+  #geoMapContainer svg {
+    display: block;
+    width: 100%;
+    height: 380px;
+  }
+  #geoMapStatus {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--mid);
+    font-size: 12.5px;
+    font-style: italic;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .map-region {
+    transition: opacity 0.15s, stroke 0.12s, stroke-width 0.12s;
+    cursor: default;
+    vector-effect: non-scaling-stroke;
+  }
+  .geo-context path {
+    vector-effect: non-scaling-stroke;
+  }
+  .map-region:hover {
+    stroke: var(--yellow);
+    stroke-width: 1.4;
+  }
+  .map-mode-tag {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: rgba(255,255,255,0.85);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--mid);
+  }
+  .map-legend {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--mid);
+    font-family: 'Lato', sans-serif;
+  }
+  .map-legend .legend-bar {
+    flex: 0 1 200px;
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(to right, #e8eded, #123939);
+  }
+
+    /* Children panel inline hero stat */
+  .kid-panel-head {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .kid-panel-head h3 { margin-bottom: 0; }
+  .kid-hero-inline {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--light-pink);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 8px 14px 8px 12px;
+  }
+  .khi-num {
+    font-family: 'Shrikhand', serif;
+    font-size: 30px; color: var(--green);
+    line-height: 1; font-style: italic;
+  }
+  .khi-side { display: flex; flex-direction: column; gap: 1px; }
+  .khi-label {
+    font-family: 'Oswald', sans-serif; font-size: 10.5px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--mid);
+  }
+  .khi-context { font-size: 10.5px; color: var(--mid); line-height: 1.3; }
+  .khi-context strong { color: var(--dark); }
+
+  @media (max-width: 760px) {
+    .donut-wrap { grid-template-columns: 1fr; justify-items: center; }
+    .hbar-row { grid-template-columns: 90px 1fr 46px; }
+  }
+
+
  </style>
+
+ <!-- D3 + TopoJSON for the geographic choropleth (Demographics tab).
+      Loaded from CDN at runtime; cached after first visit. ~90KB total. -->
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 </head>
 <body>
 
@@ -1245,12 +1704,17 @@
  <button class="tab-btn active" onclick="showTab('kpis', this)">KPIs &amp; Status</button>
  <button class="tab-btn" onclick="showTab('affiliates', this)">Referral Sources</button>
  <button class="tab-btn" onclick="showTab('track', this)">Track Completions</button>
+ <button class="tab-btn" onclick="showTab('demographics', this)">Demographics</button>
+ <button class="tab-btn" onclick="showTab('service-area', this)">Service Area</button>
 </div>
 
 <!-- ══════════════════════════════════════════
    TAB 1 - KPIs & STATUS COUNTS
 ════════════════════════════════════════════ -->
 <div id="tab-kpis" class="tab-panel active">
+ <h2 class="tab-title">How ĒMA Is Doing</h2>
+ <p class="tab-intro">The three core measures of impact this period: family preservation, family stability, and learning progress.</p>
+
 
  <!-- ════════════════════════════════════════════════════════
       KPI SCORECARDS - v2 hero-card pattern
@@ -1282,7 +1746,7 @@
       <div class="ip-body">
        <div class="ip-block">
         <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Children <strong>prevented from CPS Involvement or Foster Care Placement</strong>, divided by all children of moms with a current Family Wellbeing Assessment on file. The same numerator drives the Child Welfare Prevention count and Estimated Impact Value in the Children panel.</div>
+        <div class="ip-block-body">Children <strong>prevented from CPS Involvement or Foster Care Placement</strong>, divided by all children of moms with a current Family Wellbeing Assessment on file.</div>
        </div>
        <div class="ip-block">
         <div class="ip-block-label">Excluded</div>
@@ -1316,7 +1780,7 @@
       <div class="ip-body">
        <div class="ip-block">
         <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Moms whose <strong>composite Family Stability Score</strong> increased from their starting Family Wellbeing Assessment to their most recent one. The composite covers 11 life-area domains. A retired Child Welfare pilot domain is excluded from the composite.</div>
+        <div class="ip-block-body">Moms whose <strong>composite Family Stability Score</strong> increased from their starting Family Wellbeing Assessment to their most recent one. The composite covers 11 life-area domains.</div>
        </div>
        <div class="ip-block">
         <div class="ip-block-label">Excluded</div>
@@ -1419,48 +1883,33 @@
     <span style="font-size:12px;color:var(--mid);">served during Q1</span>
    </div>
 
-   <div style="padding:0 26px;">
-
-    <!-- Active During Q1 - funnel-row pattern -->
-    <div style="padding:6px 0 18px;border-top:1px solid #f0ece5;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin:14px 0 12px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each mother counted once</span></div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>In a Track</strong></span>
-      <div class="fr-bar-wrap" title="61 moms">
-       <div class="fr-bar" data-hydrate="mom-intrack-pct" style="background:var(--green);width:65%;"><span class="fr-val" data-hydrate="mom-intrack-count">61</span></div>
-       <div class="fr-tooltip"><strong>In a Track</strong><div class="ft-sub">Matched with an advocate</div></div>
-      </div>
-      <span class="fr-pct" data-hydrate="mom-intrack-pct-label">65%</span>
+   <div style="padding:18px 26px 22px;border-top:1px solid #f0ece5;margin-top:6px;">
+    <div class="entity-split">
+     <div>
+      <div class="es-section-label">Active During Q1 <span class="es-meta">each mother counted once</span></div>
+      <div class="donut-wrap" id="momActiveDonut">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="245.04 131.95" stroke-dashoffset="-0.00" data-bucket="mom-intrack" data-label="In a Track" data-pct="65" data-n="61" data-color="#ec482f" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="131.95 245.04" stroke-dashoffset="-245.04" data-bucket="mom-mc" data-label="Membership Community" data-pct="35" data-n="33" data-color="#123939" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label">In a Track</div><div class="dl-pct" data-hydrate="mom-intrack-pct-label">65%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">Membership Community</div><div class="dl-pct" data-hydrate="mom-mc-pct-label">35%</div></div>
      </div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>Membership Community</strong></span>
-      <div class="fr-bar-wrap" title="33 moms">
-       <div class="fr-bar" data-hydrate="mom-mc-pct" style="background:var(--yellow);width:35%;"><span class="fr-val" data-hydrate="mom-mc-count">33</span></div>
-       <div class="fr-tooltip"><strong>Membership Community</strong><div class="ft-sub">Not in a track</div></div>
       </div>
-      <span class="fr-pct" data-hydrate="mom-mc-pct-label">35%</span>
      </div>
-    </div>
-
-    <!-- Q1 Activity - Shrikhand numbers, no hard dividers -->
-    <div style="padding:18px 0;border-top:1px solid #f0ece5;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1 to Mar 31</span></div>
-     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
-      <div>
-       <span data-hydrate="mom-q1-referrals" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">31</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Referrals Received</div>
-      </div>
-      <div>
-       <span data-hydrate="mom-q1-engaged" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">22</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Engaged in Program</div>
-      </div>
-      <div>
-       <span data-hydrate="mom-q1-completions" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">18</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Track Completions</div>
+     <div>
+      <div class="es-section-label">Q1 Activity <span class="es-meta">records created or last updated Jan 1 to Mar 31</span></div>
+      <div class="entity-q1-stack">
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="mom-q1-referrals">31</span><span class="eqs-label">Referrals Received</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="mom-q1-engaged">22</span><span class="eqs-label">Engaged in Program</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="mom-q1-completions">18</span><span class="eqs-label">Track Completions</span></div>
       </div>
      </div>
     </div>
-
    </div>
    <div style="padding:0 26px 18px;"></div>
   </div>
@@ -1540,72 +1989,39 @@
     <span style="font-size:12px;color:var(--mid);">active during Q1</span>
    </div>
 
-   <div style="padding:0 26px;">
-
-    <!-- Active During Q1 - funnel-row pattern -->
-    <div style="padding:6px 0 18px;border-top:1px solid #f0ece5;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin:14px 0 12px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each advocate counted once &middot; priority order</span></div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>Paired 1:1</strong></span>
-      <div class="fr-bar-wrap" title="47 advocates">
-       <div class="fr-bar" data-hydrate="adv-paired-pct" style="background:var(--green);width:82%;"><span class="fr-val" data-hydrate="adv-paired-count">47</span></div>
-       <div class="fr-tooltip"><strong>Paired 1:1</strong><div class="ft-sub">Matched one-on-one</div></div>
-      </div>
-      <span class="fr-pct" data-hydrate="adv-paired-pct-label">82%</span>
+   <div style="padding:18px 26px 22px;border-top:1px solid #f0ece5;margin-top:6px;">
+    <div class="entity-split">
+     <div>
+      <div class="es-section-label">Active During Q1 <span class="es-meta">each advocate counted once · priority order</span></div>
+      <div class="donut-wrap" id="advActiveDonut">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="309.13 67.86" stroke-dashoffset="-0.00" data-bucket="adv-paired" data-label="Paired 1:1" data-pct="82" data-n="47" data-color="#f2a136" data-unit="advocates" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="33.93 343.06" stroke-dashoffset="-309.13" data-bucket="adv-group" data-label="Group facilitators" data-pct="9" data-n="5" data-color="#123939" data-unit="advocates" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5d8a7a" stroke-dasharray="26.39 350.60" stroke-dashoffset="-343.06" data-bucket="adv-waiting" data-label="Waiting to be paired" data-pct="7" data-n="4" data-color="#5d8a7a" data-unit="advocates" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#d4c5b8" stroke-dasharray="7.54 369.45" stroke-dashoffset="-369.45" data-bucket="adv-break" data-label="Taking a break" data-pct="2" data-n="1" data-color="#d4c5b8" data-unit="advocates" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Paired 1:1</div><div class="dl-pct" data-hydrate="adv-paired-pct-label">82%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">Group facilitators</div><div class="dl-pct" data-hydrate="adv-group-pct-label">9%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#5d8a7a;"></div><div class="dl-label">Waiting to be paired</div><div class="dl-pct" data-hydrate="adv-waiting-pct-label">7%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#d4c5b8;"></div><div class="dl-label">Taking a break</div><div class="dl-pct" data-hydrate="adv-break-pct-label">2%</div></div>
      </div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>Group facilitators</strong></span>
-      <div class="fr-bar-wrap" title="5 advocates">
-       <div class="fr-bar" data-hydrate="adv-group-pct" style="background:#5d8a7a;width:9%;"><span class="fr-val" data-hydrate="adv-group-count">5</span></div>
-       <div class="fr-tooltip"><strong>Group facilitators</strong><div class="ft-sub">Leads a group track</div></div>
       </div>
-      <span class="fr-pct" data-hydrate="adv-group-pct-label">9%</span>
      </div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>Waiting to be paired</strong></span>
-      <div class="fr-bar-wrap" title="4 advocates">
-       <div class="fr-bar" data-hydrate="adv-waiting-pct" style="background:var(--yellow);width:7%;"><span class="fr-val" data-hydrate="adv-waiting-count">4</span></div>
-       <div class="fr-tooltip"><strong>Waiting to be paired</strong><div class="ft-sub">Approved, not yet matched</div></div>
-      </div>
-      <span class="fr-pct" data-hydrate="adv-waiting-pct-label">7%</span>
-     </div>
-     <div class="funnel-row">
-      <span class="fr-label"><strong>Taking a break</strong></span>
-      <div class="fr-bar-wrap" title="1 advocate">
-       <div class="fr-bar" data-hydrate="adv-break-pct" style="background:#d4c5b8;width:2%;min-width:38px;color:var(--dark);"><span class="fr-val" data-hydrate="adv-break-count">1</span></div>
-       <div class="fr-tooltip"><strong>Taking a break</strong><div class="ft-sub">Temporarily paused, not matched</div></div>
-      </div>
-      <span class="fr-pct" data-hydrate="adv-break-pct-label">2%</span>
-     </div>
-    </div>
-
-    <!-- Q1 Activity - Shrikhand numbers, no hard dividers -->
-    <div style="padding:18px 0;border-top:1px solid #f0ece5;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1 to Mar 31</span></div>
-     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;">
-      <div>
-       <span data-hydrate="adv-q1-applications" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">14</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Application Received</div>
-      </div>
-      <div>
-       <span data-hydrate="adv-q1-trained" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">9</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Trained</div>
-      </div>
-      <div>
-       <span data-hydrate="adv-q1-approved" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">7</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Approved</div>
-      </div>
-      <div>
-       <span data-hydrate="adv-q1-active" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">7</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Became Active</div>
-      </div>
-      <div>
-       <span data-hydrate="adv-q1-inactive" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">3</span>
-       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Became Inactive</div>
+     <div>
+      <div class="es-section-label">Q1 Activity <span class="es-meta">records created or last updated Jan 1 to Mar 31</span></div>
+      <div class="entity-q1-stack">
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-applications">14</span><span class="eqs-label">Application Received</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-trained">9</span><span class="eqs-label">Trained</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-approved">7</span><span class="eqs-label">Approved</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-active">7</span><span class="eqs-label">Became Active</span></div>
+       <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-inactive">3</span><span class="eqs-label">Became Inactive</span></div>
       </div>
      </div>
     </div>
-
    </div>
    <div style="padding:0 26px 18px;"></div>
   </div>
@@ -1624,6 +2040,9 @@
    TAB 4 - AFFILIATE COMPARISON
 ════════════════════════════════════════════ -->
 <div id="tab-affiliates" class="tab-panel">
+ <h2 class="tab-title">How Moms Reach ĒMA</h2>
+ <p class="tab-intro">Referral volume by source, conversion to engagement, and outcomes for the moms who came in this period.</p>
+
 
  <!-- ════════════════════════════════════════════════════════
       REFERRAL SUMMARY - paired headline + 3-card breakdown
@@ -1672,82 +2091,96 @@
 
   </div>
 
-  <!-- BOTTOM ROW: three-card breakdown of where the 38 ended up -->
-  <div class="hero-grid-3">
-
-   <div class="hero-card accent-red">
-    <div class="info-icon-wrap">
-     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
-     <div class="info-popover">
-      <div class="ip-body">
-       <div class="ip-block">
-        <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Referral status moved to <strong>Engaged In Program</strong>. The mother converted from referral into active engagement.</div>
-       </div>
-       <div class="ip-block warn">
-        <div class="ip-block-label">Known limitation</div>
-        <div class="ip-block-body">Engaged is the referral-stage outcome. Some engaged moms never initiate a first track session; those <strong>Did Not Initiate Sessions</strong> cases surface in the intake-to-track funnel and in the Track Completions tab, not here.</div>
-       </div>
-      </div>
-     </div>
-    </div>
-    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-    <div class="hc-number" data-hydrate="ref-engaged">29</div>
-    <div class="hc-label">Engaged in Program</div>
-    <div class="hc-context">Converted from referral</div>
-   </div>
-
-   <div class="hero-card accent-yellow">
-    <div class="info-icon-wrap">
-     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
-     <div class="info-popover">
-      <div class="ip-body">
-       <div class="ip-block">
-        <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Status is <strong>Did Not Engage In Program</strong>. Closed referrals where engagement did not happen: unable to contact, client declined, ineligible, duplicate, or referred to another program.</div>
-       </div>
-      </div>
-     </div>
-    </div>
-    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-    <div class="hc-number" data-hydrate="ref-didnotengage">3</div>
-    <div class="hc-label">Did Not Engage</div>
-    <div class="hc-context">Unable to contact, declined, ineligible, or referred elsewhere</div>
-   </div>
-
-   <div class="hero-card accent-yellow">
-    <div class="info-icon-wrap">
-     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
-     <div class="info-popover">
-      <div class="ip-body">
-       <div class="ip-block">
-        <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Status is <strong>Prospect</strong> or <strong>Prospect Intake Scheduled</strong>. The intake appointment may still happen; not a failed referral.</div>
-       </div>
-      </div>
-     </div>
-    </div>
-    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-    <div class="hc-number" data-hydrate="ref-pending">6</div>
-    <div class="hc-label">Still Pending</div>
-    <div class="hc-context">May still convert &nbsp;&middot;&nbsp; not in rate</div>
-   </div>
-
-  </div>
  </div>
 
- <!-- REFERRAL SOURCE TABLE -->
+
+
+ <!-- ── Referral outcomes (full width, 4/23/26) ──
+      Wide stacked bar reads better at full width than half. -->
  <div class="section-group">
-  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+<div class="panel accent-green" style="overflow:visible;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Each referral counted once by its current outcome status.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Some moms reach Engaged but never start a first track session. Those Did Not Initiate Sessions cases appear in the Track Completions tab, not here.</div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <h3>Referral outcomes</h3>
+   <div class="panel-n"><strong data-hydrate="ref-total-2">38</strong> referrals total</div>
+   <div class="prop-bar" style="margin-top:8px;margin-bottom:14px;">
+    <div style="background:#123939;flex:76;"
+         data-label="Engaged in Program" data-pct="76" data-n="29" data-color="#123939" data-unit="referrals"
+         onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
+    <div style="background:#f2a136;flex:16;"
+         data-label="Still Pending" data-pct="16" data-n="6" data-color="#f2a136" data-unit="referrals"
+         onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
+    <div style="background:#5e7d7d;flex:8;"
+         data-label="Did Not Engage" data-pct="8" data-n="3" data-color="#5e7d7d" data-unit="referrals"
+         onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
+   </div>
+   <div class="pb-legend" style="grid-template-columns:repeat(3, 1fr);">
+    <div class="pbl-row"><div class="pbl-dot" style="background:#123939;"></div><span class="pbl-num"><span data-hydrate="ref-engaged">29</span></span> <span class="pbl-label">Engaged in Program</span></div>
+    <div class="pbl-row"><div class="pbl-dot" style="background:#f2a136;"></div><span class="pbl-num"><span data-hydrate="ref-pending">6</span></span> <span class="pbl-label">Still Pending</span></div>
+    <div class="pbl-row"><div class="pbl-dot" style="background:#5e7d7d;"></div><span class="pbl-num"><span data-hydrate="ref-didnotengage">3</span></span> <span class="pbl-label">Did Not Engage</span></div>
+   </div>
+  </div>
+
+ </div>
+
+ <!-- REFERRAL SOURCE: donut + table paired (4/23/26) -->
+
+ <div class="section-group">
+<div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
    <div>Referrals by Source
-    <span class="anchor-note">each row = one referral source category &nbsp;&middot;&nbsp; numerator and denominator shown per source</span>
    </div>
    <button onclick="requestReferralExport()" style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:white;background:var(--green);border:none;border-radius:5px;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:5px;">
     <svg viewBox="0 0 16 16" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M8 2v8M4 7l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v2h12v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Export CSV
    </button>
   </div>
-  <div class="affiliate-table-wrap accent-green" id="refSourceTable">
+
+  <div class="two-col">
+<div class="panel accent-green" style="overflow:visible;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover"><div class="ip-body">
+     <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Each referral counted once by its source category.</div></div>
+     <div class="ip-block"><div class="ip-block-label">Excluded</div><div class="ip-block-body">Sources with fewer than 5 referrals are grouped under Other Sources to protect mother privacy.</div></div>
+    </div></div>
+   </div>
+   <h3>Where referrals come from</h3>
+   <div class="panel-n"><strong data-hydrate="refsrc-n">38</strong> referrals across <strong data-hydrate="refsrc-cat-n">5</strong> source categories</div>
+   <div class="donut-wrap vertical">
+    <svg class="donut-svg" viewBox="0 0 160 160">
+     <g transform="rotate(-90 80 80)">
+      <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="120.64 256.35" stroke-dashoffset="-0.00" data-label="DCF / Child Protective Services" data-pct="32" data-n="12" data-color="#123939" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="79.17 297.82" stroke-dashoffset="-120.64" data-label="Self-Referral / Walk-In" data-pct="21" data-n="8" data-color="#ec482f" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="67.86 309.13" stroke-dashoffset="-199.81" data-label="Community Partner / Nonprofit" data-pct="18" data-n="7" data-color="#f2a136" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="49.01 327.98" stroke-dashoffset="-267.66" data-label="Hospital / Healthcare Provider" data-pct="13" data-n="5" data-color="#5e7d7d" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f4a08a" stroke-dasharray="60.32 316.67" stroke-dashoffset="-316.67" data-label="Other Sources" data-pct="16" data-n="6" data-color="#f4a08a" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+     </g>
+    </svg>
+    <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">DCF / Child Protective Services</div><div class="dl-pct" data-hydrate="refsrc-dcf---child-protective-service-pct">32%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label">Self-Referral / Walk-In</div><div class="dl-pct" data-hydrate="refsrc-self-referral---walk-in-pct">21%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Community Partner / Nonprofit</div><div class="dl-pct" data-hydrate="refsrc-community-partner---nonprofit-pct">18%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Hospital / Healthcare Provider</div><div class="dl-pct" data-hydrate="refsrc-hospital---healthcare-provider-pct">13%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f4a08a;"></div><div class="dl-label">Other Sources</div><div class="dl-pct" data-hydrate="refsrc-other-sources-pct">16%</div></div>
+    </div>
+   </div>
+  </div>
+
+<div class="affiliate-table-wrap accent-green" id="refSourceTable">
    <div class="info-icon-wrap">
     <button class="info-icon-btn" type="button" aria-label="How to read this table" aria-expanded="false" onclick="toggleInfo(this)">i</button>
     <div class="info-popover">
@@ -1773,70 +2206,58 @@
       <th>Referral Source</th>
       <th>Referrals Received</th>
       <th>Engaged in Program</th>
-      <th>Did Not Engage</th>
-      <th>Still Pending</th>
       <th>Conversion Rate</th>
-      <th style="border-left:2px solid var(--border);">% of All Referrals</th>
      </tr>
     </thead>
     <tbody>
-     <tr>
-      <td><strong>DCF / Child Protective Services</strong></td>
-      <td>12</td><td>10</td><td>1</td><td>1</td><td>91%</td>
-      <td style="border-left:2px solid var(--border);">32%</td>
+     <tr data-source="dcf">
+      <td class="rs-source"><strong>DCF / Child Protective Services</strong></td>
+      <td>12</td><td>10</td><td>91%</td>
      </tr>
-     <tr>
-      <td><strong>Self-Referral / Walk-In</strong></td>
-      <td>8</td><td>5</td><td>1</td><td>2</td><td>83%</td>
-      <td style="border-left:2px solid var(--border);">21%</td>
+     <tr data-source="self">
+      <td class="rs-source"><strong>Self-Referral / Walk-In</strong></td>
+      <td>8</td><td>5</td><td>83%</td>
      </tr>
-     <tr>
-      <td><strong>Community Partner / Nonprofit</strong></td>
-      <td>7</td><td>6</td><td>0</td><td>1</td><td>100%</td>
-      <td style="border-left:2px solid var(--border);">18%</td>
+     <tr data-source="comm">
+      <td class="rs-source"><strong>Community Partner / Nonprofit</strong></td>
+      <td>7</td><td>6</td><td>100%</td>
      </tr>
-     <tr>
-      <td><strong>Hospital / Healthcare Provider</strong></td>
-      <td>5</td><td>4</td><td>1</td><td>0</td><td>80%</td>
-      <td style="border-left:2px solid var(--border);">13%</td>
+     <tr data-source="hosp">
+      <td class="rs-source"><strong>Hospital / Healthcare Provider</strong></td>
+      <td>5</td><td>4</td><td>80%</td>
      </tr>
      <!-- Other Sources rollup row (click to toggle individual sources below) -->
-     <tr class="ref-other-row" style="background:var(--yellow-light);cursor:pointer;" onclick="var open=this.classList.toggle('open');document.querySelectorAll('.ref-small-src').forEach(function(r){r.style.display=open?'table-row':'none'});" title="Click to expand or collapse">
-      <td><strong>Other Sources</strong> <span style="font-size:11px;color:var(--mid);font-weight:400;">2 sources with fewer than 5 referrals</span> <span class="ref-toggle">Show</span></td>
-      <td>6</td><td>4</td><td>0</td><td>2</td><td>100%</td>
-      <td style="border-left:2px solid var(--border);">16%</td>
+     <tr class="ref-other-row" data-source="other" style="cursor:pointer;" onclick="var open=this.classList.toggle('open');document.querySelectorAll('.ref-small-src').forEach(function(r){r.style.display=open?'table-row':'none'});" title="Click to expand or collapse">
+      <td class="rs-source"><strong>Other Sources</strong> <span style="font-size:11px;color:var(--mid);font-weight:400;">2 sources with fewer than 5 referrals</span> <span class="ref-toggle">Show</span></td>
+      <td>6</td><td>4</td><td>100%</td>
      </tr>
      <!-- Hidden individual small-source rows (shown on expand) -->
-     <tr class="ref-small-src" style="display:none;background:var(--yellow-light);">
-      <td style="padding-left:28px;"><strong>School / Educational Institution</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
-      <td>4</td><td>3</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
-      <td style="border-left:2px solid var(--border);">11%</td>
+     <tr class="ref-small-src" data-source="other" style="display:none;">
+      <td class="rs-source" style="padding-left:28px;"><strong>School / Educational Institution</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
+      <td>4</td><td>3</td><td style="color:#ccc;">hidden</td>
      </tr>
-     <tr class="ref-small-src" style="display:none;background:var(--yellow-light);">
-      <td style="padding-left:28px;"><strong>Court / Legal System</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
-      <td>2</td><td>1</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
-      <td style="border-left:2px solid var(--border);">5%</td>
+     <tr class="ref-small-src" data-source="other" style="display:none;">
+      <td class="rs-source" style="padding-left:28px;"><strong>Court / Legal System</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
+      <td>2</td><td>1</td><td style="color:#ccc;">hidden</td>
      </tr>
      <tr class="ref-small-src" style="display:none;">
-      <td colspan="7" style="font-size:11px;color:var(--mid);font-style:italic;padding:8px 28px;">Conversion rates, did-not-engage counts and pending counts hidden for sources with fewer than 5 referrals to protect mother privacy.</td>
+      <td colspan="4" style="font-size:11px;color:var(--mid);font-style:italic;padding:8px 28px;">Conversion rates, did-not-engage counts and pending counts hidden for sources with fewer than 5 referrals to protect mother privacy.</td>
      </tr>
      <!-- RD: When rebuilding the tbody from refSources payload, also update
          this totals row. Counts should sum across all rows, rate = engaged/resolved,
          %-of-all = 100%. -->
      <tr class="att-totals">
-      <td><span class="att-label">All Sources</span></td>
-      <td><span class="att-total-num">38</span></td>
-      <td><span class="att-total-num">29</span></td>
-      <td><span class="att-total-num">3</span></td>
-      <td><span class="att-total-num">6</span></td>
-      <td><span class="att-total-num">91<span class="att-pct">%</span></span></td>
-      <td style="border-left:2px solid var(--border);"><span class="att-total-num">100<span class="att-pct">%</span></span></td>
+      <td><strong>All Sources</strong></td>
+      <td><strong>38</strong></td>
+      <td><strong>29</strong></td>
+      <td><strong>91%</strong></td>
      </tr>
     </tbody>
    </table>
   </div>
- </div>
 
+  </div>
+ </div>
  <!-- Bar chart visual removed per Jessie review 4/10. -->
 
 </div><!-- /tab-affiliates -->
@@ -1845,6 +2266,9 @@
    TAB 5 - TRACK OVERSIGHT
 ════════════════════════════════════════════ -->
 <div id="tab-track" class="tab-panel">
+ <h2 class="tab-title">How Tracks Finish</h2>
+ <p class="tab-intro">Completion outcomes, curriculum mix, and learning progress for tracks closed during the period.</p>
+
 
 <!-- ════════════════════════════════════════════════════════
      TRACK COMPLETIONS - full reorder during V1 merge (4/23/26)
@@ -2055,48 +2479,54 @@
        to break the 3-green run (Delivery, Language, TCC) in Tab 3 and to
        group them as the "informational breakdown" pair (parallel to the
        yellow How Tracks Completed panel above). -->
-  <div class="panel accent-yellow">
-   <h3>Delivery Format</h3>
-   <!-- RD: Static demo numbers. To hydrate, compute o2o% and group% from
-        the track_oversight payload, set flex values proportionally on
-        the two stripes, update .pbl-pct-o2o and .pbl-pct-group text in
-        the legend below, and update the title attributes + pb-tip
-        secondary text ("13 moms") with actual counts. -->
-   <div class="prop-bar" style="margin-bottom:14px;">
-    <div style="background:var(--green);flex:72;" title="13 moms">
-     <div class="pb-tip"><strong>1:1 Advocacy</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">13 moms</div></div>
+   <div class="panel accent-yellow" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Each completed track counted by its delivery format.</div></div>
+     </div></div>
     </div>
-    <div style="background:var(--yellow);flex:28;" title="5 moms">
-     <div class="pb-tip"><strong>Group Setting</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">5 moms</div></div>
+    <h3>Delivery Format</h3>
+    <div class="panel-n" data-legacy-pct-hooks=""><span class="pbl-pct-o2o" style="display:none">72%</span><span class="pbl-pct-group" style="display:none">28%</span><strong data-hydrate="deliv-n">18</strong> completed tracks</div>
+    <div class="donut-wrap">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="271.43 105.56" stroke-dashoffset="-0.00" data-label="1:1 Advocacy" data-pct="72" data-n="13" data-color="#123939" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="105.56 271.43" stroke-dashoffset="-271.43" data-label="Group Setting" data-pct="28" data-n="5" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">1:1 Advocacy</div><div class="dl-pct" data-hydrate="deliv-11-advocacy-pct">72%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Group Setting</div><div class="dl-pct" data-hydrate="deliv-group-setting-pct">28%</div></div>
+     </div>
     </div>
    </div>
-   <div class="pb-legend" style="grid-template-columns:1fr 1fr;">
-    <div class="pbl-row" title="13 moms"><div class="pbl-dot" style="background:var(--green);"></div><span class="pbl-num pbl-pct-o2o">72%</span> <span class="pbl-label">1:1 Advocacy</span></div>
-    <div class="pbl-row" title="5 moms"><div class="pbl-dot" style="background:var(--yellow);"></div><span class="pbl-num pbl-pct-group">28%</span> <span class="pbl-label">Group Setting</span></div>
-   </div>
-  </div>
 
   <!-- RIGHT: Language Split (symmetric with Delivery Format) -->
-  <div class="panel accent-yellow">
-   <h3>Language Split</h3>
-   <!-- RD: Static demo numbers. To hydrate, compute en% and es% from
-        completed tracks payload, set flex values on the two stripes,
-        update .pbl-pct-en and .pbl-pct-es text in the legend, and
-        update the title + pb-tip counts. .ls-total no longer in DOM
-        (subtitle removed for symmetry with Delivery Format). -->
-   <div class="prop-bar" style="margin-bottom:14px;">
-    <div style="background:var(--green);flex:60;" title="11 tracks">
-     <div class="pb-tip"><strong>English</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">11 tracks</div></div>
+   <div class="panel accent-yellow" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Each completed track counted by the curriculum language.</div></div>
+     </div></div>
     </div>
-    <div style="background:var(--yellow);flex:40;" title="7 tracks">
-     <div class="pb-tip"><strong>Spanish</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">7 tracks</div></div>
+    <h3>Language Split</h3>
+    <div class="panel-n" data-legacy-pct-hooks=""><span class="pbl-pct-en" style="display:none">60%</span><span class="pbl-pct-es" style="display:none">40%</span><strong data-hydrate="lang-split-n">18</strong> completed tracks</div>
+    <div class="donut-wrap">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="226.19 150.80" stroke-dashoffset="-0.00" data-label="English" data-pct="60" data-n="11" data-color="#123939" data-unit="tracks" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="150.80 226.19" stroke-dashoffset="-226.19" data-label="Spanish" data-pct="40" data-n="7" data-color="#f2a136" data-unit="tracks" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">English</div><div class="dl-pct" data-hydrate="lang-split-english-pct">60%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Spanish</div><div class="dl-pct" data-hydrate="lang-split-spanish-pct">40%</div></div>
+     </div>
     </div>
    </div>
-   <div class="pb-legend" style="grid-template-columns:1fr 1fr;">
-    <div class="pbl-row" title="11 tracks"><div class="pbl-dot" style="background:var(--green);"></div><span class="pbl-num pbl-pct-en">60%</span> <span class="pbl-label">English</span></div>
-    <div class="pbl-row" title="7 tracks"><div class="pbl-dot" style="background:var(--yellow);"></div><span class="pbl-num pbl-pct-es">40%</span> <span class="pbl-label">Spanish</span></div>
-   </div>
-  </div>
 
  </div>
 </div>
@@ -2109,92 +2539,34 @@
 
  <div class="two-col" style="margin-bottom:16px;">
 
-  <!-- Closed and Completed by Track (combined visual, replaces Share of Tracks
-       vbar + Completion Rate by Track table from prior layout, 4/23/26).
-       Two side-by-side bars per curriculum, sharing one scale (max closed). -->
-  <div class="panel accent-green" style="overflow:visible;">
-   <h3>Closed and Completed by Track</h3>
-   <div class="tcc-grid" id="tccGrid">
-    <!-- RD hydration hooks: .tcc-col[data-track="NPP|EP|RR"] wraps each
-         curriculum. .tcc-bar-num holds the count text (or em-dash when no
-         data); .tcc-bar-fill is the bar; height = (count/maxClosed)*100%
-         where maxClosed is the largest closed count across the three.
-         .tcc-rate holds the rate label ("X% completed" or "rate pending"). -->
-    <div class="tcc-col" data-track="NPP">
-     <div class="tcc-share">48%</div>
-     <div class="tcc-share-label">of closed tracks</div>
-     <div class="tcc-bars-wrap">
-      <div class="tcc-bars-row">
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:100%;"></div></div>
-        <div class="tcc-bar-key">Closed</div>
-       </div>
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
-        <div class="tcc-bar-key">Completed</div>
-       </div>
-      </div>
-      <div class="tcc-tooltip">
-       <strong>Nurturing Parenting</strong>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">68</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
-      </div>
-     </div>
-     <div class="tcc-track-label">Nurturing Parenting</div>
+  <!-- Tracks Closed by Curriculum (donut, redesigned 4/23/26 - replaces tcc-grid)
+       Curriculum colors: NPP green / EP red / RR yellow.
+       Same colors used in Learning Progress by Track row stripes below. -->
+  <div class="panel accent-green" style="overflow:visible;" id="cbtDonutPanel">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover"><div class="ip-body">
+     <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Each closed track counted by its curriculum. Hover a slice for completion detail.</div></div>
+    </div></div>
+   </div>
+   <h3>Tracks closed by curriculum</h3>
+   <div class="panel-n"><strong data-hydrate="cbt-n">143</strong> tracks closed during the period</div>
+   <div class="donut-wrap">
+    <svg class="donut-svg" viewBox="0 0 160 160">
+     <g transform="rotate(-90 80 80)">
+      <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="180.96 196.04" stroke-dashoffset="-0.00" data-track="NPP" data-label="Nurturing Parenting" data-pct="48" data-n="68" data-color="#123939" data-unit="closed" data-extra="Completed: pending" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="128.18 248.81" stroke-dashoffset="-180.96" data-track="EP" data-label="Empowered Parenting" data-pct="34" data-n="48" data-color="#ec482f" data-unit="closed" data-extra="Completed: pending" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="71.63 305.36" stroke-dashoffset="-309.13" data-track="RR" data-label="Roadmap to Resilience" data-pct="19" data-n="27" data-color="#f2a136" data-unit="closed" data-extra="Completed: pending" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+     </g>
+    </svg>
+    <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label"><strong>NPP</strong> Nurturing Parenting</div><div class="dl-pct" data-hydrate="cbt-NPP-pct">48%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label"><strong>EP</strong> Empowered Parenting</div><div class="dl-pct" data-hydrate="cbt-EP-pct">34%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label"><strong>RR</strong> Roadmap to Resilience</div><div class="dl-pct" data-hydrate="cbt-RR-pct">19%</div></div>
     </div>
-
-    <div class="tcc-col" data-track="EP">
-     <div class="tcc-share">34%</div>
-     <div class="tcc-share-label">of closed tracks</div>
-     <div class="tcc-bars-wrap">
-      <div class="tcc-bars-row">
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:70.6%;"></div></div>
-        <div class="tcc-bar-key">Closed</div>
-       </div>
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
-        <div class="tcc-bar-key">Completed</div>
-       </div>
-      </div>
-      <div class="tcc-tooltip">
-       <strong>Empowered Parenting</strong>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">48</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
-      </div>
-     </div>
-     <div class="tcc-track-label">Empowered Parenting</div>
-    </div>
-
-    <div class="tcc-col" data-track="RR">
-     <div class="tcc-share">19%</div>
-     <div class="tcc-share-label">of closed tracks</div>
-     <div class="tcc-bars-wrap">
-      <div class="tcc-bars-row">
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:39.7%;"></div></div>
-        <div class="tcc-bar-key">Closed</div>
-       </div>
-       <div class="tcc-bar-pair">
-        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
-        <div class="tcc-bar-key">Completed</div>
-       </div>
-      </div>
-      <div class="tcc-tooltip">
-       <strong>Roadmap to Resilience</strong>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">27</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
-       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
-      </div>
-     </div>
-     <div class="tcc-track-label">Roadmap to Resilience</div>
-    </div>
-
    </div>
   </div>
-
   <!-- Learning Progress by Track -->
   <div class="affiliate-table-wrap accent-yellow" style="overflow:visible;">
    <div class="info-icon-wrap">
@@ -2216,28 +2588,51 @@
      </div>
     </div>
    </div>
-   <h3 class="att-head">Learning Progress by Track</h3>
+   <h3 class="att-head">Per-curriculum rates</h3>
    <table>
     <thead>
      <tr>
-      <th>Track</th>
-      <th>Improved</th>
-      <th>Valid Pairs</th>
-      <th>Rate</th>
+      <th>Curriculum</th>
+      <th>Completion rate</th>
+      <th>Learning progress</th>
      </tr>
     </thead>
     <tbody id="learningProgressBody">
-     <tr>
-      <td><strong>NPP</strong> <span class="n-warn" style="cursor:help;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span></td>
-      <td>8</td><td>10</td><td><strong>80%</strong></td>
+     <tr data-track="NPP">
+      <td class="lp-curriculum"><strong>NPP</strong> <span style="color:var(--mid);font-weight:400;">Nurturing Parenting</span></td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="NPP completion" data-n="11" data-unit="of 68 closed tracks completed" data-color="#123939"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>16%</strong></span>
+      </td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="NPP learning progress" data-n="8" data-unit="of 10 with both assessments improved" data-color="#123939"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>80%</strong></span>
+       <span class="n-warn" style="cursor:help;margin-left:6px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>
+      </td>
      </tr>
-     <tr>
-      <td><strong>EP</strong> <span class="n-warn crit" style="cursor:help;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span></td>
-      <td>3</td><td>5</td><td><strong>60%</strong></td>
+     <tr data-track="EP">
+      <td class="lp-curriculum"><strong>EP</strong> <span style="color:var(--mid);font-weight:400;">Empowered Parenting</span></td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="EP completion" data-n="5" data-unit="of 48 closed tracks completed" data-color="#ec482f"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>10%</strong></span>
+      </td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="EP learning progress" data-n="3" data-unit="of 5 with both assessments improved" data-color="#ec482f"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>60%</strong></span>
+       <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
+      </td>
      </tr>
-     <tr>
-      <td><strong>RR</strong> <span class="n-warn crit" style="cursor:help;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span></td>
-      <td>2</td><td>3</td><td><strong>67%</strong></td>
+     <tr data-track="RR">
+      <td class="lp-curriculum"><strong>RR</strong> <span style="color:var(--mid);font-weight:400;">Roadmap to Resilience</span></td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="RR completion" data-n="2" data-unit="of 27 closed tracks completed" data-color="#f2a136"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>7%</strong></span>
+      </td>
+      <td class="lp-rate">
+       <span class="rate-cell" data-label="RR learning progress" data-n="2" data-unit="of 3 with both assessments improved" data-color="#f2a136"
+             onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>67%</strong></span>
+       <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
+      </td>
      </tr>
     </tbody>
    </table>
@@ -2249,6 +2644,370 @@
 
 </div><!-- /tab-track -->
 
+<!-- ══════════════════════════════════════════
+   TAB 4 - DEMOGRAPHICS  (added 4/23/26, Cristina)
+   Stage A+B: Race, Age, Language, Pregnancy, Children, Caregiver, Marital
+   Stage C (TBD): Geographic ZIP table + county map
+   RD: All numbers are demo placeholders. Hydration anchors via
+   data-hydrate attributes throughout. Donut SVG slices need
+   geometry recompute on data wire (slice_len=pct/100*C, offset=-cum/100*C; r=60, C=376.99).
+   ══════════════════════════════════════════ -->
+<div id="tab-demographics" class="tab-panel">
+
+ <h2 class="tab-title">Who ĒMA Serves</h2>
+ <p class="tab-intro">Demographic profile of moms in active service during the period. Coverage varies by field; some are captured for nearly everyone, others only at Trellis intake.</p>
+
+ <!-- Race + Age (paired) -->
+ <div class="section-group">
+  <div class="two-col">
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Moms who selected a race on her intake or profile.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Race is single-select. Moms who identify with multiple races appear in only one category.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Race</h3>
+    <div class="panel-n"><strong data-hydrate="race-n">87</strong> moms with race recorded</div>
+    <div class="donut-wrap">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="196.04 180.96" stroke-dashoffset="-0.00" data-label="Black or African American" data-pct="52" data-n="45" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="90.48 286.51" stroke-dashoffset="-196.04" data-label="Hispanic or Latino" data-pct="24" data-n="21" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="52.78 324.21" stroke-dashoffset="-286.51" data-label="White" data-pct="14" data-n="12" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="15.08 361.91" stroke-dashoffset="-339.29" data-label="Asian" data-pct="4" data-n="3" data-color="#5e7d7d" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f4a08a" stroke-dasharray="11.31 365.68" stroke-dashoffset="-354.37" data-label="American Indian" data-pct="3" data-n="3" data-color="#f4a08a" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#8da4a4" stroke-dasharray="3.77 373.22" stroke-dashoffset="-365.68" data-label="Middle Eastern or N African" data-pct="1" data-n="1" data-color="#8da4a4" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f8c486" stroke-dasharray="3.77 373.22" stroke-dashoffset="-369.45" data-label="Native Hawaiian or Pacific Islander" data-pct="1" data-n="1" data-color="#f8c486" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#c5d2d2" stroke-dasharray="3.77 373.22" stroke-dashoffset="-373.22" data-label="Alaskan Native" data-pct="1" data-n="1" data-color="#c5d2d2" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">Black or African American</div><div class="dl-pct" data-hydrate="race-black-or-african-american-pct">52%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label">Hispanic or Latino</div><div class="dl-pct" data-hydrate="race-hispanic-or-latino-pct">24%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">White</div><div class="dl-pct" data-hydrate="race-white-pct">14%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Asian</div><div class="dl-pct" data-hydrate="race-asian-pct">4%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f4a08a;"></div><div class="dl-label">American Indian</div><div class="dl-pct" data-hydrate="race-american-indian-pct">3%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#8da4a4;"></div><div class="dl-label">Middle Eastern or N African</div><div class="dl-pct" data-hydrate="race-middle-eastern-or-n-african-pct">1%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f8c486;"></div><div class="dl-label">Native Hawaiian or Pacific Islander</div><div class="dl-pct" data-hydrate="race-native-hawaiian-or-pacific-islander-pct">1%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#c5d2d2;"></div><div class="dl-label">Alaskan Native</div><div class="dl-pct" data-hydrate="race-alaskan-native-pct">1%</div></div>
+     </div>
+    </div>
+   </div>
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Age calculated from date of birth as of period end.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Moms with no date of birth recorded are not shown.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Age</h3>
+    <div class="panel-n"><strong data-hydrate="age-n">87</strong> moms with date of birth recorded</div>
+    <svg class="demo-bar-svg" viewBox="0 0 460 220" preserveAspectRatio="xMidYMid meet">
+  <line class="grid-line" x1="32" x2="448" y1="182.0" y2="182.0" />
+  <text class="axis-label" x="26" y="185.5" text-anchor="end">0</text>
+  <line class="grid-line" x1="32" x2="448" y1="140.0" y2="140.0" />
+  <text class="axis-label" x="26" y="143.5" text-anchor="end">10</text>
+  <line class="grid-line" x1="32" x2="448" y1="98.0" y2="98.0" />
+  <text class="axis-label" x="26" y="101.5" text-anchor="end">20</text>
+  <line class="grid-line" x1="32" x2="448" y1="56.0" y2="56.0" />
+  <text class="axis-label" x="26" y="59.5" text-anchor="end">30</text>
+  <line class="grid-line" x1="32" x2="448" y1="14.0" y2="14.0" />
+  <text class="axis-label" x="26" y="17.5" text-anchor="end">40</text>
+  <line class="grid-line" x1="32" x2="448" y1="182.0" y2="182.0" style="stroke:var(--mid);stroke-width:1.2;" />
+  <rect class="bar-rect" x="47.8" y="165.2" width="51.6" height="16.8" rx="4" fill="#f4a08a" data-hydrate="age-under-18-rect"  data-label="Under 18" data-pct="5" data-n="4" data-color="#f4a08a" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="73.6" y="159.2" data-hydrate="age-under-18-pct">5%</text>
+  <text class="bar-cat-label" x="73.6" y="200.0">Under 18</text>
+  <rect class="bar-rect" x="131.0" y="106.4" width="51.6" height="75.6" rx="4" fill="#f8c486" data-hydrate="age-18-to-24-rect"  data-label="18 to 24" data-pct="21" data-n="18" data-color="#f8c486" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="156.8" y="100.4" data-hydrate="age-18-to-24-pct">21%</text>
+  <text class="bar-cat-label" x="156.8" y="200.0">18 to 24</text>
+  <rect class="bar-rect" x="214.2" y="35.0" width="51.6" height="147.0" rx="4" fill="#f2a136" data-hydrate="age-25-to-34-rect"  data-label="25 to 34" data-pct="40" data-n="35" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="240.0" y="29.0" data-hydrate="age-25-to-34-pct">40%</text>
+  <text class="bar-cat-label" x="240.0" y="200.0">25 to 34</text>
+  <rect class="bar-rect" x="297.4" y="89.6" width="51.6" height="92.4" rx="4" fill="#ec482f" data-hydrate="age-35-to-44-rect"  data-label="35 to 44" data-pct="25" data-n="22" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="323.2" y="83.6" data-hydrate="age-35-to-44-pct">25%</text>
+  <text class="bar-cat-label" x="323.2" y="200.0">35 to 44</text>
+  <rect class="bar-rect" x="380.6" y="148.4" width="51.6" height="33.6" rx="4" fill="#123939" data-hydrate="age-45-and-up-rect"  data-label="45 and up" data-pct="9" data-n="8" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="406.4" y="142.4" data-hydrate="age-45-and-up-pct">9%</text>
+  <text class="bar-cat-label" x="406.4" y="200.0">45 and up</text>
+</svg>
+   </div>
+  </div>
+ </div>
+
+ <!-- Language + Pregnancy (paired) -->
+ <div class="section-group">
+  <div class="two-col">
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Languages each mom speaks, recorded on her intake or profile.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Moms who speak more than one language are counted once per language. Bars may sum to more than 100%.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Top 5 languages spoken</h3>
+    <div class="panel-n"><strong data-hydrate="lang-n">92</strong> moms with languages recorded</div>
+    <div class="hbar-list">
+     <div class="hbar-row" data-label="English" data-pct="87" data-n="80" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">English</div><div class="hbar-track"><div class="hbar-fill" style="background:#123939;width:100.0%;"></div></div><div class="hbar-meta" data-hydrate="lang-english-pct">87%</div></div>
+     <div class="hbar-row" data-label="Spanish" data-pct="38" data-n="35" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Spanish</div><div class="hbar-track"><div class="hbar-fill" style="background:#ec482f;width:43.7%;"></div></div><div class="hbar-meta" data-hydrate="lang-spanish-pct">38%</div></div>
+     <div class="hbar-row" data-label="Haitian Creole" data-pct="6" data-n="5" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Haitian Creole</div><div class="hbar-track"><div class="hbar-fill" style="background:#f2a136;width:6.9%;"></div></div><div class="hbar-meta" data-hydrate="lang-haitian-creole-pct">6%</div></div>
+     <div class="hbar-row" data-label="Portuguese" data-pct="3" data-n="3" data-color="#5e7d7d" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Portuguese</div><div class="hbar-track"><div class="hbar-fill" style="background:#5e7d7d;width:3.4%;"></div></div><div class="hbar-meta" data-hydrate="lang-portuguese-pct">3%</div></div>
+     <div class="hbar-row" data-label="French" data-pct="2" data-n="2" data-color="#f4a08a" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">French</div><div class="hbar-track"><div class="hbar-fill" style="background:#f4a08a;width:2.3%;"></div></div><div class="hbar-meta" data-hydrate="lang-french-pct">2%</div></div>
+    </div>
+    <div class="hbar-foot">Only the top 5 are shown; less common languages are not listed.</div>
+   </div>
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Whether mom was pregnant when added to the system.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Pregnancy status at intake</h3>
+    <div class="panel-n"><strong data-hydrate="preg-n">147</strong> moms with pregnancy status recorded</div>
+    <div class="donut-wrap">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="331.75 45.24" stroke-dashoffset="-0.00" data-label="Not pregnant at intake" data-pct="88" data-n="130" data-color="#5e7d7d" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="45.24 331.75" stroke-dashoffset="-331.75" data-label="Currently pregnant" data-pct="12" data-n="17" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Not pregnant at intake</div><div class="dl-pct" data-hydrate="preg-not-pregnant-at-intake-pct">88%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Currently pregnant</div><div class="dl-pct" data-hydrate="preg-currently-pregnant-pct">12%</div></div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <!-- Children in home (full width with inline hero stat) -->
+ <div class="section-group">
+  <div class="panel accent-green" style="overflow:visible;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover"><div class="ip-body">
+     <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Children who live with mom. Includes children temporarily placed out of home by CPS.</div></div>
+     <div class="ip-block warn"><div class="ip-block-label">Known limitation</div><div class="ip-block-body">Bucket "4 or more" combines all moms with four or more children at home.</div></div>
+    </div></div>
+   </div>
+   <div class="kid-panel-head">
+    <h3>Children in the home</h3>
+    <div class="kid-hero-inline">
+     <div class="khi-num" data-hydrate="kids-avg-age">4.2</div>
+     <div class="khi-side">
+      <div class="khi-label">Average age of children</div>
+      <div class="khi-context">Across <strong data-hydrate="kids-total">284</strong> children of served moms</div>
+     </div>
+    </div>
+   </div>
+   <div class="panel-n"><strong data-hydrate="kids-n">150</strong> moms with household details recorded</div>
+   <svg class="demo-bar-svg" viewBox="0 0 900 240" preserveAspectRatio="xMidYMid meet">
+  <line class="grid-line" x1="32" x2="888" y1="202.0" y2="202.0" />
+  <text class="axis-label" x="26" y="205.5" text-anchor="end">0</text>
+  <line class="grid-line" x1="32" x2="888" y1="164.4" y2="164.4" />
+  <text class="axis-label" x="26" y="167.9" text-anchor="end">10</text>
+  <line class="grid-line" x1="32" x2="888" y1="126.8" y2="126.8" />
+  <text class="axis-label" x="26" y="130.3" text-anchor="end">20</text>
+  <line class="grid-line" x1="32" x2="888" y1="89.2" y2="89.2" />
+  <text class="axis-label" x="26" y="92.7" text-anchor="end">30</text>
+  <line class="grid-line" x1="32" x2="888" y1="51.6" y2="51.6" />
+  <text class="axis-label" x="26" y="55.1" text-anchor="end">40</text>
+  <line class="grid-line" x1="32" x2="888" y1="14.0" y2="14.0" />
+  <text class="axis-label" x="26" y="17.5" text-anchor="end">50</text>
+  <line class="grid-line" x1="32" x2="888" y1="202.0" y2="202.0" style="stroke:var(--mid);stroke-width:1.2;" />
+  <rect class="bar-rect" x="64.5" y="183.2" width="106.1" height="18.8" rx="4" fill="#f4a08a" data-hydrate="kids-0-rect"  data-label="0" data-pct="3" data-n="5" data-color="#f4a08a" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="117.6" y="177.2" data-hydrate="kids-0-pct">3%</text>
+  <text class="bar-cat-label" x="117.6" y="220.0">0</text>
+  <rect class="bar-rect" x="235.7" y="21.5" width="106.1" height="180.5" rx="4" fill="#f8c486" data-hydrate="kids-1-rect"  data-label="1" data-pct="32" data-n="48" data-color="#f8c486" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="288.8" y="15.5" data-hydrate="kids-1-pct">32%</text>
+  <text class="bar-cat-label" x="288.8" y="220.0">1</text>
+  <rect class="bar-rect" x="406.9" y="29.0" width="106.1" height="173.0" rx="4" fill="#f2a136" data-hydrate="kids-2-rect"  data-label="2" data-pct="31" data-n="46" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="460.0" y="23.0" data-hydrate="kids-2-pct">31%</text>
+  <text class="bar-cat-label" x="460.0" y="220.0">2</text>
+  <rect class="bar-rect" x="578.1" y="89.2" width="106.1" height="112.8" rx="4" fill="#ec482f" data-hydrate="kids-3-rect"  data-label="3" data-pct="20" data-n="30" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="631.2" y="83.2" data-hydrate="kids-3-pct">20%</text>
+  <text class="bar-cat-label" x="631.2" y="220.0">3</text>
+  <rect class="bar-rect" x="749.3" y="123.0" width="106.1" height="79.0" rx="4" fill="#123939" data-hydrate="kids-4-or-more-rect"  data-label="4 or more" data-pct="14" data-n="21" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"/>
+  <text class="bar-pct" x="802.4" y="117.0" data-hydrate="kids-4-or-more-pct">14%</text>
+  <text class="bar-cat-label" x="802.4" y="220.0">4 or more</text>
+</svg>
+  </div>
+ </div>
+
+ <!-- Caregiver + Marital (paired) -->
+ <div class="section-group">
+  <div class="two-col">
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Caregiver role mom selected on her intake or profile.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Caregiver type</h3>
+    <div class="panel-n"><strong data-hydrate="care-n">99</strong> moms with caregiver type recorded</div>
+    <div class="donut-wrap">
+     <svg class="donut-svg" viewBox="0 0 160 160">
+      <g transform="rotate(-90 80 80)">
+       <circle class="dn-track" cx="80" cy="80" r="60" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="331.75 45.24" stroke-dashoffset="-0.00" data-label="Biological mom" data-pct="88" data-n="87" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="18.85 358.14" stroke-dashoffset="-331.75" data-label="Foster mom" data-pct="5" data-n="5" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="15.08 361.91" stroke-dashoffset="-350.60" data-label="Adoptive mom" data-pct="4" data-n="4" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="11.31 365.68" stroke-dashoffset="-365.68" data-label="Relative guardian" data-pct="3" data-n="3" data-color="#5e7d7d" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      </g>
+     </svg>
+     <div class="donut-legend">
+      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">Biological mom</div><div class="dl-pct" data-hydrate="care-biological-mom-pct">88%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label">Foster mom</div><div class="dl-pct" data-hydrate="care-foster-mom-pct">5%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Adoptive mom</div><div class="dl-pct" data-hydrate="care-adoptive-mom-pct">4%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Relative guardian</div><div class="dl-pct" data-hydrate="care-relative-guardian-pct">3%</div></div>
+     </div>
+    </div>
+   </div>
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Mom's relationship status when added to the system.</div>
+       </div>
+     </div></div>
+    </div>
+    <h3>Marital status</h3>
+    <div class="panel-n"><strong data-hydrate="mar-n">89</strong> moms with marital status recorded</div>
+    <div class="hbar-list">
+     <div class="hbar-row" data-label="Single" data-pct="79" data-n="70" data-color="#123939" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Single</div><div class="hbar-track"><div class="hbar-fill" style="background:#123939;width:100.0%;"></div></div><div class="hbar-meta" data-hydrate="mar-single-pct">79%</div></div>
+     <div class="hbar-row" data-label="Separated or divorced" data-pct="12" data-n="11" data-color="#ec482f" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Separated or divorced</div><div class="hbar-track"><div class="hbar-fill" style="background:#ec482f;width:15.2%;"></div></div><div class="hbar-meta" data-hydrate="mar-separated-or-divorced-pct">12%</div></div>
+     <div class="hbar-row" data-label="Married" data-pct="8" data-n="7" data-color="#f2a136" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Married</div><div class="hbar-track"><div class="hbar-fill" style="background:#f2a136;width:10.1%;"></div></div><div class="hbar-meta" data-hydrate="mar-married-pct">8%</div></div>
+     <div class="hbar-row" data-label="Widowed" data-pct="1" data-n="1" data-color="#5e7d7d" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Widowed</div><div class="hbar-track"><div class="hbar-fill" style="background:#5e7d7d;width:1.3%;"></div></div><div class="hbar-meta" data-hydrate="mar-widowed-pct">1%</div></div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+
+
+</div><!-- /tab-demographics -->
+
+<!-- ══════════════════════════════════════════
+   TAB 5 - SERVICE AREA  (added 4/23/26, Cristina)
+   Map + counties + top ZIPs. Auto-renders the map on tab activation.
+   ══════════════════════════════════════════ -->
+<div id="tab-service-area" class="tab-panel">
+
+ <h2 class="tab-title">Where ĒMA Serves</h2>
+ <p class="tab-intro">Geographic profile of moms in active service during the period. The map shifts between county and state detail depending on the spread of served regions.</p>
+
+ <!-- Where moms live: choropleth map (Stage C+, added 4/23/26) -->
+ <div class="section-group">
+  <div class="panel accent-green" id="geoMapPanel" style="overflow:visible;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover"><div class="ip-body">
+     <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Each mom counted once by her county of residence. Color depth shows comparative volume.</div></div>
+     <div class="ip-block"><div class="ip-block-label">View mode</div><div class="ip-block-body">When moms are concentrated in one or two states, counties are shown. When more states are involved, the view shifts to state-level shading.</div></div>
+    </div></div>
+   </div>
+   <h3>Where moms live</h3>
+   <div class="panel-n"><strong data-hydrate="geo-n">182</strong> moms with location on file</div>
+   <div id="geoMapContainer">
+    <div id="geoMapStatus">Loading map...</div>
+   </div>
+   <div class="map-legend">
+    <span>Fewer moms</span>
+    <div class="legend-bar"></div>
+    <span>More moms</span>
+   </div>
+  </div>
+ </div>
+
+ <!-- Geographic distribution (Stage C, added 4/23/26)
+      Counties hbar + Top 5 ZIPs table. County map intentionally deferred
+      pending scope-aware design (national-vs-affiliate view). The data
+      structure here will accept a map drop-in without restructuring. -->
+ <div class="section-group">
+  <div class="two-col">
+
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+      <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">County recorded on mom's address.</div></div>
+      <div class="ip-block warn"><div class="ip-block-label">Known limitation</div><div class="ip-block-body">Some moms relocate during the period; the county shown reflects the most recent address on file.</div></div>
+     </div></div>
+    </div>
+    <h3>Counties served</h3>
+    <div class="panel-n"><strong data-hydrate="county-n">182</strong> moms with county recorded</div>
+    <div class="hbar-list">
+     <div class="hbar-row" data-label="Broward County" data-pct="78" data-n="142" data-color="#123939" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Broward</div><div class="hbar-track"><div class="hbar-fill" style="background:#123939;width:100.0%;"></div></div><div class="hbar-meta" data-hydrate="county-broward-pct">78%</div></div>
+     <div class="hbar-row" data-label="Miami-Dade County" data-pct="12" data-n="22" data-color="#ec482f" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Miami-Dade</div><div class="hbar-track"><div class="hbar-fill" style="background:#ec482f;width:15.4%;"></div></div><div class="hbar-meta" data-hydrate="county-miamidade-pct">12%</div></div>
+     <div class="hbar-row" data-label="Palm Beach County" data-pct="8" data-n="14" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Palm Beach</div><div class="hbar-track"><div class="hbar-fill" style="background:#f2a136;width:10.3%;"></div></div><div class="hbar-meta" data-hydrate="county-palmbeach-pct">8%</div></div>
+     <div class="hbar-row" data-label="Hillsborough County" data-pct="2" data-n="4" data-color="#5e7d7d" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Hillsborough</div><div class="hbar-track"><div class="hbar-fill" style="background:#5e7d7d;width:2.6%;"></div></div><div class="hbar-meta" data-hydrate="county-hillsborough-pct">2%</div></div>
+    </div>
+   </div>
+
+   <div class="panel accent-green" style="overflow:visible;">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover"><div class="ip-body">
+      <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">Mom counts grouped by ZIP code from her address.</div></div>
+      <div class="ip-block"><div class="ip-block-label">Excluded</div><div class="ip-block-body">ZIPs not in the top 5 are combined into Other ZIPs. ZIPs with fewer than 5 moms are also combined into this row to protect mother privacy.</div></div>
+     </div></div>
+    </div>
+    <h3>Top ZIP codes</h3>
+    <div class="panel-n"><strong data-hydrate="zip-n">122</strong> moms with ZIP recorded</div>
+    <table class="zip-table">
+     <thead>
+      <tr><th>#</th><th>ZIP</th><th>Area</th><th>Moms</th></tr>
+     </thead>
+     <tbody id="topZipsBody">
+     <tr><td>1</td><td><strong>33442</strong></td><td>Coconut Creek</td><td>18</td></tr>
+     <tr><td>2</td><td><strong>33068</strong></td><td>Margate</td><td>15</td></tr>
+     <tr><td>3</td><td><strong>33063</strong></td><td>Pompano Beach</td><td>14</td></tr>
+     <tr><td>4</td><td><strong>33009</strong></td><td>Hallandale</td><td>12</td></tr>
+     <tr><td>5</td><td><strong>33060</strong></td><td>Pompano Beach</td><td>11</td></tr>
+     <tr style="color:var(--mid);"><td></td><td><em>Other ZIPs combined</em></td><td></td><td><em>52</em></td></tr>
+     </tbody>
+    </table>
+   </div>
+
+  </div>
+ </div>
+
+</div><!-- /tab-service-area -->
+
+
 
 
 <!-- ── SHARED FOOTER (identical to hub.html) ──────────────── -->
@@ -2257,6 +3016,8 @@
 <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
 </div>
 </div><!-- /portal-view -->
+
+<div class="dn-tooltip" id="emaDataTip"><div class="dnt-label"></div><div class="dnt-meta"></div></div>
 
 <!-- ══════════════════════════════════════════
    AUTH + DATA SCRIPTS
@@ -2335,6 +3096,35 @@
  document.getElementById("login-pass").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();doLogin();}});
 
  /* ── Cristina's tab switcher ─────────────────────────────── */
+ /* Universal data tooltip: one global tip element, reused by all data viz.
+    Any element with data-label, data-pct, data-n, data-color can use these handlers. */
+ function dnTipShow(ev, el) {
+  var tip = document.getElementById('emaDataTip');
+  if (!tip) return;
+  tip.querySelector('.dnt-label').textContent = el.getAttribute('data-label') || '';
+  var pct = el.getAttribute('data-pct');
+  var n = el.getAttribute('data-n');
+  var unit = el.getAttribute('data-unit') || 'moms';
+  var color = el.getAttribute('data-color') || '#999';
+  var extra = el.getAttribute('data-extra') || '';
+  tip.querySelector('.dnt-meta').innerHTML =
+    '<span class="dnt-dot" style="background:' + color + ';"></span>' +
+    (pct ? pct + '% · ' : '') + n + ' ' + unit +
+    (extra ? '<div class="dnt-extra">' + extra + '</div>' : '');
+  tip.classList.add('show');
+  dnTipMove(ev);
+ }
+ function dnTipMove(ev) {
+  var tip = document.getElementById('emaDataTip');
+  if (!tip) return;
+  tip.style.left = ev.clientX + 'px';
+  tip.style.top  = (ev.clientY - 6) + 'px';
+ }
+ function dnTipHide() {
+  var tip = document.getElementById('emaDataTip');
+  if (tip) tip.classList.remove('show');
+ }
+
  function showTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -2389,7 +3179,7 @@
   //     mom-q1-referrals / mom-q1-engaged / mom-q1-completions
   //     mom-intrack-count / mom-intrack-pct (bar) / mom-intrack-pct-label
   //     mom-mc-count     / mom-mc-pct (bar)     / mom-mc-pct-label
-  //   [Tab 1 · Children prevention] (when snap.children_prevented_cps_fc set)
+  //   [Tab 1 · Children prevention] (single-sourced from k1.numerator)
   //     child-prev-count / child-prev-value / child-prev-count-ctx
   //   [Tab 2 · Referrals headline + breakdown]
   //     ref-total / ref-engaged / ref-convrate / ref-pending /
@@ -2432,13 +3222,12 @@
   //        adv_became_active, adv_became_inactive
   //     Date range: records created OR last updated within the period.
   //
-  //   [Tab 1 · Children prevention $ math]
+  //   [Tab 1 · Children prevention $ math] — single-sourced from k1.numerator
   //     child-prev-count / child-prev-value / child-prev-count-ctx
-  //     ⇒ wireup ready; needs payload key:
-  //        snap.children_prevented_cps_fc = integer
-  //     Distinct from k1.numerator (which includes Permanent Removal
-  //     prevention; PR is excluded from the dollar estimate per locked
-  //     formula). Dollar value computed client-side as count × $38,850.
+  //     No separate payload key. Per Cristina's locked 4/23/26 rule,
+  //     KPI 1 numerator = CPS + Foster Care prevented only (Permanent
+  //     Removal excluded), so k1.numerator IS the prevention count.
+  //     Dollar value computed client-side as k1.numerator × $38,850.
   //
   // ── STATIC by design (leave as-is, do not wire) ──
   //   "Other" reason in Why Tracks Ended Early - synthesized client-side
@@ -2454,19 +3243,38 @@
   document.querySelector('.portal-view').classList.remove('dashboard-loading');
  }
 
+ // Normalize affiliate display name: upstream payload may return
+ // "EMA Cincinnati" without the macron; brand rule is "ĒMA ..."
+ // (U+0112). Client-side safety net so the dropdown is correct
+ // regardless of how RD's /api/report-data returns the field.
+ function emaDisplayName(name) {
+  if (!name) return name;
+  return name.replace(/^EMA(\s|$)/, '\u0112MA$1');
+ }
+
  function populateAffiliateFilter(affiliates) {
   var sel = document.getElementById('affiliateFilter');
   // Keep the "All Affiliates" default, clear the rest
   while (sel.options.length > 1) { sel.remove(1); }
+  // RD: BROWARD_ID hardcode is scoped to current single-affiliate reality.
+  // When a second affiliate comes online this "except Broward" option
+  // needs to become dynamic — see v3-rd-handoff.md, "Open items".
   var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
   var exOpt = document.createElement('option');
   exOpt.value = 'exclude-broward';
   exOpt.textContent = 'All Affiliates except \u0112MA Broward';
   sel.appendChild(exOpt);
-  affiliates.forEach(function(aff) {
+  // Sort alphabetically by display name (macron-normalized) for a
+  // stable, predictable dropdown order regardless of API ordering.
+  var sorted = (affiliates || []).slice().sort(function(a, b) {
+   var an = emaDisplayName(a.name || a.label || a.affiliate_name || '');
+   var bn = emaDisplayName(b.name || b.label || b.affiliate_name || '');
+   return an.localeCompare(bn);
+  });
+  sorted.forEach(function(aff) {
    var opt = document.createElement('option');
    opt.value = aff.id || aff.affiliate_id || aff.name;
-   opt.textContent = aff.name || aff.label || aff.affiliate_name || opt.value;
+   opt.textContent = emaDisplayName(aff.name || aff.label || aff.affiliate_name || opt.value);
    sel.appendChild(opt);
   });
  }
@@ -2721,15 +3529,16 @@
    if (snap.adv_became_active != null)         setH1('adv-q1-active',       fmt(snap.adv_became_active));
    if (snap.adv_became_inactive != null)       setH1('adv-q1-inactive',     fmt(snap.adv_became_inactive));
 
-   // Children prevention (KPI 1 dollar math)
-   //   Per Cristina's locked formula: (CPS_prevented + FosterCare_prevented)
-   //   × $38,850/child. Permanent Removal preventions count toward the
-   //   "preserved children" KPI 1 numerator but NOT the dollar estimate.
-   //   PENDING from RD: payload field for cps+fc-prevented child count.
-   //   Suggested key: snap.children_prevented_cps_fc - separate from
-   //   k1.numerator (which includes Permanent Removal).
-   if (snap.children_prevented_cps_fc != null) {
-    var pcCount = snap.children_prevented_cps_fc;
+   // Children prevention (KPI 1 dollar math) — SINGLE-SOURCED from k1.numerator
+   //   Per Cristina's locked 4/23/26 decision, KPI 1 numerator =
+   //   CPS Prevented + Foster Care Prevented ONLY. Permanent Removal
+   //   prevention is excluded from the numerator entirely until the
+   //   validation pathway is in place. That makes the KPI 1 numerator
+   //   and the Children-card "Child Welfare Prevention" count the
+   //   SAME NUMBER — one source, two display sites. No second payload
+   //   key needed. Dollar value = count × $38,850, computed client-side.
+   if (k1.numerator != null) {
+    var pcCount = k1.numerator;
     var pcDollars = pcCount * 38850;
     var pcDisp;
     if      (pcDollars >= 1e6)  pcDisp = '~$' + (pcDollars / 1e6).toFixed(2) + 'M';
@@ -2752,11 +3561,28 @@
     setH1('mom-mc-count', mc);
     setH1('mom-intrack-pct-label', inTrackPct + '%');
     setH1('mom-mc-pct-label', mcPct + '%');
-    // Bar widths (data-hydrate target is the .fr-bar div; set inline width)
-    var inTrackBar = tab1.querySelector('[data-hydrate="mom-intrack-pct"]');
-    if (inTrackBar) inTrackBar.style.width = inTrackPct + '%';
-    var mcBar = tab1.querySelector('[data-hydrate="mom-mc-pct"]');
-    if (mcBar) mcBar.style.width = mcPct + '%';
+    // Hydrate the Mothers Active Donut slices (replaced bar-width JS)
+    var R_md = 60, C_md = 2 * Math.PI * R_md;
+    var momDonutPanel = document.getElementById('momActiveDonut');
+    if (momDonutPanel) {
+     var momSlices = [
+      { key: 'mom-intrack', pct: inTrackPct, count: inTrack },
+      { key: 'mom-mc',      pct: mcPct,      count: mc      }
+     ];
+     var cumPct = 0;
+     momSlices.forEach(function(s) {
+      var slen = (s.pct / 100) * C_md;
+      var off  = -(cumPct / 100) * C_md;
+      var slice = momDonutPanel.querySelector('.dn-slice[data-bucket="' + s.key + '"]');
+      if (slice) {
+       slice.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_md - slen).toFixed(2));
+       slice.setAttribute('stroke-dashoffset', off.toFixed(2));
+       slice.setAttribute('data-pct', s.pct);
+       slice.setAttribute('data-n', s.count);
+      }
+      cumPct += s.pct;
+     });
+    }
    }
 
    // ── Advocate funnel-row buckets (Paired 1:1 / Group / Waiting / Break)
@@ -2797,16 +3623,29 @@
      setH1('adv-group-count',      grp);    setH1('adv-group-pct-label',   gPct + '%');
      setH1('adv-waiting-count',    wait);   setH1('adv-waiting-pct-label', wPct + '%');
      setH1('adv-break-count',      brk);    setH1('adv-break-pct-label',   bPct + '%');
-     var advBars = {
-      'adv-paired-pct':  pPct,
-      'adv-group-pct':   gPct,
-      'adv-waiting-pct': wPct,
-      'adv-break-pct':   bPct
-     };
-     Object.keys(advBars).forEach(function(k) {
-      var bar = tab1.querySelector('[data-hydrate="' + k + '"]');
-      if (bar) bar.style.width = advBars[k] + '%';
-     });
+     var R_ad = 60, C_ad = 2 * Math.PI * R_ad;
+     var advDonutPanel = document.getElementById('advActiveDonut');
+     if (advDonutPanel) {
+      var advSlicesHydrate = [
+       { key: 'adv-paired',  pct: pPct, count: paired },
+       { key: 'adv-group',   pct: gPct, count: grp    },
+       { key: 'adv-waiting', pct: wPct, count: wait   },
+       { key: 'adv-break',   pct: bPct, count: brk    }
+      ];
+      var advCum = 0;
+      advSlicesHydrate.forEach(function(s) {
+       var slen = (s.pct / 100) * C_ad;
+       var off  = -(advCum / 100) * C_ad;
+       var slice = advDonutPanel.querySelector('.dn-slice[data-bucket="' + s.key + '"]');
+       if (slice) {
+        slice.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_ad - slen).toFixed(2));
+        slice.setAttribute('stroke-dashoffset', off.toFixed(2));
+        slice.setAttribute('data-pct', s.pct);
+        slice.setAttribute('data-n', s.count);
+       }
+       advCum += s.pct;
+      });
+     }
     }
    }
   }
@@ -3074,57 +3913,83 @@
     { track: 'EP',  name: 'Empowered Parenting',  closed: epClosed,  completed: epCompleted  },
     { track: 'RR',  name: 'Roadmap to Resilience', closed: rrClosed, completed: rrCompleted  }
    ];
+   var R_cbt = 60, C_cbt = 2 * Math.PI * R_cbt;
+   var cumPct = 0;
+   var donutPanel = document.getElementById('cbtDonutPanel');
    tccMap.forEach(function(t) {
-    var col = tabTrack.querySelector('.tcc-col[data-track="' + t.track + '"]');
-    if (!col) return;
-    // Share %
-    var share = totalClosed > 0 ? Math.round(t.closed / totalClosed * 100) : 0;
-    var shareEl = col.querySelector('.tcc-share');
-    if (shareEl) shareEl.textContent = share + '%';
-    // Bar heights (closed + completed both scaled to maxClosed for visual comparability)
-    var fills = col.querySelectorAll('.tcc-bar-fill');
-    if (fills[0]) fills[0].style.height = ((t.closed / maxClosed) * 100).toFixed(1) + '%';
-    var hasCompleted = t.completed != null && t.completed > 0;
-    if (fills[1]) fills[1].style.height = hasCompleted
-      ? ((t.completed / maxClosed) * 100).toFixed(1) + '%'
-      : '0%';
-    // Hover tooltip: three labeled lines (Closed / Completed / Rate)
-    var tipVals = col.querySelectorAll('.tcc-tip-val');
-    if (tipVals[0]) tipVals[0].textContent = t.closed;
-    if (tipVals[1]) tipVals[1].textContent = hasCompleted ? t.completed : 'pending';
-    if (tipVals[2]) {
-     if (hasCompleted && t.closed > 0) {
-      tipVals[2].textContent = Math.round(t.completed / t.closed * 100) + '%';
-     } else {
-      tipVals[2].textContent = 'pending';
+    var pct = totalClosed > 0 ? Math.round(t.closed / totalClosed * 100) : 0;
+    var slen = (pct / 100) * C_cbt;
+    var off  = -(cumPct / 100) * C_cbt;
+    if (donutPanel) {
+     var slice = donutPanel.querySelector('.dn-slice[data-track="' + t.track + '"]');
+     if (slice) {
+      slice.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_cbt - slen).toFixed(2));
+      slice.setAttribute('stroke-dashoffset', off.toFixed(2));
+      slice.setAttribute('data-pct', pct);
+      slice.setAttribute('data-n', t.closed);
+      var hasC = t.completed != null && t.completed > 0;
+      var rate = (hasC && t.closed > 0) ? Math.round(t.completed / t.closed * 100) : null;
+      var extraTxt = (rate != null) ? (t.completed + ' completed (' + rate + '%)') : 'Completed: pending';
+      slice.setAttribute('data-extra', extraTxt);
      }
+     var pctEl = donutPanel.querySelector('[data-hydrate="cbt-' + t.track + '-pct"]');
+     if (pctEl) pctEl.textContent = pct + '%';
     }
+    cumPct += pct;
    });
+   var cbtN = donutPanel && donutPanel.querySelector('[data-hydrate="cbt-n"]');
+   if (cbtN) cbtN.textContent = totalClosed;
 
-   // ── Learning Progress by Track table
+   // ── Per-curriculum rates table (combines completion rate from tccMap +
+   //    learning progress from lpData, both keyed by curriculum)
    var lpData = track.learning_progress_by_track || [];
-   // Sort: NPP first, EP second, RR third (match Completion Rate table order)
-   var trackOrder = { 'NPP': 1, 'EP': 2, 'RR': 3 };
-   lpData.sort(function(a, b) { return (trackOrder[a.track_group] || 99) - (trackOrder[b.track_group] || 99); });
+   var lpByTrack = {};
+   lpData.forEach(function(l) { lpByTrack[l.track_group] = l; });
+   var compByCurr = {};
+   tccMap.forEach(function(t) { compByCurr[t.track] = t; });
+   var curriculaOrder = [
+    { id: 'NPP', name: 'Nurturing Parenting',   color: '#123939' },
+    { id: 'EP',  name: 'Empowered Parenting',   color: '#ec482f' },
+    { id: 'RR',  name: 'Roadmap to Resilience', color: '#f2a136' }
+   ];
    var lpBody = document.getElementById('learningProgressBody');
-   if (lpBody && lpData.length > 0) {
+   if (lpBody) {
     var lpHtml = '';
-    lpData.forEach(function(r) {
-     var rate = r.valid_pairs > 0 ? Math.round(r.improved / r.valid_pairs * 100) + '%' : '\u2014';
-     // Two-tier sample size flag per memory #17:
-     //   n < 10  → red "Too few to interpret" (.n-warn.crit)  -  rate not meaningful
-     //   n < 20  → yellow "Interpret with caution"  -  rate could shift noticeably
-     //   n >= 20 → no badge
-     var nWarn = '';
-     if (r.valid_pairs < 10) {
-      nWarn = ' <span class="n-warn crit" style="cursor:help;font-size:10px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>';
-     } else if (r.valid_pairs < 20) {
-      nWarn = ' <span class="n-warn" style="cursor:help;font-size:10px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>';
+    curriculaOrder.forEach(function(curr) {
+     var c = compByCurr[curr.id] || {};
+     var l = lpByTrack[curr.id] || {};
+     // Completion rate
+     var compPct, compN, compDen;
+     if (c.completed != null && c.closed > 0) {
+      compPct = Math.round(c.completed / c.closed * 100) + '%';
+      compN = c.completed;
+      compDen = c.closed;
+     } else {
+      compPct = 'pending';
+      compN = 0;
+      compDen = c.closed || 0;
      }
-     lpHtml += '<tr><td><strong>' + r.track_group + '</strong>' + nWarn + '</td>';
-     lpHtml += '<td>' + r.improved + '</td>';
-     lpHtml += '<td>' + r.valid_pairs + '</td>';
-     lpHtml += '<td><strong>' + rate + '</strong></td></tr>';
+     // Learning progress rate
+     var lpPct, lpN, lpDen, warnHtml = '';
+     if (l.improved != null && l.valid_pairs > 0) {
+      lpPct = Math.round(l.improved / l.valid_pairs * 100) + '%';
+      lpN = l.improved;
+      lpDen = l.valid_pairs;
+      if (l.valid_pairs < 10) {
+       warnHtml = '<span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>';
+      } else if (l.valid_pairs < 20) {
+       warnHtml = '<span class="n-warn" style="cursor:help;margin-left:6px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>';
+      }
+     } else {
+      lpPct = 'pending';
+      lpN = 0;
+      lpDen = 0;
+     }
+     lpHtml += '<tr data-track="' + curr.id + '">';
+     lpHtml += '<td class="lp-curriculum"><strong>' + curr.id + '</strong> <span style="color:var(--mid);font-weight:400;">' + curr.name + '</span></td>';
+     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' completion" data-n="' + compN + '" data-unit="of ' + compDen + ' closed tracks completed" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + compPct + '</strong></span></td>';
+     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' learning progress" data-n="' + lpN + '" data-unit="of ' + lpDen + ' with both assessments improved" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + lpPct + '</strong></span>' + warnHtml + '</td>';
+     lpHtml += '</tr>';
     });
     lpBody.innerHTML = lpHtml;
    }
@@ -3540,7 +4405,7 @@
       var otherConv = otherResolved > 0 ? Math.round(otherIntakes / otherResolved * 100) : 0;
       var otherPct = totalReferrals > 0 ? Math.round(otherReceived / totalReferrals * 100) : 0;
       // "Other Sources" rollup row - stays visible, click toggles sub-rows
-      mainHtml += '<tr class="ref-other-row" style="background:var(--yellow-light);cursor:pointer;" onclick="var open=this.classList.toggle(\'open\');document.querySelectorAll(\'.ref-small-src\').forEach(function(r){r.style.display=open?\'table-row\':\'none\'});" title="Click to expand or collapse">';
+      mainHtml += '<tr class="ref-other-row" data-source="other" style="cursor:pointer;" onclick="var open=this.classList.toggle(\'open\');document.querySelectorAll(\'.ref-small-src\').forEach(function(r){r.style.display=open?\'table-row\':\'none\'});" title="Click to expand or collapse">';
       mainHtml += '<td><strong>Other Sources</strong> <span style="font-size:11px;color:var(--mid);font-weight:400;">' + otherCount + ' source' + (otherCount > 1 ? 's' : '') + ' with fewer than ' + REF_MIN + ' referrals</span> <span class="ref-toggle">Show</span></td>';
       mainHtml += '<td>' + otherReceived + '</td>';
       mainHtml += '<td>' + otherIntakes + '</td>';
@@ -3551,7 +4416,7 @@
       // Hidden individual small-source rows
       smallSources.forEach(function(r) {
        var pctOfAll = totalReferrals > 0 ? Math.round((r.referrals_received || 0) / totalReferrals * 100) : 0;
-       mainHtml += '<tr class="ref-small-src" style="display:none;background:var(--yellow-light);">';
+       mainHtml += '<tr class="ref-small-src" style="display:none;">';
        mainHtml += '<td style="padding-left:28px;"><strong>' + (r.referral_source || 'Unknown') + '</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate and pending count hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>';
        mainHtml += '<td>' + (r.referrals_received || 0) + '</td>';
        mainHtml += '<td>' + (r.intakes_completed || 0) + '</td>';
@@ -3950,6 +4815,216 @@ function confirmReferralExport(){
   link.click();
   URL.revokeObjectURL(url);
 }
+
+
+/* ──────────────────────────────────────────────────────────────
+   Geographic choropleth (Demographics tab > Where moms live)
+   Auto-mode: if >2 states served, state-level shading; else county.
+   Auto-fit viewport to served regions.
+   Topology fetched from jsdelivr CDN, cached by browser.
+   Hover uses the universal tooltip system.
+   ────────────────────────────────────────────────────────────── */
+window.__GEO_TOPO_CACHE__ = window.__GEO_TOPO_CACHE__ || {};
+
+window.renderGeoMap = async function renderGeoMap(geoData) {
+  var container = document.getElementById('geoMapContainer');
+  var status = document.getElementById('geoMapStatus');
+  if (!container) return;
+
+  if (typeof d3 === 'undefined' || typeof topojson === 'undefined') {
+    if (status) status.textContent = 'Map library not loaded yet. Refresh the page if this persists.';
+    return;
+  }
+
+  // 1. Aggregate by state and county
+  var countyCounts = {}, stateCounts = {};
+  (geoData || []).forEach(function(g) {
+    var c = g.count || 1;
+    if (g.county_fips) countyCounts[g.county_fips] = (countyCounts[g.county_fips] || 0) + c;
+    if (g.state_fips)  stateCounts[g.state_fips]   = (stateCounts[g.state_fips]   || 0) + c;
+  });
+
+  if (Object.keys(stateCounts).length === 0) {
+    if (status) status.textContent = 'No location data available for the current view.';
+    return;
+  }
+
+  var numStates = Object.keys(stateCounts).length;
+  var mode = numStates > 2 ? 'state' : 'county';
+
+  // 2. Fetch topology - always grab states (small, used as context layer in
+  //    county mode), grab counties only when in county mode.
+  var fetchOne = async function(key, url) {
+    if (window.__GEO_TOPO_CACHE__[key]) return window.__GEO_TOPO_CACHE__[key];
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('Topology fetch failed: ' + resp.status);
+    var data = await resp.json();
+    window.__GEO_TOPO_CACHE__[key] = data;
+    return data;
+  };
+
+  try {
+    if (status) status.textContent = 'Loading map...';
+    var statesTopo = await fetchOne('states', 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json');
+    var countiesTopo = mode === 'county'
+      ? await fetchOne('counties', 'https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json')
+      : null;
+
+    var allStates = topojson.feature(statesTopo, statesTopo.objects.states).features;
+
+    var servedFeatures, contextFeatures;
+    if (mode === 'state') {
+      servedFeatures = allStates.filter(function(f) { return stateCounts[f.id] > 0; });
+      contextFeatures = []; // state mode doesn't need extra context layer
+    } else {
+      var allCounties = topojson.feature(countiesTopo, countiesTopo.objects.counties).features;
+      servedFeatures = allCounties.filter(function(f) { return countyCounts[f.id] > 0; });
+      // Context = the full state(s) containing served counties
+      contextFeatures = allStates.filter(function(f) { return stateCounts[f.id] > 0; });
+    }
+
+    if (servedFeatures.length === 0) {
+      if (status) status.textContent = 'No matching ' + mode + ' boundaries found.';
+      return;
+    }
+
+    // 3. Build SVG. Auto-fit to context (full state) when in county mode so
+    //    the user sees the state shape not just the served slice.
+    var W = container.clientWidth || 800;
+    var H = 380;
+    container.innerHTML = '';
+
+    var svg = d3.select(container).append('svg')
+      .attr('viewBox', '0 0 ' + W + ' ' + H)
+      .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    var fitTarget = (mode === 'county' && contextFeatures.length > 0)
+      ? { type: 'FeatureCollection', features: contextFeatures }
+      : { type: 'FeatureCollection', features: servedFeatures };
+
+    var projection = mode === 'state'
+      ? d3.geoAlbersUsa().fitSize([W * 0.92, H * 0.92], fitTarget)
+      : d3.geoMercator().fitSize([W * 0.92, H * 0.92], fitTarget);
+
+    var path = d3.geoPath(projection);
+
+    // 4. Color scale - light to brand green
+    var counts = mode === 'county' ? countyCounts : stateCounts;
+    var maxCount = Math.max.apply(null, Object.values(counts));
+    var color = d3.scaleLinear()
+      .domain([1, maxCount])
+      .range(['#cbd6d6', '#123939'])
+      .clamp(true);
+
+    // 5. Layered drawing. The outer <g> is the zoom target. Stroke widths
+    //    are baked at projection time; CSS handles hover thickening.
+    var g = svg.append('g').attr('class', 'geo-zoom-target');
+
+    // Layer 1: context state outlines (only in county mode)
+    if (contextFeatures.length > 0) {
+      g.append('g').attr('class', 'geo-context')
+        .selectAll('path')
+        .data(contextFeatures)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', '#f5f3ee')
+        .attr('stroke', '#c8c2b3')
+        .attr('stroke-width', 0.7)
+        .style('pointer-events', 'none');
+    }
+
+    // Layer 2: served regions (interactive)
+    g.append('g').attr('class', 'geo-served')
+      .selectAll('path')
+      .data(servedFeatures)
+      .join('path')
+      .attr('d', path)
+      .attr('class', 'map-region')
+      .attr('fill', function(d) { return color(counts[d.id]); })
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 0.8)
+      .attr('data-label', function(d) {
+        var name = d.properties && d.properties.name ? d.properties.name : 'Unknown';
+        return mode === 'county' ? name + ' County' : name;
+      })
+      .attr('data-n', function(d) { return counts[d.id]; })
+      .attr('data-color', function(d) { return color(counts[d.id]); })
+      .attr('data-unit', 'moms')
+      .on('mouseenter', function(ev) { dnTipShow(ev, this); })
+      .on('mousemove', function(ev) { dnTipMove(ev); })
+      .on('mouseleave', function() { dnTipHide(); });
+
+    // 6. Zoom behavior. Scroll to zoom, drag to pan, double-click to zoom in.
+    var zoom = d3.zoom()
+      .scaleExtent([0.8, 12])
+      .on('zoom', function(event) {
+        g.attr('transform', event.transform);
+      });
+    svg.call(zoom);
+
+    // 7. Mode tag (top-right corner)
+    var tag = document.createElement('div');
+    tag.className = 'map-mode-tag';
+    tag.textContent = mode === 'county' ? 'County view' : 'State view';
+    container.appendChild(tag);
+
+    // 8. Reset-zoom button (bottom-right)
+    var resetBtn = document.createElement('button');
+    resetBtn.className = 'map-reset-btn';
+    resetBtn.title = 'Reset zoom';
+    resetBtn.innerHTML = '↺';
+    resetBtn.onclick = function() { svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity); };
+    container.appendChild(resetBtn);
+
+    // 9. Interaction hint (bottom-left, fades after first interaction)
+    var hint = document.createElement('div');
+    hint.className = 'map-hint';
+    hint.textContent = 'Drag to pan · scroll to zoom';
+    container.appendChild(hint);
+    var hideHint = function() { hint.style.opacity = '0'; svg.on('.hideHint', null); };
+    svg.on('wheel.hideHint', hideHint).on('mousedown.hideHint', hideHint);
+
+  } catch (err) {
+    if (status) status.textContent = 'Map could not load. (' + err.message + ')';
+    console.error('[geo map]', err);
+  }
+};
+
+/* Demo data: Broward affiliate FL counties (1 state → county mode).
+   FIPS: 12011 Broward, 12086 Miami-Dade, 12099 Palm Beach, 12057 Hillsborough.
+   In production, replace with real aggregation from window.__EMA_DATA__.geographic_distribution */
+window.__DEMO_GEO__ = [
+  { state_fips: '12', county_fips: '12011', count: 142 },
+  { state_fips: '12', county_fips: '12086', count: 22 },
+  { state_fips: '12', county_fips: '12099', count: 14 },
+  { state_fips: '12', county_fips: '12057', count: 4 }
+];
+
+/* Trigger render when Demographics tab becomes active.
+   Defers heavy fetch until the user actually clicks the tab. */
+(function() {
+  var renderedOnce = false;
+  function maybeRender() {
+    if (renderedOnce) return;
+    var saTab = document.getElementById('tab-service-area');
+    if (saTab && saTab.classList.contains('active')) {
+      renderedOnce = true;
+      var geoData = (window.__EMA_DATA__ && window.__EMA_DATA__.geographic_distribution) || window.__DEMO_GEO__;
+      window.renderGeoMap(geoData);
+    }
+  }
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.matches && e.target.matches('button.tab-btn')) {
+      setTimeout(maybeRender, 50);
+    }
+  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeRender);
+  } else {
+    maybeRender();
+  }
+})();
+
 
 /* ── v2 visual grammar: info-popover toggle (added during V1 merge) ── */
 function toggleInfo(btn) {

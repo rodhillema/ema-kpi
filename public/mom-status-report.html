@@ -319,7 +319,7 @@ thead tr th.c-chev{background:var(--green)!important}
 @media(max-width:860px){.nav{padding:0 16px}.main{padding:0 16px 22px}}
 </style>
 </head>
-<body class="show-login">
+<body>
 
 <div class="login-view">
   <div class="login-box">
@@ -660,8 +660,11 @@ async function loadMoms(){
     var sel=document.getElementById('affiliateSlicer');
     if(sel&&sel.value)url+='?affiliate_id='+encodeURIComponent(sel.value);
     var res=await fetch(url);
-    if(res.ok){MOMS=await res.json();showMoms();}
-  }catch(e){console.error('Failed to load moms:',e);}
+    if(res.ok){MOMS=await res.json();}
+    else{MOMS=[];console.error('mom-status fetch returned '+res.status);}
+  }catch(e){MOMS=[];console.error('Failed to load moms:',e);}
+  // Always clear the loading overlay — even on error — so the UI doesn't stay stuck spinning.
+  showMoms();
 }
 function updateNavScope(){
   // Nav scope (Viewing label) is role-based only — set in applySession, not affected by affiliate selector

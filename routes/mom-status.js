@@ -249,8 +249,20 @@ router.get('/', async (req, res) => {
         const sessionsDone = heldByMom[r.id] || 0;
         const stalledDays = daysSince(r.lastSessionDate);
         const stalled = stalledDays != null && stalledDays > 14;
+        // Normalize track title to NPP/EP/RR group code for filter bucketing.
+        // Spanish track names share their English counterpart's group:
+        //   "Crianza con cariño"    / "Nurturing Parenting"    → NPP
+        //   "Crianza empoderada"    / "Empowered Parenting"    → EP
+        //   "Hoja de ruta"          / "Roadmap to Resilience"  → RR
+        // Display still uses the raw `name` (title); filter logic uses `group`.
+        const title = r.activeTrackTitle.toLowerCase();
+        let group = 'Other';
+        if (title.includes('nurturing') || title.includes('crianza con')) group = 'NPP';
+        else if (title.includes('empowered') || title.includes('crianza empoderada') || title.includes('empoderada')) group = 'EP';
+        else if (title.includes('roadmap') || title.includes('resilience') || title.includes('hoja de ruta') || title.includes('resiliencia')) group = 'RR';
         inProgressTrack = {
           name: r.activeTrackTitle,
+          group,
           sessionsDone,
           sessionsTotal,
           stalled,

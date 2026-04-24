@@ -3513,6 +3513,42 @@
    if (k3.numerator != null)   setH1('kpi3-num', k3.numerator);
    if (k3.denominator != null) setH1('kpi3-den', k3.denominator);
 
+   // KPI status pill hydration (RD 4/24/26)
+   //   Cristina's rule (line 1737-1738 spec):
+   //     > target                → above (green pill, up arrow)
+   //     0 to 5pt below target   → close (yellow pill, down arrow)
+   //     > 5pt below target      → below (red pill, down arrow)
+   //   Rate == target reads as "on target" (green pill).
+   function updateKpiPill(key, rate, target) {
+     var pill = document.querySelector('[data-hydrate="' + key + '-status"]');
+     if (!pill || rate == null || target == null) return;
+     var delta = rate - target;
+     var absDelta = Math.abs(Math.round(delta));
+     var cls, arrow, text;
+     if (delta >= 0) {
+       cls = 'above';
+       arrow = '\u2191';  // up arrow
+       text = absDelta === 0 ? 'on target' : absDelta + 'pt above target';
+     } else if (delta > -5) {
+       cls = 'close';
+       arrow = '\u2193';  // down arrow
+       text = absDelta + 'pt below target';
+     } else {
+       cls = 'below';
+       arrow = '\u2193';
+       text = absDelta + 'pt below target';
+     }
+     pill.classList.remove('above', 'close', 'below');
+     pill.classList.add(cls);
+     var pillEl = pill.querySelector('.hcs-pill');
+     if (pillEl) {
+       pillEl.innerHTML = '<span class="hcs-arrow">' + arrow + '</span> ' + text;
+     }
+   }
+   updateKpiPill('kpi1', k1.rate, k1.target);
+   updateKpiPill('kpi2', k2.rate, k2.target);
+   updateKpiPill('kpi3', k3.rate, k3.target);
+
    // Entity headlines (44px Shrikhand)
    setH1('mom-served-total',  fmt(totalFamilies || familiesServed));
    setH1('child-served-total', fmt(snap.children_total || 0));

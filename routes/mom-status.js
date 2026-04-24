@@ -115,8 +115,11 @@ router.get('/', async (req, res) => {
         m."id",
         m."first_name" AS "firstName",
         m."last_name"  AS "lastName",
-        m."phone",
-        m."email",
+        -- Mom has no single "phone" column. Fall back through the two mom-owned
+        -- phone fields (phone_other / phone_alternate_c). referring_contact_phone_c
+        -- intentionally excluded — that's the referrer's number, not the mom's.
+        COALESCE(m."phone_other", m."phone_alternate_c") AS "phone",
+        m."email1" AS "email",
         m."status"::text AS "status",
         m."affiliate_id" AS "affiliateId",
         aff."name" AS "affiliateName",

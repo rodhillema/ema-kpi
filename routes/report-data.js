@@ -259,29 +259,62 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 3: FSS Deep Dive ───────────────────────────────
 
-      // Assessment results with construct-level scores
-      // Get all completed assessment results for moms in scope
+      // V3 (Cristina 4/24): Pull domain-level scores directly from WellnessAssessment.
+      //   - 11 FSS domains (cw_score excluded — tracked separately for KPI 1)
+      //   - Pre/post derived temporally per mom: earliest scored WA = pre, latest = post
+      //   - Mom eligible only if wa_count >= 2 (so pre != post)
+      //   - Same domain names emitted as before (pre/post) for frontend back-compat;
+      //     domain "name" is now the column slug (ats_score, cc_score, etc.) — Cristina
+      //     can map to display labels in the HTML if needed.
       pool.query(`
+        WITH scored_was AS (
+          SELECT
+            wa."mom_id",
+            wa."ats_score", wa."cc_score", wa."edu_score", wa."ei_score", wa."fin_cpi_sum",
+            wa."home_score", wa."naa_score", wa."res_score", wa."soc_score",
+            wa."trnprt_score", wa."well_score",
+            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" ASC)  AS rn_asc,
+            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" DESC) AS rn_desc,
+            COUNT(*)       OVER (PARTITION BY wa."mom_id")                              AS wa_count
+          FROM "WellnessAssessment" wa
+          JOIN "Mom" m ON m."id" = wa."mom_id"
+          WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
+            AND wa."cpi_total" IS NOT NULL
+            ${affWhere}
+        ),
+        pre_post AS (
+          SELECT
+            "mom_id",
+            CASE WHEN rn_asc = 1 THEN 'pre' WHEN rn_desc = 1 THEN 'post' END AS atype,
+            "ats_score", "cc_score", "edu_score", "ei_score", "fin_cpi_sum",
+            "home_score", "naa_score", "res_score", "soc_score", "trnprt_score", "well_score"
+          FROM scored_was
+          WHERE (rn_asc = 1 OR rn_desc = 1)
+            AND wa_count >= 2
+        ),
+        unpivoted AS (
+          SELECT "mom_id", atype, 'ats_score'    AS domain,  1 AS domain_order, "ats_score"::numeric    AS score FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'cc_score',     2,  "cc_score"::numeric    FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'edu_score',    3,  "edu_score"::numeric   FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'ei_score',     4,  "ei_score"::numeric    FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'fin_cpi_sum',  5,  "fin_cpi_sum"::numeric FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'home_score',   6,  "home_score"::numeric  FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'naa_score',    7,  "naa_score"::numeric   FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'res_score',    8,  "res_score"::numeric   FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'soc_score',    9,  "soc_score"::numeric   FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'trnprt_score', 10, "trnprt_score"::numeric FROM pre_post
+          UNION ALL SELECT "mom_id", atype, 'well_score',   11, "well_score"::numeric  FROM pre_post
+        )
         SELECT
-          ac."name" AS domain,
-          ac."order" AS domain_order,
-          ar."type"::text AS assessment_type,
-          COUNT(DISTINCT ar."momId")::int AS mom_count,
-          ROUND(AVG(arqr."intResponse")::numeric, 2)::float AS avg_score
-        FROM "AssessmentResult" ar
-        JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
-        JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId"
-        JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
-        JOIN "Mom" m ON m."id" = ar."momId"
-        WHERE ar."deleted_at" = 0
-          AND arqr."deleted_at" = 0
-          AND aq."deleted_at" = 0
-          AND ac."deleted_at" = 0
-          AND m."deleted_at" = 0
-          AND arqr."intResponse" IS NOT NULL
-          ${affWhere}
-        GROUP BY ac."name", ac."order", ar."type"::text
-        ORDER BY ac."order", ar."type"::text
+          domain,
+          domain_order,
+          atype AS assessment_type,
+          COUNT(DISTINCT "mom_id")::int AS mom_count,
+          ROUND(AVG(score)::numeric, 2)::float AS avg_score
+        FROM unpivoted
+        WHERE atype IS NOT NULL AND score IS NOT NULL
+        GROUP BY domain, domain_order, atype
+        ORDER BY domain_order, atype
       `, affParams),
 
       // ─── TAB 4: Affiliate Comparison ────────────────────────
@@ -909,17 +942,21 @@ router.get('/', async (req, res) => {
       // PERIOD-ANCHORED: counts are stable regardless of when the Q1 report is viewed.
       // Does NOT require mom.status='active' now — moms who were active during Q1 are included
       // even if they have since gone inactive.
+      //
+      // V3 (Cristina 4/24): Moved from AssessmentResult to WellnessAssessment.
+      //   - Filter: cpi_total IS NOT NULL (substantive-assessment marker — 333 of 453 rows qualify)
+      //   - Window: 3 months ending period end (was 4-month grace window on AR)
+      //   - Date column: updated_at per Cristina's original spec language
       // Reference: Family Preservation Impact methodology
       pool.query(`
         WITH moms_with_period_fwa AS (
-          SELECT DISTINCT ar."momId"
-          FROM "AssessmentResult" ar
-          JOIN "Mom" m ON m."id" = ar."momId"
-          JOIN "Assessment" a ON a."id" = ar."assessmentId"
-          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
-            AND a."name" NOT ILIKE '%Legacy%'
-            AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
-            AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
+          SELECT DISTINCT wa."mom_id" AS "momId"
+          FROM "WellnessAssessment" wa
+          JOIN "Mom" m ON m."id" = wa."mom_id"
+          WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
+            AND wa."cpi_total" IS NOT NULL
+            AND wa."updated_at" >= '${PERIOD_START}'
+            AND wa."updated_at" <= '${PERIOD_END} 23:59:59'
             ${affWhere}
         )
         SELECT
@@ -930,8 +967,9 @@ router.get('/', async (req, res) => {
         WHERE c."deleted_at" = 0
       `, affParams),
 
-      // Count children excluded (moms served during Q1 but had no Q1-valid FWA
-      // in a current Trellis template — Legacy PS assessments don't count)
+      // Count children excluded (moms served during Q1 but had no Q1-valid scored
+      // WellnessAssessment). V3: substantive-assessment marker is cpi_total IS NOT NULL
+      // on WellnessAssessment; drafts without scoring don't qualify a mom's children.
       // "Served during Q1" = had an active pairing or held session at any point in Q1,
       // OR their intake_date falls in Q1.
       pool.query(`
@@ -940,12 +978,11 @@ router.get('/', async (req, res) => {
         JOIN "Mom" m ON m."id" = c."mom_id"
         WHERE c."deleted_at" = 0 AND m."deleted_at" = 0
           AND NOT EXISTS (
-            SELECT 1 FROM "AssessmentResult" ar
-            JOIN "Assessment" a ON a."id" = ar."assessmentId"
-            WHERE ar."momId" = m."id" AND ar."deleted_at" = 0
-              AND a."name" NOT ILIKE '%Legacy%'
-              AND COALESCE(ar."completedAt", ar."lastSaved") >= '${PERIOD_START}'
-              AND COALESCE(ar."completedAt", ar."lastSaved") <= '${PERIOD_GRACE_END} 23:59:59'
+            SELECT 1 FROM "WellnessAssessment" wa
+            WHERE wa."mom_id" = m."id" AND wa."deleted_at" = 0
+              AND wa."cpi_total" IS NOT NULL
+              AND wa."updated_at" >= '${PERIOD_START}'
+              AND wa."updated_at" <= '${PERIOD_END} 23:59:59'
           )
           AND (
             EXISTS (
@@ -966,50 +1003,57 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // KPI 2 — FSS Improvement Rate (target 70%)
-      // Moms who completed a Pairing in Q1, having both pre and post assessments
-      // from current Trellis templates (EP, RR, future AAPI). PromiseServes Legacy
-      // assessments are explicitly excluded — they're pre-Trellis data migrated in,
-      // not representative of Q1 program activity.
       //
-      // Anchored on Pairing.completed_on to match KPI 3's cohort. Post assessment
-      // date is not directly filtered because assessment-date capture has been
-      // unreliable since migration; Pairing.completed_on is the reliable Q1 anchor.
+      // V3 (Cristina 4/24): Moved off AssessmentResult onto WellnessAssessment.
+      //   - FSS formula: ats_score + cc_score + edu_score + ei_score + fin_cpi_sum
+      //                + home_score + naa_score + res_score + soc_score
+      //                + trnprt_score + well_score   (11 domains, max 356)
+      //   - cw_score is EXCLUDED from FSS (tracked separately for KPI 1)
+      //   - cpi_total is NOT used (turned out to not be a clean sum of domain scores)
+      //   - Pre/post: no type column on WA, so derived temporally:
+      //       pre  = earliest scored WA per mom by created_at
+      //       post = latest   scored WA per mom by created_at
+      //       Mom eligible only if earliest != latest AND both rows have all 11 scores
+      //   - "Scored" = cpi_total IS NOT NULL (333 of 453 rows qualify; same population
+      //      in practice as checking each score column individually)
+      //   - ei_score chosen over ei_cpi_sum per Cristina's default; they differ on
+      //      34% of rows — revisit if she changes her mind.
+      //   - No Pairing.completed_on anchor: Cristina's v3 spec derives pre/post
+      //      directly from the WA population. Flag if she meant to keep pairing anchor.
       pool.query(`
-        WITH q1_completers AS (
-          SELECT DISTINCT p."momId"
-          FROM "Pairing" p
-          JOIN "Mom" m ON m."id" = p."momId"
-          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
-            AND p."status"::text = 'pairing_complete'
-            AND p."complete_reason_sub_status" IS NOT NULL
-            AND p."completed_on" >= '${PERIOD_START}'
-            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+        WITH scored_was AS (
+          SELECT
+            wa."mom_id",
+            wa."created_at",
+            (COALESCE(wa."ats_score",0) + COALESCE(wa."cc_score",0) + COALESCE(wa."edu_score",0)
+             + COALESCE(wa."ei_score",0) + COALESCE(wa."fin_cpi_sum",0) + COALESCE(wa."home_score",0)
+             + COALESCE(wa."naa_score",0) + COALESCE(wa."res_score",0) + COALESCE(wa."soc_score",0)
+             + COALESCE(wa."trnprt_score",0) + COALESCE(wa."well_score",0)) AS fss_total,
+            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" ASC)  AS rn_asc,
+            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" DESC) AS rn_desc,
+            COUNT(*)        OVER (PARTITION BY wa."mom_id")                              AS wa_count
+          FROM "WellnessAssessment" wa
+          JOIN "Mom" m ON m."id" = wa."mom_id"
+          WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
+            AND wa."cpi_total" IS NOT NULL
             ${affWhere}
         ),
-        mom_scores AS (
-          SELECT ar."momId", ar."type"::text AS atype,
-            AVG(arqr."intResponse")::numeric(10,2) AS avg_score
-          FROM "AssessmentResult" ar
-          JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
-          JOIN "Assessment" a ON a."id" = ar."assessmentId"
-          WHERE ar."deleted_at" = 0 AND arqr."deleted_at" = 0
-            AND a."name" NOT ILIKE '%Legacy%'
-            AND arqr."intResponse" IS NOT NULL
-            AND ar."momId" IN (SELECT "momId" FROM q1_completers)
-          GROUP BY ar."momId", ar."type"::text
-        ),
-        paired AS (
-          SELECT pre."momId",
-            pre.avg_score AS pre_score,
-            post.avg_score AS post_score
-          FROM mom_scores pre
-          JOIN mom_scores post ON pre."momId" = post."momId" AND post.atype = 'post'
-          WHERE pre.atype = 'pre'
+        mom_pre_post AS (
+          SELECT
+            "mom_id",
+            MAX(CASE WHEN rn_asc  = 1 THEN fss_total END) AS pre_fss,
+            MAX(CASE WHEN rn_desc = 1 THEN fss_total END) AS post_fss,
+            MAX(wa_count) AS wa_count
+          FROM scored_was
+          GROUP BY "mom_id"
         )
         SELECT
           COUNT(*)::int AS denominator,
-          SUM(CASE WHEN post_score > pre_score THEN 1 ELSE 0 END)::int AS numerator
-        FROM paired
+          SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int AS numerator
+        FROM mom_pre_post
+        WHERE wa_count >= 2
+          AND pre_fss IS NOT NULL
+          AND post_fss IS NOT NULL
       `, affParams),
 
       // KPI 3 — Learning Progress (target 70%)
@@ -1222,6 +1266,17 @@ router.get('/', async (req, res) => {
         by_status: advocatePipeline.rows,
         by_sub_status: advocateSubStatus.rows,
       },
+
+      // Service Area tab (Cristina's v3 report).
+      // Shape: [{ state_fips: '12', county_fips: '12011', count: 142 }, ...]
+      // FIPS: 2-char state, 5-char county (state prefix included).
+      // Frontend falls back to window.__DEMO_GEO__ (Broward-only demo array) when
+      // this is empty. Map auto-switches county vs state view based on distinct state count.
+      // TODO: populate from Mom address/county columns once schema is confirmed.
+      // Pending Railway query: need to identify county/state/fips columns on Mom
+      // (or related address table) before wiring real aggregation. Leaving [] is safe
+      // — frontend renders the demo array until this is live.
+      geographic_distribution: [],
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,

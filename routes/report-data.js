@@ -1270,13 +1270,13 @@ router.get('/', async (req, res) => {
       // Service Area tab (Cristina's v3 report).
       // Shape: [{ state_fips: '12', county_fips: '12011', count: 142 }, ...]
       // FIPS: 2-char state, 5-char county (state prefix included).
-      // Frontend falls back to window.__DEMO_GEO__ (Broward-only demo array) when
-      // this is empty. Map auto-switches county vs state view based on distinct state count.
+      // Frontend fallback pattern: `window.__EMA_DATA__.geographic_distribution || __DEMO_GEO__`
+      // — so we must send NULL (not []) to trigger the demo fallback, because empty-array
+      // is truthy in JS and skips the fallback.
       // TODO: populate from Mom address/county columns once schema is confirmed.
       // Pending Railway query: need to identify county/state/fips columns on Mom
-      // (or related address table) before wiring real aggregation. Leaving [] is safe
-      // — frontend renders the demo array until this is live.
-      geographic_distribution: [],
+      // (or related address table) before wiring real aggregation.
+      geographic_distribution: null,
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,

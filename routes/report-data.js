@@ -33,6 +33,60 @@ const REQUIRED_SESSIONS = {
   'Hoja de ruta hacia la resiliencia RR': 4,
 };
 
+// ─── FIPS lookups for Service Area map (Cristina v3) ────────────
+// State name/abbreviation → state FIPS (2-digit).
+// Covers full names + 2-letter USPS codes since Mom.primary_address_state
+// isn't normalized. Case-insensitive match via uppercased key below.
+const STATE_FIPS = {
+  'AL':'01','ALABAMA':'01','AK':'02','ALASKA':'02','AZ':'04','ARIZONA':'04',
+  'AR':'05','ARKANSAS':'05','CA':'06','CALIFORNIA':'06','CO':'08','COLORADO':'08',
+  'CT':'09','CONNECTICUT':'09','DE':'10','DELAWARE':'10','DC':'11','DISTRICT OF COLUMBIA':'11',
+  'FL':'12','FLORIDA':'12','GA':'13','GEORGIA':'13','HI':'15','HAWAII':'15',
+  'ID':'16','IDAHO':'16','IL':'17','ILLINOIS':'17','IN':'18','INDIANA':'18',
+  'IA':'19','IOWA':'19','KS':'20','KANSAS':'20','KY':'21','KENTUCKY':'21',
+  'LA':'22','LOUISIANA':'22','ME':'23','MAINE':'23','MD':'24','MARYLAND':'24',
+  'MA':'25','MASSACHUSETTS':'25','MI':'26','MICHIGAN':'26','MN':'27','MINNESOTA':'27',
+  'MS':'28','MISSISSIPPI':'28','MO':'29','MISSOURI':'29','MT':'30','MONTANA':'30',
+  'NE':'31','NEBRASKA':'31','NV':'32','NEVADA':'32','NH':'33','NEW HAMPSHIRE':'33',
+  'NJ':'34','NEW JERSEY':'34','NM':'35','NEW MEXICO':'35','NY':'36','NEW YORK':'36',
+  'NC':'37','NORTH CAROLINA':'37','ND':'38','NORTH DAKOTA':'38','OH':'39','OHIO':'39',
+  'OK':'40','OKLAHOMA':'40','OR':'41','OREGON':'41','PA':'42','PENNSYLVANIA':'42',
+  'RI':'44','RHODE ISLAND':'44','SC':'45','SOUTH CAROLINA':'45','SD':'46','SOUTH DAKOTA':'46',
+  'TN':'47','TENNESSEE':'47','TX':'48','TEXAS':'48','UT':'49','UTAH':'49',
+  'VT':'50','VERMONT':'50','VA':'51','VIRGINIA':'51','WA':'53','WASHINGTON':'53',
+  'WV':'54','WEST VIRGINIA':'54','WI':'55','WISCONSIN':'55','WY':'56','WYOMING':'56',
+};
+
+// County name → county FIPS (5-digit, includes state prefix).
+// Nested by state for scoping. Add new states as ĒMA expands.
+// Current: all 67 Florida counties.
+// Normalization: uppercased + "ST." and "ST " collapsed, "SAINT" allowed.
+const COUNTY_FIPS = {
+  '12': {
+    'ALACHUA':'12001','BAKER':'12003','BAY':'12005','BRADFORD':'12007','BREVARD':'12009',
+    'BROWARD':'12011','CALHOUN':'12013','CHARLOTTE':'12015','CITRUS':'12017','CLAY':'12019',
+    'COLLIER':'12021','COLUMBIA':'12023','DESOTO':'12027','DIXIE':'12029','DUVAL':'12031',
+    'ESCAMBIA':'12033','FLAGLER':'12035','FRANKLIN':'12037','GADSDEN':'12039','GILCHRIST':'12041',
+    'GLADES':'12043','GULF':'12045','HAMILTON':'12047','HARDEE':'12049','HENDRY':'12051',
+    'HERNANDO':'12053','HIGHLANDS':'12055','HILLSBOROUGH':'12057','HOLMES':'12059','INDIAN RIVER':'12061',
+    'JACKSON':'12063','JEFFERSON':'12065','LAFAYETTE':'12067','LAKE':'12069','LEE':'12071',
+    'LEON':'12073','LEVY':'12075','LIBERTY':'12077','MADISON':'12079','MANATEE':'12081',
+    'MARION':'12083','MARTIN':'12085','MIAMI-DADE':'12086','MIAMI DADE':'12086','DADE':'12086',
+    'MONROE':'12087','NASSAU':'12089','OKALOOSA':'12091','OKEECHOBEE':'12093','ORANGE':'12095',
+    'OSCEOLA':'12097','PALM BEACH':'12099','PASCO':'12101','PINELLAS':'12103','POLK':'12105',
+    'PUTNAM':'12107','ST. JOHNS':'12109','ST JOHNS':'12109','SAINT JOHNS':'12109',
+    'ST. LUCIE':'12111','ST LUCIE':'12111','SAINT LUCIE':'12111',
+    'SANTA ROSA':'12113','SARASOTA':'12115','SEMINOLE':'12117','SUMTER':'12119','SUWANNEE':'12121',
+    'TAYLOR':'12123','UNION':'12125','VOLUSIA':'12127','WAKULLA':'12129','WALTON':'12131','WASHINGTON':'12133',
+  },
+};
+
+// Normalize a county/state name for lookup: uppercase, trim, collapse multi-space.
+function normalizeName(s) {
+  if (s == null) return null;
+  return String(s).trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
 router.get('/', async (req, res) => {
   try {
     const { role, affiliateId } = req.session.user;
@@ -140,6 +194,7 @@ router.get('/', async (req, res) => {
       kpi3,
       intakeData,
       psMigrated,
+      geoDistRaw,
       affiliates,
       affNameResult,
     ] = await Promise.all([
@@ -586,43 +641,128 @@ router.get('/', async (req, res) => {
         ORDER BY total_closed DESC
       `, affParams),
 
-      // ─── Learning Progress by Track (pre/post improvement per track group) ──
+      // ─── Learning Progress by Track (V3 — Cristina 4/24 spec) ─────
+      //
+      // Three data sources, three attribution rules:
+      //   NPP → AAPIScore table (5 constructs A–E, pre+post on SAME ROW)
+      //          Improvement: (A_post+B_post+C_post+D_post+E_post)
+      //                     > (A_pre + B_pre + C_pre + D_pre + E_pre)
+      //          Multi-enrollment: per pairing, pick most recent AAPIScore where
+      //          created_at < next NPP pairing start (unbounded if no next pairing).
+      //          Post scores legitimately entered after track close — do NOT bound by
+      //          pairing.completed_on.
+      //   EP  → AssessmentResult (Assessment.name LIKE 'Empowered Parenting%')
+      //   RR  → AssessmentResult (Assessment.name LIKE 'Resilience%')
+      //          Both use type='pre'/'post' + SUM(intResponse) per attempt.
+      //          AR has NO pairing_id column — attribution is temporal: each post
+      //          is paired with the most recent pre for the same mom + same track
+      //          dated earlier. Multi-enrollment on EP/RR may undercount pending
+      //          Cristina's confirmation of this approach.
+      //
+      // Denominator: pairs with both pre AND post on file (completion status IGNORED
+      // per Cristina — pairing.completed_on is NOT the anchor).
+      // Time anchor: post date (AAPIScore.created_at for NPP, AR.completedAt||created_at
+      // for EP/RR) falls in Q1 period. Reason: without a time anchor, KPI reflects all
+      // lifetime data, which doesn't match quarterly-report semantics. Post date = when
+      // progress was measured.
+      //
+      // Excludes PromiseServes Legacy: legacy_ps_id IS NULL on AAPIScore,
+      // Assessment.name NOT ILIKE '%Legacy%' on AR.
       pool.query(`
-        WITH completions AS (
-          SELECT p."id" AS pairing_id, p."momId", t."title" AS track_title
+        WITH
+        npp_pairings AS (
+          SELECT p."id" AS pairing_id, p."momId",
+            LEAD(p."created_at") OVER (PARTITION BY p."momId" ORDER BY p."created_at") AS next_pairing_start
           FROM "Pairing" p
           JOIN "Track" t ON t."id" = p."trackId"
           JOIN "Mom" m ON m."id" = p."momId"
-          WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
-            AND p."complete_reason_sub_status" IS NOT NULL
-            AND p."completed_on" >= '${PERIOD_START}' AND p."completed_on" <= '${PERIOD_END} 23:59:59'
-            AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
-            AND m."deleted_at" = 0 ${affWhere}
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND (t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%')
+            ${affWhere}
         ),
-        with_scores AS (
-          SELECT c.pairing_id, c.track_title,
-            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
-             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
-             WHERE ar."momId" = c."momId" AND ar."type"::text = 'pre' AND ar."deleted_at" = 0
-               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS pre_avg,
-            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
-             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
-             WHERE ar."momId" = c."momId" AND ar."type"::text = 'post' AND ar."deleted_at" = 0
-               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS post_avg
-          FROM completions c
+        npp_scored AS (
+          SELECT * FROM (
+            SELECT
+              np.pairing_id,
+              (s."constructAPreAssessment"  + s."constructBPreAssessment"
+               + s."constructCPreAssessment" + s."constructDPreAssessment"
+               + s."constructEPreAssessment") AS pre_sum,
+              (s."constructAPostAssessment" + s."constructBPostAssessment"
+               + s."constructCPostAssessment" + s."constructDPostAssessment"
+               + s."constructEPostAssessment") AS post_sum,
+              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
+            FROM npp_pairings np
+            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
+            WHERE s."deleted_at" = 0
+              AND s."legacy_ps_id" IS NULL
+              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
+              AND s."created_at" >= '${PERIOD_START}'
+              AND s."created_at" <= '${PERIOD_END} 23:59:59'
+              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
+              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
+              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
+              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
+              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
+          ) t WHERE rn = 1
+        ),
+        ep_rr_ar AS (
+          SELECT
+            ar."id" AS ar_id,
+            ar."momId",
+            ar."type"::text AS atype,
+            COALESCE(ar."completedAt", ar."created_at") AS ar_date,
+            CASE
+              WHEN a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%' THEN 'EP'
+              WHEN a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%' THEN 'RR'
+              ELSE NULL
+            END AS track_group,
+            (SELECT SUM(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
+             WHERE arqr."assessmentResultId" = ar."id"
+               AND arqr."deleted_at" = 0
+               AND arqr."intResponse" IS NOT NULL) AS total_score
+          FROM "AssessmentResult" ar
+          JOIN "Assessment" a ON a."id" = ar."assessmentId"
+          JOIN "Mom" m ON m."id" = ar."momId"
+          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND a."name" NOT ILIKE '%Legacy%'
+            AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'
+                 OR a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%')
+            ${affWhere}
+        ),
+        ep_rr_paired AS (
+          SELECT
+            post.track_group,
+            post.total_score AS post_sum,
+            (SELECT pre.total_score FROM ep_rr_ar pre
+             WHERE pre."momId" = post."momId"
+               AND pre.track_group = post.track_group
+               AND pre.atype = 'pre'
+               AND pre.ar_date < post.ar_date
+             ORDER BY pre.ar_date DESC
+             LIMIT 1) AS pre_sum
+          FROM ep_rr_ar post
+          WHERE post.atype = 'post'
+            AND post.track_group IS NOT NULL
+            AND post.ar_date >= '${PERIOD_START}'
+            AND post.ar_date <= '${PERIOD_END} 23:59:59'
+        ),
+        all_tracks AS (
+          SELECT 'NPP' AS track_group,
+            (SELECT COUNT(*)::int FROM npp_pairings) AS total_completions,
+            COUNT(*)::int AS valid_pairs,
+            SUM(CASE WHEN post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
+          FROM npp_scored
+          UNION ALL
+          SELECT track_group,
+            COUNT(*)::int AS total_completions,
+            COUNT(CASE WHEN pre_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
+            SUM(CASE WHEN pre_sum IS NOT NULL AND post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
+          FROM ep_rr_paired
+          GROUP BY track_group
         )
-        SELECT
-          CASE
-            WHEN track_title ILIKE '%nurturing%' OR track_title ILIKE '%crianza con%' THEN 'NPP'
-            WHEN track_title ILIKE '%empowered%' OR track_title ILIKE '%crianza empoderada%' THEN 'EP'
-            WHEN track_title ILIKE '%roadmap%' OR track_title ILIKE '%ruta%' THEN 'RR'
-            ELSE 'Other'
-          END AS track_group,
-          COUNT(DISTINCT pairing_id)::int AS total_completions,
-          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL THEN pairing_id END)::int AS valid_pairs,
-          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL AND post_avg > pre_avg THEN pairing_id END)::int AS improved
-        FROM with_scores
-        GROUP BY 1 ORDER BY 1
+        SELECT track_group, total_completions, valid_pairs, improved
+        FROM all_tracks
+        ORDER BY CASE track_group WHEN 'NPP' THEN 1 WHEN 'EP' THEN 2 WHEN 'RR' THEN 3 ELSE 4 END
       `, affParams),
 
       // ─── Average Sessions per Completed Track ──────────────
@@ -1057,41 +1197,112 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // KPI 3 — Learning Progress (target 70%)
-      // Track completions in Q1 with pre/post improvement.
-      // EXCLUDES PromiseServes Legacy assessments — only current Trellis templates count.
+      //
+      // V3 (Cristina 4/24): Three data sources, three attribution rules.
+      //   NPP → AAPIScore (5-construct A–E total, pre+post on same row)
+      //   EP  → AssessmentResult + Assessment.name LIKE 'Empowered Parenting%'
+      //   RR  → AssessmentResult + Assessment.name LIKE 'Resilience%'
+      //
+      // Denominator: pairs with both pre AND post on file. Completion status IGNORED
+      // (pairing.completed_on NOT the anchor per Cristina). Time scoping: post date in Q1.
+      //
+      // NPP multi-enrollment: most recent AAPIScore.created_at before next NPP pairing
+      // start (unbounded if no next pairing). Post scores can legitimately be entered
+      // after track close, so pairing.completed_on is not a bound.
+      //
+      // EP/RR caveat: AssessmentResult has NO pairing_id column — attribution is temporal
+      // (most recent pre before each post, same mom + same track). Flagged for Cristina.
+      //
+      // Shape matches learning_progress_by_track (same CTE chain); this is the rolled-up
+      // total across all 3 tracks for the top-line KPI 3 rate.
       pool.query(`
-        WITH completions AS (
-          SELECT p."id" AS pairing_id, p."momId", p."trackId"
+        WITH
+        npp_pairings AS (
+          SELECT p."id" AS pairing_id, p."momId",
+            LEAD(p."created_at") OVER (PARTITION BY p."momId" ORDER BY p."created_at") AS next_pairing_start
           FROM "Pairing" p
+          JOIN "Track" t ON t."id" = p."trackId"
           JOIN "Mom" m ON m."id" = p."momId"
           WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
-            AND p."status"::text = 'pairing_complete'
-            AND p."complete_reason_sub_status" IS NOT NULL
-            AND p."completed_on" >= '${PERIOD_START}'
-            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND (t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%')
             ${affWhere}
         ),
-        with_scores AS (
-          SELECT c.pairing_id,
-            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
-             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
-             JOIN "Assessment" a ON a."id" = ar."assessmentId"
-             WHERE ar."momId" = c."momId" AND ar."type"::text = 'pre' AND ar."deleted_at" = 0
-               AND a."name" NOT ILIKE '%Legacy%'
-               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS pre_avg,
-            (SELECT AVG(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
-             JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
-             JOIN "Assessment" a ON a."id" = ar."assessmentId"
-             WHERE ar."momId" = c."momId" AND ar."type"::text = 'post' AND ar."deleted_at" = 0
-               AND a."name" NOT ILIKE '%Legacy%'
-               AND arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL) AS post_avg
-          FROM completions c
+        npp_scored AS (
+          SELECT * FROM (
+            SELECT
+              np.pairing_id,
+              (s."constructAPreAssessment"  + s."constructBPreAssessment"
+               + s."constructCPreAssessment" + s."constructDPreAssessment"
+               + s."constructEPreAssessment") AS pre_sum,
+              (s."constructAPostAssessment" + s."constructBPostAssessment"
+               + s."constructCPostAssessment" + s."constructDPostAssessment"
+               + s."constructEPostAssessment") AS post_sum,
+              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
+            FROM npp_pairings np
+            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
+            WHERE s."deleted_at" = 0
+              AND s."legacy_ps_id" IS NULL
+              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
+              AND s."created_at" >= '${PERIOD_START}'
+              AND s."created_at" <= '${PERIOD_END} 23:59:59'
+              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
+              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
+              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
+              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
+              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
+          ) t WHERE rn = 1
+        ),
+        ep_rr_ar AS (
+          SELECT
+            ar."id" AS ar_id,
+            ar."momId",
+            ar."type"::text AS atype,
+            COALESCE(ar."completedAt", ar."created_at") AS ar_date,
+            CASE
+              WHEN a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%' THEN 'EP'
+              WHEN a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%' THEN 'RR'
+              ELSE NULL
+            END AS track_group,
+            (SELECT SUM(arqr."intResponse") FROM "AssessmentResultQuestionResponse" arqr
+             WHERE arqr."assessmentResultId" = ar."id"
+               AND arqr."deleted_at" = 0
+               AND arqr."intResponse" IS NOT NULL) AS total_score
+          FROM "AssessmentResult" ar
+          JOIN "Assessment" a ON a."id" = ar."assessmentId"
+          JOIN "Mom" m ON m."id" = ar."momId"
+          WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND a."name" NOT ILIKE '%Legacy%'
+            AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'
+                 OR a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%')
+            ${affWhere}
+        ),
+        ep_rr_paired AS (
+          SELECT
+            post.total_score AS post_sum,
+            (SELECT pre.total_score FROM ep_rr_ar pre
+             WHERE pre."momId" = post."momId"
+               AND pre.track_group = post.track_group
+               AND pre.atype = 'pre'
+               AND pre.ar_date < post.ar_date
+             ORDER BY pre.ar_date DESC
+             LIMIT 1) AS pre_sum
+          FROM ep_rr_ar post
+          WHERE post.atype = 'post'
+            AND post.track_group IS NOT NULL
+            AND post.ar_date >= '${PERIOD_START}'
+            AND post.ar_date <= '${PERIOD_END} 23:59:59'
+        ),
+        combined AS (
+          SELECT post_sum, pre_sum FROM npp_scored
+          UNION ALL
+          SELECT post_sum, pre_sum FROM ep_rr_paired WHERE pre_sum IS NOT NULL
         )
         SELECT
-          COUNT(DISTINCT pairing_id)::int AS total_completions,
-          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL THEN pairing_id END)::int AS with_pre_post,
-          COUNT(DISTINCT CASE WHEN pre_avg IS NOT NULL AND post_avg IS NOT NULL AND post_avg > pre_avg THEN pairing_id END)::int AS improved
-        FROM with_scores
+          (SELECT COUNT(*)::int FROM npp_pairings)
+            + (SELECT COUNT(*)::int FROM ep_rr_paired) AS total_completions,
+          COUNT(*)::int AS with_pre_post,
+          SUM(CASE WHEN post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
+        FROM combined
       `, affParams),
 
       // ─── Intake Date (derived from AuditLog) ─────────────────
@@ -1119,6 +1330,26 @@ router.get('/', async (req, res) => {
           AND data->>'prospect_status' = 'engaged_in_program'
           AND DATE_TRUNC('day', created_at) IN ('2025-11-30', '2025-12-17')
       `),
+
+      // ─── Service Area: geographic distribution (Cristina v3) ──
+      // Same active-during-period cohort as familiesServed (mom has a paired
+      // Pairing overlapping Q1). Text state/county comes raw from Mom;
+      // FIPS mapping happens in post-processing via STATE_FIPS / COUNTY_FIPS.
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(m."primary_address_state"), ''), 'UNKNOWN')    AS state_name,
+          COALESCE(NULLIF(TRIM(m."primary_address_county_c"), ''), 'UNKNOWN') AS county_name,
+          COUNT(DISTINCT m."id")::int AS count
+        FROM "Mom" m
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          ${affWhere}
+        GROUP BY 1, 2
+      `, affParams),
 
       // ─── Affiliate list (for admin slicer) ──────────────────
 
@@ -1162,6 +1393,28 @@ router.get('/', async (req, res) => {
     const kpi3WithData = kpi3.rows[0]?.with_pre_post || 0;
     const kpi3Improved = kpi3.rows[0]?.improved || 0;
     const kpi3Rate = kpi3WithData > 0 ? Math.round(1000 * kpi3Improved / kpi3WithData) / 10 : null;
+
+    // ─── Service Area: map raw state/county text → FIPS codes ─
+    // Rows unmappable by either lookup are dropped silently with a debug log
+    // (so they don't poison the chart). If a whole affiliate shows zeros,
+    // the "No location data available" fallback triggers correctly.
+    const geoByKey = {};
+    let geoUnmapped = 0;
+    for (const r of (geoDistRaw.rows || [])) {
+      const stateKey = normalizeName(r.state_name);
+      const countyKey = normalizeName(r.county_name);
+      const stateFips = STATE_FIPS[stateKey];
+      if (!stateFips) { geoUnmapped += r.count; continue; }
+      const countyFips = COUNTY_FIPS[stateFips]?.[countyKey];
+      if (!countyFips) { geoUnmapped += r.count; continue; }
+      const k = countyFips;
+      if (!geoByKey[k]) geoByKey[k] = { state_fips: stateFips, county_fips: countyFips, count: 0 };
+      geoByKey[k].count += r.count;
+    }
+    const geographicDistribution = Object.values(geoByKey);
+    if (geoUnmapped > 0) {
+      console.log(`[geographic_distribution] ${geoUnmapped} moms dropped from map (unmapped state/county)`);
+    }
 
     // ─── Build response envelope ────────────────────────────
 
@@ -1269,14 +1522,14 @@ router.get('/', async (req, res) => {
 
       // Service Area tab (Cristina's v3 report).
       // Shape: [{ state_fips: '12', county_fips: '12011', count: 142 }, ...]
-      // FIPS: 2-char state, 5-char county (state prefix included).
-      // Frontend fallback pattern: `window.__EMA_DATA__.geographic_distribution || __DEMO_GEO__`
-      // — so we must send NULL (not []) to trigger the demo fallback, because empty-array
-      // is truthy in JS and skips the fallback.
-      // TODO: populate from Mom address/county columns once schema is confirmed.
-      // Pending Railway query: need to identify county/state/fips columns on Mom
-      // (or related address table) before wiring real aggregation.
-      geographic_distribution: null,
+      // Built from Mom.primary_address_state + primary_address_county_c, mapped
+      // through STATE_FIPS / COUNTY_FIPS constants at top of file. If zero rows
+      // make it through (no addressed moms in scope), frontend falls back to
+      // __DEMO_GEO__ since the array will be empty — actually for that to work
+      // we must send null; but an empty array means "real data attempted, zero
+      // addressed moms" which is a legitimate state. Send empty array here so
+      // the map correctly shows "No location data available" rather than demo.
+      geographic_distribution: geographicDistribution,
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,

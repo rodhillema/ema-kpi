@@ -905,11 +905,14 @@ function getFiltered(){
       if(f.note==="overdue"&&age<=14)return false;
       if(f.note==="recent"&&age>=7)return false;
     }
+    // Outreach scope = Active OR Taking A Break. Matches the card-count logic below
+    // (renderMetricsBar) so clicking a card filters to the SAME cohort shown in its number.
+    const inOutreachScope = a.status==="Active" || a.sub==="Taking A Break" || a.sub==="Taking a Break";
     if(activeCards.has("active")&&a.status!=="Active")return false;
-    if(activeCards.has("paired")&&deriveSub(a).sub!=="Paired")return false;
+    if(activeCards.has("paired")&&(!inOutreachScope||deriveSub(a).sub!=="Paired"))return false;
     if(activeCards.has("break")&&a.sub!=="Taking A Break"&&a.sub!=="Taking a Break")return false;
-    if(activeCards.has("bdays30")&&dbu(a.birthday)>30)return false;
-    if(activeCards.has("overdue")&&dsa(a.latestNoteDate)<=14)return false;
+    if(activeCards.has("bdays30")&&(!inOutreachScope||!a.birthday||dbu(a.birthday)>30))return false;
+    if(activeCards.has("overdue")&&(!inOutreachScope||!a.latestNoteDate||dsa(a.latestNoteDate)<=14))return false;
     return true;
   });
   list.sort((a,b)=>{

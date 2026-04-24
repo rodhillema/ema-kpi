@@ -134,10 +134,10 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 <div class="login-title">Impact Hub</div>
 <div class="login-sub">Sign in with your Trellis credentials</div>
 <div class="login-err" id="login-err"></div>
-<div class="field"><label>Username</label><input id="login-user" type="text" placeholder="your.name@ema.org" autocomplete="username"></div>
+<div class="field"><label>Username</label><input id="login-user" type="text" placeholder="first.last" autocomplete="username"></div>
 <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
 <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
-<a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Open Trellis Platform</a>
+<a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
 </div></div>
 
 <div class="portal-view">
@@ -147,19 +147,20 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 <div class="nav-hub">Impact Hub</div>
 </div>
 <div class="nav-right">
-<div class="nav-scope" id="nav-scope" style="display:none;">
-<div class="nav-scope-lbl">Viewing</div>
-<div class="nav-scope-val" id="nav-scope-val">—</div>
-</div>
-<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
-<a href="https://trellis.ema.org/login" class="nav-link nav-trellis" target="_blank">Go to Trellis &#8594;</a>
-<div class="nav-sep nav-trellis"></div>
 <div class="nav-user">
 <div class="nav-avatar" id="nav-avatar">C</div>
 <div><div class="nav-name" id="nav-name">Cristina</div><div class="nav-role" id="nav-role">HQ Admin</div></div>
+</div>
+<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
+<div class="nav-scope" id="nav-scope" style="display:none;">
+<div class="nav-scope-lbl">Viewing</div>
+<div class="nav-scope-val" id="nav-scope-val"></div>
+</div>
 <div class="nav-sep"></div>
 <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
-</div></div></nav>
+<div class="nav-sep nav-trellis"></div>
+<a href="https://trellis.ema.org/login" class="nav-link nav-trellis" target="_blank">Go to Trellis &#8594;</a>
+</div></nav>
 
 <div class="portal-main">
 <div class="welcome"><div class="welcome-hello" id="welcome-hello">Welcome back</div><div class="welcome-sub" id="welcome-sub"></div></div>
@@ -204,10 +205,16 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 </a>
 </div>
 
-<!-- Coming soon - flat, no toggles -->
-<div class="rrow-soon vis-c vis-s vis-a" style="border-left-color:var(--red)">
-<div class="rrow-soon-t">Mom Reports</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
+<!-- MOM REPORTS - expandable, live -->
+<div class="type-row vis-c vis-s vis-a" data-toggle="sub-mom">
+<div class="type-row-body"><div class="type-row-t"><span class="rdot"></span> Mom Reports</div></div>
+<div class="type-row-r"><div class="rb rb-live">Live</div><div class="type-chev">&#9656;</div></div>
+</div>
+<div class="type-sub" id="sub-mom">
+<a href="/report/mom-status" class="type-sub-row">
+<div class="sub-t">Mom Status Report</div>
+<div class="sub-r"><div class="rb rb-live">Live</div><div class="rarr">&#8594;</div></div>
+</a>
 </div>
 <div class="rrow-soon vis-c vis-s vis-a" style="border-left-color:var(--red)">
 <div class="rrow-soon-t">Referral Reports</div>
@@ -270,7 +277,7 @@ if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
 if(r)r.textContent=L[u.role]||u.role;
 if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
 if(w)w.textContent="Welcome back, "+(u.firstName||"");
-// Champion Management visibility — gated to specific usernames (not all admins)
+// Champion Management visibility: gated to specific usernames (not all admins)
 var CHAMPION_MGMT_ALLOWED=["rd.hill"];
 var champLink=document.getElementById("championMgmtLink");
 if(champLink&&!CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
@@ -280,7 +287,7 @@ if(champLink&&!CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
 var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
 if(scope&&scopeVal){
 var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
-scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"");
 scope.style.display="";
 if(scopeSep)scopeSep.style.display="";
 }

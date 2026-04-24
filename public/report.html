@@ -4,7 +4,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
  <meta charset="UTF-8" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
- <title>ĒMA - Quarterly Impact Report</title>
+ <title>ĒMA Quarterly Impact Report</title>
  <link rel="preconnect" href="https://fonts.googleapis.com">
  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
@@ -69,38 +69,66 @@
   .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
   .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
 
-  /* ── REPORT HEADER (green title bar - Option A) ──────────── */
-  /*
-   Option A: Green title bar (default)
-   Option B: White card with green accent (commented below)
-   Option C: Minimal flush on page background (commented below)
-  */
+  /* ── REPORT HEADER (green title bar) ─────────────────────────
+     Aligned 4/23/26 with quarterly-impact-v2.html and hub.html.
+     Was Shrikhand 22px italic; now Oswald 20px uppercase.
+     Selects upgraded from native chrome to brand pills with custom
+     SVG arrow. Options B/C alternate treatments removed. */
   .report-header{background:var(--green);padding:20px 32px 16px;color:var(--white)}
-  .report-header-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
-  .report-header h1{font-size:22px;font-weight:400;letter-spacing:0.3px;font-family:'Shrikhand',serif;color:var(--white)}
-  .report-header .rh-subtitle{font-size:13px;opacity:0.85;margin-top:3px;font-family:'Oswald',sans-serif;font-weight:400;letter-spacing:0.5px}
-  .report-header .rh-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  .report-header .rh-controls label{font-size:12px;opacity:0.85}
-  .report-header .rh-controls select{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 10px;border-radius:4px;font-size:13px;cursor:pointer}
-  .report-header .rh-controls select option{background:#333;color:white}
-  /*
-   ── Option B (uncomment to use, comment out Option A above) ──
-   .report-header{background:var(--white);border-left:4px solid var(--green);padding:20px 32px 16px;margin:24px 32px 0;border-radius:8px;border:1px solid var(--border);border-left:4px solid var(--green)}
-   .report-header h1{color:var(--green)}
-   .report-header .rh-subtitle{color:var(--mid);opacity:1}
-   .report-header .rh-controls select{background:var(--light);border:1px solid var(--border);color:var(--dark)}
-   .report-header .rh-controls select option{background:var(--white);color:var(--dark)}
-   .report-header .rh-controls label{color:var(--mid);opacity:1}
-  */
-  /*
-   ── Option C (uncomment to use, comment out Option A above) ──
-   .report-header{background:transparent;padding:24px 32px 16px;border-bottom:2px solid var(--green)}
-   .report-header h1{color:var(--green)}
-   .report-header .rh-subtitle{color:var(--mid);opacity:1}
-   .report-header .rh-controls select{background:var(--white);border:1px solid var(--border);color:var(--dark)}
-   .report-header .rh-controls select option{background:var(--white);color:var(--dark)}
-   .report-header .rh-controls label{color:var(--mid);opacity:1}
-  */
+  .report-header-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .report-header h1{
+    font-family:'Oswald',sans-serif;
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--white);
+    line-height:1.2;
+  }
+  .report-header .rh-subtitle{font-size:13px;opacity:0.75;margin-top:6px;font-family:'Lato',sans-serif;font-weight:400;letter-spacing:0.2px}
+  .report-header .rh-controls{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+  .report-header .rh-controls > div{display:flex;flex-direction:column;gap:5px}
+  .report-header .rh-controls br{display:none}
+  .report-header .rh-controls label{
+    font-family:'Oswald',sans-serif;
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.65);
+  }
+  .report-header .rh-controls select{
+    /* strip native chrome */
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    /* brand pill */
+    background-color:rgba(255,255,255,0.08);
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.75' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:8px;
+    color:rgba(255,255,255,0.95);
+    padding:8px 36px 8px 14px;
+    font-family:'Oswald',sans-serif;
+    font-size:12px;
+    font-weight:400;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    transition:background-color 0.15s, border-color 0.15s;
+  }
+  .report-header .rh-controls select:hover{
+    background-color:rgba(255,255,255,0.14);
+    border-color:rgba(255,255,255,0.32);
+  }
+  .report-header .rh-controls select:focus{outline:none}
+  .report-header .rh-controls select:focus-visible{
+    outline:none;
+    border-color:rgba(255,255,255,0.5);
+    background-color:rgba(255,255,255,0.16);
+  }
+  .report-header .rh-controls select option{background:var(--green);color:white;font-family:'Lato',sans-serif}
 
   /* ── SHARED FOOTER (red-orange) ──────────────────────────── */
   .footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
@@ -114,8 +142,8 @@
 
 
   /* TAB NAV */
-  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; }
-  .tab-btn { padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; }
+  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; overflow-x: auto; }
+  .tab-btn { padding: 14px 18px; font-size: 12px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
   .tab-btn:hover { color: var(--red); }
   .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
 
@@ -407,7 +435,7 @@
   .cell-anchor { font-size: 10px; color: #bbb; display: block; font-style: italic; }
   .fwa-flag { color: var(--warn); font-size: 12px; font-weight: 600; }
 
-  /* TOOLTIPS — shared style for all hover tooltips */
+  /* TOOLTIPS - shared style for all hover tooltips */
   [data-tip],.n-warn{position:relative;cursor:help}
   [data-tip]::after{content:'';display:inline-block;width:12px;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%23bbb' stroke-width='1.2'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' fill='%23bbb'%3E%3F%3C/text%3E%3C/svg%3E") no-repeat center;margin-left:5px;vertical-align:middle;opacity:.6}
   [data-tip]:hover::after{opacity:1}
@@ -481,6 +509,653 @@
   .affiliate-table-wrap tbody tr:nth-child(even) td { background: #faf9f7; }
   .affiliate-table-wrap tbody tr:hover td { background: var(--light); }
 
+
+  /* ═══════════════════════════════════════════════════════════════
+     v2 IMPACT REPORT VISUAL GRAMMAR - added during V1 merge 4/23/26
+     Lifted from quarterly-impact-v2.html. Rules below override
+     earlier .panel / .affiliate-table-wrap / .tip / [data-tip]::after
+     by source order. New classes: .hero-card, .hc-*, .hcs-*, .info-*,
+     .ip-block, .funnel-row, .fr-*, .prop-bar, .pb-*, .pbl-*, .vbar-*,
+     .att-*, .hero-grid-3/4/5.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* HERO STAT CARD - big Shrikhand number, icon, one-line context */
+  .hero-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--green);
+    border-radius: 12px;
+    padding: 26px 24px 22px;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 1;
+  }
+  .hero-card:has(.info-icon-wrap:hover),
+  .hero-card:has(.info-icon-btn[aria-expanded="true"]) { z-index: 100; }
+  .hero-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+  .hero-card.accent-red { border-top-color: var(--red); }
+  .hero-card.accent-yellow { border-top-color: var(--yellow); }
+  .hero-card.accent-green { border-top-color: var(--green); }
+  .hero-card .hc-icon {
+    width: 28px; height: 28px;
+    color: var(--green);
+    margin-bottom: 14px;
+    display: block;
+  }
+  .hero-card.accent-red .hc-icon { color: var(--red); }
+  .hero-card.accent-yellow .hc-icon { color: var(--yellow); }
+  .hero-card .hc-number {
+    font-family: 'Shrikhand', serif;
+    font-size: 44px;
+    line-height: 1;
+    color: var(--green);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .hero-card.accent-red .hc-number { color: var(--red); }
+  .hero-card.accent-yellow .hc-number { color: var(--yellow); }
+  .hero-card .hc-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--dark);
+    margin-bottom: 4px;
+  }
+  .hero-card .hc-context {
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.5;
+  }
+
+  /* KPI hero-card layout: number left, status pill right */
+  .hero-card.kpi-layout .hc-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin: 4px 0 12px;
+  }
+  .hero-card.kpi-layout .hc-number {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  /* PERFORMANCE STATUS - applied to the .hc-status pill only.
+     IDENTITY (.accent-red/green/yellow) is fixed per KPI for visual
+     interest. STATUS (.hc-status above/close/below) shifts with the
+     data: at/above target = above (green pill), within 5pt below =
+     close (yellow pill), >5pt below = below (red pill). The two
+     dimensions are independent. */
+  .hc-status {
+    flex: 1;
+    padding-bottom: 4px;
+  }
+  .hc-status .hcs-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .hc-status .hcs-arrow { font-size: 13px; line-height: 1; }
+  .hc-status .hcs-frame {
+    font-size: 11px;
+    color: var(--mid);
+    font-family: 'Lato', sans-serif;
+    letter-spacing: 0;
+  }
+  .hc-status.above .hcs-pill { background: var(--green-light); color: var(--green); }
+  .hc-status.close .hcs-pill { background: var(--yellow-light); color: #b8791e; }
+  .hc-status.below .hcs-pill { background: var(--red-light); color: var(--red-dark); }
+
+  /* HERO GRIDS */
+  .hero-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .hero-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .hero-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  @media (max-width: 1100px) {
+    .hero-grid-5 { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .hero-grid-3, .hero-grid-4, .hero-grid-5 { grid-template-columns: 1fr 1fr; }
+    .funnel-row { grid-template-columns: 100px 1fr 46px; }
+  }
+
+  /* OVERRIDE earlier .panel - adds 4px top accent + popover-friendly z-index */
+  .panel { background: var(--white); border: 1px solid var(--border); border-top: 4px solid var(--border); border-radius: 12px; padding: 20px; position: relative; z-index: 1; }
+  .panel.accent-red { border-top-color: var(--red); }
+  .panel.accent-green { border-top-color: var(--green); }
+  .panel.accent-yellow { border-top-color: var(--yellow); }
+  .panel:has(.info-icon-wrap:hover),
+  .panel:has(.info-icon-btn[aria-expanded="true"]) { z-index: 100; }
+  .panel h3 { font-size: 13px; font-weight: 300; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; font-family: 'Oswald', sans-serif; }
+
+  /* OVERRIDE earlier .affiliate-table-wrap - accent variants + popover-friendly */
+  .affiliate-table-wrap {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--border);
+    border-radius: 12px;
+    overflow: visible;
+    position: relative;
+  }
+  .affiliate-table-wrap.accent-red { border-top-color: var(--red); }
+  .affiliate-table-wrap.accent-green { border-top-color: var(--green); }
+  .affiliate-table-wrap.accent-yellow { border-top-color: var(--yellow); }
+  .affiliate-table-wrap .att-head {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--dark);
+    padding: 18px 18px 12px;
+    margin: 0;
+  }
+  .affiliate-table-wrap th { background: var(--white); padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--mid); text-align: left; border-bottom: 2px solid var(--border); border-top: 1px solid var(--border); }
+  .affiliate-table-wrap tr.att-totals td { background: #f9f9f9; border-top: 2px solid var(--border); padding-top: 12px; padding-bottom: 12px; }
+  .affiliate-table-wrap tr.att-totals:hover td { background: #f9f9f9; }
+  .affiliate-table-wrap tr.att-totals .att-label { font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dark); }
+  .affiliate-table-wrap .att-total-num {
+    font-family: 'Shrikhand', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--dark);
+    letter-spacing: 0.3px;
+    line-height: 1;
+    display: inline-block;
+  }
+  .affiliate-table-wrap .att-total-num .att-pct { font-size: 15px; }
+
+  /* "i" INFO ICON + POPOVER PATTERN */
+  .info-icon-wrap {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    z-index: 5;
+  }
+  .info-icon-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid #d8dcd0;
+    background: var(--white);
+    color: var(--mid);
+    font-family: 'Lato', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+  .info-icon-btn:hover,
+  .info-icon-btn:focus-visible {
+    background: var(--green);
+    color: var(--white);
+    border-color: var(--green);
+    outline: none;
+  }
+  .info-icon-btn[aria-expanded="true"] {
+    background: var(--green);
+    color: var(--white);
+    border-color: var(--green);
+  }
+  .info-popover {
+    position: absolute;
+    top: 42px;
+    right: 0;
+    width: 280px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--dark);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .info-icon-wrap:hover,
+  .info-icon-wrap:has(.info-icon-btn[aria-expanded="true"]) { z-index: 101; }
+  .info-popover::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background: var(--white);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    transform: rotate(45deg);
+  }
+  .info-icon-wrap:hover .info-popover,
+  .info-icon-btn[aria-expanded="true"] + .info-popover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .info-popover .ip-body { color: var(--dark); font-size: 12px; line-height: 1.55; }
+  .info-popover .ip-body strong { color: var(--green); }
+  .info-popover .ip-block { margin-bottom: 10px; }
+  .info-popover .ip-block:last-child { margin-bottom: 0; }
+  .info-popover .ip-block-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--yellow);
+    margin-bottom: 3px;
+  }
+  .info-popover .ip-block.warn .ip-block-label { color: var(--red); }
+  .info-popover .ip-block-body { color: var(--dark); font-size: 12px; line-height: 1.5; }
+  .info-popover .ip-block-body strong { color: var(--green); font-weight: 700; }
+
+  /* FUNNEL-ROW - count inside bar, percentage outside */
+  .funnel-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 50px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .funnel-row .fr-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--dark);
+    text-align: right;
+    letter-spacing: 0.3px;
+  }
+  .funnel-row.total .fr-label { color: var(--dark); font-weight: 700; }
+  .funnel-row .fr-bar-wrap {
+    background: #f0ece5;
+    border-radius: 20px;
+    height: 26px;
+    position: relative;
+    overflow: visible;
+  }
+  .funnel-row .fr-bar {
+    background: var(--green);
+    height: 100%;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    color: var(--white);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 38px;
+    position: relative;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .funnel-row .fr-pct {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--mid);
+    text-align: left;
+  }
+  .funnel-row .fr-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--dark);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Lato', sans-serif;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .funnel-row .fr-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--dark);
+  }
+  .funnel-row .fr-tooltip strong { font-weight: 700; color: #fff; }
+  .funnel-row .fr-tooltip .ft-sub {
+    color: rgba(255,255,255,0.75);
+    font-size: 10px;
+    margin-top: 2px;
+  }
+  .funnel-row .fr-bar-wrap:hover .fr-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* PROP-BAR - pill-style stacked proportion bar with hover tip */
+  .prop-bar {
+    height: 22px;
+    display: flex;
+    gap: 3px;
+  }
+  .prop-bar > div {
+    border-radius: 6px;
+    min-width: 4px;
+    position: relative;
+    cursor: default;
+  }
+  .pb-tip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--dark);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Lato', sans-serif;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .pb-tip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--dark);
+  }
+  .pb-tip strong {
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .prop-bar > div:hover .pb-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* PROP-BAR LEGEND - Oswald, count-led */
+  .pb-legend {
+    display: grid;
+    gap: 10px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+  }
+  .pb-legend .pbl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pb-legend .pbl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .pb-legend .pbl-num {
+    font-weight: 400;
+    color: var(--dark);
+    letter-spacing: 0.3px;
+  }
+  .pb-legend .pbl-label {
+    color: var(--dark);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: 'Lato', sans-serif;
+    font-size: 12px;
+  }
+
+  /* VERTICAL BAR CHART (multi-color) - each category its own story */
+  .vbar-chart {
+    display: flex;
+    align-items: stretch;
+    gap: 32px;
+    padding: 8px 16px 0;
+    height: 220px;
+  }
+  .vbar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    position: relative;
+  }
+  .vbar-top {
+    text-align: center;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+  .vbar-num {
+    font-family: 'Shrikhand', serif;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--dark);
+    margin-bottom: 4px;
+  }
+  .vbar-pct {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--mid);
+  }
+  .vbar-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+  .vbar-bar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+    transition: opacity 0.15s;
+  }
+  .vbar-col:hover .vbar-bar { opacity: 0.85; }
+  .vbar-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--mid);
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.3;
+  }
+
+  /* ── TCC: Closed-and-Completed combined chart (4/23/26)
+       Replaces Share of Tracks vbar + Completion Rate by Track table.
+       Three metrics in one panel:
+         (1) Hero % above each pair = share of total closed tracks
+         (2) Bar heights = absolute counts (Closed light, Completed green)
+             both scaled to maxClosed for visual comparability
+         (3) Hover tooltip = closed count, completed count, completion rate
+       Color: Closed bar tan (neutral state), Completed bar green (success).
+       Hero % uses brand green to echo the panel accent and signal it as
+       the headline metric distinct from the bar visualization. */
+  .tcc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 14px 4px 4px; }
+  .tcc-col { display: flex; flex-direction: column; align-items: center; }
+  .tcc-share { font-family: 'Shrikhand', serif; font-size: 30px; color: var(--green); line-height: 1; text-align: center; letter-spacing: 0.5px; }
+  .tcc-share-label { font-family: 'Oswald', sans-serif; font-size: 9px; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: 0.8px; text-align: center; margin-top: 4px; margin-bottom: 14px; }
+  .tcc-bars-wrap { position: relative; width: 100%; display: flex; justify-content: center; }
+  .tcc-bars-row { display: flex; gap: 12px; align-items: flex-end; justify-content: center; min-height: 170px; }
+  .tcc-bar-pair { display: flex; flex-direction: column; align-items: center; width: 44px; cursor: help; }
+  .tcc-bar-track { height: 150px; display: flex; align-items: flex-end; width: 100%; }
+  .tcc-bar-fill { width: 100%; background: #e8d8c8; border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.6s ease-out; }
+  .tcc-bar-fill.completed { background: var(--green); }
+  .tcc-bar-key { font-family: 'Oswald', sans-serif; font-size: 9px; font-weight: 600; color: var(--mid); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 7px; }
+  .tcc-track-label { margin-top: 14px; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600; color: var(--dark); text-align: center; text-transform: uppercase; letter-spacing: 0.6px; line-height: 1.3; }
+  /* Hover tooltip: positioned above the bars, shows absolute counts + rate */
+  .tcc-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--dark);
+    color: var(--white);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: 'Lato', sans-serif;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 50;
+  }
+  .tcc-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border: 5px solid transparent;
+    border-top-color: var(--dark);
+  }
+  .tcc-tooltip strong {
+    display: block;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    color: var(--yellow);
+  }
+  .tcc-tip-line { font-size: 11px; opacity: 0.95; margin-top: 3px; line-height: 1.4; display: flex; justify-content: space-between; gap: 18px; }
+  .tcc-tip-line .tcc-tip-key { opacity: 0.7; }
+  .tcc-tip-line .tcc-tip-val { font-weight: 600; }
+  .tcc-bars-wrap:hover .tcc-tooltip { opacity: 1; }
+
+  /* OVERRIDE earlier .n-warn - pill aesthetic, no border, no emoji prefix */
+  .n-warn {
+    display: inline-flex; align-items: center;
+    background: var(--yellow-light);
+    color: #b8791e;
+    border: none;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 9.5px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-left: 6px;
+    vertical-align: middle;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .n-warn.crit { background: var(--red-light); color: var(--red-dark); }
+
+  /* OVERRIDE earlier .tip and [data-tip]::after - white popover style w/ arrow */
+  [data-tip]::after {
+    content: 'i';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    margin-left: 5px;
+    vertical-align: middle;
+    border: 1px solid #d8dcd0;
+    border-radius: 50%;
+    background: var(--white) !important;
+    color: var(--mid);
+    font-family: 'Lato', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 10px;
+    line-height: 1;
+    opacity: .7;
+    transition: all 0.15s;
+  }
+  [data-tip]:hover::after {
+    opacity: 1;
+    background: var(--green) !important;
+    color: var(--white);
+    border-color: var(--green);
+  }
+  .tip {
+    background: var(--white);
+    color: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+    padding: 12px 14px;
+    top: calc(100% + 10px);
+    margin-top: 0;
+    line-height: 1.55;
+  }
+  .tip::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 12px;
+    width: 10px;
+    height: 10px;
+    background: var(--white);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    transform: rotate(45deg);
+  }
+
+  /* Tab-panel animation - replayable on tab switch */
+  @keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .tab-panel.active .funnel-row .fr-bar {
+    transform-origin: left center;
+    animation: barGrow 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .tab-panel.active .hero-card { animation: fadeSlideUp 0.5s ease-out both; }
+  .tab-panel.active .hero-card:nth-child(2) { animation-delay: 0.08s; }
+  .tab-panel.active .hero-card:nth-child(3) { animation-delay: 0.16s; }
+  .tab-panel.active .hero-card:nth-child(4) { animation-delay: 0.24s; }
+  .tab-panel.active .hero-card:nth-child(5) { animation-delay: 0.32s; }
+
  </style>
 </head>
 <body>
@@ -501,7 +1176,7 @@
 <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="your.name@ema.org" autocomplete="username"></div>
 <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
 <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
-<a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Open Trellis Platform</a>
+<a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
 </div></div>
 
 <!-- ══════════════════════════════════════════
@@ -518,31 +1193,28 @@
 <a href="/" style="display:flex;align-items:center;gap:14px;text-decoration:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo"><div class="nav-hub">Impact Hub</div></a>
 </div>
 <div class="nav-right">
-<div class="nav-scope" id="nav-scope" style="display:none;">
-<div class="nav-scope-lbl">Viewing</div>
-<div class="nav-scope-val" id="nav-scope-val">—</div>
-</div>
-<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
-<a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
-<div class="nav-sep"></div>
-<!-- RD: User info populated by applySession() -->
+<!-- Order matches hub.html (4/23/26): user · scope · signout · trellis -->
 <div class="nav-user">
 <div class="nav-avatar" id="nav-avatar">C</div>
 <div><div class="nav-name" id="nav-name">User</div><div class="nav-role" id="nav-role">Role</div></div>
+</div>
+<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
+<div class="nav-scope" id="nav-scope" style="display:none;">
+<div class="nav-scope-lbl">Viewing</div>
+<div class="nav-scope-val" id="nav-scope-val">-</div>
+</div>
 <div class="nav-sep"></div>
 <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
-</div></div></nav>
+<div class="nav-sep nav-trellis"></div>
+<a href="https://trellis.ema.org/login" class="nav-link nav-trellis" target="_blank">Go to Trellis &#8594;</a>
+</div></nav>
 
-<!-- ── REPORT HEADER (Option A: Green title bar) ─────────── -->
-<!--
- Cristina: Three options are included in CSS. Option A (green bar) is active.
- To switch: comment out Option A CSS block and uncomment B or C.
--->
+<!-- ── REPORT HEADER (green title bar) ─────────────────────── -->
 <div class="report-header">
  <div class="report-header-top">
   <div>
    <h1>ĒMA Quarterly Impact Report</h1>
-   <div class="rh-subtitle">Static snapshot &nbsp;&middot;&nbsp; Data source: Trellis (Railway PostgreSQL)</div>
+   <div class="rh-subtitle">Every Mother's Advocate &nbsp;&middot;&nbsp; Quarterly impact snapshot</div>
   </div>
   <div class="rh-controls">
    <div>
@@ -580,309 +1252,362 @@
 ════════════════════════════════════════════ -->
 <div id="tab-kpis" class="tab-panel active">
 
- <!-- KPI SCORECARDS -->
+ <!-- ════════════════════════════════════════════════════════
+      KPI SCORECARDS - v2 hero-card pattern
+      ════════════════════════════════════════════════════════
+      RD: This block was rewritten during the V1 merge (4/23/26).
+      The old .kpi-gauge-card / .kpi-badge / svg-arc / .kpi-anchor-sm
+      hooks are RETIRED. New hydration targets per card:
+        .hc-number       → percentage value (e.g. "86%")
+        .hcs-pill        → status label text (e.g. "1pt above target")
+        .hcs-frame       → target reference (e.g. "target 85%")
+        .hc-context      → numerator/denominator context line
+        .hc-status       → wrapper that takes class above/close/below
+                           per the performance status rule:
+                             ≥ target              → above (green pill)
+                             0 to 5pt below target → close (yellow pill)
+                             > 5pt below target    → below (red pill)
+      The .accent-red/green/yellow class is KPI IDENTITY (fixed per
+      KPI for visual interest), independent of performance status.
+      ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Core KPIs - Q1 2026
-   <span class="anchor-note">All three KPIs anchored to Q1 2026 (Jan 1 – Mar 31) with a 30-day post-period grace window for late entries. Pre-Trellis PromiseServes migration data is excluded — only current Trellis assessments (EP, RR; AAPI pending) count. Expand each card for data integrity notes.</span>
-  </div>
+  <div class="section-label">Core KPIs &nbsp;&middot;&nbsp; Q1 2026</div>
   <div class="kpi-grid">
 
-   <!-- KPI 1 - Family Preservation Rate - 86.2% ON TRACK -->
-   <div class="kpi-gauge-card on-track">
-    <div class="kpi-num">KPI 1</div>
-    <div class="kpi-name">Family Preservation Rate</div>
-    <div class="kpi-gauge-wrap">
-     <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
-      <!-- Background track: 270° arc -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target band up to 85% : 85×2.827=240.3 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="240.3 376.9" transform="rotate(135 80 80)"/>
-      <!-- Fill: 86.2% → 86.2×2.827=243.7 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="243.7 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target tick at 85%: offset=-(240.3) -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
-       stroke-dasharray="3 373.9" stroke-dashoffset="-240.3" transform="rotate(135 80 80)"/>
-      <!-- Center text -->
-      <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">86%</text>
-      <text x="80" y="95" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 85%</text>
-      <!-- Target label -->
-     </svg>
+   <!-- KPI 1 · Family Preservation Rate · accent identity = red -->
+   <div class="hero-card accent-red kpi-layout">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Children <strong>prevented from CPS Involvement or Foster Care Placement</strong>, divided by all children of moms with a current Family Wellbeing Assessment on file. The same numerator drives the Child Welfare Prevention count and Estimated Impact Value in the Children panel.</div>
+       </div>
+       <div class="ip-block">
+        <div class="ip-block-label">Excluded</div>
+        <div class="ip-block-body">Children whose mom has no current FWA on file. Children in Temporary or Permanent Removal status. <strong>Prevented from Permanent Removal</strong> cases are also excluded from the numerator until the validation pathway is in place.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Deliberate undercount in service of data integrity. Teams familiar with the broader Prevention definition may expect a higher number; the gap is the Permanent Removal Prevention cases held back.</div>
+       </div>
+      </div>
+     </div>
     </div>
-    <div class="kpi-badge on-track">On Track ✓</div>
-    <div class="eff-formula">Children Preserved ÷ Children with Valid 3-Mo FWA</div>
-    <div class="kpi-anchor-sm">50 of 58 eligible children preserved &nbsp;·&nbsp; 20 children excluded (no valid FWA)</div>
-    <details class="kpi-detail">
-     <summary>Data integrity notes</summary>
-     <div class="kd-body">
- <div class="di-row"><div class="di-label">What we count</div><div class="di-val di-ok">Each child belonging to a mom with a Q1 assessment on file counts as one data point, not the mom herself</div></div>
- <div class="di-row"><div class="di-label">Preserved means</div><div class="di-val">Children whose Family Preservation Impact falls in the Prevention %: Prevented from CPS Involvement (stayed home, no CW contact), Prevented from Foster Care Placement (had CW involvement but stayed home), or Prevented from Permanent Removal (was in foster care but reunified)</div></div>
- <div class="di-row"><div class="di-label">Not preserved</div><div class="di-val">Children in Temporary Removal (currently in foster care/kinship) or Permanent Removal (will not return). These are the Out of Care % and are excluded from the numerator</div></div>
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Children whose moms had a Family Wellbeing Assessment logged between Jan 1 and Apr 30, 2026 (Q1 + 30-day grace for late entries) using the current Trellis assessment templates</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Children whose moms don't yet have a Q1 assessment on file in Trellis. Current-system assessments have been entered sparingly since Trellis migration — coordinator follow-up needed.</div></div>
- <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">Pre-migration PromiseServes assessment records are excluded from this KPI. Only assessments completed in the current Trellis system (EP, RR, future AAPI) count toward Q1 reporting.</div></div>
- <div class="di-row"><div class="di-label">Period-anchored</div><div class="di-val">Numbers reflect activity during Q1 2026 specifically, not a rolling window from today. The same Q1 view will yield the same numbers whether viewed in April or next year.</div></div>
- <div class="di-row"><div class="di-label">⚠ Known limitation</div><div class="di-val di-flag">A small edit to any part of an assessment updates the assessment date, so "recent" doesn't always mean a full re-assessment was done. Coordinators should confirm full re-assessments were completed, not just edits.</div></div>
-</div>
-    </details>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <div class="hc-row">
+     <div class="hc-number" data-hydrate="kpi1-rate">48%</div>
+     <div class="hc-status below" data-hydrate="kpi1-status">
+      <!-- STATIC: pill text + arrow + frame copy demo until status logic is ported into hero-card pattern -->
+      <div class="hcs-pill"><span class="hcs-arrow">&#x2193;</span> 37pt below target</div>
+      <div class="hcs-frame">target 85%</div>
+     </div>
+    </div>
+    <div class="hc-label">Family Preservation Rate</div>
+    <div class="hc-context"><span data-hydrate="kpi1-num">28</span> of <span data-hydrate="kpi1-den">58</span> eligible children preserved &nbsp;&middot;&nbsp; <span data-hydrate="kpi1-excl">20</span> children excluded (no valid FWA)</div>
    </div>
 
-   <!-- KPI 2 - Family Stability Score Improvement - 71.2% ON TRACK -->
-   <div class="kpi-gauge-card on-track">
-    <div class="kpi-num">KPI 2</div>
-    <div class="kpi-name">Family Stability Score Improvement</div>
-    <div class="kpi-gauge-wrap">
-     <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target band up to 70% : 70×2.827=197.9 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="197.9 376.9" transform="rotate(135 80 80)"/>
-      <!-- Fill: 71.2% → 71.2×2.827=201.3 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="201.3 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target tick at 70% -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
-       stroke-dasharray="3 373.9" stroke-dashoffset="-197.9" transform="rotate(135 80 80)"/>
-      <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">71%</text>
-      <text x="80" y="95" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 70%</text>
-     </svg>
+   <!-- KPI 2 · Family Stability Score Improvement · accent identity = green -->
+   <div class="hero-card accent-green kpi-layout">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Moms whose <strong>composite Family Stability Score</strong> increased from their starting Family Wellbeing Assessment to their most recent one. The composite covers 11 life-area domains. A retired Child Welfare pilot domain is excluded from the composite.</div>
+       </div>
+       <div class="ip-block">
+        <div class="ip-block-label">Excluded</div>
+        <div class="ip-block-body">Moms missing either a starting or current Family Wellbeing Assessment on file. Legacy assessments from the prior system are excluded; only current assessments count.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">A small edit to any part of an assessment updates the assessment date, so "recent" doesn't always mean a full re-assessment. Current-system data has been entered sparingly so far; the pathway is being rebuilt.</div>
+       </div>
+      </div>
+     </div>
     </div>
-    <div class="kpi-badge on-track">On Track ✓</div>
-    <div class="eff-formula">Moms with FSS Improvement ÷ Moms Completing a Q1 Pairing with Pre &amp; Post</div>
-    <div class="kpi-anchor-sm">37 of 52 moms show composite FSS improvement &nbsp;·&nbsp; 23 moms excluded (missing pre or post in current Trellis templates)</div>
-    <details class="kpi-detail">
-     <summary>Data integrity notes</summary>
-     <div class="kd-body">
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track pairing during Q1 2026 AND have both a pre and a post assessment on file from the current Trellis system</div></div>
- <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's combined score across life-area questions between her pre and post assessments</div></div>
- <div class="di-row"><div class="di-label">What's not scored here</div><div class="di-val">The Child Welfare area is tracked separately — it feeds into KPI 1, not this score</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">Moms completing tracks without both a pre and post on file in Trellis — particularly NPP completers, since AAPI (NPP's assessment) doesn't yet have a Trellis template to log results against</div></div>
- <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">PromiseServes migration records (pre-Trellis) are excluded. Only pre/post assessments entered through current Trellis templates (EP, RR) count.</div></div>
- <div class="di-row"><div class="di-label">Anchor date</div><div class="di-val">Pairing.completed_on between Jan 1 and Mar 31, 2026. Assessment dates themselves are not required to fall in Q1 — only the track completion.</div></div>
- <div class="di-row"><div class="di-label">⚠ Current reporting gap</div><div class="di-val di-flag">Coordinators have entered only ~60 non-legacy assessments org-wide since Trellis launched in December. Most Q1 completions lack the current-system pre/post data this KPI requires. Rebuilding this pathway is in progress.</div></div>
-</div>
-    </details>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <div class="hc-row">
+     <div class="hc-number" data-hydrate="kpi2-rate">71%</div>
+     <div class="hc-status above" data-hydrate="kpi2-status">
+      <!-- STATIC: pill text + arrow + frame copy demo until status logic is ported into hero-card pattern -->
+      <div class="hcs-pill"><span class="hcs-arrow">&#x2191;</span> 1pt above target</div>
+      <div class="hcs-frame">target 70%</div>
+     </div>
+    </div>
+    <div class="hc-label">Family Stability Score Improvement</div>
+    <div class="hc-context"><span data-hydrate="kpi2-num">37</span> of <span data-hydrate="kpi2-den">52</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">23</span> moms excluded (missing pre or post)</div>
    </div>
 
-   <!-- KPI 3 - Learning Progress - 72.2% ON TRACK -->
-   <div class="kpi-gauge-card on-track">
-    <div class="kpi-num">KPI 3</div>
-    <div class="kpi-name">Learning Progress</div>
-    <div class="kpi-gauge-wrap">
-     <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target band up to 70% : 197.9 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ecefe1" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="197.9 376.9" transform="rotate(135 80 80)"/>
-      <!-- Fill: 72.2% → 72.2×2.827=204.1 -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
-       stroke-dasharray="204.1 376.9" transform="rotate(135 80 80)"/>
-      <!-- Target tick at 70% -->
-      <circle cx="80" cy="80" r="60" fill="none" stroke="#ec482f" stroke-width="16" stroke-linecap="butt"
-       stroke-dasharray="3 373.9" stroke-dashoffset="-197.9" transform="rotate(135 80 80)"/>
-      <text x="80" y="73" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">72%</text>
-      <text x="80" y="95" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">target: 70%</text>
-     </svg>
+   <!-- KPI 3 · Learning Progress · accent identity = yellow -->
+   <div class="hero-card accent-yellow kpi-layout">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Any <strong>score increase</strong> between a mom's start-of-track and end-of-track learning assessment. Each track counts separately, so a mom completing two tracks counts twice.</div>
+       </div>
+       <div class="ip-block">
+        <div class="ip-block-label">Excluded</div>
+        <div class="ip-block-body">Tracks missing a pre or post assessment, and entries where the post date is earlier than the pre date. NPP completers are not yet scored.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Pre and post assessments are sparse since the current system launched. NPP (the largest track) produces no scored assessments yet, so this rate reflects EP and RR only.</div>
+       </div>
+      </div>
+     </div>
     </div>
-    <div class="kpi-badge on-track">On Track ✓</div>
-    <div class="eff-formula">Completions where post composite &gt; pre composite ÷ Completions with valid pre &amp; post pair</div>
-    <div class="kpi-anchor-sm">13 of 18 eligible completions show improvement &nbsp;·&nbsp; EP and RR tracks only (NPP pending AAPI template)</div>
-    <details class="kpi-detail">
-     <summary>Data integrity notes</summary>
-     <div class="kd-body">
- <div class="di-row"><div class="di-label">What counts as improvement</div><div class="di-val di-ok">Any increase in a mom's total score between her start-of-track assessment and her end-of-track assessment — even one point up counts</div></div>
- <div class="di-row"><div class="di-label">Who's included</div><div class="di-val">Moms who completed a track pairing in Q1 2026 AND have both a pre and post assessment on file from current Trellis templates (EP Pre/Post, RR Pre/Post). Each track counts separately.</div></div>
- <div class="di-row"><div class="di-label">Who's not included</div><div class="di-val di-warn">NPP completers: AAPI (the NPP assessment instrument) does not yet have a Trellis template, so NPP completions cannot be scored here until that's addressed. Also excluded: any completion missing a pre or post, and records with pre/post dates out of order.</div></div>
- <div class="di-row"><div class="di-label">Legacy data excluded</div><div class="di-val">PromiseServes migration records (pre-Trellis) are excluded. Only pre/post assessments entered through current Trellis templates count.</div></div>
- <div class="di-row"><div class="di-label">Anchor date</div><div class="di-val">Pairing.completed_on between Jan 1 and Mar 31, 2026. Assessment dates themselves are not required to fall in Q1 — only the track completion.</div></div>
- <div class="di-row"><div class="di-label">Not related to FWA</div><div class="di-val di-ok">This KPI uses track learning assessments only — separate from the Family Wellbeing Assessment used in KPI 1 and KPI 2.</div></div>
- <div class="di-row"><div class="di-label">⚠ Current reporting gap</div><div class="di-val di-flag">Same data capture issue as KPI 2 — Trellis-era pre/post assessments are sparse. NPP (the largest track) produces no Trellis assessments at all until AAPI is added as a template.</div></div>
-</div>
-    </details>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <div class="hc-row">
+     <div class="hc-number" data-hydrate="kpi3-rate">72%</div>
+     <div class="hc-status above" data-hydrate="kpi3-status">
+      <!-- STATIC: pill text + arrow + frame copy demo until status logic is ported into hero-card pattern -->
+      <div class="hcs-pill"><span class="hcs-arrow">&#x2191;</span> 2pt above target</div>
+      <div class="hcs-frame">target 70%</div>
+     </div>
+    </div>
+    <div class="hc-label">Learning Progress</div>
+    <div class="hc-context"><span data-hydrate="kpi3-num">13</span> of <span data-hydrate="kpi3-den">18</span> eligible completions improved &nbsp;&middot;&nbsp; EP and RR only (NPP pending AAPI template)</div>
    </div>
 
   </div>
  </div>
 
 
- <!-- PROGRAM STATUS - FAMILIES / CHILDREN / ADVOCATES -->
+ <!-- ════════════════════════════════════════════════════════
+      PROGRAM STATUS - entity cards (Mothers, Children, Advocates)
+      ════════════════════════════════════════════════════════
+      RD: Hydration hooks preserved.
+        · Headline numbers: span[style*="font-size:44px"] order
+            [0] Mothers (94)  [1] Children (142)  [2] Advocates (57)
+        · Q1 Activity numbers: span[style*="font-size:24px"] (currently
+          queried but not yet written; preserved for future hydration)
+      Identity colors per accent rule: Mothers red, Children green,
+      Advocates yellow.
+      ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Program Status - Q1 2026</div>
+  <div class="section-label">Program Status &nbsp;&middot;&nbsp; Q1 2026</div>
 
-  <!-- ══ FAMILIES ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+  <!-- ══ MOTHERS · accent identity = red ══ -->
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:12px;overflow:visible;margin-bottom:20px;position:relative;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Every mom <strong>active</strong> at any point during the period, including moms who completed or exited within the period. <strong>In a Track</strong> requires a pairing record at any point during the period; if no pairing, she falls into <strong>Membership Community</strong>.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body">No mom appears in both buckets. End-of-period counts are lower than total served, since some moms exited or completed during the period.</div>
+      </div>
+     </div>
+    </div>
+   </div>
 
    <!-- Entity header -->
-   <div style="background:var(--red-light);border-bottom:1px solid #e8c4ba;padding:14px 24px;display:flex;align-items:baseline;gap:12px;">
-    <div style="font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Mothers</div>
-    <span style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">94</span>
+   <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
+    <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Mothers</div>
+    <span data-hydrate="mom-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--red);line-height:1;letter-spacing:0.5px;">94</span>
     <span style="font-size:12px;color:var(--mid);">served during Q1</span>
    </div>
 
-   <div style="padding:0 24px;">
+   <div style="padding:0 26px;">
 
-    <!-- Active During Q1 -->
-    <div style="padding:16px 0;border-bottom:1px solid var(--border);">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each mother counted once</span></div>
-     <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;margin-bottom:12px;">
-      <div style="background:var(--green);flex:65;"></div>
-      <div style="background:var(--yellow);flex:35;"></div>
+    <!-- Active During Q1 - funnel-row pattern -->
+    <div style="padding:6px 0 18px;border-top:1px solid #f0ece5;">
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin:14px 0 12px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each mother counted once</span></div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>In a Track</strong></span>
+      <div class="fr-bar-wrap" title="61 moms">
+       <div class="fr-bar" data-hydrate="mom-intrack-pct" style="background:var(--green);width:65%;"><span class="fr-val" data-hydrate="mom-intrack-count">61</span></div>
+       <div class="fr-tooltip"><strong>In a Track</strong><div class="ft-sub">Matched with an advocate</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="mom-intrack-pct-label">65%</span>
      </div>
-     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--green);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">61 &nbsp;·&nbsp; 65%</span> <span style="color:var(--mid);">In a Track</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">matched with an advocate</div></div></div>
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--yellow);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">33 &nbsp;·&nbsp; 35%</span> <span style="color:var(--mid);">Membership Community</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">not in a track</div></div></div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>Membership Community</strong></span>
+      <div class="fr-bar-wrap" title="33 moms">
+       <div class="fr-bar" data-hydrate="mom-mc-pct" style="background:var(--yellow);width:35%;"><span class="fr-val" data-hydrate="mom-mc-count">33</span></div>
+       <div class="fr-tooltip"><strong>Membership Community</strong><div class="ft-sub">Not in a track</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="mom-mc-pct-label">35%</span>
      </div>
     </div>
 
-    <!-- Q1 Activity -->
-    <div style="padding:16px 0;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1–Mar 31</span></div>
-     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
-      <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Referrals Received</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">31</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Referral submitted</div>
+    <!-- Q1 Activity - Shrikhand numbers, no hard dividers -->
+    <div style="padding:18px 0;border-top:1px solid #f0ece5;">
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1 to Mar 31</span></div>
+     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div>
+       <span data-hydrate="mom-q1-referrals" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">31</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Referrals Received</div>
       </div>
-      <div style="padding:8px 16px;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Engaged in Program</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">22</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Became a client</div>
+      <div>
+       <span data-hydrate="mom-q1-engaged" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">22</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Engaged in Program</div>
       </div>
-      <div style="padding:8px 0 8px 16px;">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Track Completions</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">18</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Track completed</div>
+      <div>
+       <span data-hydrate="mom-q1-completions" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">18</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Track Completions</div>
       </div>
      </div>
     </div>
 
    </div>
-   <div style="padding:0 24px 16px;">
-    <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
- <div class="di-row"><div class="di-label">How we count</div><div class="di-val di-ok">Every mom active at any point Jan 1–Mar 31 is included - including moms who completed or exited during the quarter</div></div>
- <div class="di-row"><div class="di-label">Reporting use</div><div class="di-val">This is the primary count used for grant and investor reporting</div></div>
- <div class="di-row"><div class="di-label">Track completions</div><div class="di-val">18 total - 11 Full Track, 4 without Support Sessions, 3 without Post Assessment</div></div>
- <div class="di-row"><div class="di-label">Served vs. active</div><div class="di-val">94 includes every mom active at any point during Q1 - some exited or completed during the quarter, so the number still active at quarter end is lower. End-of-quarter counts are available in the monthly report.</div></div>
- <div class="di-row"><div class="di-label">Bucket logic</div><div class="di-val">Every mom appears in exactly one bucket - In a Track takes precedence if she had a pairing at any point in Q1, otherwise Membership Community</div></div>
- <div class="di-row"><div class="di-label">No double counting</div><div class="di-val di-ok">In a Track + Membership Community = 94 total · no mom appears in both</div></div>
-</div></details>
-   </div>
+   <div style="padding:0 26px 18px;"></div>
   </div>
 
-  <!-- ══ CHILDREN ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+  <!-- ══ CHILDREN · accent identity = green ══ -->
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--green);border-radius:12px;overflow:visible;margin-bottom:20px;position:relative;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Sum of <strong>child profiles</strong> linked to moms active during the period; only children the mom has legal authority over count. <strong>Child Welfare Prevention</strong> shows the same number as the KPI 1 numerator above, multiplied by $38,850 per child for the Estimated Impact Value.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body">Children whose mom has no current FWA on file (excluded from Child Welfare Prevention). Permanent Removal Prevention cases (held back until the validation pathway is in place).</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Where a mom has no child count on file, the average across active moms is used as a proxy. The Estimated Impact Value uses $38,850 per child (per ĒMA white paper) and is an estimated, not confirmed, financial figure.</div>
+      </div>
+     </div>
+    </div>
+   </div>
 
    <!-- Entity header -->
-   <div style="background:var(--red-light);border-bottom:1px solid #e8c4ba;padding:14px 24px;display:flex;align-items:baseline;gap:12px;">
-    <div style="font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Children</div>
-    <span style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">142</span>
+   <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
+    <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-family:'Oswald',sans-serif;flex-shrink:0;">Children</div>
+    <span data-hydrate="child-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--green);line-height:1;letter-spacing:0.5px;">142</span>
     <span style="font-size:12px;color:var(--mid);">served during Q1</span>
    </div>
 
-   <div style="padding:16px 24px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
-     <div style="padding:8px 16px 8px 0;border-right:1px solid var(--border);">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Child Welfare Prevention</div>
-      <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">28</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Children prevented from child welfare involvement</div>
+   <div style="padding:0 26px 18px;border-top:1px solid #f0ece5;">
+    <div style="padding-top:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+     <div>
+      <span class="child-prev-count" data-hydrate="child-prev-count" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">28</span>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:4px;">Child Welfare Prevention</div>
+      <div style="font-size:11px;color:#aaa;font-style:italic;">Children prevented from child welfare involvement</div>
      </div>
-     <div style="padding:8px 0 8px 16px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Est. Impact Value</div>
-      <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">~$1.09M</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">28 × $38,850 · estimated prevention value</div>
+     <div>
+      <span class="child-prev-value" data-hydrate="child-prev-value" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">~$1.09M</span>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:4px;">Est. Impact Value</div>
+      <div style="font-size:11px;color:#aaa;font-style:italic;"><span class="child-prev-count-ctx" data-hydrate="child-prev-count-ctx">28</span> &middot; $38,850 per child &middot; estimated prevention value</div>
      </div>
     </div>
    </div>
-   <div style="padding:0 24px 16px;">
-    <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
- <div class="di-row"><div class="di-label">Children served</div><div class="di-val">Sum of child profiles linked to moms active during Q1 - only children the mom has legal authority over are counted</div></div>
- <div class="di-row"><div class="di-label">Missing counts</div><div class="di-val di-warn">Where a mom has no child count recorded, the average child count across all active moms is used as a proxy</div></div>
- <div class="di-row"><div class="di-label">Child welfare prevention</div><div class="di-val">Children prevented from CPS involvement or foster care placement, sourced from the Child Welfare area of the Family Wellbeing Assessment</div></div>
- <div class="di-row"><div class="di-label">Est. impact value</div><div class="di-val">Prevention count × $38,850 per child, based on average annual foster care costs from ĒMA white paper</div></div>
-</div></details>
-   </div>
+   <div style="padding:0 26px 18px;"></div>
   </div>
 
-  <!-- ══ ADVOCATES ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+  <!-- ══ ADVOCATES · accent identity = yellow ══ -->
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--yellow);border-radius:12px;overflow:visible;position:relative;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Each advocate appears in exactly one bucket, in priority order: <strong>Group Facilitator</strong> then <strong>Paired 1:1</strong> then <strong>Waiting to be Paired</strong> then <strong>Taking a Break</strong>. The mom's pairing record is the source of truth and takes precedence over the advocate's own status.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body">Activity events are independent counts, not a funnel. An advocate who trained and was approved during the period appears in both. Counts are derived from the current User record state, not event history; an advocate cycling through multiple states during the period reflects only her most recent state.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Some advocates are set to Active status with a "Taking a Break" sub-status as a coordinator workaround. The pairing-first rule handles this correctly. Group facilitator count and sub-status values need confirmation against live data before final publication.</div>
+      </div>
+     </div>
+    </div>
+   </div>
 
    <!-- Entity header -->
-   <div style="background:var(--red-light);border-bottom:1px solid #e8c4ba;padding:14px 24px;display:flex;align-items:baseline;gap:12px;">
-    <div style="font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Advocates</div>
-    <span style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">57</span>
+   <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
+    <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--yellow);font-family:'Oswald',sans-serif;flex-shrink:0;">Advocates</div>
+    <span data-hydrate="adv-active-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--yellow);line-height:1;letter-spacing:0.5px;">57</span>
     <span style="font-size:12px;color:var(--mid);">active during Q1</span>
    </div>
 
-   <div style="padding:0 24px;">
+   <div style="padding:0 26px;">
 
-    <!-- Active During Q1 -->
-    <div style="padding:16px 0;border-bottom:1px solid var(--border);">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each advocate counted once · priority order below</span></div>
-     <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;margin-bottom:12px;">
-      <div style="background:#123939;flex:5;"></div>
-      <div style="background:#2a6060;flex:47;"></div>
-      <div style="background:var(--yellow);flex:4;"></div>
-      <div style="background:#e8c4ba;flex:1;"></div>
+    <!-- Active During Q1 - funnel-row pattern -->
+    <div style="padding:6px 0 18px;border-top:1px solid #f0ece5;">
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin:14px 0 12px;">Active During Q1 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">each advocate counted once &middot; priority order</span></div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>Paired 1:1</strong></span>
+      <div class="fr-bar-wrap" title="47 advocates">
+       <div class="fr-bar" data-hydrate="adv-paired-pct" style="background:var(--green);width:82%;"><span class="fr-val" data-hydrate="adv-paired-count">47</span></div>
+       <div class="fr-tooltip"><strong>Paired 1:1</strong><div class="ft-sub">Matched one-on-one</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="adv-paired-pct-label">82%</span>
      </div>
-     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px;">
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:#123939;flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">5 &nbsp;·&nbsp; 9%</span> <span style="color:var(--mid);">Group facilitators</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">leads a group track</div></div></div>
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:#2a6060;flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">47 &nbsp;·&nbsp; 82%</span> <span style="color:var(--mid);">Paired 1:1</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">matched with a mom one-on-one</div></div></div>
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--yellow);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">4 &nbsp;·&nbsp; 7%</span> <span style="color:var(--mid);">Waiting to be paired</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">approved and available, not yet matched with a mom</div></div></div>
-      <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:#e8c4ba;flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">1 &nbsp;·&nbsp; 2%</span> <span style="color:var(--mid);">Taking a break</span><div style="color:#aaa;font-style:italic;font-size:10px;margin-top:2px;">active but temporarily paused, not currently matched with a mom</div></div></div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>Group facilitators</strong></span>
+      <div class="fr-bar-wrap" title="5 advocates">
+       <div class="fr-bar" data-hydrate="adv-group-pct" style="background:#5d8a7a;width:9%;"><span class="fr-val" data-hydrate="adv-group-count">5</span></div>
+       <div class="fr-tooltip"><strong>Group facilitators</strong><div class="ft-sub">Leads a group track</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="adv-group-pct-label">9%</span>
+     </div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>Waiting to be paired</strong></span>
+      <div class="fr-bar-wrap" title="4 advocates">
+       <div class="fr-bar" data-hydrate="adv-waiting-pct" style="background:var(--yellow);width:7%;"><span class="fr-val" data-hydrate="adv-waiting-count">4</span></div>
+       <div class="fr-tooltip"><strong>Waiting to be paired</strong><div class="ft-sub">Approved, not yet matched</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="adv-waiting-pct-label">7%</span>
+     </div>
+     <div class="funnel-row">
+      <span class="fr-label"><strong>Taking a break</strong></span>
+      <div class="fr-bar-wrap" title="1 advocate">
+       <div class="fr-bar" data-hydrate="adv-break-pct" style="background:#d4c5b8;width:2%;min-width:38px;color:var(--dark);"><span class="fr-val" data-hydrate="adv-break-count">1</span></div>
+       <div class="fr-tooltip"><strong>Taking a break</strong><div class="ft-sub">Temporarily paused, not matched</div></div>
+      </div>
+      <span class="fr-pct" data-hydrate="adv-break-pct-label">2%</span>
      </div>
     </div>
 
-    <!-- Q1 Activity -->
-    <div style="padding:16px 0;">
-     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:10px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1–Mar 31</span></div>
-     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
-      <div style="padding:8px 12px 8px 0;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Application Received</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">14</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Applied</div>
+    <!-- Q1 Activity - Shrikhand numbers, no hard dividers -->
+    <div style="padding:18px 0;border-top:1px solid #f0ece5;">
+     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:14px;">Q1 Activity <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#aaa;font-style:italic;margin-left:6px;">records created or last updated Jan 1 to Mar 31</span></div>
+     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;">
+      <div>
+       <span data-hydrate="adv-q1-applications" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">14</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Application Received</div>
       </div>
-      <div style="padding:8px 12px;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Trained</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">9</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Completed training</div>
+      <div>
+       <span data-hydrate="adv-q1-trained" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">9</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Trained</div>
       </div>
-      <div style="padding:8px 12px;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Approved</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">7</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Passed final review</div>
+      <div>
+       <span data-hydrate="adv-q1-approved" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">7</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Approved</div>
       </div>
-      <div style="padding:8px 12px;border-right:1px solid var(--border);">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Became Active</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">7</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Became active</div>
+      <div>
+       <span data-hydrate="adv-q1-active" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">7</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Became Active</div>
       </div>
-      <div style="padding:8px 0 8px 12px;">
-       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--mid);margin-bottom:4px;">Became Inactive</div>
-       <div style="font-size:24px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">3</div>
-       <div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic;">Stepped down</div>
+      <div>
+       <span data-hydrate="adv-q1-inactive" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">3</span>
+       <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);">Became Inactive</div>
       </div>
      </div>
     </div>
 
    </div>
-   <div style="padding:0 24px 16px;">
-    <details class="kpi-detail" style="width:100%;"><summary>Data integrity notes</summary><div class="kd-body">
- <div class="di-row"><div class="di-label">Unique counts</div><div class="di-val di-ok">Each advocate appears in exactly one bucket - priority order is: Group facilitator → Paired 1:1 → Waiting to be Paired → Taking a Break</div></div>
- <div class="di-row"><div class="di-label">Pairing source</div><div class="di-val di-ok">Group facilitator and Paired 1:1 counts are sourced from mom's pairing record - this is the truth for whether pairing happened, regardless of what the advocate's own status says</div></div>
- <div class="di-row"><div class="di-label">Sub-status fallback</div><div class="di-val">Waiting to be Paired and Taking a Break are sourced from the advocate's own sub-status - only used when no active pairing is found on mom's side</div></div>
- <div class="di-row"><div class="di-label">⚠ Known workaround</div><div class="di-val di-flag">Some advocates are set to Active status with a Taking a Break sub-status as a system workaround. Mom's pairing record takes precedence - if a pairing exists on mom's side they are correctly classified as Paired 1:1 or Group. Only if no pairing exists do they fall into the Taking a Break bucket.</div></div>
- <div class="di-row"><div class="di-label">⚠ Pending</div><div class="di-val di-flag">Group facilitator count and sub-status values need confirmation with live data before this section is finalized</div></div>
- <div class="di-row"><div class="di-label">Multiple counts</div><div class="di-val">One advocate may appear in multiple Q1 Activity counts - an advocate who trained and was approved in Q1 appears in both. These are independent events, not a funnel.</div></div>
- <div class="di-row"><div class="di-label">Application / Trained / Approved</div><div class="di-val">Counts advocate user records created during Q1 whose current sub-status falls in each bucket. "Application Received" = any new advocate record. "Trained" / "Approved" = records currently past the training/approval step.</div></div>
- <div class="di-row"><div class="di-label">Became active</div><div class="di-val">Advocate users whose record was last updated during Q1 and whose current status is Active — a reasonable proxy for "became active in Q1" without event-history tracking</div></div>
- <div class="di-row"><div class="di-label">Became inactive</div><div class="di-val">Same logic — records last updated in Q1 whose current status is Inactive</div></div>
- <div class="di-row"><div class="di-label">⚠ Methodology limitation</div><div class="di-val di-flag">These counts are derived from the current User record state anchored to created_at / updated_at timestamps, not from event history. This means an advocate who cycled through multiple states in Q1 (e.g., Active → Inactive → Active) would be counted only by their current state and most recent update. Event-based counts require reliable AuditLog access, which is not currently feasible.</div></div>
-</div></details>
-   </div>
+   <div style="padding:0 26px 18px;"></div>
   </div>
 
  </div>
@@ -900,45 +1625,114 @@
 ════════════════════════════════════════════ -->
 <div id="tab-affiliates" class="tab-panel">
 
- <!-- SUMMARY STRIP -->
+ <!-- ════════════════════════════════════════════════════════
+      REFERRAL SUMMARY - paired headline + 3-card breakdown
+      ════════════════════════════════════════════════════════
+      RD: These five hero-cards are static placeholders for now.
+      Hydration targets when wired:
+        .hc-number  → big count or percent
+        .hc-context → small subtitle line
+      Card identity (accent class) is fixed per metric for visual
+      interest; do not vary with data.
+      ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Referral Summary - Q1 2026
-   <span class="anchor-note">Date anchor: referral submitted date falls Jan 1–Mar 31, 2026</span>
-  </div>
-  <div class="status-count-wrap" style="padding:20px 24px;">
-   <div class="status-cards">
-    <div class="status-card">
-     <div class="sc-label">Total Referrals Received</div>
-     <div class="sc-value">38</div>
-     <div class="sc-note">All sources</div>
-    </div>
-    <div class="status-card">
-     <div class="sc-label">Engaged in Program</div>
-     <div class="sc-value">29</div>
-     <div class="sc-note">Converted from referral</div>
-    </div>
-    <div class="status-card">
-     <div class="sc-label">Conversion Rate</div>
-     <div class="sc-value">91%</div>
-     <div class="sc-note">29 engaged ÷ 32 resolved (engaged + did not engage) · pending excluded</div>
-    </div>
-    <div class="status-card">
-     <div class="sc-label">Still Pending</div>
-     <div class="sc-value">6</div>
-     <div class="sc-note">May still convert - not counted in rate</div>
-    </div>
-    <div class="status-card">
-     <div class="sc-label">Did Not Engage</div>
-     <div class="sc-value">3</div>
-     <div class="sc-note">Unable to contact, declined, ineligible, or referred elsewhere</div>
-    </div>
+  <div class="section-label">Referral Summary &nbsp;&middot;&nbsp; Q1 2026</div>
+
+  <!-- TOP ROW: paired headline (Total + Conversion Rate) -->
+  <div class="two-col" style="margin-bottom:16px;">
+
+   <div class="hero-card accent-green">
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    <div class="hc-number" data-hydrate="ref-total">38</div>
+    <div class="hc-label">Total Referrals</div>
+    <div class="hc-context">All sources</div>
    </div>
-   <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
- <div class="di-row"><div class="di-label">How conversion is counted</div><div class="di-val di-ok">Converted = referral status is "Engaged In Program"</div></div>
- <div class="di-row"><div class="di-label">Pending</div><div class="di-val">Status is "Prospect" or "Prospect Intake Scheduled" - appointment may still happen. Not a failed referral.</div></div>
- <div class="di-row"><div class="di-label">Did not convert</div><div class="di-val di-warn">Status is "Did Not Engage In Program" - includes: unable to contact, client declined, ineligible, duplicate referral, or referred to another program. These are closed and excluded from the pending count.</div></div>
- <div class="di-row"><div class="di-label">Denominator</div><div class="di-val">Conversion rate = Engaged In Program ÷ all referrals received (excluding duplicates). Pending referrals are shown separately - not included in the rate.</div></div>
-</div></details>
+
+   <div class="hero-card accent-green">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Engaged divided by <strong>resolved referrals</strong> (Engaged plus Did Not Engage). Resolved means the referral has reached a final outcome.</div>
+       </div>
+       <div class="ip-block">
+        <div class="ip-block-label">Excluded</div>
+        <div class="ip-block-body">Still Pending referrals are shown separately and not counted in the rate. Duplicate referrals are also excluded.</div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    <div class="hc-number" data-hydrate="ref-convrate">91%</div>
+    <div class="hc-label">Conversion Rate</div>
+    <div class="hc-context"><span data-hydrate="ref-convrate-num">29</span> engaged of <span data-hydrate="ref-convrate-den">32</span> resolved &nbsp;&middot;&nbsp; pending excluded</div>
+   </div>
+
+  </div>
+
+  <!-- BOTTOM ROW: three-card breakdown of where the 38 ended up -->
+  <div class="hero-grid-3">
+
+   <div class="hero-card accent-red">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Referral status moved to <strong>Engaged In Program</strong>. The mother converted from referral into active engagement.</div>
+       </div>
+       <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">Engaged is the referral-stage outcome. Some engaged moms never initiate a first track session; those <strong>Did Not Initiate Sessions</strong> cases surface in the intake-to-track funnel and in the Track Completions tab, not here.</div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    <div class="hc-number" data-hydrate="ref-engaged">29</div>
+    <div class="hc-label">Engaged in Program</div>
+    <div class="hc-context">Converted from referral</div>
+   </div>
+
+   <div class="hero-card accent-yellow">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Status is <strong>Did Not Engage In Program</strong>. Closed referrals where engagement did not happen: unable to contact, client declined, ineligible, duplicate, or referred to another program.</div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    <div class="hc-number" data-hydrate="ref-didnotengage">3</div>
+    <div class="hc-label">Did Not Engage</div>
+    <div class="hc-context">Unable to contact, declined, ineligible, or referred elsewhere</div>
+   </div>
+
+   <div class="hero-card accent-yellow">
+    <div class="info-icon-wrap">
+     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+     <div class="info-popover">
+      <div class="ip-body">
+       <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Status is <strong>Prospect</strong> or <strong>Prospect Intake Scheduled</strong>. The intake appointment may still happen; not a failed referral.</div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+    <div class="hc-number" data-hydrate="ref-pending">6</div>
+    <div class="hc-label">Still Pending</div>
+    <div class="hc-context">May still convert &nbsp;&middot;&nbsp; not in rate</div>
+   </div>
+
   </div>
  </div>
 
@@ -946,83 +1740,104 @@
  <div class="section-group">
   <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
    <div>Referrals by Source
-    <span class="anchor-note">Referral submitted date in Q1 · each row = one referral source category · numerator/denominator shown per source</span>
+    <span class="anchor-note">each row = one referral source category &nbsp;&middot;&nbsp; numerator and denominator shown per source</span>
    </div>
    <button onclick="requestReferralExport()" style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:white;background:var(--green);border:none;border-radius:5px;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:5px;">
     <svg viewBox="0 0 16 16" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M8 2v8M4 7l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v2h12v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Export CSV
    </button>
   </div>
-  <div class="affiliate-table-wrap" id="refSourceTable">
+  <div class="affiliate-table-wrap accent-green" id="refSourceTable">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How to read this table" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Each row shows where referrals from this source ended up: <strong>Engaged</strong>, <strong>Did Not Engage</strong>, or <strong>Still Pending</strong>. Conversion Rate = Engaged divided by resolved (Engaged + Did Not Engage). Share = this source's % of all referrals.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body">Still Pending referrals are shown but excluded from the conversion rate. Sources with fewer than 5 referrals during the period are rolled into <strong>Other Sources</strong> with detailed counts hidden, to protect mothers who could be identified within small groups.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Referral source is a free-text field. Live data may include misspellings or variations of the same agency name. Affiliate teams clean these up over time.</div>
+      </div>
+     </div>
+    </div>
+   </div>
    <table>
     <thead>
      <tr>
-      <th data-tip>Referral Source<span class="tip">The organization or pathway that connected the mother to ĒMA. This is a free-text field in Trellis, so naming may vary.</span></th>
-      <th data-tip>Referrals Received<span class="tip">Total referrals submitted from this source during the quarter, regardless of outcome.</span></th>
-      <th data-tip>Engaged in Program<span class="tip">Referrals where the mother's status moved to "Engaged In Program." This is the Trellis referral status, not necessarily the same as completing all intake steps.</span></th>
-      <th data-tip>Conversion Rate<span class="tip">Engaged ÷ resolved referrals (engaged + did not engage). Pending referrals are excluded from this rate.</span></th>
-      <th data-tip>Still Pending<span class="tip">Referrals still in process. May still convert in a later period. Not counted in the conversion rate.</span></th>
-      <th data-tip style="border-left:2px solid var(--border);">% of All Referrals<span class="tip">This source's share of all referrals received during the quarter.</span></th>
+      <th>Referral Source</th>
+      <th>Referrals Received</th>
+      <th>Engaged in Program</th>
+      <th>Did Not Engage</th>
+      <th>Still Pending</th>
+      <th>Conversion Rate</th>
+      <th style="border-left:2px solid var(--border);">% of All Referrals</th>
      </tr>
     </thead>
     <tbody>
      <tr>
       <td><strong>DCF / Child Protective Services</strong></td>
-      <td>12</td><td>10</td><td>91%</td><td>1</td>
+      <td>12</td><td>10</td><td>1</td><td>1</td><td>91%</td>
       <td style="border-left:2px solid var(--border);">32%</td>
      </tr>
      <tr>
       <td><strong>Self-Referral / Walk-In</strong></td>
-      <td>8</td><td>5</td><td>83%</td><td>2</td>
+      <td>8</td><td>5</td><td>1</td><td>2</td><td>83%</td>
       <td style="border-left:2px solid var(--border);">21%</td>
      </tr>
      <tr>
       <td><strong>Community Partner / Nonprofit</strong></td>
-      <td>7</td><td>6</td><td>100%</td><td>1</td>
+      <td>7</td><td>6</td><td>0</td><td>1</td><td>100%</td>
       <td style="border-left:2px solid var(--border);">18%</td>
      </tr>
      <tr>
       <td><strong>Hospital / Healthcare Provider</strong></td>
-      <td>5</td><td>4</td><td>80%</td><td>0</td>
+      <td>5</td><td>4</td><td>1</td><td>0</td><td>80%</td>
       <td style="border-left:2px solid var(--border);">13%</td>
      </tr>
      <!-- Other Sources rollup row (click to toggle individual sources below) -->
      <tr class="ref-other-row" style="background:var(--yellow-light);cursor:pointer;" onclick="var open=this.classList.toggle('open');document.querySelectorAll('.ref-small-src').forEach(function(r){r.style.display=open?'table-row':'none'});" title="Click to expand or collapse">
       <td><strong>Other Sources</strong> <span style="font-size:11px;color:var(--mid);font-weight:400;">2 sources with fewer than 5 referrals</span> <span class="ref-toggle">Show</span></td>
-      <td>6</td><td>4</td><td>100%</td><td>2</td>
+      <td>6</td><td>4</td><td>0</td><td>2</td><td>100%</td>
       <td style="border-left:2px solid var(--border);">16%</td>
      </tr>
      <!-- Hidden individual small-source rows (shown on expand) -->
      <tr class="ref-small-src" style="display:none;background:var(--yellow-light);">
-      <td style="padding-left:28px;"><strong>School / Educational Institution</strong> <span class="n-warn">Few referrals<span class="tip">This source had fewer than 5 referrals this quarter. Conversion rates and pending counts are hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
-      <td>4</td><td>3</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
+      <td style="padding-left:28px;"><strong>School / Educational Institution</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
+      <td>4</td><td>3</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
       <td style="border-left:2px solid var(--border);">11%</td>
      </tr>
      <tr class="ref-small-src" style="display:none;background:var(--yellow-light);">
-      <td style="padding-left:28px;"><strong>Court / Legal System</strong> <span class="n-warn">Few referrals<span class="tip">This source had fewer than 5 referrals this quarter. Conversion rates and pending counts are hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
-      <td>2</td><td>1</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
+      <td style="padding-left:28px;"><strong>Court / Legal System</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate, did-not-engage and pending counts hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>
+      <td>2</td><td>1</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td><td style="color:#ccc;">hidden</td>
       <td style="border-left:2px solid var(--border);">5%</td>
      </tr>
      <tr class="ref-small-src" style="display:none;">
-      <td colspan="6" style="font-size:11px;color:var(--mid);font-style:italic;padding:8px 28px;">Conversion rates and pending counts hidden for sources with fewer than 5 referrals to protect mother privacy.</td>
+      <td colspan="7" style="font-size:11px;color:var(--mid);font-style:italic;padding:8px 28px;">Conversion rates, did-not-engage counts and pending counts hidden for sources with fewer than 5 referrals to protect mother privacy.</td>
      </tr>
-     <tr style="font-weight:700;background:#f9f9f9">
-      <td>All Sources</td>
-      <td>38</td><td>29</td><td>91%</td><td>6</td>
-      <td style="border-left:2px solid var(--border);">100%</td>
+     <!-- RD: When rebuilding the tbody from refSources payload, also update
+         this totals row. Counts should sum across all rows, rate = engaged/resolved,
+         %-of-all = 100%. -->
+     <tr class="att-totals">
+      <td><span class="att-label">All Sources</span></td>
+      <td><span class="att-total-num">38</span></td>
+      <td><span class="att-total-num">29</span></td>
+      <td><span class="att-total-num">3</span></td>
+      <td><span class="att-total-num">6</span></td>
+      <td><span class="att-total-num">91<span class="att-pct">%</span></span></td>
+      <td style="border-left:2px solid var(--border);"><span class="att-total-num">100<span class="att-pct">%</span></span></td>
      </tr>
     </tbody>
    </table>
   </div>
-  <details class="kpi-detail" style="margin-top:12px;"><summary>Data Integrity Notes</summary><div class="kd-body">
- <div class="di-row"><div class="di-label">⚠ Sample data</div><div class="di-val di-flag">The referral source categories shown here are placeholders - real category names will be confirmed before this report is finalized</div></div>
- <div class="di-row"><div class="di-label">⚠ Data quality</div><div class="di-val di-flag">The referral agency field in Trellis is a free-text input, not a dropdown - live data is expected to contain misspellings and inconsistent entries for the same agency (e.g. "DCF", "Dept. of Children & Families", "Department of Children and Families"). RD will need to normalize these before source groupings are reliable.</div></div>
- <div class="di-row"><div class="di-label">Missing sources</div><div class="di-val di-ok">Any referral with no source on record will be shown as "Unknown / Not Recorded" - not quietly left out of the count</div></div>
-</div></details>
  </div>
 
- <!-- Bar chart visual removed per Jessie review 4/10 - redundant with table above.
-    Table columns aligned to match referral summary strip. -->
+ <!-- Bar chart visual removed per Jessie review 4/10. -->
 
 </div><!-- /tab-affiliates -->
 
@@ -1031,255 +1846,377 @@
 ════════════════════════════════════════════ -->
 <div id="tab-track" class="tab-panel">
 
-<!-- ── HEADLINE — mirrors Mothers/Children/Advocates pattern ─────── -->
-<div class="section-group">
- <div class="section-label">Track Completions — Q1 2026
-  <span class="anchor-note">Tracks closed Jan 1–Mar 31 &nbsp;&middot;&nbsp; one track = one record &nbsp;&middot;&nbsp; a mom completing two tracks counts twice &nbsp;&middot;&nbsp; excludes same-day close/reopen duplicates</span>
- </div>
- <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-  <div style="background:var(--green-light);border-bottom:1px solid #c8d9c8;padding:14px 24px;display:flex;align-items:baseline;gap:12px;">
-   <div style="font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-family:'Oswald',sans-serif;flex-shrink:0;">Track Completions</div>
-   <span style="font-size:44px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--dark);line-height:1;">18</span>
-   <span style="font-size:12px;color:var(--mid);">tracks completed in Q1 2026</span>
-  </div>
- </div>
-</div>
+<!-- ════════════════════════════════════════════════════════
+     TRACK COMPLETIONS - full reorder during V1 merge (4/23/26)
+     ════════════════════════════════════════════════════════
+     RD: Section structure changed; hydration hooks preserved.
+     - "How Tracks Completed" panel: 4 .fr-val spans (3 rows + total)
+     - "Why Tracks Ended Early" panel: 5 .fr-val spans (4 rows + total)
+       NOTE: Did Not Initiate Sessions is no longer in this panel.
+       The panel now shows 4 incomplete reasons summing to 13.
+       The DNI count surfaces separately in the intake-to-track funnel
+       (Tab 1 Mothers Q1 Activity card) and in the popovers here.
+       This means your existing hydration loop indices change:
+         old [0..5] → new [0..4]
+         remove the DNI write at old index [2]
+         shift Relocated and Other up one
+     - Learning Progress table tbody id="learningProgressBody" preserved
+     - Share of Tracks now uses .vbar-chart (vertical bars), not horizontal
+     ════════════════════════════════════════════════════════ -->
 
-<!-- ── COMPLETION RATE (left) + DELIVERY FORMAT (right) ──────────── -->
+<!-- ── (1) HEADLINE: Tracks Completed + Completion Rate paired hero-cards ── -->
 <div class="section-group">
+ <div class="section-label">Track Completions &nbsp;&middot;&nbsp; Q1 2026</div>
  <div class="two-col">
 
-  <!-- LEFT: Arc gauge -->
-  <div class="panel" style="display:flex;flex-direction:column;align-items:center;">
-   <h3>Completion Rate</h3>
-   <svg viewBox="0 0 160 160" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="80" cy="80" r="60" fill="none" stroke="#EBEBEB" stroke-width="14" stroke-linecap="round"
-     stroke-dasharray="282.7 376.9" transform="rotate(135 80 80)"/>
-    <circle cx="80" cy="80" r="60" fill="none" stroke="#123939" stroke-width="14" stroke-linecap="round"
-     stroke-dasharray="149.8 376.9" transform="rotate(135 80 80)"/>
-    <text x="80" y="72" text-anchor="middle" font-size="30" font-weight="700" fill="#2C2C2C" font-family="Arial,sans-serif">53%</text>
-    <text x="80" y="91" text-anchor="middle" font-size="11" fill="#888" font-family="Arial,sans-serif">18 of 34 tracks</text>
+  <!-- LEFT: Tracks Completed count -->
+  <div class="hero-card accent-green">
+   <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/>
+    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
    </svg>
-   <div class="eff-formula" style="margin-bottom:12px;">Tracks Completed ÷ Tracks Closed in Q1</div>
-   <details class="kpi-detail" style="width:100%;">
-    <summary>Data integrity notes</summary>
-    <div class="kd-body">
-     <div class="di-row"><div class="di-label">What counts</div><div class="di-val">Any track with a closed status recorded between January 1 and March 31, regardless of when that track started.</div></div>
-     <div class="di-row"><div class="di-label">EP and RR</div><div class="di-val di-warn">These tracks launched more recently, so moms who started later in Q1 had less time to finish. Lower completion rates for EP and RR are an expected pattern at this stage, not a concern.</div></div>
-     <div class="di-row"><div class="di-label">Excluded</div><div class="di-val">A small number of records where a track was closed and immediately reopened the same day are excluded. This is a known data entry pattern used to change a track type, not a real exit.</div></div>
-    </div>
-   </details>
+   <div class="hc-number" data-hydrate="tc-headline-completed">18</div>
+   <div class="hc-label">Tracks Completed</div>
+   <div class="hc-context">Across all track types and delivery formats</div>
   </div>
 
-  <!-- RIGHT: Delivery format — counts only, bar shows proportion -->
-  <div class="panel">
-   <h3>Delivery Format</h3>
-   <div style="display:flex;gap:0;margin-bottom:20px;">
-    <div style="flex:1;padding-right:20px;border-right:1px solid var(--border);">
-     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:6px;">1:1 Advocacy</div>
-     <div style="font-size:40px;font-weight:700;color:var(--dark);font-family:'Oswald',sans-serif;line-height:1;">13</div>
-     <div style="font-size:12px;color:var(--mid);margin-top:4px;">completed tracks</div>
-    </div>
-    <div style="flex:1;padding-left:20px;">
-     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mid);font-family:'Oswald',sans-serif;margin-bottom:6px;">Group Setting</div>
-     <div style="font-size:40px;font-weight:700;color:var(--dark);font-family:'Oswald',sans-serif;line-height:1;">5</div>
-     <div style="font-size:12px;color:var(--mid);margin-top:4px;">completed tracks</div>
+  <!-- RIGHT: Completion Rate hero-card -->
+  <div class="hero-card accent-green">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Any track with a <strong>closed status</strong> recorded during the period, regardless of when the track started.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body"><strong>Did Not Initiate Sessions</strong> (moms who enrolled but never attended a first session). They surface separately in the intake-to-track funnel; a mom can't fail to complete a track she never started. Same-day close/reopen duplicates are also excluded (data-entry pattern used to change track type, not a real exit).</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">EP and RR launched recently, so moms who enrolled late had less time to finish. Lower completion rates for those tracks are expected at this stage, not a concern.</div>
+      </div>
+     </div>
     </div>
    </div>
-   <!-- Proportion bar — matches Mothers/Children brand bar style -->
-   <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;margin-bottom:10px;">
-    <div style="background:var(--green);flex:72;"></div>
-    <div style="background:var(--yellow);flex:28;"></div>
-   </div>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
-    <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--green);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">72%</span> <span style="color:var(--mid);">1:1 Advocacy</span></div></div>
-    <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--yellow);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">28%</span> <span style="color:var(--mid);">Group Setting</span></div></div>
-   </div>
-   <details class="kpi-detail" style="margin-top:12px;">
-    <summary>Data integrity notes</summary>
-    <div class="kd-body">
-     <div class="di-row"><div class="di-label">How it's counted</div><div class="di-val">These counts are based on each mom's track record individually. One group facilitator leading a group of 6 moms will appear as 6 tracks here, because each mom's experience is counted separately. This is intentional — it reflects the number of moms served, not the number of facilitators.</div></div>
-    </div>
-   </details>
+   <svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+   <div class="hc-number" data-hydrate="tc-completion-rate">58%</div>
+   <div class="hc-label">Completion Rate</div>
+   <div class="hc-context"><span data-hydrate="tc-completion-num">18</span> completed of <span data-hydrate="tc-completion-den">31</span> tracks closed in Q1</div>
   </div>
 
  </div>
 </div>
 
-<!-- ── HOW COMPLETED + WHY ENDED EARLY ──────────────────────────── -->
+<!-- ── (2) HOW COMPLETED + WHY ENDED EARLY ──────────────────────── -->
 <div class="section-group">
  <div class="two-col">
 
-  <!-- LEFT: Completion types -->
-  <div class="panel">
+  <!-- LEFT: How Tracks Completed -->
+  <!-- accent-yellow (4/23/26): breaks the 1-2-3 green stretch
+       (Tracks Completed → Completion Rate → How). Semantic fit: yellow
+       reads as informational breakdown rather than another success
+       headline; pairs with red on the right for completion vs ended-early. -->
+  <div class="panel accent-yellow">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body"><strong>Full Track</strong> = all required curriculum sessions, at least one support session on file, and a post-assessment on file. <strong>Without Support Sessions</strong> = curriculum complete but no support sessions recorded. <strong>Without Post Assessment</strong> = sessions complete but no post-assessment on file.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Tracks closed Without Post Assessment are excluded from the Learning Progress KPI denominator since change cannot be measured.</div>
+      </div>
+     </div>
+    </div>
+   </div>
    <h3>How Tracks Completed</h3>
-   <div class="fidelity-row">
-    <span class="fr-label">Completed — Full Track</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:61%;height:8px;background:var(--green);border-radius:3px;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">11</span>
+   <!-- RD: .fr-pct values below are static demo. They should be computed
+        from the same data used for the .fr-val counts above each one,
+        as round(count / totalCompleted * 100) + "%". Total row fr-pct
+        "18 · 100%" shows the overall count.htc-total span in subtitle. -->
+   <div style="font-size:11px;color:var(--mid);margin-bottom:14px;"><span class="htc-total">18</span> tracks completed during the period</div>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Full Track</strong></span>
+    <div class="fr-bar-wrap" title="11 tracks">
+     <div class="fr-bar" style="background:var(--green);width:61%;"><span class="fr-val">11</span></div>
+     <div class="fr-tooltip"><strong>Full Track</strong><div class="ft-sub">Curriculum, support sessions, post-assessment all on file</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="how-full-pct">61%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Completed — Without Support Sessions</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:22%;height:8px;background:var(--green);border-radius:3px;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">4</span>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Without Support Sessions</strong></span>
+    <div class="fr-bar-wrap" title="4 tracks">
+     <div class="fr-bar" style="background:#5d8a7a;width:22%;"><span class="fr-val">4</span></div>
+     <div class="fr-tooltip"><strong>Without Support Sessions</strong><div class="ft-sub">Curriculum complete, no support sessions recorded</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="how-nosupp-pct">22%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Completed — Without Post Assessment</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:17%;height:8px;background:var(--green);border-radius:3px;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">3</span>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Without Post Assessment</strong></span>
+    <div class="fr-bar-wrap" title="3 tracks">
+     <div class="fr-bar" style="background:#9ab3a6;width:17%;color:var(--dark);"><span class="fr-val">3</span></div>
+     <div class="fr-tooltip"><strong>Without Post Assessment</strong><div class="ft-sub">Sessions complete, no post-assessment on file</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="how-nopost-pct">17%</span>
    </div>
-   <div class="fidelity-row" style="font-weight:700;border-top:2px solid var(--dark);border-bottom:none;">
-    <span class="fr-label" style="color:var(--dark);">18 completed</span>
-    <span class="fr-val">18</span>
-   </div>
-   <details class="kpi-detail" style="margin-top:10px;">
-    <summary>Data integrity notes</summary>
-    <div class="kd-body">
-     <div class="di-row"><div class="di-label">Full track</div><div class="di-val di-ok">All required curriculum sessions, at least one support session on record, and a post-assessment on file.</div></div>
-     <div class="di-row"><div class="di-label">Without support</div><div class="di-val">Completed all required curriculum sessions but no support sessions were recorded during the track.</div></div>
-     <div class="di-row"><div class="di-label">Without post</div><div class="di-val di-warn">Completed all required sessions but has no post-assessment on record. These 3 tracks are excluded from the Learning Progress KPI denominator.</div></div>
-    </div>
-   </details>
+   <!-- Hidden total span retained for RD's existing hydration (frVals[3]) -->
+   <span class="fr-val" style="display:none;">18</span>
   </div>
 
-  <!-- RIGHT: Incomplete reasons -->
-  <div class="panel">
+  <!-- RIGHT: Why Tracks Ended Early -->
+  <div class="panel accent-red">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body"><strong>Track Requirements Unmet</strong> = closed without meeting curriculum or participation requirements. <strong>Client Choice</strong> = mom elected to exit. <strong>Relocated</strong> = moved outside the service area. <strong>Other</strong> = reason not in standard categories.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body"><strong>Did Not Initiate Sessions</strong> (moms who enrolled but never attended a first session) is counted in the intake-to-track funnel instead. A mom can't fail to complete a track she never started.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">"Did Not Initiate Sessions" cases functionally indicate non-engagement and should have moved to inactive in Trellis but the workflow did not always catch them. Coordinator review needed to confirm status alignment.</div>
+      </div>
+     </div>
+    </div>
+   </div>
    <h3>Why Tracks Ended Early</h3>
-   <div class="fidelity-row">
-    <span class="fr-label">Track Requirements Unmet</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:38%;height:8px;background:var(--red);border-radius:3px;opacity:0.85;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">6</span>
+   <div style="font-size:11px;color:var(--mid);margin-bottom:14px;"><span class="why-total">13</span> tracks ended without completion &nbsp;&middot;&nbsp; "Did Not Initiate Sessions" excluded</div>
+   <!-- RD: The four .fr-label text values below are static. If Trellis
+        category definitions shift over time (per Cristina's 4/16 note),
+        these labels may need to become dynamic from the data payload.
+        For now they map to these payload fields in document order:
+          [0] Track Requirements Unmet  → incomplete_priorities_shifted
+          [1] Client Choice             → incomplete_no_advocate (VERIFY)
+          [2] Relocated                 → incomplete_achieved_outcomes
+          [3] Other                     → (not in expanded data)
+        See also the hydration comment block in the main script. -->
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Track Requirements Unmet</strong></span>
+    <div class="fr-bar-wrap" title="6 tracks">
+     <div class="fr-bar" style="background:var(--red);width:46%;"><span class="fr-val">6</span></div>
+     <div class="fr-tooltip"><strong>Track Requirements Unmet</strong><div class="ft-sub">Closed without meeting curriculum or participation requirements</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="why-requnmet-pct">46%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Client Choice</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:25%;height:8px;background:var(--red);border-radius:3px;opacity:0.85;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">4</span>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Client Choice</strong></span>
+    <div class="fr-bar-wrap" title="4 tracks">
+     <div class="fr-bar" style="background:var(--red);width:31%;"><span class="fr-val">4</span></div>
+     <div class="fr-tooltip"><strong>Client Choice</strong><div class="ft-sub">Mom elected to exit the track</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="why-clientchoice-pct">31%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Did Not Initiate Sessions</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:19%;height:8px;background:var(--red);border-radius:3px;opacity:0.85;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">3</span>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Relocated</strong></span>
+    <div class="fr-bar-wrap" title="2 tracks">
+     <div class="fr-bar" style="background:#d4c5b8;width:15%;color:var(--dark);"><span class="fr-val">2</span></div>
+     <div class="fr-tooltip"><strong>Relocated</strong><div class="ft-sub">Moved outside the service area</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="why-relocated-pct">15%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Relocated</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:13%;height:8px;background:var(--red);border-radius:3px;opacity:0.85;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">2</span>
+   <div class="funnel-row">
+    <span class="fr-label"><strong>Other</strong></span>
+    <div class="fr-bar-wrap" title="1 track">
+     <div class="fr-bar" style="background:#d4c5b8;width:8%;color:var(--dark);"><span class="fr-val">1</span></div>
+     <div class="fr-tooltip"><strong>Other</strong><div class="ft-sub">Reason not in standard categories</div></div>
     </div>
+    <span class="fr-pct" data-hydrate="why-other-pct">8%</span>
    </div>
-   <div class="fidelity-row">
-    <span class="fr-label">Other</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-     <div style="width:72px;height:8px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:6%;height:8px;background:var(--red);border-radius:3px;opacity:0.85;"></div></div>
-     <span class="fr-val" style="min-width:18px;text-align:right;">1</span>
-    </div>
-   </div>
-   <div class="fidelity-row" style="font-weight:700;border-top:2px solid var(--dark);border-bottom:none;">
-    <span class="fr-label" style="color:var(--dark);">16 incomplete</span>
-    <span class="fr-val">16</span>
-   </div>
-   <details class="kpi-detail" style="margin-top:10px;">
-    <summary>Data integrity notes</summary>
-    <div class="kd-body">
-     <div class="di-row"><div class="di-label">Did Not Initiate</div><div class="di-val di-warn">These moms enrolled in the program but never attended a first session. May indicate a gap between when a mom signs up and when her first session is scheduled.</div></div>
-    </div>
-   </details>
+   <!-- Hidden total span retained for RD's totalIncomplete hydration -->
+   <span class="fr-val" style="display:none;">13</span>
   </div>
 
  </div>
 </div>
 
- <!-- Language summary — overall split across all closed tracks -->
- <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
-  <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-family:'Oswald',sans-serif;">Language Split</h3>
-  <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;margin-bottom:10px;">
-   <div style="background:var(--green);flex:60;"></div>
-   <div style="background:var(--yellow);flex:40;"></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
-   <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--green);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">60%</span> <span style="color:var(--mid);">English</span></div></div>
-   <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--yellow);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">40%</span> <span style="color:var(--mid);">Spanish</span></div></div>
-  </div>
- </div>
-
-<!-- ── BY TRACK ───────────────────────────────────────────────────── -->
+<!-- ── (3) DELIVERY FORMAT + LANGUAGE SPLIT ─────────────────────── -->
 <div class="section-group">
- <div class="section-label">By Track — Q1 2026
-  <span class="anchor-note">Tracks closed Jan 1–Mar 31 &nbsp;&middot;&nbsp; session data for completed tracks only</span>
+ <div class="two-col">
+
+  <!-- LEFT: Delivery Format
+       Symmetric with Language Split (4/23/26): no i-popover, no subtitle.
+       Both panels are self-explanatory two-stripe breakdowns.
+       accent-yellow (4/23/26): both Delivery and Language are now yellow
+       to break the 3-green run (Delivery, Language, TCC) in Tab 3 and to
+       group them as the "informational breakdown" pair (parallel to the
+       yellow How Tracks Completed panel above). -->
+  <div class="panel accent-yellow">
+   <h3>Delivery Format</h3>
+   <!-- RD: Static demo numbers. To hydrate, compute o2o% and group% from
+        the track_oversight payload, set flex values proportionally on
+        the two stripes, update .pbl-pct-o2o and .pbl-pct-group text in
+        the legend below, and update the title attributes + pb-tip
+        secondary text ("13 moms") with actual counts. -->
+   <div class="prop-bar" style="margin-bottom:14px;">
+    <div style="background:var(--green);flex:72;" title="13 moms">
+     <div class="pb-tip"><strong>1:1 Advocacy</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">13 moms</div></div>
+    </div>
+    <div style="background:var(--yellow);flex:28;" title="5 moms">
+     <div class="pb-tip"><strong>Group Setting</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">5 moms</div></div>
+    </div>
+   </div>
+   <div class="pb-legend" style="grid-template-columns:1fr 1fr;">
+    <div class="pbl-row" title="13 moms"><div class="pbl-dot" style="background:var(--green);"></div><span class="pbl-num pbl-pct-o2o">72%</span> <span class="pbl-label">1:1 Advocacy</span></div>
+    <div class="pbl-row" title="5 moms"><div class="pbl-dot" style="background:var(--yellow);"></div><span class="pbl-num pbl-pct-group">28%</span> <span class="pbl-label">Group Setting</span></div>
+   </div>
+  </div>
+
+  <!-- RIGHT: Language Split (symmetric with Delivery Format) -->
+  <div class="panel accent-yellow">
+   <h3>Language Split</h3>
+   <!-- RD: Static demo numbers. To hydrate, compute en% and es% from
+        completed tracks payload, set flex values on the two stripes,
+        update .pbl-pct-en and .pbl-pct-es text in the legend, and
+        update the title + pb-tip counts. .ls-total no longer in DOM
+        (subtitle removed for symmetry with Delivery Format). -->
+   <div class="prop-bar" style="margin-bottom:14px;">
+    <div style="background:var(--green);flex:60;" title="11 tracks">
+     <div class="pb-tip"><strong>English</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">11 tracks</div></div>
+    </div>
+    <div style="background:var(--yellow);flex:40;" title="7 tracks">
+     <div class="pb-tip"><strong>Spanish</strong><div style="font-size:10px;font-weight:400;margin-top:2px;opacity:0.85;">7 tracks</div></div>
+    </div>
+   </div>
+   <div class="pb-legend" style="grid-template-columns:1fr 1fr;">
+    <div class="pbl-row" title="11 tracks"><div class="pbl-dot" style="background:var(--green);"></div><span class="pbl-num pbl-pct-en">60%</span> <span class="pbl-label">English</span></div>
+    <div class="pbl-row" title="7 tracks"><div class="pbl-dot" style="background:var(--yellow);"></div><span class="pbl-num pbl-pct-es">40%</span> <span class="pbl-label">Spanish</span></div>
+   </div>
+  </div>
+
+ </div>
+</div>
+
+<!-- ── (4) BY TRACK: combined Closed+Completed chart + Learning Progress ── -->
+<div class="section-group">
+ <div class="section-label">By Track &nbsp;&middot;&nbsp; Q1 2026
+  <span class="anchor-note">Tracks closed during the period &nbsp;&middot;&nbsp; per-curriculum view</span>
  </div>
 
- <!-- 1. Share of tracks closed by type -->
- <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
-  <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-family:'Oswald',sans-serif;">Share of Tracks Closed by Type</h3>
-  <div style="background:var(--border);border-radius:6px;height:20px;display:flex;overflow:hidden;margin-bottom:10px;">
-   <div style="background:#123939;flex:68;"></div>
-   <div style="background:#1e5c5c;flex:48;"></div>
-   <div style="background:var(--yellow);flex:27;"></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;">
-   <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:#123939;flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">68 &nbsp;&middot;&nbsp; 48%</span><div style="color:var(--mid);margin-top:1px;">Nurturing Parenting</div></div></div>
-   <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:#1e5c5c;flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">48 &nbsp;&middot;&nbsp; 34%</span><div style="color:var(--mid);margin-top:1px;">Empowered Parenting</div></div></div>
-   <div style="display:flex;align-items:flex-start;gap:6px;"><div style="width:10px;height:10px;border-radius:2px;background:var(--yellow);flex-shrink:0;margin-top:2px;"></div><div><span style="font-weight:700;color:var(--dark);">27 &nbsp;&middot;&nbsp; 19%</span><div style="color:var(--mid);margin-top:1px;">Roadmap to Resilience</div></div></div>
-  </div>
- </div>
-
- <!-- 2+3. Completion rate + Learning Progress side by side -->
  <div class="two-col" style="margin-bottom:16px;">
 
-  <!-- Completion rate by track -->
-  <div class="affiliate-table-wrap">
-   <div style="padding:12px 16px;background:var(--light);border-bottom:2px solid var(--border);">
-    <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin:0;font-family:'Oswald',sans-serif;">Completion Rate by Track</h3>
+  <!-- Closed and Completed by Track (combined visual, replaces Share of Tracks
+       vbar + Completion Rate by Track table from prior layout, 4/23/26).
+       Two side-by-side bars per curriculum, sharing one scale (max closed). -->
+  <div class="panel accent-green" style="overflow:visible;">
+   <h3>Closed and Completed by Track</h3>
+   <div class="tcc-grid" id="tccGrid">
+    <!-- RD hydration hooks: .tcc-col[data-track="NPP|EP|RR"] wraps each
+         curriculum. .tcc-bar-num holds the count text (or em-dash when no
+         data); .tcc-bar-fill is the bar; height = (count/maxClosed)*100%
+         where maxClosed is the largest closed count across the three.
+         .tcc-rate holds the rate label ("X% completed" or "rate pending"). -->
+    <div class="tcc-col" data-track="NPP">
+     <div class="tcc-share">48%</div>
+     <div class="tcc-share-label">of closed tracks</div>
+     <div class="tcc-bars-wrap">
+      <div class="tcc-bars-row">
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:100%;"></div></div>
+        <div class="tcc-bar-key">Closed</div>
+       </div>
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
+        <div class="tcc-bar-key">Completed</div>
+       </div>
+      </div>
+      <div class="tcc-tooltip">
+       <strong>Nurturing Parenting</strong>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">68</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
+      </div>
+     </div>
+     <div class="tcc-track-label">Nurturing Parenting</div>
+    </div>
+
+    <div class="tcc-col" data-track="EP">
+     <div class="tcc-share">34%</div>
+     <div class="tcc-share-label">of closed tracks</div>
+     <div class="tcc-bars-wrap">
+      <div class="tcc-bars-row">
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:70.6%;"></div></div>
+        <div class="tcc-bar-key">Closed</div>
+       </div>
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
+        <div class="tcc-bar-key">Completed</div>
+       </div>
+      </div>
+      <div class="tcc-tooltip">
+       <strong>Empowered Parenting</strong>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">48</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
+      </div>
+     </div>
+     <div class="tcc-track-label">Empowered Parenting</div>
+    </div>
+
+    <div class="tcc-col" data-track="RR">
+     <div class="tcc-share">19%</div>
+     <div class="tcc-share-label">of closed tracks</div>
+     <div class="tcc-bars-wrap">
+      <div class="tcc-bars-row">
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill" style="height:39.7%;"></div></div>
+        <div class="tcc-bar-key">Closed</div>
+       </div>
+       <div class="tcc-bar-pair">
+        <div class="tcc-bar-track"><div class="tcc-bar-fill completed" style="height:0%;"></div></div>
+        <div class="tcc-bar-key">Completed</div>
+       </div>
+      </div>
+      <div class="tcc-tooltip">
+       <strong>Roadmap to Resilience</strong>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Closed</span><span class="tcc-tip-val">27</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completed</span><span class="tcc-tip-val">pending</span></div>
+       <div class="tcc-tip-line"><span class="tcc-tip-key">Completion rate</span><span class="tcc-tip-val">pending</span></div>
+      </div>
+     </div>
+     <div class="tcc-track-label">Roadmap to Resilience</div>
+    </div>
+
    </div>
-   <table>
-    <thead>
-     <tr>
-      <th>Track</th>
-      <th>Closed</th>
-      <th>Completed</th>
-      <th>Rate</th>
-     </tr>
-    </thead>
-    <tbody>
-     <tr>
-      <td><strong>Nurturing Parenting (NPP)</strong></td>
-      <td>68</td>
-      <td><span style="color:var(--mid);font-style:italic;">—</span></td>
-      <td><span style="color:var(--mid);">—</span></td>
-     </tr>
-     <tr>
-      <td><strong>Empowered Parenting (EP)</strong></td>
-      <td>48</td>
-      <td><span style="color:var(--mid);font-style:italic;">—</span></td>
-      <td><span style="color:var(--mid);">—</span></td>
-     </tr>
-     <tr>
-      <td><strong>Roadmap to Resilience (RR)</strong></td>
-      <td>27</td>
-      <td><span style="color:var(--mid);font-style:italic;">—</span></td>
-      <td><span style="color:var(--mid);">—</span></td>
-     </tr>
-    </tbody>
-   </table>
   </div>
 
-  <!-- Learning Progress by track -->
-  <div class="affiliate-table-wrap" style="overflow:visible;">
-   <div style="padding:12px 16px;background:var(--light);border-bottom:2px solid var(--border);">
-    <h3 style="font-size:13px;font-weight:300;text-transform:uppercase;letter-spacing:1px;margin:0;font-family:'Oswald',sans-serif;">Learning Progress by Track</h3>
+  <!-- Learning Progress by Track -->
+  <div class="affiliate-table-wrap accent-yellow" style="overflow:visible;">
+   <div class="info-icon-wrap">
+    <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
+    <div class="info-popover">
+     <div class="ip-body">
+      <div class="ip-block">
+       <div class="ip-block-label">What counts</div>
+       <div class="ip-block-body">Moms whose end-of-track assessment score was <strong>higher</strong> than their start-of-track score, divided by all moms with both assessments on file. Same method as KPI 3. Each track counted separately.</div>
+      </div>
+      <div class="ip-block">
+       <div class="ip-block-label">Excluded</div>
+       <div class="ip-block-body">Tracks missing a start or end assessment, and entries where the end date is earlier than the start date.</div>
+      </div>
+      <div class="ip-block warn">
+       <div class="ip-block-label">Known limitation</div>
+       <div class="ip-block-body">Sample size flags appear next to each track. Below 20 valid pairs = interpret with caution. Below 10 = not yet interpretable. Stable rates need 30 or more pairs.</div>
+      </div>
+     </div>
+    </div>
    </div>
+   <h3 class="att-head">Learning Progress by Track</h3>
    <table>
     <thead>
      <tr>
@@ -1291,34 +2228,23 @@
     </thead>
     <tbody id="learningProgressBody">
      <tr>
-      <td><strong>NPP</strong></td>
-      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
+      <td><strong>NPP</strong> <span class="n-warn" style="cursor:help;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span></td>
+      <td>8</td><td>10</td><td><strong>80%</strong></td>
      </tr>
      <tr>
-      <td><strong>EP</strong></td>
-      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
+      <td><strong>EP</strong> <span class="n-warn crit" style="cursor:help;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span></td>
+      <td>3</td><td>5</td><td><strong>60%</strong></td>
      </tr>
      <tr>
-      <td><strong>RR</strong></td>
-      <td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td><td><span style="color:var(--mid);font-style:italic;">&mdash;</span></td>
+      <td><strong>RR</strong> <span class="n-warn crit" style="cursor:help;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span></td>
+      <td>2</td><td>3</td><td><strong>67%</strong></td>
      </tr>
     </tbody>
    </table>
-   <details class="kpi-detail" style="margin:0;border-radius:0 0 8px 8px;">
-    <summary>Data integrity notes</summary>
-    <div class="kd-body">
-     <div class="di-row"><div class="di-label">Formula</div><div class="di-val di-ok">Moms whose end-of-track assessment score was higher than their start-of-track score, out of all moms with both assessments on file. Same method as KPI 3.</div></div>
-     <div class="di-row"><div class="di-label">Excluded</div><div class="di-val di-warn">Once live data is connected, this will show counts excluded for: missing start assessment, missing end assessment, end date recorded before start date, or track marked completed without a final assessment.</div></div>
-     <div class="di-row"><div class="di-label">Sample size</div><div class="di-val">Rates with fewer than 20 valid pairs are flagged for caution. Rates with fewer than 10 are flagged as not yet interpretable. The ideal threshold for a stable rate is 30 or more pairs.</div></div>
-    </div>
-   </details>
   </div>
 
  </div>
 
-</div>
-
- </div>
 </div>
 
 </div><!-- /tab-track -->
@@ -1360,7 +2286,7 @@
   var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
   var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
   if(scope&&scopeVal){
-   scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+   scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"-");
    scope.style.display="";
    if(scopeSep)scopeSep.style.display="";
   }
@@ -1440,7 +2366,91 @@
   } else if (dataRes) {
    console.error('Report data error:', dataRes.status);
   }
-  // Remove loading state even if data failed — don't leave spinner forever
+  // ══════════════════════════════════════════════════════════════
+  // ⚠ PENDING HYDRATION  ·  audit 4/23/26
+  // ══════════════════════════════════════════════════════════════
+  // Every visible result number now has either an existing class hook,
+  // a new data-hydrate="..." attribute, or an HTML <!-- STATIC: ... -->
+  // comment marking it for review. Pattern for new wireups:
+  //   var el = document.querySelector('[data-hydrate="ref-total"]');
+  //   if (el) el.textContent = fmt(totalReferrals);
+  //
+  // ── Wired in this pass (renderDashboard already writes these) ──
+  //   [Tab 1 · KPI hero-cards]
+  //     kpi1-rate / kpi1-num / kpi1-den / kpi1-excl
+  //     kpi2-rate / kpi2-num / kpi2-den / kpi2-excl
+  //     kpi3-rate / kpi3-num / kpi3-den
+  //     kpi1-status / kpi2-status / kpi3-status (status pill containers;
+  //                  RD: pill text + arrow stays static for now until
+  //                  the above/close/below logic is ported into this
+  //                  hero-card pattern; class swap only for now)
+  //   [Tab 1 · Entity headlines + Q1 Activity]
+  //     mom-served-total / child-served-total / adv-active-total
+  //     mom-q1-referrals / mom-q1-engaged / mom-q1-completions
+  //     mom-intrack-count / mom-intrack-pct (bar) / mom-intrack-pct-label
+  //     mom-mc-count     / mom-mc-pct (bar)     / mom-mc-pct-label
+  //   [Tab 1 · Children prevention] (when snap.children_prevented_cps_fc set)
+  //     child-prev-count / child-prev-value / child-prev-count-ctx
+  //   [Tab 2 · Referrals headline + breakdown]
+  //     ref-total / ref-engaged / ref-convrate / ref-pending /
+  //     ref-didnotengage / ref-convrate-num / ref-convrate-den
+  //   [Tab 3 · Track Completions]
+  //     tc-headline-completed / tc-completion-rate /
+  //     tc-completion-num / tc-completion-den
+  //     how-full-pct / how-nosupp-pct / how-nopost-pct
+  //     why-requnmet-pct / why-clientchoice-pct / why-relocated-pct /
+  //     why-other-pct
+  //     vbar NPP/EP/RR (.vbar-num / .vbar-pct / .vbar-bar / .vbar-total)
+  //     Delivery Format (.pbl-pct-o2o / .pbl-pct-group + .prop-bar)
+  //     Language Split (.pbl-pct-en / .pbl-pct-es + .prop-bar + .ls-total)
+  //     Completion Rate by Track + Learning Progress tables
+  //
+  // ── Still PENDING (need new payload fields from RD) ──
+  //   [Tab 1 · Advocate funnel-row buckets]
+  //     adv-paired-count / -pct / -pct-label
+  //     adv-group-count / -pct / -pct-label
+  //     adv-waiting-count / -pct / -pct-label
+  //     adv-break-count / -pct / -pct-label
+  //     ⇒ wireup ready (see advBuckets block above); needs payload key:
+  //        data.advocate_status_buckets = {
+  //          paired_1_1: integer,
+  //          group: integer,
+  //          waiting: integer,
+  //          on_break: integer
+  //        }
+  //     Per memory: priority order is (1) group facilitator (from
+  //     AdvocacyGroup), (2) paired 1:1 (from active pairing record),
+  //     (3) waiting (advocate sub-status only when no pairing on mom
+  //     side), (4) on_break (Active + "Taking a Break" sub-status).
+  //     Each advocate counted once.
+  //
+  //   [Tab 1 · Advocate Q1 Activity strip - 5 numbers]
+  //     adv-q1-applications / adv-q1-trained / adv-q1-approved /
+  //     adv-q1-active / adv-q1-inactive
+  //     ⇒ wireup ready; needs payload keys on snap:
+  //        adv_applications_received, adv_trained, adv_approved,
+  //        adv_became_active, adv_became_inactive
+  //     Date range: records created OR last updated within the period.
+  //
+  //   [Tab 1 · Children prevention $ math]
+  //     child-prev-count / child-prev-value / child-prev-count-ctx
+  //     ⇒ wireup ready; needs payload key:
+  //        snap.children_prevented_cps_fc = integer
+  //     Distinct from k1.numerator (which includes Permanent Removal
+  //     prevention; PR is excluded from the dollar estimate per locked
+  //     formula). Dollar value computed client-side as count × $38,850.
+  //
+  // ── STATIC by design (leave as-is, do not wire) ──
+  //   "Other" reason in Why Tracks Ended Early - synthesized client-side
+  //     as totalIncomplete minus the three known categories.
+  //   Status pills inside KPI 1/2/3 hero-cards (text + arrow + frame copy)
+  //     are demo-snapshot until the hero-card status logic is reimplemented
+  //     for this layout. The container has data-hydrate="kpi[123]-status"
+  //     ready to receive a class swap.
+  //
+  // ══════════════════════════════════════════════════════════════
+
+  // Remove loading state even if data failed - don't leave spinner forever
   document.querySelector('.portal-view').classList.remove('dashboard-loading');
  }
 
@@ -1638,44 +2648,167 @@
   var membershipCommunity = kpis.membership_community || 0;
   var totalFamilies = activeInTrack + membershipCommunity;
 
+  // ── Data aggregations needed for both Tab 1 and Tab 2 hydration ──
+  // Referral sources aggregate (used for Tab 1 Q1 Activity + Tab 2 referrals cards)
+  var refSources = data.referral_sources || [];
+  var totalReferrals = 0, totalIntakes = 0, totalPending = 0, totalDidNotEngage = 0;
+  refSources.forEach(function(r) {
+   totalReferrals += (r.referrals_received || 0);
+   totalIntakes += (r.intakes_completed || 0);
+   totalPending += (r.pending || 0);
+   totalDidNotEngage += (r.did_not_engage || 0);
+  });
+  // Track completions count (used for Tab 1 Mothers Q1 Activity strip)
+  var trackExp = track.track_completions_expanded || {};
+  var totalCompletions = trackExp.total_completions || 0;
+  // Advocate split (kept for downstream blocks)
+  var advSplit = data.advocacy_type_split || [];
+  var oneToOne = 0, groupCount = 0, oneToOneAdvocates = 0, groupAdvocates = 0;
+  advSplit.forEach(function(a) {
+   if (a.advocacy_type === 'one_to_one') {
+    oneToOne = a.active_pairings || 0;
+    oneToOneAdvocates = a.distinct_advocates || 0;
+   } else if (a.advocacy_type === 'group') {
+    groupCount = a.active_pairings || 0;
+    groupAdvocates = a.distinct_advocates || 0;
+   }
+  });
+
   var tab1 = document.getElementById('tab-kpis');
   if (tab1) {
-   // Find the 44px headline numbers in entity headers (Families, Children, Advocates)
-   var bigNums44 = tab1.querySelectorAll('span[style*="font-size:44px"]');
-   if (bigNums44.length >= 1) bigNums44[0].textContent = fmt(totalFamilies || familiesServed); // Families
-   if (bigNums44.length >= 2) bigNums44[1].textContent = fmt(snap.children_total || 0); // Children
-   if (bigNums44.length >= 3) bigNums44[2].textContent = fmt(snap.active_advocates || 0); // Advocates
+   // ── New (4/23/26) data-hydrate hooks for KPI hero context lines,
+   //    entity headlines (Mothers/Children/Advocates), Q1 Activity
+   //    Shrikhand strips, and Children prevention numbers. Pattern:
+   //    every visible result number that derives from payload data has
+   //    a [data-hydrate="..."] target. Hook keys are namespaced.
+   var setH1 = function(key, val) {
+    var el = tab1.querySelector('[data-hydrate="' + key + '"]');
+    if (el && val !== null && val !== undefined) el.textContent = val;
+   };
 
-   // Find the 24px numbers in the Families section (active, in track, membership community, referrals, intakes, completions)
-   var nums24 = tab1.querySelectorAll('span[style*="font-size:24px"]');
-   // These map to the stat cells in entity cards - order depends on Cristina's layout
+   // KPI hero numbers + context (Tab 1 hero-cards)
+   var k1 = kpis.kpi1 || {}, k2 = kpis.kpi2 || {}, k3 = kpis.kpi3 || {};
+   if (k1.rate != null) setH1('kpi1-rate', Math.round(k1.rate) + '%');
+   if (k1.numerator != null)   setH1('kpi1-num', k1.numerator);
+   if (k1.denominator != null) setH1('kpi1-den', k1.denominator);
+   if (k1.excluded != null)    setH1('kpi1-excl', k1.excluded);
+   if (k2.rate != null) setH1('kpi2-rate', Math.round(k2.rate) + '%');
+   if (k2.numerator != null)   setH1('kpi2-num', k2.numerator);
+   if (k2.denominator != null) setH1('kpi2-den', k2.denominator);
+   if (k2.excluded != null)    setH1('kpi2-excl', k2.excluded);
+   if (k3.rate != null) setH1('kpi3-rate', Math.round(k3.rate) + '%');
+   if (k3.numerator != null)   setH1('kpi3-num', k3.numerator);
+   if (k3.denominator != null) setH1('kpi3-den', k3.denominator);
 
-   // Referral sources aggregate for Q1 Activity
-   var refSources = data.referral_sources || [];
-   var totalReferrals = 0, totalIntakes = 0, totalPending = 0, totalDidNotEngage = 0;
-   refSources.forEach(function(r) {
-    totalReferrals += (r.referrals_received || 0);
-    totalIntakes += (r.intakes_completed || 0);
-    totalPending += (r.pending || 0);
-    totalDidNotEngage += (r.did_not_engage || 0);
-   });
+   // Entity headlines (44px Shrikhand)
+   setH1('mom-served-total',  fmt(totalFamilies || familiesServed));
+   setH1('child-served-total', fmt(snap.children_total || 0));
+   setH1('adv-active-total',   fmt(snap.active_advocates || 0));
 
-   // Track completions from track_oversight
-   var trackExp = track.track_completions_expanded || {};
-   var totalCompletions = trackExp.total_completions || 0;
+   // Mothers Q1 Activity strip
+   setH1('mom-q1-referrals',   fmt(totalReferrals));
+   setH1('mom-q1-engaged',     fmt(totalIntakes));
+   setH1('mom-q1-completions', fmt(totalCompletions));
 
-   // ── Advocate section data ──
-   var advSplit = data.advocacy_type_split || [];
-   var oneToOne = 0, groupCount = 0, oneToOneAdvocates = 0, groupAdvocates = 0;
-   advSplit.forEach(function(a) {
-    if (a.advocacy_type === 'one_to_one') {
-     oneToOne = a.active_pairings || 0;
-     oneToOneAdvocates = a.distinct_advocates || 0;
-    } else if (a.advocacy_type === 'group') {
-     groupCount = a.active_pairings || 0;
-     groupAdvocates = a.distinct_advocates || 0;
+   // Advocates Q1 Activity strip
+   //   PENDING from RD: payload fields for application/training/approval
+   //   funnel are not in current snapshot. Suggested keys:
+   //   snap.adv_applications_received, adv_trained, adv_approved,
+   //   adv_became_active, adv_became_inactive
+   if (snap.adv_applications_received != null) setH1('adv-q1-applications', fmt(snap.adv_applications_received));
+   if (snap.adv_trained != null)               setH1('adv-q1-trained',      fmt(snap.adv_trained));
+   if (snap.adv_approved != null)              setH1('adv-q1-approved',     fmt(snap.adv_approved));
+   if (snap.adv_became_active != null)         setH1('adv-q1-active',       fmt(snap.adv_became_active));
+   if (snap.adv_became_inactive != null)       setH1('adv-q1-inactive',     fmt(snap.adv_became_inactive));
+
+   // Children prevention (KPI 1 dollar math)
+   //   Per Cristina's locked formula: (CPS_prevented + FosterCare_prevented)
+   //   × $38,850/child. Permanent Removal preventions count toward the
+   //   "preserved children" KPI 1 numerator but NOT the dollar estimate.
+   //   PENDING from RD: payload field for cps+fc-prevented child count.
+   //   Suggested key: snap.children_prevented_cps_fc - separate from
+   //   k1.numerator (which includes Permanent Removal).
+   if (snap.children_prevented_cps_fc != null) {
+    var pcCount = snap.children_prevented_cps_fc;
+    var pcDollars = pcCount * 38850;
+    var pcDisp;
+    if      (pcDollars >= 1e6)  pcDisp = '~$' + (pcDollars / 1e6).toFixed(2) + 'M';
+    else if (pcDollars >= 1e3)  pcDisp = '~$' + Math.round(pcDollars / 1e3) + 'K';
+    else                        pcDisp = '~$' + pcDollars;
+    setH1('child-prev-count',     pcCount);
+    setH1('child-prev-value',     pcDisp);
+    setH1('child-prev-count-ctx', pcCount);
+   }
+
+   // ── Mothers funnel-row buckets (In a Track / Membership Community)
+   //    Payload: kpis.active_in_track + kpis.membership_community
+   var inTrack = kpis.active_in_track || 0;
+   var mc = kpis.membership_community || 0;
+   var totalBuckets = inTrack + mc;
+   if (totalBuckets > 0) {
+    var inTrackPct = Math.round(inTrack / totalBuckets * 100);
+    var mcPct = 100 - inTrackPct;
+    setH1('mom-intrack-count', inTrack);
+    setH1('mom-mc-count', mc);
+    setH1('mom-intrack-pct-label', inTrackPct + '%');
+    setH1('mom-mc-pct-label', mcPct + '%');
+    // Bar widths (data-hydrate target is the .fr-bar div; set inline width)
+    var inTrackBar = tab1.querySelector('[data-hydrate="mom-intrack-pct"]');
+    if (inTrackBar) inTrackBar.style.width = inTrackPct + '%';
+    var mcBar = tab1.querySelector('[data-hydrate="mom-mc-pct"]');
+    if (mcBar) mcBar.style.width = mcPct + '%';
+   }
+
+   // ── Advocate funnel-row buckets (Paired 1:1 / Group / Waiting / Break)
+   //    PENDING from RD: payload key data.advocate_status_buckets
+   //    = { paired_1_1, group, waiting, on_break }. Until that arrives,
+   //    these buckets stay at their static demo values.
+   //
+   //    The math here computes percentages against the bucket SUM (not the
+   //    headline active-during-Q1 count), so percentages always sum to
+   //    exactly 100% even if upstream scoping has drifted. The headline
+   //    stays as the trusted active-during-Q1 number. If the two numbers
+   //    diverge in live data, that's a payload scoping issue (buckets not
+   //    filtered to the active-during-Q1 set); see the data-integrity
+   //    console.warn below.
+   var advBuckets = data.advocate_status_buckets || null;
+   if (advBuckets) {
+    var paired = advBuckets.paired_1_1 || 0;
+    var grp    = advBuckets.group || 0;
+    var wait   = advBuckets.waiting || 0;
+    var brk    = advBuckets.on_break || 0;
+    var advTotal = paired + grp + wait + brk;
+    // Data-integrity check: bucket sum should match the active-during-Q1
+    // headline. If they diverge, the buckets aren't filtered to the same
+    // set as the headline (payload scoping issue). We log a warning and
+    // overwrite the headline with the bucket sum so percentages and
+    // headline tell the same story to the reader.
+    var headlineActive = snap.active_advocates || 0;
+    if (advTotal > 0 && headlineActive > 0 && advTotal !== headlineActive) {
+     console.warn('[DATA] Advocate buckets sum (' + advTotal + ') does not match active-during-Q1 headline (' + headlineActive + '). Overwriting headline with bucket sum so percentages reconcile.');
+     setH1('adv-active-total', fmt(advTotal));
     }
-   });
+    if (advTotal > 0) {
+     var pPct = Math.round(paired / advTotal * 100);
+     var gPct = Math.round(grp    / advTotal * 100);
+     var wPct = Math.round(wait   / advTotal * 100);
+     var bPct = 100 - pPct - gPct - wPct;
+     setH1('adv-paired-count',     paired); setH1('adv-paired-pct-label',  pPct + '%');
+     setH1('adv-group-count',      grp);    setH1('adv-group-pct-label',   gPct + '%');
+     setH1('adv-waiting-count',    wait);   setH1('adv-waiting-pct-label', wPct + '%');
+     setH1('adv-break-count',      brk);    setH1('adv-break-pct-label',   bPct + '%');
+     var advBars = {
+      'adv-paired-pct':  pPct,
+      'adv-group-pct':   gPct,
+      'adv-waiting-pct': wPct,
+      'adv-break-pct':   bPct
+     };
+     Object.keys(advBars).forEach(function(k) {
+      var bar = tab1.querySelector('[data-hydrate="' + k + '"]');
+      if (bar) bar.style.width = advBars[k] + '%';
+     });
+    }
+   }
   }
 
   // ════════════════════════════════════════════════════════
@@ -1780,23 +2913,21 @@
   // ════════════════════════════════════════════════════════
   var tabAff = document.getElementById('tab-affiliates');
   if (tabAff && data.referral_sources && data.referral_sources.length > 0) {
-   var refWrap = tabAff.querySelector('.status-count-wrap');
-   if (refWrap) {
-    setStatusCardValue(refWrap, 'Total Referrals', fmt(totalReferrals));
-    setStatusCardValue(refWrap, 'Engaged in Program', fmt(totalIntakes));
-    var totalResolved = totalIntakes + totalDidNotEngage;
-    var convRate = totalResolved > 0 ? Math.round(totalIntakes / totalResolved * 100) : 0;
-    setStatusCardValue(refWrap, 'Conversion Rate', convRate + '%');
-    setStatusCardValue(refWrap, 'Still Pending', fmt(totalPending));
-    setStatusCardValue(refWrap, 'Did Not Engage', fmt(totalDidNotEngage));
-    // Update the conversion rate note
-    var convNote = refWrap.querySelectorAll('.sc-note');
-    for (var ni = 0; ni < convNote.length; ni++) {
-     if (convNote[ni].textContent.indexOf('engaged') !== -1 && convNote[ni].textContent.indexOf('resolved') !== -1) {
-      convNote[ni].textContent = totalIntakes + ' engaged \u00F7 ' + totalResolved + ' resolved (engaged + did not engage) \u00B7 pending excluded';
-     }
-    }
-   }
+   // ⚠ Updated 4/23/26: was .status-count-wrap targeting (old DOM), now
+   //    uses data-hydrate hooks on the referrals hero cards.
+   var setH2 = function(key, val) {
+    var el = tabAff.querySelector('[data-hydrate="' + key + '"]');
+    if (el && val !== null && val !== undefined) el.textContent = val;
+   };
+   var totalResolved = totalIntakes + totalDidNotEngage;
+   var convRate = totalResolved > 0 ? Math.round(totalIntakes / totalResolved * 100) : 0;
+   setH2('ref-total',         fmt(totalReferrals));
+   setH2('ref-engaged',       fmt(totalIntakes));
+   setH2('ref-convrate',      convRate + '%');
+   setH2('ref-convrate-num',  totalIntakes);
+   setH2('ref-convrate-den',  totalResolved);
+   setH2('ref-pending',       fmt(totalPending));
+   setH2('ref-didnotengage',  fmt(totalDidNotEngage));
   }
 
   // ════════════════════════════════════════════════════════
@@ -1808,7 +2939,7 @@
   setStalledCard('21', fmt(stallBuckets.stalled_21_30 || 0));
   setStalledCard('30+', fmt(stallBuckets.stalled_30_plus || 0));
 
-  // ── Track Completions — full tab wiring ──
+  // ── Track Completions - full tab wiring ──
   var tce = track.track_completions_expanded || {};
   var tabTrack = document.getElementById('tab-track');
   if (tabTrack && tce.total_completions != null) {
@@ -1818,27 +2949,18 @@
    var completionPct = totalClosed > 0 ? Math.round(totalCompleted / totalClosed * 100) : 0;
 
    // ── Headline: "18" → total completions
-   var headlineNums = tabTrack.querySelectorAll('span[style*="font-size:44px"]');
-   if (headlineNums.length >= 1) headlineNums[0].textContent = fmt(totalCompleted);
-
-   // ── Completion Rate gauge (SVG arc)
+   //    + Completion Rate hero ("58%") + context ("18 of 31")
+   //    Uses data-hydrate hooks added 4/23/26 (was targeting an SVG gauge
+   //    that no longer exists; the merged DOM is a hero-card pattern).
+   var setHydrate = function(key, val) {
+    var el = tabTrack.querySelector('[data-hydrate="' + key + '"]');
+    if (el) el.textContent = val;
+   };
+   setHydrate('tc-headline-completed', fmt(totalCompleted));
+   setHydrate('tc-completion-rate', completionPct + '%');
+   setHydrate('tc-completion-num', totalCompleted);
+   setHydrate('tc-completion-den', totalClosed);
    var completionPanels = tabTrack.querySelectorAll('.panel');
-   for (var ci = 0; ci < completionPanels.length; ci++) {
-    var ch3 = completionPanels[ci].querySelector('h3');
-    if (ch3 && ch3.textContent.indexOf('Completion Rate') !== -1) {
-     var svg = completionPanels[ci].querySelector('svg');
-     if (svg) {
-      var texts = svg.querySelectorAll('text');
-      if (texts.length >= 1) texts[0].textContent = completionPct + '%';
-      if (texts.length >= 2) texts[1].textContent = totalCompleted + ' of ' + totalClosed + ' tracks';
-      var circles = svg.querySelectorAll('circle');
-      if (circles.length >= 2) {
-       circles[1].setAttribute('stroke-dasharray', (completionPct * 2.827).toFixed(1) + ' 376.9');
-      }
-     }
-     break;
-    }
-   }
 
    // ── Delivery Format (1:1 vs Group completions)
    var compByFormat = track.completions_by_format || [];
@@ -1850,25 +2972,32 @@
    var totalFormatComp = oneToOneComp + groupComp;
    var o2oPct = totalFormatComp > 0 ? Math.round(oneToOneComp / totalFormatComp * 100) : 0;
    var grpPct = totalFormatComp > 0 ? 100 - o2oPct : 0;
+   // ⚠ Updated 4/23/26: targets the .pbl-pct-* classes + .prop-bar pattern
+   // (was generic style[*=display:flex] which no longer matches the merged DOM).
    for (var di = 0; di < completionPanels.length; di++) {
     var dh3 = completionPanels[di].querySelector('h3');
     if (dh3 && dh3.textContent.indexOf('Delivery Format') !== -1) {
-     var bigNums40 = completionPanels[di].querySelectorAll('div[style*="font-size:40px"]');
-     if (bigNums40.length >= 2) {
-      bigNums40[0].textContent = oneToOneComp;
-      bigNums40[1].textContent = groupComp;
+     var dfPanel = completionPanels[di];
+     var dfBar = dfPanel.querySelector('.prop-bar');
+     if (dfBar) {
+      var dfSegs = dfBar.children;
+      if (dfSegs.length >= 2) {
+       dfSegs[0].style.flex = o2oPct || 1;
+       dfSegs[1].style.flex = grpPct || 1;
+       // Update title attr + pb-tip count text
+       dfSegs[0].setAttribute('title', oneToOneComp + ' moms');
+       dfSegs[1].setAttribute('title', groupComp + ' moms');
+       var dfTip0 = dfSegs[0].querySelector('.pb-tip > div'); if (dfTip0) dfTip0.textContent = oneToOneComp + ' moms';
+       var dfTip1 = dfSegs[1].querySelector('.pb-tip > div'); if (dfTip1) dfTip1.textContent = groupComp + ' moms';
+      }
      }
-     // Update proportion bar
-     var barSegs = completionPanels[di].querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
-     if (barSegs.length >= 2) {
-      barSegs[0].style.flex = o2oPct || 1;
-      barSegs[1].style.flex = grpPct || 1;
-     }
-     // Update legend percentages
-     var legendSpans = completionPanels[di].querySelectorAll('span[style*="font-weight:700"]');
-     if (legendSpans.length >= 2) {
-      legendSpans[0].textContent = o2oPct + '%';
-      legendSpans[1].textContent = grpPct + '%';
+     var pctO2O = dfPanel.querySelector('.pbl-pct-o2o'); if (pctO2O) pctO2O.textContent = o2oPct + '%';
+     var pctGrp = dfPanel.querySelector('.pbl-pct-group'); if (pctGrp) pctGrp.textContent = grpPct + '%';
+     // Update legend row title attrs
+     var dfRows = dfPanel.querySelectorAll('.pbl-row');
+     if (dfRows.length >= 2) {
+      dfRows[0].setAttribute('title', oneToOneComp + ' moms');
+      dfRows[1].setAttribute('title', groupComp + ' moms');
      }
      break;
     }
@@ -1884,20 +3013,29 @@
    var totalLang = engCount + spaCount;
    var engPct = totalLang > 0 ? Math.round(engCount / totalLang * 100) : 0;
    var spaPct = totalLang > 0 ? 100 - engPct : 0;
-   var langPanel = tabTrack.querySelector('h3');
    var langPanels = tabTrack.querySelectorAll('h3');
    for (var li = 0; li < langPanels.length; li++) {
     if (langPanels[li].textContent.indexOf('Language Split') !== -1) {
-     var langContainer = langPanels[li].parentElement;
-     var langBars = langContainer.querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
-     if (langBars.length >= 2) {
-      langBars[0].style.flex = engPct || 1;
-      langBars[1].style.flex = spaPct || 1;
+     var lsPanel = langPanels[li].parentElement;
+     var lsTotal = lsPanel.querySelector('.ls-total'); if (lsTotal) lsTotal.textContent = totalLang;
+     var lsBar = lsPanel.querySelector('.prop-bar');
+     if (lsBar) {
+      var lsSegs = lsBar.children;
+      if (lsSegs.length >= 2) {
+       lsSegs[0].style.flex = engPct || 1;
+       lsSegs[1].style.flex = spaPct || 1;
+       lsSegs[0].setAttribute('title', engCount + ' tracks');
+       lsSegs[1].setAttribute('title', spaCount + ' tracks');
+       var lsTip0 = lsSegs[0].querySelector('.pb-tip > div'); if (lsTip0) lsTip0.textContent = engCount + ' tracks';
+       var lsTip1 = lsSegs[1].querySelector('.pb-tip > div'); if (lsTip1) lsTip1.textContent = spaCount + ' tracks';
+      }
      }
-     var langLegends = langContainer.querySelectorAll('span[style*="font-weight:700"]');
-     if (langLegends.length >= 2) {
-      langLegends[0].innerHTML = engCount + ' \u00B7 ' + engPct + '%';
-      langLegends[1].innerHTML = spaCount + ' \u00B7 ' + spaPct + '%';
+     var pctEn = lsPanel.querySelector('.pbl-pct-en'); if (pctEn) pctEn.textContent = engPct + '%';
+     var pctEs = lsPanel.querySelector('.pbl-pct-es'); if (pctEs) pctEs.textContent = spaPct + '%';
+     var lsRows = lsPanel.querySelectorAll('.pbl-row');
+     if (lsRows.length >= 2) {
+      lsRows[0].setAttribute('title', engCount + ' tracks');
+      lsRows[1].setAttribute('title', spaCount + ' tracks');
      }
      // Validation: language total should match total closed tracks
      var totalClosedFromTce = (tce.total_completions || 0) + (tce.total_incompletes || 0);
@@ -1908,62 +3046,60 @@
     }
    }
 
-   // ── Share of Tracks Closed by Type
-   // Group English+Spanish variants: NPP, EP, RR
+   // ── Closed and Completed by Track (combined chart, .tcc-* DOM)
+   //    Replaces the prior Share-of-Tracks vbar wireup AND the
+   //    Completion Rate by Track table wireup (4/23/26).
+   //    Hero number above bars = share % (this curriculum's portion of
+   //    total closed). Bars share one scale (max closed across the three).
+   //    Hover tooltip shows absolute counts + completion rate.
    var nppClosed = 0, epClosed = 0, rrClosed = 0;
-   compByTrack.forEach(function(t) {
-    var title = (t.track_title || '').toLowerCase();
-    if (title.indexOf('nurturing') !== -1 || title.indexOf('crianza con') !== -1) nppClosed += t.total_closed || 0;
-    else if (title.indexOf('empowered') !== -1 || title.indexOf('crianza empoderada') !== -1) epClosed += t.total_closed || 0;
-    else if (title.indexOf('roadmap') !== -1 || title.indexOf('ruta') !== -1) rrClosed += t.total_closed || 0;
-   });
-   var totalByType = nppClosed + epClosed + rrClosed;
-   var nppPct = totalByType > 0 ? Math.round(nppClosed / totalByType * 100) : 0;
-   var epPct = totalByType > 0 ? Math.round(epClosed / totalByType * 100) : 0;
-   var rrPct = totalByType > 0 ? 100 - nppPct - epPct : 0;
-   for (var si = 0; si < langPanels.length; si++) {
-    if (langPanels[si].textContent.indexOf('Share of Tracks Closed') !== -1) {
-     var shareContainer = langPanels[si].parentElement;
-     var shareBars = shareContainer.querySelectorAll('div[style*="display:flex;overflow:hidden"] > div');
-     if (shareBars.length >= 3) {
-      shareBars[0].style.flex = nppClosed || 1;
-      shareBars[1].style.flex = epClosed || 1;
-      shareBars[2].style.flex = rrClosed || 1;
-     }
-     var shareLegends = shareContainer.querySelectorAll('span[style*="font-weight:700"]');
-     if (shareLegends.length >= 3) {
-      shareLegends[0].textContent = nppClosed + ' \u00B7 ' + nppPct + '%';
-      shareLegends[1].textContent = epClosed + ' \u00B7 ' + epPct + '%';
-      shareLegends[2].textContent = rrClosed + ' \u00B7 ' + rrPct + '%';
-     }
-     break;
-    }
-   }
-
-   // ── Completion Rate by Track table
    var nppCompleted = 0, epCompleted = 0, rrCompleted = 0;
    compByTrack.forEach(function(t) {
     var title = (t.track_title || '').toLowerCase();
-    if (title.indexOf('nurturing') !== -1 || title.indexOf('crianza con') !== -1) nppCompleted += t.completed || 0;
-    else if (title.indexOf('empowered') !== -1 || title.indexOf('crianza empoderada') !== -1) epCompleted += t.completed || 0;
-    else if (title.indexOf('roadmap') !== -1 || title.indexOf('ruta') !== -1) rrCompleted += t.completed || 0;
-   });
-   var compRateTables = tabTrack.querySelectorAll('.affiliate-table-wrap');
-   for (var cri = 0; cri < compRateTables.length; cri++) {
-    var crH3 = compRateTables[cri].querySelector('h3');
-    if (crH3 && crH3.textContent.indexOf('Completion Rate by Track') !== -1) {
-     var crTbody = compRateTables[cri].querySelector('tbody');
-     if (crTbody) {
-      var nppRate = nppClosed > 0 ? Math.round(nppCompleted / nppClosed * 100) + '%' : '\u2014';
-      var epRate = epClosed > 0 ? Math.round(epCompleted / epClosed * 100) + '%' : '\u2014';
-      var rrRate = rrClosed > 0 ? Math.round(rrCompleted / rrClosed * 100) + '%' : '\u2014';
-      crTbody.innerHTML = '<tr><td><strong>Nurturing Parenting (NPP)</strong></td><td>' + nppClosed + '</td><td>' + nppCompleted + '</td><td><strong>' + nppRate + '</strong></td></tr>'
-       + '<tr><td><strong>Empowered Parenting (EP)</strong></td><td>' + epClosed + '</td><td>' + epCompleted + '</td><td><strong>' + epRate + '</strong></td></tr>'
-       + '<tr><td><strong>Roadmap to Resilience (RR)</strong></td><td>' + rrClosed + '</td><td>' + rrCompleted + '</td><td><strong>' + rrRate + '</strong></td></tr>';
-     }
-     break;
+    if (title.indexOf('nurturing') !== -1 || title.indexOf('crianza con') !== -1) {
+     nppClosed    += t.total_closed || 0;
+     nppCompleted += t.completed || 0;
+    } else if (title.indexOf('empowered') !== -1 || title.indexOf('crianza empoderada') !== -1) {
+     epClosed    += t.total_closed || 0;
+     epCompleted += t.completed || 0;
+    } else if (title.indexOf('roadmap') !== -1 || title.indexOf('ruta') !== -1) {
+     rrClosed    += t.total_closed || 0;
+     rrCompleted += t.completed || 0;
     }
-   }
+   });
+   var totalClosed = nppClosed + epClosed + rrClosed;
+   var maxClosed = Math.max(nppClosed, epClosed, rrClosed, 1);
+   var tccMap = [
+    { track: 'NPP', name: 'Nurturing Parenting',  closed: nppClosed, completed: nppCompleted },
+    { track: 'EP',  name: 'Empowered Parenting',  closed: epClosed,  completed: epCompleted  },
+    { track: 'RR',  name: 'Roadmap to Resilience', closed: rrClosed, completed: rrCompleted  }
+   ];
+   tccMap.forEach(function(t) {
+    var col = tabTrack.querySelector('.tcc-col[data-track="' + t.track + '"]');
+    if (!col) return;
+    // Share %
+    var share = totalClosed > 0 ? Math.round(t.closed / totalClosed * 100) : 0;
+    var shareEl = col.querySelector('.tcc-share');
+    if (shareEl) shareEl.textContent = share + '%';
+    // Bar heights (closed + completed both scaled to maxClosed for visual comparability)
+    var fills = col.querySelectorAll('.tcc-bar-fill');
+    if (fills[0]) fills[0].style.height = ((t.closed / maxClosed) * 100).toFixed(1) + '%';
+    var hasCompleted = t.completed != null && t.completed > 0;
+    if (fills[1]) fills[1].style.height = hasCompleted
+      ? ((t.completed / maxClosed) * 100).toFixed(1) + '%'
+      : '0%';
+    // Hover tooltip: three labeled lines (Closed / Completed / Rate)
+    var tipVals = col.querySelectorAll('.tcc-tip-val');
+    if (tipVals[0]) tipVals[0].textContent = t.closed;
+    if (tipVals[1]) tipVals[1].textContent = hasCompleted ? t.completed : 'pending';
+    if (tipVals[2]) {
+     if (hasCompleted && t.closed > 0) {
+      tipVals[2].textContent = Math.round(t.completed / t.closed * 100) + '%';
+     } else {
+      tipVals[2].textContent = 'pending';
+     }
+    }
+   });
 
    // ── Learning Progress by Track table
    var lpData = track.learning_progress_by_track || [];
@@ -1975,7 +3111,16 @@
     var lpHtml = '';
     lpData.forEach(function(r) {
      var rate = r.valid_pairs > 0 ? Math.round(r.improved / r.valid_pairs * 100) + '%' : '\u2014';
-     var nWarn = r.valid_pairs < 20 ? ' <span class="n-warn" style="cursor:help;font-size:10px;">Interpret with caution<span class="tip">Fewer than 20 assessment pairs this quarter. Rates based on small numbers can shift noticeably as more moms complete the track. The direction is meaningful but the exact percentage may not yet be stable.</span></span>' : '';
+     // Two-tier sample size flag per memory #17:
+     //   n < 10  → red "Too few to interpret" (.n-warn.crit)  -  rate not meaningful
+     //   n < 20  → yellow "Interpret with caution"  -  rate could shift noticeably
+     //   n >= 20 → no badge
+     var nWarn = '';
+     if (r.valid_pairs < 10) {
+      nWarn = ' <span class="n-warn crit" style="cursor:help;font-size:10px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>';
+     } else if (r.valid_pairs < 20) {
+      nWarn = ' <span class="n-warn" style="cursor:help;font-size:10px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>';
+     }
      lpHtml += '<tr><td><strong>' + r.track_group + '</strong>' + nWarn + '</td>';
      lpHtml += '<td>' + r.improved + '</td>';
      lpHtml += '<td>' + r.valid_pairs + '</td>';
@@ -1984,7 +3129,7 @@
     lpBody.innerHTML = lpHtml;
    }
 
-   // ── Average Sessions per Completed Track — DEFERRED TO Q2
+   // ── Average Sessions per Completed Track - DEFERRED TO Q2
    // Q1 data unreliable due to PS-migrated session recording differences
 
    // ── How Tracks Completed panel
@@ -1998,23 +3143,113 @@
       frVals[2].textContent = tce.completed_without_post_assessment || 0;
       frVals[3].textContent = totalCompleted;
      }
+     // ── Compute and write fr-pct labels + bar widths
+     //    Updated 4/23/26: previously only the .fr-val counts were wired;
+     //    visible % labels and bar widths stayed static.
+     var pct = function(n) { return totalCompleted > 0 ? Math.round((n / totalCompleted) * 100) + '%' : '0%'; };
+     var fullN   = tce.completed_full_track || 0;
+     var nosuppN = tce.completed_without_support_sessions || 0;
+     var nopostN = tce.completed_without_post_assessment || 0;
+     var hPanel = completionPanels[hi];
+     var setHTC = function(key, val) {
+      var el = hPanel.querySelector('[data-hydrate="' + key + '"]');
+      if (el) el.textContent = val;
+     };
+     setHTC('how-full-pct',   pct(fullN));
+     setHTC('how-nosupp-pct', pct(nosuppN));
+     setHTC('how-nopost-pct', pct(nopostN));
+     // Set bar widths (find each .fr-bar by its sibling .fr-pct's data-hydrate)
+     var hRows = hPanel.querySelectorAll('.funnel-row');
+     var hVals = [fullN, nosuppN, nopostN];
+     hRows.forEach(function(row, idx) {
+      var bar = row.querySelector('.fr-bar');
+      if (bar && totalCompleted > 0) bar.style.width = Math.round((hVals[idx] / totalCompleted) * 100) + '%';
+      // Also update .fr-bar-wrap title attr (hover tooltip)
+      var wrap = row.querySelector('.fr-bar-wrap');
+      if (wrap) wrap.setAttribute('title', hVals[idx] + ' tracks');
+     });
+     // Update subtitle htc-total
+     var hTotal = hPanel.querySelector('.htc-total'); if (hTotal) hTotal.textContent = totalCompleted;
      break;
     }
    }
 
    // ── Why Tracks Ended Early panel
+   //
+   // ⚠ STRUCTURE CHANGED 4/23/26 (V1 merge):
+   //   Did Not Initiate Sessions was removed from this panel and is now
+   //   surfaced in the intake-to-track funnel (Tab 1 Mothers Q1 Activity)
+   //   plus in the popovers on this panel and the Completion Rate card.
+   //   The panel now has 5 .fr-val spans (4 reasons + 1 hidden total span),
+   //   not 6. The check below (length >= 6) currently no-ops as a result.
+   //
+   //   Remap applied below.
+   //
+   //   ALSO: per memory note, payload field for DNI is incomplete_no_advocate
+   //   (RD legacy name). If your incomplete_no_advocate field is the DNI
+   //   count, then the Client Choice mapping needs a different field.
+   //   Worth confirming the canonical field-to-label mapping before wiring.
    for (var wi = 0; wi < completionPanels.length; wi++) {
     var wh3 = completionPanels[wi].querySelector('h3');
     if (wh3 && wh3.textContent.indexOf('Why Tracks Ended') !== -1) {
      var frVals = completionPanels[wi].querySelectorAll('.fr-val');
-     if (frVals.length >= 6) {
-      frVals[0].textContent = tce.incomplete_priorities_shifted || 0; // Track Requirements Unmet maps to priorities_shifted
-      frVals[1].textContent = tce.incomplete_no_advocate || 0; // Client Choice maps to no_advocate
-      frVals[2].textContent = tce.incomplete_extended_wait || 0; // Did Not Initiate
-      frVals[3].textContent = tce.incomplete_achieved_outcomes || 0; // Relocated
-      // frVals[4] = Other (not in expanded data)
-      frVals[5].textContent = totalIncomplete;
+     // Post DNI-removal: 5 spans (4 reasons + 1 hidden total).
+     //
+     // ⚠ Client Choice (frVals[1]) is intentionally NOT hydrated.
+     //    Per memory, the only available "incomplete_*" field that could
+     //    plausibly map to Client Choice is `incomplete_no_advocate` -
+     //    which is the DNI payload field. DNI is supposed to be excluded
+     //    from this panel entirely. Wiring it to Client Choice would
+     //    surface DNI cases under a wrong label and contradict the
+     //    panel's own "Did Not Initiate Sessions excluded" subtitle.
+     //
+     //    Until RD provides the correct payload field for Client Choice
+     //    exits, this cell stays at its static demo value. A console
+     //    warning fires when payload arrives so the gap stays visible.
+     if (frVals.length >= 5) {
+      if (tce.incomplete_priorities_shifted != null) {
+       frVals[0].textContent = tce.incomplete_priorities_shifted; // Track Requirements Unmet
+      }
+      // frVals[1] = Client Choice - INTENTIONALLY UNWIRED, see note above
+      if (tce.incomplete_achieved_outcomes != null) {
+       frVals[2].textContent = tce.incomplete_achieved_outcomes;  // Relocated
+      }
+      // frVals[3] = Other (synthesized below)
+      frVals[4].textContent = totalIncomplete;                    // Hidden total span
+      if (tce.incomplete_no_advocate != null) {
+       console.warn('[DATA] incomplete_no_advocate field present in payload (value=' + tce.incomplete_no_advocate + '). Per locked methodology this is the DNI count and should be excluded from Why Tracks Ended Early. Client Choice cell intentionally not hydrated - RD to confirm the correct payload field.');
+      }
      }
+     // ── Compute and write fr-pct labels + bar widths
+     //    Updated 4/23/26 alongside the How panel hydration.
+     var wPanel = completionPanels[wi];
+     var pctW = function(n) { return totalIncomplete > 0 ? Math.round((n / totalIncomplete) * 100) + '%' : '0%'; };
+     var requnmetN     = tce.incomplete_priorities_shifted || 0;
+     var clientchoiceN = tce.incomplete_no_advocate || 0;
+     var relocatedN    = tce.incomplete_achieved_outcomes || 0;
+     // Other = remainder (totalIncomplete minus the three known)
+     var otherN = Math.max(0, totalIncomplete - requnmetN - clientchoiceN - relocatedN);
+     var setWHY = function(key, val) {
+      var el = wPanel.querySelector('[data-hydrate="' + key + '"]');
+      if (el) el.textContent = val;
+     };
+     setWHY('why-requnmet-pct',     pctW(requnmetN));
+     setWHY('why-clientchoice-pct', pctW(clientchoiceN));
+     setWHY('why-relocated-pct',    pctW(relocatedN));
+     setWHY('why-other-pct',        pctW(otherN));
+     var wRows = wPanel.querySelectorAll('.funnel-row');
+     var wVals = [requnmetN, clientchoiceN, relocatedN, otherN];
+     wRows.forEach(function(row, idx) {
+      var bar = row.querySelector('.fr-bar');
+      if (bar && totalIncomplete > 0) bar.style.width = Math.round((wVals[idx] / totalIncomplete) * 100) + '%';
+      var wrap = row.querySelector('.fr-bar-wrap');
+      if (wrap) wrap.setAttribute('title', wVals[idx] + (wVals[idx] === 1 ? ' track' : ' tracks'));
+     });
+     // Update subtitle why-total
+     var wTotal = wPanel.querySelector('.why-total'); if (wTotal) wTotal.textContent = totalIncomplete;
+     // ⚠ Write the synthesized "Other" count into the hidden 4th .fr-val
+     //    (frVals[3]) so RD's downstream consumers stay consistent.
+     if (frVals.length >= 5) frVals[3].textContent = otherN;
      break;
     }
    }
@@ -2042,7 +3277,11 @@
        var html = '';
        sessionsByTrack.forEach(function(row) {
         var required = reqSessions[row.track_title] || '\u2014';
-        var avgTrack = row.avg_track_sessions || 0;
+        // AVG SESSIONS - metric removed from UI per memory #14
+      // (PromiseServes session data issues). JS references retained in case
+      // RD wires a monthly-action view that uses avg sessions per track.
+      // Safe to strip these lines if not needed elsewhere.
+      var avgTrack = row.avg_track_sessions || 0;
         var avgSupport = row.avg_support_sessions || 0;
         var avgTotal = (avgTrack + avgSupport).toFixed(1);
         var pctComplete = (typeof required === 'number' && required > 0) ? Math.round(avgTrack / required * 100) : '\u2014';
@@ -2081,7 +3320,7 @@
   var N_THRESHOLD = 30;
   function nWarnBadge(n) {
    if (n == null || n >= N_THRESHOLD) return '';
-   return '<span class="n-warn">Interpret with caution<span class="tip">This figure is based on a small number of records. The direction is meaningful but the exact number may shift as more data comes in.</span></span>';
+   return '<span class="n-warn">Interpret with caution<span class="tip">This figure is based on a small number of moms. The direction is meaningful but the exact number may shift as more moms are added.</span></span>';
   }
   document.querySelectorAll('[data-n]').forEach(function(el) {
    var n = parseInt(el.getAttribute('data-n'), 10);
@@ -2191,7 +3430,7 @@
      }
      return 0;
     }
-    // Exact-match variant — prevents 'paired' matching 'waiting_to_be_paired'
+    // Exact-match variant - prevents 'paired' matching 'waiting_to_be_paired'
     function getPipeCountExact(arr, key) {
      for (var p = 0; p < arr.length; p++) {
       if ((arr[p].advocate_status || arr[p].advocate_sub_status || '').toLowerCase() === key.toLowerCase()) return arr[p].count || 0;
@@ -2242,7 +3481,7 @@
     }
 
     // "Q1 Activity" - five 24px numbers from AuditLog (true Q1-scoped event-based counts)
-    // Find the grid with 5 columns anywhere in tab1 (there's only one such grid — advocates Q1 activity)
+    // Find the grid with 5 columns anywhere in tab1 (there's only one such grid - advocates Q1 activity)
     var advQ1 = data.advocate_q1_activity || {};
     var allGrids5 = tab1.querySelectorAll('div[style*="grid-template-columns:repeat(5"]');
     var advActivityGrid = allGrids5.length > 0 ? allGrids5[allGrids5.length - 1] : null;
@@ -2313,7 +3552,7 @@
       smallSources.forEach(function(r) {
        var pctOfAll = totalReferrals > 0 ? Math.round((r.referrals_received || 0) / totalReferrals * 100) : 0;
        mainHtml += '<tr class="ref-small-src" style="display:none;background:var(--yellow-light);">';
-       mainHtml += '<td style="padding-left:28px;"><strong>' + (r.referral_source || 'Unknown') + '</strong> <span class="n-warn">Few referrals<span class="tip">This source had fewer than 5 referrals this quarter. Conversion rates and pending counts are hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>';
+       mainHtml += '<td style="padding-left:28px;"><strong>' + (r.referral_source || 'Unknown') + '</strong> <span class="n-warn">Few referrals<span class="tip">Below 5 referrals during the period. Conversion rate and pending count hidden to protect the privacy of mothers who could be identified through small referral groups.</span></span></td>';
        mainHtml += '<td>' + (r.referrals_received || 0) + '</td>';
        mainHtml += '<td>' + (r.intakes_completed || 0) + '</td>';
        mainHtml += '<td style="color:#ccc;">hidden</td>';
@@ -2688,8 +3927,8 @@ function confirmReferralExport(){
   var rows = [hdr];
   refs.forEach(function(r){
     var resolved = (r.intakes_completed||0) + (r.did_not_engage||0);
-    var convRate = resolved > 0 ? Math.round((r.intakes_completed||0)/resolved*100) + '%' : '—';
-    var pctAll = totalReferrals > 0 ? Math.round((r.referrals_received||0)/totalReferrals*100) + '%' : '—';
+    var convRate = resolved > 0 ? Math.round((r.intakes_completed||0)/resolved*100) + '%' : '-';
+    var pctAll = totalReferrals > 0 ? Math.round((r.referrals_received||0)/totalReferrals*100) + '%' : '-';
     rows.push([
       r.referral_source || 'Unknown',
       r.referrals_received || 0,
@@ -2711,9 +3950,25 @@ function confirmReferralExport(){
   link.click();
   URL.revokeObjectURL(url);
 }
+
+/* ── v2 visual grammar: info-popover toggle (added during V1 merge) ── */
+function toggleInfo(btn) {
+  var isOpen = btn.getAttribute('aria-expanded') === 'true';
+  document.querySelectorAll('.info-icon-btn[aria-expanded="true"]').forEach(function(b) {
+    if (b !== btn) b.setAttribute('aria-expanded', 'false');
+  });
+  btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.info-icon-wrap')) {
+    document.querySelectorAll('.info-icon-btn[aria-expanded="true"]').forEach(function(b) {
+      b.setAttribute('aria-expanded', 'false');
+    });
+  }
+});
 </script>
 
-<!-- ── Referral Export — Responsibility Acknowledgment Modal ── -->
+<!-- ── Referral Export - Responsibility Acknowledgment Modal ── -->
 <div id="refExportOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center;">
  <div style="background:white;border-radius:12px;max-width:460px;width:90%;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
   <div style="font-family:'Shrikhand',serif;font-size:22px;color:var(--red);margin-bottom:6px;">Export Referral Data</div>

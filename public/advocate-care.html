@@ -89,6 +89,15 @@ body.logged-in .portal-view{display:flex}
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 22px;min-width:0}
 
 /* ── REPORT HEADER (Style C: warm cream + red-orange accent) ── */
+.rh-aff-wrap{display:none;align-items:center;gap:7px}
+.rh-aff-wrap.show{display:flex}
+.rh-aff-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);white-space:nowrap}
+.rh-aff-sel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.my-moms-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green);background:var(--green-lt);border:1.5px solid var(--green);border-radius:20px;padding:5px 13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.my-moms-btn:hover{background:var(--green);color:#fff}
+.my-moms-btn.off{color:var(--mid);background:var(--white);border-color:var(--border)}
+.my-moms-btn.off:hover{border-color:var(--green);color:var(--green)}
+.my-moms-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
 .report-hdr{background:var(--lpink);border-bottom:2px solid var(--red);padding:14px 26px;margin:0 -26px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .rh-title{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark)}
 .rh-fresh{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--red);border-radius:20px;padding:3px 10px;white-space:nowrap;position:relative;cursor:help}
@@ -137,22 +146,23 @@ body.logged-in .portal-view{display:flex}
 .aor-confirm.ready{opacity:1;pointer-events:auto}
 .aor-confirm.ready:hover{background:var(--red-dk)}
 
-/* ── FILTER PILLS ── */
-.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:24px;padding:0;margin-bottom:6px}
+/* ── FILTER ROW (below metrics; pills + count + clear all in one row) ── */
+.filter-row{display:flex;gap:10px;align-items:center;margin:8px 0 6px;flex-wrap:wrap;min-height:24px}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0;margin:0}
 .fpill{display:flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;background:var(--yellow-lt);color:#6d3a00;border:1px solid rgba(242,161,54,.35);border-radius:20px;padding:3px 8px 3px 10px;white-space:nowrap}
 .fpill button{background:none;border:none;cursor:pointer;color:#6d3a00;font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.6}
 .fpill button:hover{opacity:1}
 
 /* ── METRICS ── */
 .metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
-.metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative;min-width:0}
+.metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative;min-width:0;border-top:3px solid var(--border);overflow:visible}
 .metric:hover{border-color:var(--green)}
 .metric.active{background:var(--green);border-color:var(--green)}
 .metric.active .metric-lbl{color:var(--green-lt);opacity:.75}
 .metric.active .metric-val{color:#fff}
 .metric.active .metric-sub{color:var(--green-lt);opacity:.6}
 .metric-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.metric-val{font-family:'Oswald',sans-serif;font-size:22px;font-weight:400;color:var(--green);line-height:1}
+.metric-val{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);line-height:1;margin-bottom:2px}
 .metric-sub{font-size:10.5px;color:var(--mid);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── TABLE ── */
@@ -171,12 +181,12 @@ thead tr th:last-child{border-right:none}
 .th-ficon svg{width:9px;height:9px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:1.5;pointer-events:none}
 .th-ficon.on{background:rgba(242,161,54,.25);border-color:rgba(242,161,54,.5)}
 .th-ficon.on svg{stroke:var(--yellow)}
-.pop{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:170px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
-.pop.open{display:block}
+.pop{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:170px;box-shadow:0 6px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:normal;font-weight:400;text-align:left}
+.pop.open{display:flex;flex-direction:column;align-items:stretch;gap:0}
 .pop-lbl{font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:8px}
 .pop select,.pop input[type=text],.pop input[type=date]{width:100%;font-family:'Lato',sans-serif;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none}
 .pop select:focus,.pop input:focus{border-color:var(--green)}
-.pop-clear{margin-top:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.pop-clear{margin-top:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;align-self:flex-start}
 .pop-clear:hover{color:var(--red)}
 .chips{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
 .chip-opt{display:flex;align-items:center;gap:8px;font-family:'Lato',sans-serif;font-size:13px;color:var(--mid);cursor:pointer;padding:4px 6px;border-radius:5px;transition:background .1s}
@@ -186,7 +196,7 @@ thead tr th:last-child{border-right:none}
 .date-range{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .date-range-row{display:flex;flex-direction:column;gap:3px}
 .date-range-lbl{font-size:11px;color:var(--mid);font-family:'Lato',sans-serif}
-td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;text-overflow:ellipsis;white-space:nowrap}
 tbody tr:nth-child(even) td{background:#faf9f7}
 tbody tr:hover td{background:var(--light)}
 td.c-sub{overflow:visible;position:relative}
@@ -204,7 +214,8 @@ tr.dr.sel td{background:var(--pink)}
 .cl:hover{text-decoration:underline}
 .no-results{padding:40px;text-align:center;color:var(--mid);font-size:13px;font-family:'Oswald',sans-serif;font-weight:300;letter-spacing:.5px}
 .sub-mismatch{font-style:italic;color:#b85d00}
-.copy-cell{display:flex;align-items:center;gap:5px;min-width:0}
+.sub-dur{font-size:10px;color:var(--yellow);font-style:italic;margin-top:2px;font-family:'Lato',sans-serif;line-height:1.2}
+.copy-cell{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
 .copy-cell a{color:var(--green);text-decoration:none;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .copy-cell a:hover{text-decoration:underline}
 .copy-btn{flex-shrink:0;opacity:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:opacity .15s,background .15s;padding:0}
@@ -235,24 +246,37 @@ thead tr th.c-chev{background:var(--green)!important}
 .d-top{background:var(--green);padding:18px 22px 16px;position:sticky;top:0;z-index:1}
 .d-close{position:absolute;top:12px;right:14px;background:none;border:1px solid rgba(255,255,255,.22);border-radius:4px;color:rgba(255,255,255,.6);font-size:12px;padding:3px 9px;cursor:pointer;font-family:'Lato',sans-serif;transition:all .15s}
 .d-close:hover{background:rgba(255,255,255,.1);color:#fff}
-.d-name{font-family:'Shrikhand',serif;font-size:20px;color:#fff;line-height:1.1;margin-bottom:4px}
+.d-name{font-family:'Lato',sans-serif;font-weight:700;font-size:17px;color:#fff;line-height:1.2;margin-bottom:4px}
 .d-sl{font-family:'Oswald',sans-serif;font-weight:300;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--green-lt);opacity:.85}
 .d-body{padding:18px 22px}
-.d-sec{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.d-sec{margin-bottom:10px;padding:12px 14px;background:var(--white);border:1px solid var(--border);border-radius:9px;overflow:visible;border-top:3px solid var(--border)}
 .d-sec:last-child{border-bottom:none;margin-bottom:0}
-.d-sec-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1.1px;color:var(--mid);margin-bottom:10px}
+.d-sec-lbl{font-family:'Oswald',sans-serif;font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mid);padding:0;margin-bottom:8px}
 .d-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .d-mi{background:var(--faint);border-radius:6px;padding:9px 11px}
 .d-mi-lbl{font-size:10px;color:var(--mid);margin-bottom:2px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.7px}
 .d-mi-val{font-size:16px;font-weight:400;color:var(--green);font-family:'Oswald',sans-serif}
 .d-cr{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
 .d-cr:last-child{border-bottom:none}
-.d-cl{font-size:11px;color:var(--mid);width:52px;flex-shrink:0}
+.d-cl{font-size:11px;color:var(--mid);width:80px;flex-shrink:0}
 .d-cv a{color:var(--green);text-decoration:none}
 .d-cv a:hover{text-decoration:underline}
 .d-note{font-size:13px;line-height:1.75;color:var(--dark);background:var(--lpink);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:10px 13px}
 .d-note-dt{font-size:11px;color:var(--mid);margin-bottom:6px}
 .pr{display:grid;grid-template-columns:1fr auto;gap:6px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.upd-note{padding:9px 14px 10px;border-bottom:1px solid var(--border)}
+.upd-note:last-child,.upd-entry:last-child{border-bottom:none}
+.upd-entry{padding:9px 14px;border-bottom:1px solid var(--border)}
+.upd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.upd-date{font-size:11px;color:var(--mid)}
+.upd-type{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:.6px;color:var(--mid);background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:1px 7px}
+.upd-note-text{font-size:12px;line-height:1.65;color:var(--dark);margin-top:4px}
+.upd-text{font-size:12px;line-height:1.65;color:var(--dark)}
+.upd-mom{font-size:10px;font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-right:6px;display:inline-block;margin-bottom:2px}
+.upd-empty{font-size:13px;color:var(--mid);font-style:italic;padding:11px 14px}
+.upd-i-wrap{position:relative;display:inline-block}
+.upd-i-wrap:hover .upd-i-pop{display:block !important}
+.b-stalled-adv{background:var(--yellow-lt);color:#8a4a00;border:1px solid rgba(242,161,54,.45);font-size:9px;padding:1px 6px;border-radius:10px;letter-spacing:.5px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;display:inline-block;vertical-align:middle;margin-left:4px}
 .pr:last-child{border-bottom:none}
 .pr-type{font-size:10px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.6px;color:var(--mid)}
 .pr-out{color:var(--mid);font-size:11px}
@@ -282,10 +306,10 @@ thead tr th.c-chev{background:var(--green)!important}
     <div class="login-title">Impact Hub</div>
     <div class="login-sub">Sign in with your Trellis credentials</div>
     <div class="login-err" id="login-err"></div>
-    <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="your.name@ema.org" autocomplete="username"></div>
+    <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="first.last" autocomplete="username"></div>
     <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
     <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
-    <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Open Trellis Platform</a>
+    <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
   </div>
 </div>
 
@@ -301,22 +325,22 @@ thead tr th.c-chev{background:var(--green)!important}
       </a>
     </div>
     <div class="nav-right">
-      <div class="nav-scope" id="nav-scope" style="display:none;">
-        <div class="nav-scope-lbl">Viewing</div>
-        <div class="nav-scope-val" id="nav-scope-val">—</div>
-      </div>
-      <div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
-      <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
-      <div class="nav-sep"></div>
       <div class="nav-user">
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div>
           <div class="nav-name" id="nav-name">Loading</div>
           <div class="nav-role" id="nav-role"></div>
         </div>
-        <div class="nav-sep"></div>
-        <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
       </div>
+      <div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
+      <div class="nav-scope" id="nav-scope" style="display:none;">
+        <div class="nav-scope-lbl">Viewing</div>
+        <div class="nav-scope-val" id="nav-scope-val"></div>
+      </div>
+      <div class="nav-sep"></div>
+      <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
+      <div class="nav-sep"></div>
+      <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
     </div>
   </nav>
 
@@ -327,6 +351,12 @@ thead tr th.c-chev{background:var(--green)!important}
       <!-- REPORT HEADER -->
       <div class="report-hdr" id="reportHdr">
         <div class="rh-title">Advocate Care Report</div>
+        <div class="rh-aff-wrap" id="rhAffWrap">
+          <span class="rh-aff-lbl">Affiliate</span>
+          <select id="affiliateSlicer" class="rh-aff-sel" onchange="loadAdvocates()">
+            <option value="">All Affiliates</option>
+          </select>
+        </div>
         <div class="rh-fresh" id="freshLabel" tabindex="0">Live
           <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
         </div>
@@ -337,16 +367,16 @@ thead tr th.c-chev{background:var(--green)!important}
 
       <!-- TOOLBAR -->
       <div class="toolbar">
-        <div class="toolbar-title">Advocates</div>
-        <select id="affiliateSlicer" style="display:none;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:0.5px;color:var(--dark);background:var(--white);cursor:pointer;" onchange="loadAdvocates()">
-          <option value="">All Affiliates</option>
-        </select>
+        <div class="toolbar-title"></div>
+
+        <button class="my-moms-btn off" id="myAdvsBtn" onclick="toggleMyAdvocates()" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Advocates
+        </button>
         <div class="srch">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input type="text" id="search" placeholder="Search name, email, phone…" oninput="render()">
         </div>
-        <span class="active-count" id="activeCount"></span>
-        <button class="clear-btn" id="clearBtn" onclick="clearAll()">&#x2715; Clear all filters</button>
         <button class="export-btn" onclick="requestExport()" title="Export filtered results as CSV">
           <svg viewBox="0 0 16 16"><path d="M8 2v8M4 7l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12v2h12v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Export CSV
@@ -355,7 +385,11 @@ thead tr th.c-chev{background:var(--green)!important}
 
       <div class="metrics" id="metricsBar"></div>
 
-      <div class="filter-pills" id="filterPills"></div>
+      <div class="filter-row">
+        <div class="filter-pills" id="filterPills"></div>
+        <span class="active-count" id="activeCount"></span>
+        <button class="clear-btn" id="clearBtn" onclick="clearAll()">&#x2715; Clear all filters</button>
+      </div>
 
       <div class="table-wrap" id="tableWrap">
         <table>
@@ -494,9 +528,14 @@ thead tr th.c-chev{background:var(--green)!important}
           <div id="d-contact"></div>
         </div>
         <div class="d-sec">
-          <div class="d-sec-lbl">Latest coordinator note</div>
-          <div class="d-note-dt" id="d-note-dt"></div>
-          <div class="d-note" id="d-note"></div>
+          <div class="d-sec-lbl" style="display:flex;align-items:center;justify-content:space-between;">
+            Updates
+            <span style="position:relative;display:inline-block;" class="upd-i-wrap">
+              <span style="font-size:10px;color:var(--mid);cursor:help;font-family:'Oswald',sans-serif;font-weight:600;width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;opacity:.5;line-height:1;text-transform:none;">i</span>
+              <span style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:1000;width:220px;background:var(--white);border:1px solid var(--border);border-radius:7px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.55;white-space:normal;font-weight:400;text-transform:none;letter-spacing:0;" class="upd-i-pop">Includes the most recent coordinator note and contact log entries from this advocate's active pairings, pulled from Trellis.</span>
+            </span>
+          </div>
+          <div id="d-updates"></div>
         </div>
         <div class="d-sec">
           <div class="d-sec-lbl">Pairing history</div>
@@ -546,6 +585,11 @@ TODAY.setHours(0, 0, 0, 0); // normalize to start of day
 // ── DATA ──────────────────────────────────────────────────────────────────────
 var ADVOCATES = [];
 var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
+function showAdvocates() {
+  document.querySelector('.portal-view').classList.remove('adv-loading');
+  updateNavScope();
+  render();
+}
 async function loadAdvocates() {
   try {
     var url = '/api/advocates';
@@ -555,9 +599,7 @@ async function loadAdvocates() {
     var res = await fetch(url);
     if (res.ok) {
       ADVOCATES = await res.json();
-      document.querySelector('.portal-view').classList.remove('adv-loading');
-      updateNavScope();
-      render();
+      showAdvocates();
     }
   } catch (e) { console.error('Failed to load advocates:', e); }
 }
@@ -581,7 +623,7 @@ async function loadAffiliateSlicer() {
     var affiliates = await res.json();
     if (affiliates.length === 0) return;
     var sel = document.getElementById('affiliateSlicer');
-    sel.style.display = '';
+    var wrap=document.getElementById('rhAffWrap');if(wrap)wrap.classList.add('show');
     var exOpt = document.createElement('option');
     exOpt.value = 'exclude-broward';
     exOpt.textContent = 'All Affiliates except \u0112MA Broward';
@@ -600,29 +642,35 @@ const SAMPLE_ADVOCATES = [
   {id:1,name:"Renata Voss",initials:"RV",ac:"#d4ede4",tc:"#0d4a33",
    status:"Active",sub:"Paired",birthday:"1992-04-18",
    email:"renata.voss@email.com",phone:"(954) 555-0112",coordinator:"Cristina G.",
-   monthsActive:14,totalPairings:3,activePairings:1,
+   monthsActive:14,totalPairings:3,activePairings:1,activeGroupFacilitations:0,
+   subStatusSince:"2026-02-10",
    latestNoteDate:"2026-04-01",
+   contactLog:[{date:"2026-04-20",type:"Session",author:"Sarah M.",momName:"Mom C",note:"Session 4 completed. Mom engaged, mentioned childcare challenges."},{date:"2026-04-08",type:"Text",author:"Sarah M.",momName:"Mom C",note:"Session 3 reminder sent. Mom confirmed attendance."},{date:"2026-03-28",type:"Home visit",author:"Sarah M.",momName:"Mom C",note:"Check-in after session 2. Family environment stable."}],
    latestNote:"Renata is doing well with her current pairing. Checked in on session frequency; she confirmed meeting weekly. Flagged that her mom has missed two sessions but Renata is staying engaged and following up warmly. No concerns at this time.",
    pairings:[
      {mom:"Mom A",type:"1:1",start:"Jan 2025",end:"Jun 2025",outcome:"Completed Full Track"},
      {mom:"Mom B",type:"1:1",start:"Jul 2025",end:"Nov 2025",outcome:"Client Choice"},
-     {mom:"Mom C",type:"1:1",start:"Feb 2026",end:"Present",outcome:"active"},
+     {mom:"Mom C",type:"1:1",start:"Feb 2026",end:"Present",outcome:"active",stalled:false},
    ]},
   {id:2,name:"Deja Holloway",initials:"DH",ac:"#ecefe1",tc:"#123939",
    status:"Active",sub:"Paired",birthday:"1995-06-02",
    email:"deja.holloway@email.com",phone:"(954) 555-0183",coordinator:"Cristina G.",
-   monthsActive:7,totalPairings:2,activePairings:2,
+   monthsActive:7,totalPairings:2,activePairings:2,activeGroupFacilitations:0,
+   subStatusSince:"2025-10-15",
    latestNoteDate:"2026-03-28",
+   contactLog:[{date:"2026-04-06",type:"Text",author:"Sarah M.",momName:"Mom E",note:"Texted to reschedule session 3. Mom did not respond."},{date:"2026-03-30",type:"Session",author:"Sarah M.",momName:"Mom E",note:"Session 2 held. Mom distracted, mentioned housing stress."},{date:"2026-04-21",type:"Session",author:"Marcus T.",momName:"Mom D",note:"Session 7 completed. AAPI pre-assessment on file."}],
    latestNote:"Deja took on her second pairing this month. She reached out proactively to ask clarifying questions about managing two moms, which showed self-awareness. Reminded her of the two-week check-in cadence. Will monitor capacity.",
    pairings:[
-     {mom:"Mom D",type:"1:1",start:"Oct 2025",end:"Present",outcome:"active"},
-     {mom:"Mom E",type:"1:1",start:"Mar 2026",end:"Present",outcome:"active"},
+     {mom:"Mom D",type:"1:1",start:"Oct 2025",end:"Present",outcome:"active",stalled:false},
+     {mom:"Mom E",type:"1:1",start:"Mar 2026",end:"Present",outcome:"active",stalled:true},
    ]},
   {id:3,name:"Priya Menon",initials:"PM",ac:"#fde8e5",tc:"#8b2212",
    status:"Active",sub:"Waiting to be Paired",birthday:"1988-04-03",
    email:"priya.menon@email.com",phone:"(786) 555-0244",coordinator:"Charnelle B.",
-   monthsActive:22,totalPairings:6,activePairings:0,
+   monthsActive:22,totalPairings:6,activePairings:0,activeGroupFacilitations:0,
+   subStatusSince:"2026-03-10",
    latestNoteDate:"2026-04-05",
+   contactLog:[],
    latestNote:"Priya completed her most recent pairing last month and celebrated her two-year milestone together. She is enthusiastic and ready for her next match. Bringing to staffing this week.",
    pairings:[
      {mom:"Mom F",type:"1:1",start:"Jun 2024",end:"Oct 2024",outcome:"Completed Full Track"},
@@ -630,20 +678,24 @@ const SAMPLE_ADVOCATES = [
      {mom:"Mom H",type:"1:1",start:"Apr 2025",end:"Aug 2025",outcome:"Completed Full Track"},
      {mom:"Mom I",type:"1:1",start:"Sep 2025",end:"Dec 2025",outcome:"Completed without Post Assessment"},
      {mom:"Mom J",type:"1:1",start:"Jan 2026",end:"Feb 2026",outcome:"Relocated"},
-     {mom:"Mom K",type:"Group",start:"Feb 2026",end:"Mar 2026",outcome:"Completed Full Track"},
+     {type:"Group",groupName:"Winter 2026 Cohort",memberCount:4,start:"Feb 2026",end:"Mar 2026",outcome:"Completed Full Track"},
    ]},
   {id:4,name:"Tamara Osei",initials:"TO",ac:"#ecefe1",tc:"#123939",
    status:"Prospect",sub:"In Training",birthday:"1999-08-14",
    email:"tamara.osei@email.com",phone:"(305) 555-0177",coordinator:"Charnelle B.",
-   monthsActive:1,totalPairings:0,activePairings:0,
+   monthsActive:1,totalPairings:0,activePairings:0,activeGroupFacilitations:0,
+   subStatusSince:"2026-03-22",
    latestNoteDate:"2026-04-08",
+   contactLog:[],
    latestNote:"Tamara is about halfway through training. Very engaged and submitted all pre-work on time. Background check initiated. Anticipate moving to Pending Final Steps within two weeks.",
    pairings:[]},
   {id:5,name:"Lila Guerrero",initials:"LG",ac:"#fff3e0",tc:"#6d3a00",
    status:"Inactive",sub:"Taking a Break",birthday:"1990-04-27",
    email:"lila.guerrero@email.com",phone:"(954) 555-0198",coordinator:"Cristina G.",
-   monthsActive:10,totalPairings:3,activePairings:0,
+   monthsActive:10,totalPairings:3,activePairings:0,activeGroupFacilitations:0,
+   subStatusSince:"2026-03-15",
    latestNoteDate:"2026-03-15",
+   contactLog:[],
    latestNote:"Lila requested a pause after her last pairing closed. She mentioned needing time for a personal transition. Asked her to check back in May. No concerns about long-term re-engagement; she remains enthusiastic about the mission.",
    pairings:[
      {mom:"Mom L",type:"1:1",start:"Jul 2025",end:"Oct 2025",outcome:"Completed Full Track"},
@@ -653,23 +705,41 @@ const SAMPLE_ADVOCATES = [
   {id:6,name:"Chinwe Eze",initials:"CE",ac:"#d4ede4",tc:"#0d4a33",
    status:"Active",sub:"Paired",birthday:"1986-07-09",
    email:"chinwe.eze@email.com",phone:"(954) 555-0221",coordinator:"Charnelle B.",
-   monthsActive:18,totalPairings:5,activePairings:2,
+   monthsActive:18,totalPairings:5,activePairings:1,activeGroupFacilitations:1,
+   subStatusSince:"2025-08-20",
    latestNoteDate:"2026-04-06",
-   latestNote:"Chinwe continues to manage two concurrent pairings with consistency and care. Both moms are progressing well. Noted exceptional Trellis documentation this cycle and recognized her verbally; she appreciated it.",
+   contactLog:[{date:"2026-04-06",type:"Text",author:"Charnelle B.",momName:"Mom R",note:"Texted Mom R to reschedule session 3. No response — flagged as stalled."},{date:"2026-03-30",type:"Session",author:"Charnelle B.",momName:"Mom R",note:"Session 2 held. Good rapport."},{date:"2026-04-15",type:"Session",author:"Charnelle B.",momName:"Tuesday Cohort",note:"Session 2 with group. Chinwe facilitated well."}],
+   latestNote:"Chinwe continues to manage one 1:1 pairing alongside facilitating a group. Both moms are progressing well. Noted exceptional Trellis documentation this cycle and recognized her verbally; she appreciated it.",
    pairings:[
      {mom:"Mom O",type:"1:1",start:"Oct 2024",end:"Feb 2025",outcome:"Completed Full Track"},
-     {mom:"Mom P",type:"Group",start:"Mar 2025",end:"Jul 2025",outcome:"Completed Full Track"},
+     {type:"Group",groupName:"Spring 2025 Cohort",memberCount:5,start:"Mar 2025",end:"Jul 2025",outcome:"Completed Full Track"},
      {mom:"Mom Q",type:"1:1",start:"Aug 2025",end:"Dec 2025",outcome:"Completed without Support Sessions"},
-     {mom:"Mom R",type:"1:1",start:"Jan 2026",end:"Present",outcome:"active"},
-     {mom:"Mom S",type:"Group",start:"Feb 2026",end:"Present",outcome:"active"},
+     {mom:"Mom R",type:"1:1",start:"Jan 2026",end:"Present",outcome:"active",stalled:true},
+     {type:"Group",groupName:"Tuesday Cohort",memberCount:6,start:"Feb 2026",end:"Present",outcome:"active"},
    ]},
   {id:7,name:"Aisha Bankole",initials:"AB",ac:"#fde8e5",tc:"#8b2212",
    status:"Did Not Onboard",sub:"Unable to Contact",birthday:"1997-11-22",
    email:"aisha.bankole@email.com",phone:"(561) 555-0104",coordinator:"Cristina G.",
-   monthsActive:0,totalPairings:0,activePairings:0,
+   monthsActive:0,totalPairings:0,activePairings:0,activeGroupFacilitations:0,
+   subStatusSince:"2026-03-20",
    latestNoteDate:"2026-03-20",
+   contactLog:[],
    latestNote:"Made three attempts to reach Aisha after training completion with no response via email or phone. Marked as Unable to Contact per protocol. File closed.",
    pairings:[]},
+  {id:8,name:"Elizabeth Faraj",initials:"EF",ac:"#d4ede4",tc:"#0d4a33",
+   status:"Active",sub:"Paired",birthday:"1983-09-12",
+   email:"elizabeth.faraj@email.com",phone:"(954) 555-0267",coordinator:"Cristina G.",
+   monthsActive:26,totalPairings:4,activePairings:0,activeGroupFacilitations:1,
+   subStatusSince:"2025-11-04",
+   latestNoteDate:"2026-04-10",
+   contactLog:[{date:"2026-04-22",type:"Session",author:"Yeni C.",momName:"Tuesday Cohort",note:"Session 3 of RR. Final session next week."},{date:"2026-04-15",type:"Session",author:"Yeni C.",momName:"Tuesday Cohort",note:"Session 2. Resilience frameworks."},{date:"2026-04-08",type:"Session",author:"Yeni C.",momName:"Tuesday Cohort",note:"Session 1 of RR. Strong facilitation."}],
+   latestNote:"Elizabeth is leading her group with strong rhythm and the moms have built genuine community together. She handed off her last 1:1 last fall and has focused entirely on group facilitation since. Recognized at last all-staff for her steady presence.",
+   pairings:[
+     {mom:"Mom T",type:"1:1",start:"Mar 2024",end:"Aug 2024",outcome:"Completed Full Track"},
+     {mom:"Mom U",type:"1:1",start:"Sep 2024",end:"Mar 2025",outcome:"Completed Full Track"},
+     {mom:"Mom V",type:"1:1",start:"Apr 2025",end:"Oct 2025",outcome:"Completed Full Track"},
+     {type:"Group",groupName:"Tuesday Cohort",memberCount:6,start:"Nov 2025",end:"Present",outcome:"active",stalled:false},
+   ]},
 ];
 
 // "Taking a Break" appears under both Active (known coordinator workaround) and Inactive
@@ -686,14 +756,33 @@ function dbu(s){const b=new Date(s);let n=new Date(TODAY.getFullYear(),b.getMont
 function dsa(s){return Math.floor((TODAY-new Date(s))/86400000)}
 function fmtS(s){return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
 function fmtL(s){return new Date(s).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+function fmtMonths(m){
+  if(!m||m<1)return"<1 mo";
+  const y=Math.floor(m/12),mo=m%12;
+  if(y===0)return`${mo} mo`;
+  if(mo===0)return`${y} yr`;
+  return`${y} yr ${mo} mo`;
+}
 function trunc(s,n){return s.length>n?s.slice(0,n)+"…":s}
 function sBadge(s){const m={"Active":"b-active","Prospect":"b-prospect","Inactive":"b-inactive","Did Not Onboard":"b-didnot"};return`<span class="badge ${m[s]||''}">${s}</span>`}
 
+function pairingTypeLabel(oneOnOnes,groups){
+  if(oneOnOnes>0&&groups>0)return"1:1 + group";
+  if(oneOnOnes>0)return"1:1";
+  if(groups>0)return"group";
+  return null;
+}
 function deriveSub(a){
-  if(a.status!=="Active")return{sub:a.sub,mismatch:false};
-  if(a.sub==="Paired"&&a.activePairings===0)return{sub:"Waiting to be Paired",mismatch:true};
-  if(a.sub==="Waiting to be Paired"&&a.activePairings>0)return{sub:"Paired",mismatch:true};
-  return{sub:a.sub,mismatch:false};
+  const oneOnOnes=a.activePairings||0;
+  const groups=a.activeGroupFacilitations||0;
+  if(a.status!=="Active")return{sub:a.sub,mismatch:false,pairingType:null};
+  // Mismatch: claims Paired but no actual pairings or group facilitations
+  if(a.sub==="Paired"&&oneOnOnes===0&&groups===0)return{sub:"Waiting to be Paired",mismatch:true,pairingType:null};
+  // Mismatch: claims Waiting but actually has pairings or groups
+  if(a.sub==="Waiting to be Paired"&&(oneOnOnes>0||groups>0))return{sub:"Paired",mismatch:true,pairingType:pairingTypeLabel(oneOnOnes,groups)};
+  // Paired with type info
+  if(a.sub==="Paired")return{sub:"Paired",mismatch:false,pairingType:pairingTypeLabel(oneOnOnes,groups)};
+  return{sub:a.sub,mismatch:false,pairingType:null};
 }
 
 // Populate coordinator checkboxes from data
@@ -767,10 +856,18 @@ function getFilters(){
     coord:   getChecked("coord"),
   };
 }
-function hasAnyFilter(f){return f.q||f.name||f.status.length||f.sub.length||f.bday||f.email||f.phone||f.note||f.coord.length||activeCards.size>0}
+function toggleMyAdvocates(){
+  MY_ADVOCATES_ON=!MY_ADVOCATES_ON;
+  var btn=document.getElementById('myAdvsBtn');
+  btn.classList.toggle('off',!MY_ADVOCATES_ON);
+  render();
+}
+function hasAnyFilter(f){return f.q||f.name||f.status.length||f.sub.length||f.bday||f.email||f.phone||f.note||f.coord.length||activeCards.size>0||MY_ADVOCATES_ON}
 
 // ── SORT + CARD FILTERS ──────────────────────────────────────────────────────
 let sortCol="name",sortDir=1,openId=null;
+var MY_ADVOCATES_ON=false;
+var CURRENT_COORD_NAME=null;
 function setSort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render()}
 const activeCards=new Set();
 function toggleCard(key){activeCards.has(key)?activeCards.delete(key):activeCards.add(key);render()}
@@ -787,6 +884,7 @@ function getFiltered(){
     if(f.email&&!em.includes(f.email))return false;
     if(f.phone&&!ph.includes(f.phone))return false;
     if(f.coord.length&&!f.coord.includes(a.coordinator))return false;
+    if(MY_ADVOCATES_ON&&CURRENT_COORD_NAME&&a.coordinator!==CURRENT_COORD_NAME)return false;
     if(f.bday&&f.bday!=="custom"){
       const d=dbu(a.birthday);
       if(f.bday==="14"&&d>14)return false;
@@ -864,6 +962,7 @@ function render(){
   if(f.note)  pillDefs.push({label:"Note: "+document.getElementById("pf-note").selectedOptions[0].text,clear:()=>{document.getElementById("pf-note").value="";render()}});
   f.coord.forEach(v=>pillDefs.push({label:"Coordinator: "+v,clear:()=>{document.querySelector(`#coord-chips input[value="${v}"]`).checked=false;render()}}));
   let cardLabels={active:"Active advocates",paired:"Currently paired",break:"Taking a Break",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
+  if(MY_ADVOCATES_ON)pillDefs.push({label:'My Advocates',clear:function(){MY_ADVOCATES_ON=false;var btn=document.getElementById('myAdvsBtn');if(btn)btn.classList.add('off');render();}});
   activeCards.forEach(k=>pillDefs.push({label:cardLabels[k],clear:()=>{activeCards.delete(k);render()}}));
   pills.innerHTML=pillDefs.map((p,i)=>`<div class="fpill">${p.label}<button onclick="pillClear(${i})">\u2715</button></div>`).join("");
   window._pillClearFns=pillDefs.map(p=>p.clear);
@@ -871,16 +970,19 @@ function render(){
   document.getElementById("clearBtn").classList.toggle("show",!!hasAnyFilter(f));
   document.getElementById("activeCount").textContent=`${list.length} of ${ADVOCATES.length}`;
 
-  // "In scope" = active advocates OR anyone on a break (regardless of status)
-  // Taking a Break may be Active+TAB (workaround) or Inactive+TAB
-  let inScope=ADVOCATES.filter(a=>a.status==="Active"||a.sub==="Taking A Break"||a.sub==="Taking a Break");
-  let active=ADVOCATES.filter(a=>a.status==="Active").length;
-  let paired=inScope.filter(a=>deriveSub(a).sub==="Paired").length;
-  let takingBreak=ADVOCATES.filter(a=>a.sub==="Taking A Break"||a.sub==="Taking a Break").length;
-  let bdays30=inScope.filter(a=>a.birthday&&dbu(a.birthday)<=30).length;
-  let overdue=inScope.filter(a=>a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
+  // Box counts derive from the currently filtered list (reactive).
+  // Birthdays/Overdue/Currently paired include outreach-scope check (active or TAB).
+  const inOutreach=a=>a.status==="Active"||a.sub==="Taking A Break"||a.sub==="Taking a Break";
+  const isTAB=a=>a.sub==="Taking A Break"||a.sub==="Taking a Break";
+  let active     =list.filter(a=>a.status==="Active").length;
+  let paired     =list.filter(a=>inOutreach(a)&&deriveSub(a).sub==="Paired").length;
+  let takingBreak=list.filter(isTAB).length;
+  let bdays30    =list.filter(a=>inOutreach(a)&&a.birthday&&dbu(a.birthday)<=30).length;
+  let overdue    =list.filter(a=>inOutreach(a)&&a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
+  const filtersActive=list.length!==ADVOCATES.length;
+  const activeSub=filtersActive?`of ${list.length} in view`:`of ${ADVOCATES.length} total`;
   let mCards=[
-    {key:"active",  lbl:"Active advocates",     val:active,      sub:`of ${ADVOCATES.length} total`},
+    {key:"active",  lbl:"Active advocates",     val:active,      sub:activeSub},
     {key:"paired",  lbl:"Currently paired",     val:paired,      sub:"active \u00b7 mom's pairing record"},
     {key:"break",   lbl:"Taking a Break",       val:takingBreak, sub:"re-engage \u00b7 any status"},
     {key:"bdays30", lbl:"Birthdays in 30 days", val:bdays30,     sub:"upcoming milestones"},
@@ -900,10 +1002,18 @@ function render(){
     let age=dsa(a.latestNoteDate);
     let bdaySoon=days<=30;
     let noteWarn=age>14;
-    return`<tr class="dr${openId===a.id?" sel":""}" onclick="openDrawer('${a.id}')">
+    return`<tr class="dr${openId==a.id?" sel":""}" onclick="openDrawer('${a.id}')">
       <td style="font-weight:700;">${a.name}</td>
       <td>${sBadge(a.status)}</td>
-      <td class="c-sub" style="font-size:12px;">${(()=>{const d=deriveSub(a);return d.mismatch?`<span class="sub-mismatch sub-flag" tabindex="0">${d.sub} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>`:`<span style="color:var(--mid)">${d.sub}</span>`})()}</td>
+      <td class="c-sub" style="font-size:12px;">${(()=>{
+        const d=deriveSub(a);
+        const subDisplay=d.sub+(d.pairingType?` (${d.pairingType})`:"");
+        const stallStatuses=["Taking A Break","Taking a Break","Waiting to be Paired","In Training","Pending Final Steps"];
+        const showDur=stallStatuses.includes(d.sub)&&a.subStatusSince;
+        const durTxt=showDur?`<div class="sub-dur">since ${fmtS(a.subStatusSince)}</div>`:"";
+        if(d.mismatch)return`<span class="sub-mismatch sub-flag" tabindex="0">${subDisplay} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>${durTxt}`;
+        return`<span style="color:var(--mid)">${subDisplay}</span>${durTxt}`;
+      })()}</td>
       <td style="font-size:12px;">${fmtS(a.birthday)}${bdaySoon?` <span class="badge b-bday">${days}d</span>`:""}</td>
       <td><div class="copy-cell">
         <a href="mailto:${a.email}" onclick="event.stopPropagation()">${a.email}</a>
@@ -931,24 +1041,54 @@ function pillClear(i){window._pillClearFns[i]&&window._pillClearFns[i]()}
 // ── DRAWER ───────────────────────────────────────────────────────────────────
 function openDrawer(id){
   openId=id;
-  const a=ADVOCATES.find(x=>x.id===id);
+  const a=ADVOCATES.find(x=>x.id==id);
   document.getElementById("d-name").textContent=a.name;
   const derived=deriveSub(a);
-  document.getElementById("d-sl").textContent=`${a.status} \u00b7 ${derived.sub}${derived.mismatch?" (corrected from mom's record)":""} \u00b7 ${a.monthsActive} mo \u00b7 ${a.coordinator}`;
+  const subWithType=derived.sub+(derived.pairingType?` (${derived.pairingType})`:"");
+  const subMis=derived.mismatch?" (corrected from mom's record)":"";
+  const subSince=a.subStatusSince?` since ${fmtS(a.subStatusSince)}`:"";
+  document.getElementById("d-sl").textContent=`${a.status} \u00b7 ${subWithType}${subMis}${subSince} \u00b7 ${fmtMonths(a.monthsActive)} \u00b7 ${a.coordinator||"Unassigned"}`;
   const days=dbu(a.birthday);
   document.getElementById("d-meta").innerHTML=`
     <div class="d-mi"><div class="d-mi-lbl">Total pairings</div><div class="d-mi-val">${a.totalPairings}</div></div>
-    <div class="d-mi"><div class="d-mi-lbl">Active pairings</div><div class="d-mi-val">${a.activePairings}</div></div>
-    <div class="d-mi"><div class="d-mi-lbl">Months active</div><div class="d-mi-val">${a.monthsActive}</div></div>
+    <div class="d-mi"><div class="d-mi-lbl">Currently active</div><div class="d-mi-val">${(a.activePairings||0)+(a.activeGroupFacilitations||0)}</div></div>
+    <div class="d-mi"><div class="d-mi-lbl">Active for</div><div class="d-mi-val">${fmtMonths(a.monthsActive)}</div></div>
     <div class="d-mi"><div class="d-mi-lbl">Birthday</div><div class="d-mi-val" style="font-size:14px;">${fmtS(a.birthday)}${days<=30?` <span style="font-size:11px;color:var(--yellow)">(${days}d)</span>`:""}</div></div>`;
   document.getElementById("d-contact").innerHTML=`
     <div class="d-cr"><div class="d-cl">Email</div><div class="d-cv"><a href="mailto:${a.email}">${a.email}</a></div></div>
     <div class="d-cr"><div class="d-cl">Phone</div><div class="d-cv"><a href="tel:${a.phone}">${a.phone}</a></div></div>
-    <div class="d-cr"><div class="d-cl">Coordinator</div><div class="d-cv">${a.coordinator}</div></div>`;
-  document.getElementById("d-note-dt").textContent=fmtL(a.latestNoteDate);
-  document.getElementById("d-note").textContent=a.latestNote;
+    <div class="d-cr"><div class="d-cl">Coordinator</div><div class="d-cv">${a.coordinator||"Unassigned"}</div></div>`;
+  // Updates section: coordinator note + contact log from active mom pairings
+  var updHtml="";
+  if(a.latestNote&&a.latestNoteDate){
+    updHtml+='<div class="upd-note">'
+      +'<div class="upd-header"><span class="upd-date">'+fmtL(a.latestNoteDate)+(a.coordinator?' · '+a.coordinator:'')+'</span><span class="upd-type">Coordinator note</span></div>'
+      +'<div class="upd-note-text">'+a.latestNote+'</div>'
+      +'</div>';
+  }
+  if(a.contactLog&&a.contactLog.length){
+    updHtml+=a.contactLog.map(function(e){
+      return'<div class="upd-entry">'
+        +'<div class="upd-header">'
+        +'<span class="upd-date">'+fmtL(e.date)+(e.author?' · '+e.author:'')+'</span>'
+        +'<span class="upd-type">'+e.type+'</span>'
+        +'</div>'
+        +(e.momName?'<div style="margin-bottom:2px;"><span class="upd-mom">'+e.momName+'</span></div>':'')
+        +'<div class="upd-text">'+e.note+'</div>'
+        +'</div>';
+    }).join("");
+  }
+  if(!updHtml)updHtml='<div class="upd-empty">No updates on file.</div>';
+  document.getElementById("d-updates").innerHTML=updHtml;
   document.getElementById("d-pairings").innerHTML=a.pairings.length
-    ?a.pairings.map(p=>`<div class="pr"><div><div style="font-weight:700;font-size:13px;">${p.mom}</div><div class="pr-type">${p.type} \u00b7 ${p.start} \u2013 ${p.end}</div></div><div class="pr-out${p.outcome==="active"?" curr":""}">${p.outcome==="active"?"Active":p.outcome}</div></div>`).join("")
+    ?a.pairings.slice().reverse().map(p=>{
+      const isGroup=p.type==="Group";
+      const primary=isGroup?(p.groupName||"Group"):p.mom;
+      const memberStr=isGroup&&p.memberCount?` \u00b7 ${p.memberCount} moms`:"";
+      const meta=`${p.type}${memberStr} \u00b7 ${p.start} \u2013 ${p.end}`;
+      const stalledPill=p.outcome==="active"&&p.stalled?'<span class="b-stalled-adv">Stalled</span>':"";
+      return`<div class="pr"><div><div style="font-weight:700;font-size:13px;">${primary}${stalledPill}</div><div class="pr-type">${meta}</div></div><div class="pr-out${p.outcome==="active"?" curr":""}">${p.outcome==="active"?"Active":p.outcome}</div></div>`;
+    }).join("")
     :`<div style="font-size:13px;color:var(--mid);font-style:italic;">No pairings on record yet.</div>`;
   document.getElementById("drawer").classList.add("open");
   document.getElementById("mainPanel").classList.add("drawer-open");
@@ -960,6 +1100,15 @@ function closeDrawer(){
   document.getElementById("mainPanel").classList.remove("drawer-open");
   render();
 }
+
+// Close drawer when clicking anywhere in the main panel that isn't a row or the drawer
+document.addEventListener("DOMContentLoaded",function(){
+  document.getElementById("mainPanel").addEventListener("click",function(e){
+    if(openId&&!e.target.closest("tr.dr")&&!e.target.closest("#drawer")){
+      closeDrawer();
+    }
+  });
+});
 
 // ── COPY ─────────────────────────────────────────────────────────────────────
 function copyVal(e,val,btn){
@@ -1057,13 +1206,25 @@ function applySession(u){
   if(nm)nm.textContent=(u.firstName||"")+" "+(u.lastName||"");
   if(rl)rl.textContent=ROLE_LABELS[u.role]||u.role;
   if(av)av.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
+  var advBtn=document.getElementById('myAdvsBtn');
+  if(u.role==='coordinator'){
+    CURRENT_COORD_NAME=(u.firstName||'')+(u.lastName?' '+u.lastName:'');
+    MY_ADVOCATES_ON=true;
+    if(advBtn){advBtn.style.display='';advBtn.classList.remove('off');}
+  } else {
+    CURRENT_COORD_NAME=null;MY_ADVOCATES_ON=false;
+    if(advBtn)advBtn.style.display='none';
+  }
+  if(u.role==='administrator'||u.role==='supervisor'){
+    var wrap=document.getElementById('rhAffWrap');if(wrap)wrap.classList.add('show');
+  }
   // Affiliate scope display
   const scope=document.getElementById("nav-scope");
   const scopeVal=document.getElementById("nav-scope-val");
   const scopeSep=document.getElementById("nav-scope-sep");
   if(scope&&scopeVal){
     const isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
-    scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"—");
+    scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"");
     scope.style.display="";
     if(scopeSep)scopeSep.style.display="";
   }
@@ -1091,7 +1252,9 @@ async function doLogin(){
   errEl.className="login-err";
   const u=document.getElementById("login-user").value.trim().toLowerCase();
   const p=document.getElementById("login-pass").value;
-  if(DEMO_USERS[u]&&p==="demo"){applySession(DEMO_USERS[u]);ADVOCATES=SAMPLE_ADVOCATES;render();return;}
+  if(DEMO_USERS[u]&&p==="demo"){var du=DEMO_USERS[u];applySession(du);ADVOCATES=SAMPLE_ADVOCATES;
+    if(du.role==='administrator'||du.role==='supervisor'){var s2=document.getElementById('affiliateSlicer');if(s2&&s2.options.length<2){[['ĒMA Broward','aff-1'],['ĒMA Miami','aff-2'],['ĒMA Palm Beach','aff-3']].forEach(function(o){var op=document.createElement('option');op.value=o[1];op.textContent=o[0];s2.appendChild(op);});}}
+    showAdvocates();return;}
   try{
     const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
     const d=await r.json();

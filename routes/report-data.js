@@ -1157,6 +1157,20 @@ router.get('/', async (req, res) => {
           ...(intakeData.rows[0] || {}),
           ps_migrated: psMigrated.rows[0]?.count || 0,
         },
+        // KPI 1 numerator exposed directly for the Child Welfare Prevention card
+        // and Cristina's report hydration. Count of children with
+        // family_preservation_impact IN (prevented_from_cps_involvement,
+        // prevented_from_foster_care_placement). Dollar value is count × $38,850
+        // computed client-side.
+        children_prevented_cps_fc: kpi1Num,
+        // Q1 Activity strip aliases — Cristina's report reads these from snap.
+        // Backing fields are the period-scoped advocate_q1_activity counts
+        // (User-table-direct, anchored on created_at / updated_at per Q1 window).
+        adv_applications_received: advocateQ1Activity.rows[0]?.applications || 0,
+        adv_trained: advocateQ1Activity.rows[0]?.trained || 0,
+        adv_approved: advocateQ1Activity.rows[0]?.approved || 0,
+        adv_became_active: advocateQ1Activity.rows[0]?.became_active || 0,
+        adv_became_inactive: advocateQ1Activity.rows[0]?.became_inactive || 0,
       },
 
       // Tab 3: FSS Deep Dive
@@ -1194,6 +1208,15 @@ router.get('/', async (req, res) => {
 
       // Advocate pipeline
       advocate_active_breakdown: advocateActiveBreakdown.rows[0] || {},
+      // Remapped view of advocate_active_breakdown with Cristina's key names.
+      // Report's advocate status chart reads from here: { paired_1_1, group, waiting, on_break }.
+      // Keeping advocate_active_breakdown for back-compat with any other consumers.
+      advocate_status_buckets: {
+        paired_1_1: advocateActiveBreakdown.rows[0]?.paired_one_to_one || 0,
+        group: advocateActiveBreakdown.rows[0]?.group_facilitators || 0,
+        waiting: advocateActiveBreakdown.rows[0]?.waiting_to_be_paired || 0,
+        on_break: advocateActiveBreakdown.rows[0]?.taking_a_break || 0,
+      },
       advocate_q1_activity: advocateQ1Activity.rows[0] || {},
       advocate_pipeline: {
         by_status: advocatePipeline.rows,

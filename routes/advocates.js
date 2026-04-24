@@ -76,6 +76,7 @@ router.get('/', async (req, res) => {
         u."advocate_status"::text AS "status",
         u."advocate_sub_status"::text AS "subStatus",
         u."created_at",
+        u."updated_at",
         u."affiliateId",
         lnc."coordFirstName",
         lnc."coordLastName",
@@ -110,16 +111,24 @@ router.get('/', async (req, res) => {
     // Collect advocate IDs for pairing sub-query
     const advocateIds = rows.map(r => r.id);
 
-    // Fetch pairings for all returned advocates in one query
+    // Fetch pairings for all returned advocates in one query.
+    // Includes last-held-session date per pairing so we can compute the "stalled" flag.
     const pairingsQuery = `
       SELECT
+        p."id" AS "pairingId",
         p."advocateUserId",
         m."first_name" AS "momFirstName",
         m."last_name" AS "momLastName",
         p."status"::text AS "status",
         t."title" AS "trackTitle",
         p."created_at" AS "startDate",
-        p."completed_on" AS "endDate"
+        p."completed_on" AS "endDate",
+        (
+          SELECT MAX(s."date_start") FROM "Session" s
+          WHERE s."pairing_id" = p."id"
+            AND s."deleted_at" = 0
+            AND s."status"::text = 'Held'
+        ) AS "lastHeldSessionAt"
       FROM "Pairing" p
       LEFT JOIN "Mom" m ON m."id" = p."momId"
       LEFT JOIN "Track" t ON t."id" = p."trackId"
@@ -129,14 +138,113 @@ router.get('/', async (req, res) => {
     `;
     const pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
 
-    // Fetch AdvocacyGroup assignments for all returned advocates
+    // Fetch AdvocacyGroup assignments for all returned advocates.
+    // Includes member_count for the group-pairing display Cristina added.
     const groupsQuery = `
-      SELECT ag."advocateId", ag."name" AS "groupName", ag."state"::text AS "status",
-        ag."capacity", ag."start_date" AS "startDate", ag."completed_date" AS "endDate"
+      SELECT ag."id" AS "groupId",
+        ag."advocateId",
+        ag."name" AS "groupName",
+        ag."state"::text AS "status",
+        ag."capacity",
+        ag."start_date" AS "startDate",
+        ag."completed_date" AS "endDate",
+        (
+          SELECT COUNT(*)::int FROM "Pairing" p2
+          WHERE p2."advocacyGroupId" = ag."id"
+            AND p2."deleted_at" = 0
+        ) AS "memberCount"
       FROM "AdvocacyGroup" ag
       WHERE ag."advocateId" = ANY($1) AND ag."deleted_at" = 0
     `;
-    const groupsResult = await pool.query(groupsQuery, [advocateIds]);
+    let groupsResult;
+    try {
+      groupsResult = await pool.query(groupsQuery, [advocateIds]);
+    } catch (e) {
+      // Fallback if Pairing.advocacyGroupId column doesn't exist yet on this deploy —
+      // return groups without member counts.
+      console.warn('[api/advocates] AdvocacyGroup member-count join failed; returning groups without memberCount:', e.message);
+      groupsResult = await pool.query(`
+        SELECT ag."id" AS "groupId", ag."advocateId", ag."name" AS "groupName",
+          ag."state"::text AS "status", ag."capacity",
+          ag."start_date" AS "startDate", ag."completed_date" AS "endDate",
+          NULL::int AS "memberCount"
+        FROM "AdvocacyGroup" ag
+        WHERE ag."advocateId" = ANY($1) AND ag."deleted_at" = 0
+      `, [advocateIds]);
+    }
+
+    // Contact log — last 5 entries per advocate, blending their Sessions and CoordinatorNotes.
+    // Sessions come from any pairing this advocate has.
+    // CoordinatorNotes are the coordinator's notes about this advocate.
+    const contactLogQuery = `
+      WITH combined AS (
+        SELECT p."advocateUserId" AS advocate_id,
+          s."date_start" AS log_date,
+          s."status"::text AS log_type,
+          NULL::text AS note_text,
+          coord."firstName" AS author_first,
+          coord."lastName" AS author_last,
+          m."first_name" AS mom_first,
+          m."last_name" AS mom_last,
+          'session' AS source_kind
+        FROM "Session" s
+        JOIN "Pairing" p ON p."id" = s."pairing_id"
+        LEFT JOIN "Mom" m ON m."id" = p."momId"
+        LEFT JOIN "User" coord ON coord."id" = s."created_by_id"
+        WHERE p."advocateUserId" = ANY($1)
+          AND s."deleted_at" = 0
+        UNION ALL
+        SELECT cn."advocate_id" AS advocate_id,
+          cn."created_at" AS log_date,
+          'Coordinator note' AS log_type,
+          cn."description" AS note_text,
+          coord."firstName" AS author_first,
+          coord."lastName" AS author_last,
+          NULL AS mom_first,
+          NULL AS mom_last,
+          'note' AS source_kind
+        FROM "CoordinatorNote" cn
+        LEFT JOIN "User" coord ON coord."id" = cn."coordinator_id"
+        WHERE cn."advocate_id" = ANY($1)
+          AND cn."deleted_at" = 0
+      ),
+      ranked AS (
+        SELECT advocate_id, log_date, log_type, note_text, author_first, author_last,
+          mom_first, mom_last, source_kind,
+          ROW_NUMBER() OVER (PARTITION BY advocate_id ORDER BY log_date DESC) AS rn
+        FROM combined
+      )
+      SELECT advocate_id, log_date, log_type, note_text, author_first, author_last,
+        mom_first, mom_last, source_kind
+      FROM ranked
+      WHERE rn <= 5
+      ORDER BY advocate_id, log_date DESC
+    `;
+    let contactLogResult;
+    try {
+      contactLogResult = await pool.query(contactLogQuery, [advocateIds]);
+    } catch (e) {
+      // Fallback if Session.created_by_id doesn't exist on this deploy — return empty log.
+      console.warn('[api/advocates] Contact log query failed; returning empty contactLog:', e.message);
+      contactLogResult = { rows: [] };
+    }
+    const contactLogByAdvocate = {};
+    for (const r of contactLogResult.rows) {
+      if (!contactLogByAdvocate[r.advocate_id]) contactLogByAdvocate[r.advocate_id] = [];
+      const author = r.author_first
+        ? `${r.author_first} ${r.author_last || ''}`.trim()
+        : null;
+      const momName = r.mom_first
+        ? `${r.mom_first} ${r.mom_last || ''}`.trim()
+        : null;
+      contactLogByAdvocate[r.advocate_id].push({
+        date: r.log_date,
+        type: r.log_type,
+        author,
+        momName,
+        note: r.note_text || null,
+      });
+    }
 
     // Group pairings by advocate ID
     const pairingsByAdvocate = {};
@@ -155,16 +263,29 @@ router.get('/', async (req, res) => {
       return status || '—';
     }
 
+    // Compute "stalled" for each active pairing — last held session > 14 days ago.
+    function daysSince(d) {
+      if (!d) return null;
+      const then = new Date(d);
+      if (Number.isNaN(then.getTime())) return null;
+      return Math.floor((Date.now() - then.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
     for (const p of pairingsResult.rows) {
       if (!pairingsByAdvocate[p.advocateUserId]) {
         pairingsByAdvocate[p.advocateUserId] = [];
       }
+      const outcome = mapOutcome(p.status);
+      const isActive = outcome === 'active';
+      const daysSinceHeld = daysSince(p.lastHeldSessionAt);
+      const stalled = isActive && daysSinceHeld != null && daysSinceHeld > 14;
       pairingsByAdvocate[p.advocateUserId].push({
         mom: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim() || 'Unknown',
         type: p.trackTitle || '1:1',
         start: fmtDate(p.startDate),
         end: p.endDate ? fmtDate(p.endDate) : 'ongoing',
-        outcome: mapOutcome(p.status),
+        outcome,
+        stalled,
         // Keep original for back-compat
         momName: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim(),
         status: p.status,
@@ -172,17 +293,22 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Merge group results into pairings
+    // Merge group results into pairings.
+    // Cristina's new file reads `p.groupName` + `p.memberCount` for group rows.
     for (const g of groupsResult.rows) {
       if (!pairingsByAdvocate[g.advocateId]) {
         pairingsByAdvocate[g.advocateId] = [];
       }
+      const isActive = g.status === 'active';
       pairingsByAdvocate[g.advocateId].push({
         mom: g.groupName || 'Group',
         type: 'Group',
+        groupName: g.groupName || 'Group',
+        memberCount: g.memberCount || null,
         start: fmtDate(g.startDate),
         end: g.endDate ? fmtDate(g.endDate) : 'ongoing',
-        outcome: g.status === 'active' ? 'active' : (g.status === 'completed' ? 'Completed' : g.status),
+        outcome: isActive ? 'active' : (g.status === 'completed' ? 'Completed' : g.status),
+        stalled: false, // group stall detection not yet modeled
         momName: g.groupName,
         status: g.status,
         trackTitle: 'Group',
@@ -252,11 +378,19 @@ router.get('/', async (req, res) => {
         monthsActive,
         totalPairings: r.totalPairings,
         activePairings: r.activePairings,
+        // Alias Cristina's new file reads — same value as activeGroups. Keep activeGroups for back-compat.
+        activeGroupFacilitations: r.activeGroups,
         totalGroups: r.totalGroups,
         activeGroups: r.activeGroups,
+        // Proxy for "when did this advocate enter current sub-status" — User.updated_at.
+        // Accurate when the most recent update was a status change; imprecise if other fields
+        // (name, email, etc.) were edited more recently. Event-based tracking via AuditLog would
+        // be more accurate but the JSON shape is currently undiagnosable (see CLAUDE.md gap).
+        subStatusSince: r.updated_at || null,
         latestNoteDate: r.latestNoteDate || null,
         latestNote: r.latestNote || null,
         pairings: pairingsByAdvocate[r.id] || [],
+        contactLog: contactLogByAdvocate[r.id] || [],
       };
     });
 

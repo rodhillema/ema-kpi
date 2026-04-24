@@ -914,7 +914,7 @@ function getFiltered(){
     if(f.q&&!nm.includes(f.q)&&!em.includes(f.q)&&!ph.includes(f.q))return false;
     if(f.name&&!nm.includes(f.name))return false;
     if(f.status.length&&!f.status.includes(m.status))return false;
-    if(f.track.length){var tn=m.inProgressTrack?m.inProgressTrack.name:"none";if(!f.track.includes(tn))return false;}
+    if(f.track.length){var tn=m.inProgressTrack?(m.inProgressTrack.group||m.inProgressTrack.name):"none";if(!f.track.includes(tn))return false;}
     if(f.contact){var ca=dsa(m.lastContactDate);if(f.contact==="overdue"&&ca<=14)return false;if(f.contact==="recent"&&ca>=7)return false;}
     if(f.pairing.length){
       var pairingMatch=f.pairing.some(function(v){

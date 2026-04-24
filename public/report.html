@@ -1198,7 +1198,12 @@
     align-items: center;
   }
   .donut-svg { width: 160px; height: 160px; display: block; }
-  .donut-svg circle.dn-track { fill: none; stroke: var(--light); stroke-width: 28; }
+  /* Track set to transparent to hide SVG stroke subpixel anti-aliasing gaps
+     between adjacent slices. When slices cover 100% of the circle (as they do
+     on all our donuts), no visible track is needed — and with --light (#F4F6F8)
+     as the track color, even a 1–2px gap between slices made the track peek
+     through as a white wedge (visible on Race, Pregnancy, etc.). */
+  .donut-svg circle.dn-track { fill: none; stroke: transparent; stroke-width: 28; }
   .donut-svg circle.dn-slice {
     fill: none; stroke-width: 28;
     transition: stroke-width 0.15s, opacity 0.15s;

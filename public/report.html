@@ -4980,6 +4980,10 @@ window.renderGeoMap = async function renderGeoMap(geoData) {
 
   var numStates = Object.keys(stateCounts).length;
   var mode = numStates > 2 ? 'state' : 'county';
+  // RD 4/24/26 fallback: if we resolved state but no county FIPS made it through
+  // (e.g. single-state affiliate in a state we haven't loaded counties for yet),
+  // force state mode so the state still shades — better than empty county view.
+  if (mode === 'county' && Object.keys(countyCounts).length === 0) mode = 'state';
 
   // 2. Fetch topology - always grab states (small, used as context layer in
   //    county mode), grab counties only when in county mode.

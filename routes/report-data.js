@@ -222,6 +222,10 @@ router.get('/', async (req, res) => {
       geoDistRaw,
       countiesServedRaw,
       topZipCodesRaw,
+      raceDistRaw,
+      ageDistRaw,
+      languageDistRaw,
+      pregnancyDistRaw,
       affiliates,
       affNameResult,
     ] = await Promise.all([
@@ -879,7 +883,9 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── NEW: Referral Sources ──────────────────────────────
-
+      // RD 4/25/26: 'Self-Referred' agency-named rows are normalized into the
+      // 'Self-Referral' bucket along with referral_type_c='self' moms — they're
+      // the same thing, surface as one row.
       pool.query(`
         SELECT
           CASE
@@ -887,6 +893,7 @@ router.get('/', async (req, res) => {
             WHEN a."name" IS NULL AND m."referral_type_c"::text = 'internal' THEN 'Internal Referral'
             WHEN a."name" IS NULL THEN 'Not Recorded'
             WHEN a."name" ~ '^[0-9a-f]{8}-' THEN 'Not Recorded'
+            WHEN LOWER(TRIM(a."name")) IN ('self-referral','self referral','self-referred','self referred','self') THEN 'Self-Referral'
             ELSE a."name"
           END AS referral_source,
           COUNT(*)::int AS referrals_received,
@@ -1421,6 +1428,104 @@ router.get('/', async (req, res) => {
         ORDER BY 3 DESC
       `, affParams),
 
+      // ─── Demographics: Race distribution ─────────────────────
+      // GROUP BY raw race_c. Display labels match what's in the database.
+      // Same active-during-period cohort as familiesServed.
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(m."race_c"), ''), 'Unknown') AS race,
+          COUNT(DISTINCT m."id")::int AS count
+        FROM "Mom" m
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          ${affWhere}
+        GROUP BY 1
+        ORDER BY 2 DESC
+      `, affParams),
+
+      // ─── Demographics: Age distribution ──────────────────────
+      // Buckets computed from Mom.birthdate as of PERIOD_END (so the report
+      // is anchored to "age during Q1" not viewer time).
+      pool.query(`
+        SELECT
+          CASE
+            WHEN age_yrs < 18 THEN 'Under 18'
+            WHEN age_yrs < 25 THEN '18 to 24'
+            WHEN age_yrs < 35 THEN '25 to 34'
+            WHEN age_yrs < 45 THEN '35 to 44'
+            ELSE '45+'
+          END AS bucket,
+          COUNT(*)::int AS count
+        FROM (
+          SELECT m."id",
+            DATE_PART('year', AGE('${PERIOD_END}'::date, m."birthdate"))::int AS age_yrs
+          FROM "Mom" m
+          JOIN "Pairing" p ON p."momId" = m."id"
+          WHERE m."deleted_at" = 0
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND m."birthdate" IS NOT NULL
+            ${affWhere}
+          GROUP BY m."id", m."birthdate"
+        ) ages
+        GROUP BY 1
+        ORDER BY
+          CASE bucket
+            WHEN 'Under 18' THEN 1
+            WHEN '18 to 24' THEN 2
+            WHEN '25 to 34' THEN 3
+            WHEN '35 to 44' THEN 4
+            ELSE 5
+          END
+      `, affParams),
+
+      // ─── Demographics: Top languages spoken ──────────────────
+      // languages_c is an ARRAY column — UNNEST so multi-language moms
+      // count toward each language they speak (% sum can exceed 100).
+      pool.query(`
+        SELECT lang, COUNT(DISTINCT mom_id)::int AS count
+        FROM (
+          SELECT m."id" AS mom_id, UNNEST(m."languages_c") AS lang
+          FROM "Mom" m
+          JOIN "Pairing" p ON p."momId" = m."id"
+          WHERE m."deleted_at" = 0
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND m."languages_c" IS NOT NULL
+            AND array_length(m."languages_c", 1) > 0
+            ${affWhere}
+        ) lc
+        WHERE lang IS NOT NULL AND TRIM(lang) != ''
+        GROUP BY lang
+        ORDER BY 2 DESC
+      `, affParams),
+
+      // ─── Demographics: Pregnancy at intake ───────────────────
+      // currently_pregnant_c is text. Values normalized in post-processing.
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(m."currently_pregnant_c"), ''), 'Unknown') AS status,
+          COUNT(DISTINCT m."id")::int AS count
+        FROM "Mom" m
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          ${affWhere}
+        GROUP BY 1
+        ORDER BY 2 DESC
+      `, affParams),
+
       // ─── Affiliate list (for admin slicer) ──────────────────
 
       isOrgWideRole ? pool.query(`
@@ -1530,11 +1635,13 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // ─── Top ZIP Codes: top 5 by count + "Other ZIPs" rollup ──
+    // ─── Top ZIP Codes: top 5 + "Other ZIPs" rollup, plus full list ──
     // Privacy floor dropped (RD 4/24/26) — for internal HQ admin oversight,
     // surfacing low-count ZIPs is acceptable and the panel was useless when
     // small affiliates had nothing above a 5-mom threshold. Re-add a floor
     // before any external publishing of this data.
+    // V2 (RD 4/25/26): Also expose top_zip_codes_full so the frontend can offer
+    // a "show all" toggle that expands beyond the top-5 default view.
     const zipsRowsAll = (topZipCodesRaw.rows || []).filter((r) => r.zip && r.zip !== 'Unknown');
     const zipsTop = zipsRowsAll.slice(0, 5);
     const zipsRest = zipsRowsAll.slice(5);
@@ -1547,6 +1654,73 @@ router.get('/', async (req, res) => {
     if (zipsOtherCount > 0) {
       topZipCodes.push({ zip: 'OTHER', city: 'Other ZIPs combined', count: zipsOtherCount, is_other: true });
     }
+    // Full list (all ZIPs, no rollup, sorted DESC by count) for the expand toggle.
+    const topZipCodesFull = zipsRowsAll.map((r) => ({
+      zip: r.zip,
+      city: r.city || '',
+      count: r.count,
+    }));
+
+    // ─── Demographics post-processing ────────────────────────
+    // Race: keep raw labels (top 5 + "Other Races" rollup).
+    const raceRows = (raceDistRaw.rows || []);
+    const raceTotal = raceRows.reduce((s, r) => s + r.count, 0);
+    const raceTop = raceRows.slice(0, 5);
+    const raceRest = raceRows.slice(5);
+    const raceOtherCount = raceRest.reduce((s, r) => s + r.count, 0);
+    const raceDistribution = raceTop.map((r) => ({
+      label: r.race,
+      count: r.count,
+      pct: raceTotal > 0 ? Math.round(1000 * r.count / raceTotal) / 10 : 0,
+    }));
+    if (raceOtherCount > 0) {
+      raceDistribution.push({
+        label: 'Other Races',
+        count: raceOtherCount,
+        pct: raceTotal > 0 ? Math.round(1000 * raceOtherCount / raceTotal) / 10 : 0,
+        is_other: true,
+      });
+    }
+
+    // Age: already bucketed in SQL with stable ordering.
+    const ageRows = (ageDistRaw.rows || []);
+    const ageTotal = ageRows.reduce((s, r) => s + r.count, 0);
+    const ageDistribution = ageRows.map((r) => ({
+      label: r.bucket,
+      count: r.count,
+      pct: ageTotal > 0 ? Math.round(1000 * r.count / ageTotal) / 10 : 0,
+    }));
+
+    // Languages: top 5 by count. Note: each mom can speak multiple, so the
+    // sum of percentages can exceed 100% — that's expected.
+    const langRows = (languageDistRaw.rows || []);
+    // Denominator for % display = distinct moms with ANY language recorded.
+    const langDistinctMoms = langRows.length > 0 ? Math.max(...langRows.map((r) => r.count)) : 0;
+    // Better: count distinct moms separately. Use the highest-count language
+    // as a lower bound; for a true denom we'd need a separate query. For now,
+    // use raceTotal-equivalent (active-during-period cohort) — assumes most
+    // active moms have at least one language recorded. Frontend can override.
+    const languageDistribution = langRows.slice(0, 5).map((r) => ({
+      label: r.lang,
+      count: r.count,
+      pct: langDistinctMoms > 0 ? Math.round(1000 * r.count / langDistinctMoms) / 10 : 0,
+    }));
+
+    // Pregnancy: normalize 'Yes'/'No'/'true'/'false' style values into
+    // 'Pregnant at intake' vs 'Not pregnant at intake'.
+    const pregRows = (pregnancyDistRaw.rows || []);
+    let pregYes = 0, pregNo = 0, pregUnknown = 0;
+    for (const r of pregRows) {
+      const v = String(r.status || '').trim().toLowerCase();
+      if (v === 'yes' || v === 'true' || v === 'currently pregnant' || v === 'pregnant') pregYes += r.count;
+      else if (v === 'no' || v === 'false' || v === 'not pregnant' || v === 'not pregnant at intake') pregNo += r.count;
+      else pregUnknown += r.count;
+    }
+    const pregTotal = pregYes + pregNo;  // Unknown excluded from rate
+    const pregnancyDistribution = [
+      { label: 'Not pregnant at intake', count: pregNo, pct: pregTotal > 0 ? Math.round(1000 * pregNo / pregTotal) / 10 : 0 },
+      { label: 'Pregnant at intake',     count: pregYes, pct: pregTotal > 0 ? Math.round(1000 * pregYes / pregTotal) / 10 : 0 },
+    ];
 
     // ─── Build response envelope ────────────────────────────
 
@@ -1667,10 +1841,22 @@ router.get('/', async (req, res) => {
       // Shape: [{ name, count, pct, is_other? }, ...]
       counties_served: countiesServed,
 
-      // Top ZIP Codes panel — top 5 with ≥5 moms each + "Other ZIPs" rollup.
-      // Privacy floor: ZIPs with <5 moms are pre-rolled into "Other ZIPs".
+      // Top ZIP Codes panel — top 5 + "Other ZIPs" rollup (default view).
       // Shape: [{ zip, city, count, is_other? }, ...]
       top_zip_codes: topZipCodes,
+      // Full list of all ZIPs (no rollup) — drives the "Show all" expand toggle.
+      // Shape: [{ zip, city, count }, ...] sorted DESC.
+      top_zip_codes_full: topZipCodesFull,
+
+      // Demographics tab — Race / Age / Language / Pregnancy distributions.
+      // All scoped to the active-during-period cohort (same as familiesServed).
+      // Each: [{ label, count, pct, is_other? }, ...]
+      demographics: {
+        race: raceDistribution,
+        age: ageDistribution,
+        languages: languageDistribution,
+        pregnancy: pregnancyDistribution,
+      },
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,

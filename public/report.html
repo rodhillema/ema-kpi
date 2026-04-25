@@ -4781,7 +4781,8 @@
   // (RD 4/25/26) Backend returns data.referral_sources as
   // [{ referral_source, referrals_received, ... }, ...] sorted DESC by count.
   // We take top 5 + "Other Sources" rollup, render donut slices and legend.
-  (function hydrateReferralDonut() {
+  // Wrapped in try so a malformed payload doesn't kill the rest of the render.
+  try { (function hydrateReferralDonut() {
     var refs = (data.referral_sources || []).filter(function(r) { return r.referral_source && r.referral_source !== 'Not Recorded'; });
     var totalRefs = refs.reduce(function(s, r) { return s + r.referrals_received; }, 0);
     var top = refs.slice(0, 5);
@@ -4841,13 +4842,14 @@
     });
     // Apply overlap shim now that slices exist
     if (window.__closeDonutGaps__) window.__closeDonutGaps__();
-  })();
+  })(); } catch (e) { console.error('[hydrateReferralDonut] failed:', e); }
 
   // ── Demographics tab: hydrate Race / Age / Languages / Pregnancy
   // (RD 4/25/26) Backend returns data.demographics = {race, age, languages, pregnancy}.
   // All scoped to the active-during-period cohort. Re-fires on every renderDashboard
   // call so affiliate slicer changes update the panels.
-  (function hydrateDemographics() {
+  // Wrapped in try so a single failure doesn't kill the rest of the render.
+  try { (function hydrateDemographics() {
     var demo = data.demographics || {};
     var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4', '#f8c486', '#c5d2d2'];
     var R_dem = 60, C_dem = 2 * Math.PI * R_dem;
@@ -5025,13 +5027,14 @@
     }
 
     if (window.__closeDonutGaps__) window.__closeDonutGaps__();
-  })();
+  })(); } catch (e) { console.error('[hydrateDemographics] failed:', e); }
 
   // ── Service Area tab: hydrate map header counts + Counties Served + Top ZIPs
   // (RD 4/24/26) These elements live OUTSIDE the tab1 setH1 scope, so we use
   // document.querySelector directly. Re-fires on every renderDashboard call,
   // so affiliate slicer changes update them.
-  (function hydrateServiceArea() {
+  // Wrapped in try so a single failure doesn't kill the rest of the render.
+  try { (function hydrateServiceArea() {
     function setSA(key, value) {
       var el = document.querySelector('[data-hydrate="' + key + '"]');
       if (el && value !== null && value !== undefined) el.textContent = value;
@@ -5130,7 +5133,7 @@
     // Safe even if Service Area tab isn't currently active — the function
     // checks tab.classList before rendering.
     if (window.__rerenderGeoMap__) window.__rerenderGeoMap__();
-  })();
+  })(); } catch (e) { console.error('[hydrateServiceArea] failed:', e); }
 
   // Local HTML escape helper (used by Service Area hydration above).
   function escapeHtml(s) {

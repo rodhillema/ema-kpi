@@ -3622,9 +3622,12 @@
        slice.setAttribute('stroke-dashoffset', off.toFixed(2));
        slice.setAttribute('data-pct', s.pct);
        slice.setAttribute('data-n', s.count);
+       slice.removeAttribute('data-overlap-applied');  // RD: re-arm overlap shim
       }
       cumPct += s.pct;
      });
+     // RD: re-apply overlap shim now that dasharrays were rewritten with real data
+     if (window.__closeDonutGaps__) window.__closeDonutGaps__();
     }
    }
 
@@ -3685,9 +3688,12 @@
         slice.setAttribute('stroke-dashoffset', off.toFixed(2));
         slice.setAttribute('data-pct', s.pct);
         slice.setAttribute('data-n', s.count);
+        slice.removeAttribute('data-overlap-applied');  // RD: re-arm overlap shim
        }
        advCum += s.pct;
       });
+      // RD: re-apply overlap shim now that dasharrays were rewritten with real data
+      if (window.__closeDonutGaps__) window.__closeDonutGaps__();
      }
     }
    }

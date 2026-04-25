@@ -87,6 +87,39 @@ function normalizeName(s) {
   return String(s).trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
+// Normalize a raw county text value into a clean county name suitable for
+// lookup AND display, OR return null if it's clearly junk (street address,
+// state code, etc.). Used by both the map FIPS lookup and the Counties
+// Served panel so duplicates merge and junk surfaces as 'Unknown'.
+//
+// Examples:
+//   'Broward'        → 'Broward'
+//   'Broward county' → 'Broward'  (suffix stripped)
+//   'BROWARD'        → 'Broward'  (case-folded)
+//   'Miami-Dade'     → 'Miami-Dade'
+//   '2582 Riverside Dr' → null  (street address)
+//   'FL' / 'Florida'    → null  (state value in county field)
+//   ''               → null
+const STREET_SUFFIX_RE = /\b(St|Street|Dr|Drive|Ave|Avenue|Blvd|Boulevard|Rd|Road|Ln|Lane|Ct|Court|Way|Pkwy|Parkway|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway)\b/i;
+function normalizeCountyName(raw) {
+  if (raw == null) return null;
+  let s = String(raw).trim();
+  if (!s || s.toLowerCase() === 'unknown') return null;
+  // Street-address heuristic: contains digits + a common street suffix word.
+  if (/\d/.test(s) && STREET_SUFFIX_RE.test(s)) return null;
+  // Strip trailing ' county' (case-insensitive) so 'Broward county' = 'Broward'.
+  s = s.replace(/\s+county\s*$/i, '').trim();
+  if (!s) return null;
+  // Reject if what remains is a state code or full state name (someone
+  // entered the state into the county field).
+  if (STATE_FIPS[s.toUpperCase()]) return null;
+  // Title-case for display: 'BROWARD' → 'Broward', 'miami-dade' → 'Miami-Dade'.
+  s = s.toLowerCase()
+       .split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+       .split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+  return s || null;
+}
+
 router.get('/', async (req, res) => {
   try {
     const { role, affiliateId } = req.session.user;
@@ -1440,16 +1473,18 @@ router.get('/', async (req, res) => {
     const kpi3Rate = kpi3WithData > 0 ? Math.round(1000 * kpi3Improved / kpi3WithData) / 10 : null;
 
     // ─── Service Area: map raw state/county text → FIPS codes ─
-    // Rows unmappable by either lookup are dropped silently with a debug log
-    // (so they don't poison the chart). If a whole affiliate shows zeros,
-    // the "No location data available" fallback triggers correctly.
+    // County text is run through normalizeCountyName first (strips ' county'
+    // suffix, case-folds, rejects street addresses / state values) so
+    // 'Broward', 'Broward county', 'BROWARD' all merge to one map row.
+    // Rows unmappable by either lookup are dropped silently with a debug log.
     const geoByKey = {};
     let geoUnmapped = 0;
     for (const r of (geoDistRaw.rows || [])) {
       const stateKey = normalizeName(r.state_name);
-      const countyKey = normalizeName(r.county_name);
+      const cleanCounty = normalizeCountyName(r.county_name);
       const stateFips = STATE_FIPS[stateKey];
-      if (!stateFips) { geoUnmapped += r.count; continue; }
+      if (!stateFips || !cleanCounty) { geoUnmapped += r.count; continue; }
+      const countyKey = cleanCounty.toUpperCase();
       const countyFips = COUNTY_FIPS[stateFips]?.[countyKey];
       if (!countyFips) { geoUnmapped += r.count; continue; }
       const k = countyFips;
@@ -1461,13 +1496,22 @@ router.get('/', async (req, res) => {
       console.log(`[geographic_distribution] ${geoUnmapped} moms dropped from map (unmapped state/county)`);
     }
 
-    // ─── Counties Served: top 5 + Other rollup ────────────────
-    // Frontend renders these as hbar rows; the largest county = 100% bar width,
-    // rest scaled proportionally by % share of the largest.
-    const countiesRows = (countiesServedRaw.rows || []).filter((r) => r.county_name && r.county_name !== 'Unknown');
-    const countiesTotalAll = countiesRows.reduce((s, r) => s + r.count, 0);
-    const countiesTop = countiesRows.slice(0, 5);
-    const countiesRest = countiesRows.slice(5);
+    // ─── Counties Served: normalize → re-aggregate → top 5 + Other ────
+    // Run each row through normalizeCountyName so:
+    //   - 'Broward' + 'Broward county' merge into one bucket
+    //   - Street addresses ('2582 Riverside Dr') and state values ('FL') go to 'Unknown'
+    //   - Display names get title-cased
+    const countyBuckets = {};
+    for (const r of (countiesServedRaw.rows || [])) {
+      const clean = normalizeCountyName(r.county_name) || 'Unknown';
+      countyBuckets[clean] = (countyBuckets[clean] || 0) + r.count;
+    }
+    const countiesNormalized = Object.entries(countyBuckets)
+      .map(([name, count]) => ({ county_name: name, count }))
+      .sort((a, b) => b.count - a.count);
+    const countiesTotalAll = countiesNormalized.reduce((s, r) => s + r.count, 0);
+    const countiesTop = countiesNormalized.slice(0, 5);
+    const countiesRest = countiesNormalized.slice(5);
     const countiesOtherCount = countiesRest.reduce((s, r) => s + r.count, 0);
     const countiesServed = countiesTop.map((r) => ({
       name: r.county_name,

@@ -1450,6 +1450,9 @@ router.get('/', async (req, res) => {
       // ─── Demographics: Age distribution ──────────────────────
       // Buckets computed from Mom.birthdate as of PERIOD_END (so the report
       // is anchored to "age during Q1" not viewer time).
+      // ORDER BY uses MIN(age_yrs) — Postgres doesn't accept the output alias
+      // 'bucket' as the operand of CASE in ORDER BY, so we use the natural
+      // numeric ordering of the youngest age in each bucket instead.
       pool.query(`
         SELECT
           CASE
@@ -1475,14 +1478,7 @@ router.get('/', async (req, res) => {
           GROUP BY m."id", m."birthdate"
         ) ages
         GROUP BY 1
-        ORDER BY
-          CASE bucket
-            WHEN 'Under 18' THEN 1
-            WHEN '18 to 24' THEN 2
-            WHEN '25 to 34' THEN 3
-            WHEN '35 to 44' THEN 4
-            ELSE 5
-          END
+        ORDER BY MIN(age_yrs)
       `, affParams),
 
       // ─── Demographics: Top languages spoken ──────────────────

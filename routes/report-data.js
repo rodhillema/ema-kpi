@@ -195,6 +195,8 @@ router.get('/', async (req, res) => {
       intakeData,
       psMigrated,
       geoDistRaw,
+      countiesServedRaw,
+      topZipCodesRaw,
       affiliates,
       affNameResult,
     ] = await Promise.all([
@@ -1351,6 +1353,49 @@ router.get('/', async (req, res) => {
         GROUP BY 1, 2
       `, affParams),
 
+      // ─── Counties Served (Service Area panel) ────────────────
+      // Aggregates moms by primary_address_county_c (raw text). Post-processing
+      // takes top 5 + rolls up the rest into "Other Counties".
+      // Same active-during-period cohort as familiesServed.
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(m."primary_address_county_c"), ''), 'Unknown') AS county_name,
+          COUNT(DISTINCT m."id")::int AS count
+        FROM "Mom" m
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          ${affWhere}
+        GROUP BY 1
+        ORDER BY 2 DESC
+      `, affParams),
+
+      // ─── Top ZIP Codes (Service Area panel) ──────────────────
+      // Aggregates moms by ZIP + city. Post-processing applies privacy floor
+      // (ZIPs with <5 moms rolled into "Other ZIPs"), takes top 5, then rolls
+      // remaining into "Other ZIPs" too. Same active-during-period cohort.
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(m."primary_address_postalcode"), ''), 'Unknown') AS zip,
+          COALESCE(NULLIF(TRIM(m."primary_address_city"), ''), '') AS city,
+          COUNT(DISTINCT m."id")::int AS count
+        FROM "Mom" m
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND m."primary_address_postalcode" IS NOT NULL
+          AND TRIM(m."primary_address_postalcode") != ''
+          ${affWhere}
+        GROUP BY 1, 2
+        ORDER BY 3 DESC
+      `, affParams),
+
       // ─── Affiliate list (for admin slicer) ──────────────────
 
       isOrgWideRole ? pool.query(`
@@ -1414,6 +1459,48 @@ router.get('/', async (req, res) => {
     const geographicDistribution = Object.values(geoByKey);
     if (geoUnmapped > 0) {
       console.log(`[geographic_distribution] ${geoUnmapped} moms dropped from map (unmapped state/county)`);
+    }
+
+    // ─── Counties Served: top 5 + Other rollup ────────────────
+    // Frontend renders these as hbar rows; the largest county = 100% bar width,
+    // rest scaled proportionally by % share of the largest.
+    const countiesRows = (countiesServedRaw.rows || []).filter((r) => r.county_name && r.county_name !== 'Unknown');
+    const countiesTotalAll = countiesRows.reduce((s, r) => s + r.count, 0);
+    const countiesTop = countiesRows.slice(0, 5);
+    const countiesRest = countiesRows.slice(5);
+    const countiesOtherCount = countiesRest.reduce((s, r) => s + r.count, 0);
+    const countiesServed = countiesTop.map((r) => ({
+      name: r.county_name,
+      count: r.count,
+      pct: countiesTotalAll > 0 ? Math.round(1000 * r.count / countiesTotalAll) / 10 : 0,
+    }));
+    if (countiesOtherCount > 0) {
+      countiesServed.push({
+        name: 'Other Counties',
+        count: countiesOtherCount,
+        pct: countiesTotalAll > 0 ? Math.round(1000 * countiesOtherCount / countiesTotalAll) / 10 : 0,
+        is_other: true,
+      });
+    }
+
+    // ─── Top ZIP Codes: privacy floor + top 5 + Other rollup ──
+    // Per Cristina's spec: ZIPs with fewer than 5 moms are rolled into "Other ZIPs"
+    // for mother privacy. Then take top 5 of the remaining, roll the rest into "Other".
+    const zipsRowsAll = (topZipCodesRaw.rows || []).filter((r) => r.zip && r.zip !== 'Unknown');
+    const zipsAboveFloor = zipsRowsAll.filter((r) => r.count >= 5);
+    const zipsBelowFloor = zipsRowsAll.filter((r) => r.count < 5);
+    const zipsTop = zipsAboveFloor.slice(0, 5);
+    const zipsRest = zipsAboveFloor.slice(5);
+    const zipsOtherCount =
+      zipsBelowFloor.reduce((s, r) => s + r.count, 0) +
+      zipsRest.reduce((s, r) => s + r.count, 0);
+    const topZipCodes = zipsTop.map((r) => ({
+      zip: r.zip,
+      city: r.city || '',
+      count: r.count,
+    }));
+    if (zipsOtherCount > 0) {
+      topZipCodes.push({ zip: 'OTHER', city: 'Other ZIPs combined', count: zipsOtherCount, is_other: true });
     }
 
     // ─── Build response envelope ────────────────────────────
@@ -1530,6 +1617,15 @@ router.get('/', async (req, res) => {
       // addressed moms" which is a legitimate state. Send empty array here so
       // the map correctly shows "No location data available" rather than demo.
       geographic_distribution: geographicDistribution,
+
+      // Counties Served panel — top 5 by mom count + "Other Counties" rollup.
+      // Shape: [{ name, count, pct, is_other? }, ...]
+      counties_served: countiesServed,
+
+      // Top ZIP Codes panel — top 5 with ≥5 moms each + "Other ZIPs" rollup.
+      // Privacy floor: ZIPs with <5 moms are pre-rolled into "Other ZIPs".
+      // Shape: [{ zip, city, count, is_other? }, ...]
+      top_zip_codes: topZipCodes,
 
       // Affiliate slicer options (admin only)
       affiliates: affiliates.rows,

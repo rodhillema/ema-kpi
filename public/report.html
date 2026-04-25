@@ -2163,25 +2163,15 @@
     </div></div>
    </div>
    <h3>Where referrals come from</h3>
-   <div class="panel-n"><strong data-hydrate="refsrc-n">38</strong> referrals across <strong data-hydrate="refsrc-cat-n">5</strong> source categories</div>
+   <div class="panel-n"><strong data-hydrate="refsrc-n">0</strong> referrals across <strong data-hydrate="refsrc-cat-n">0</strong> source categories</div>
    <div class="donut-wrap vertical">
-    <svg class="donut-svg" viewBox="0 0 160 160">
+    <svg class="donut-svg" viewBox="0 0 160 160" id="refSourceDonutSvg">
      <g transform="rotate(-90 80 80)">
       <circle class="dn-track" cx="80" cy="80" r="60" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#123939" stroke-dasharray="120.64 256.35" stroke-dashoffset="-0.00" data-label="DCF / Child Protective Services" data-pct="32" data-n="12" data-color="#123939" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#ec482f" stroke-dasharray="79.17 297.82" stroke-dashoffset="-120.64" data-label="Self-Referral / Walk-In" data-pct="21" data-n="8" data-color="#ec482f" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="67.86 309.13" stroke-dashoffset="-199.81" data-label="Community Partner / Nonprofit" data-pct="18" data-n="7" data-color="#f2a136" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="49.01 327.98" stroke-dashoffset="-267.66" data-label="Hospital / Healthcare Provider" data-pct="13" data-n="5" data-color="#5e7d7d" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f4a08a" stroke-dasharray="60.32 316.67" stroke-dashoffset="-316.67" data-label="Other Sources" data-pct="16" data-n="6" data-color="#f4a08a" data-unit="referrals" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <!-- Slices rendered dynamically by renderReferralDonut() -->
      </g>
     </svg>
-    <div class="donut-legend">
-      <div class="dl-row"><div class="dl-dot" style="background:#123939;"></div><div class="dl-label">DCF / Child Protective Services</div><div class="dl-pct" data-hydrate="refsrc-dcf---child-protective-service-pct">32%</div></div>
-      <div class="dl-row"><div class="dl-dot" style="background:#ec482f;"></div><div class="dl-label">Self-Referral / Walk-In</div><div class="dl-pct" data-hydrate="refsrc-self-referral---walk-in-pct">21%</div></div>
-      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Community Partner / Nonprofit</div><div class="dl-pct" data-hydrate="refsrc-community-partner---nonprofit-pct">18%</div></div>
-      <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Hospital / Healthcare Provider</div><div class="dl-pct" data-hydrate="refsrc-hospital---healthcare-provider-pct">13%</div></div>
-      <div class="dl-row"><div class="dl-dot" style="background:#f4a08a;"></div><div class="dl-label">Other Sources</div><div class="dl-pct" data-hydrate="refsrc-other-sources-pct">16%</div></div>
-    </div>
+    <div class="donut-legend" id="refSourceLegend"></div>
    </div>
   </div>
 
@@ -2802,12 +2792,12 @@
       <g transform="rotate(-90 80 80)">
        <circle class="dn-track" cx="80" cy="80" r="60" />
       <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#5e7d7d" stroke-dasharray="331.75 45.24" stroke-dashoffset="-0.00" data-label="Not pregnant at intake" data-pct="88" data-n="130" data-color="#5e7d7d" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
-      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="45.24 331.75" stroke-dashoffset="-331.75" data-label="Currently pregnant" data-pct="12" data-n="17" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
+      <circle class="dn-slice" cx="80" cy="80" r="60" stroke="#f2a136" stroke-dasharray="45.24 331.75" stroke-dashoffset="-331.75" data-label="Pregnant at intake" data-pct="12" data-n="17" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()" />
       </g>
      </svg>
      <div class="donut-legend">
       <div class="dl-row"><div class="dl-dot" style="background:#5e7d7d;"></div><div class="dl-label">Not pregnant at intake</div><div class="dl-pct" data-hydrate="preg-not-pregnant-at-intake-pct">88%</div></div>
-      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Currently pregnant</div><div class="dl-pct" data-hydrate="preg-currently-pregnant-pct">12%</div></div>
+      <div class="dl-row"><div class="dl-dot" style="background:#f2a136;"></div><div class="dl-label">Pregnant at intake</div><div class="dl-pct" data-hydrate="preg-currently-pregnant-pct">12%</div></div>
      </div>
     </div>
    </div>
@@ -3840,7 +3830,10 @@
    setHydrate('tc-completion-den', totalClosed);
    var completionPanels = tabTrack.querySelectorAll('.panel');
 
-   // ── Delivery Format (1:1 vs Group completions)
+   // ── Delivery Format (1:1 vs Group completions) — RD 4/25/26
+   // Rewired to target the visible donut markup (.dn-slice + .dl-pct) instead
+   // of the legacy .pbl-pct-* hidden hooks. Was wiring real data into
+   // invisible elements while the donut showed static demo numbers.
    var compByFormat = track.completions_by_format || [];
    var oneToOneComp = 0, groupComp = 0;
    compByFormat.forEach(function(f) {
@@ -3850,38 +3843,41 @@
    var totalFormatComp = oneToOneComp + groupComp;
    var o2oPct = totalFormatComp > 0 ? Math.round(oneToOneComp / totalFormatComp * 100) : 0;
    var grpPct = totalFormatComp > 0 ? 100 - o2oPct : 0;
-   // ⚠ Updated 4/23/26: targets the .pbl-pct-* classes + .prop-bar pattern
-   // (was generic style[*=display:flex] which no longer matches the merged DOM).
+   var R_donut = 60, C_donut = 2 * Math.PI * R_donut;
+   function _renderTwoSliceDonut(panel, pct1, n1, pct2, n2, label1, label2, total, headerSel) {
+     if (!panel) return;
+     var hdrEl = panel.querySelector(headerSel);
+     if (hdrEl) hdrEl.textContent = total;
+     var slices = panel.querySelectorAll('.dn-slice');
+     if (slices.length >= 2) {
+       var slen1 = (pct1 / 100) * C_donut;
+       var slen2 = (pct2 / 100) * C_donut;
+       slices[0].setAttribute('stroke-dasharray', slen1.toFixed(2) + ' ' + (C_donut - slen1).toFixed(2));
+       slices[0].setAttribute('stroke-dashoffset', '0.00');
+       slices[0].setAttribute('data-pct', pct1);
+       slices[0].setAttribute('data-n', n1);
+       slices[0].removeAttribute('data-overlap-applied');
+       slices[1].setAttribute('stroke-dasharray', slen2.toFixed(2) + ' ' + (C_donut - slen2).toFixed(2));
+       slices[1].setAttribute('stroke-dashoffset', '-' + slen1.toFixed(2));
+       slices[1].setAttribute('data-pct', pct2);
+       slices[1].setAttribute('data-n', n2);
+       slices[1].removeAttribute('data-overlap-applied');
+     }
+     var legendPcts = panel.querySelectorAll('.dl-pct');
+     if (legendPcts.length >= 2) {
+       legendPcts[0].textContent = pct1 + '%';
+       legendPcts[1].textContent = pct2 + '%';
+     }
+   }
    for (var di = 0; di < completionPanels.length; di++) {
     var dh3 = completionPanels[di].querySelector('h3');
     if (dh3 && dh3.textContent.indexOf('Delivery Format') !== -1) {
-     var dfPanel = completionPanels[di];
-     var dfBar = dfPanel.querySelector('.prop-bar');
-     if (dfBar) {
-      var dfSegs = dfBar.children;
-      if (dfSegs.length >= 2) {
-       dfSegs[0].style.flex = o2oPct || 1;
-       dfSegs[1].style.flex = grpPct || 1;
-       // Update title attr + pb-tip count text
-       dfSegs[0].setAttribute('title', oneToOneComp + ' moms');
-       dfSegs[1].setAttribute('title', groupComp + ' moms');
-       var dfTip0 = dfSegs[0].querySelector('.pb-tip > div'); if (dfTip0) dfTip0.textContent = oneToOneComp + ' moms';
-       var dfTip1 = dfSegs[1].querySelector('.pb-tip > div'); if (dfTip1) dfTip1.textContent = groupComp + ' moms';
-      }
-     }
-     var pctO2O = dfPanel.querySelector('.pbl-pct-o2o'); if (pctO2O) pctO2O.textContent = o2oPct + '%';
-     var pctGrp = dfPanel.querySelector('.pbl-pct-group'); if (pctGrp) pctGrp.textContent = grpPct + '%';
-     // Update legend row title attrs
-     var dfRows = dfPanel.querySelectorAll('.pbl-row');
-     if (dfRows.length >= 2) {
-      dfRows[0].setAttribute('title', oneToOneComp + ' moms');
-      dfRows[1].setAttribute('title', groupComp + ' moms');
-     }
+     _renderTwoSliceDonut(completionPanels[di], o2oPct, oneToOneComp, grpPct, groupComp, '1:1 Advocacy', 'Group Setting', totalFormatComp, '[data-hydrate="deliv-n"]');
      break;
     }
    }
 
-   // ── Language Split
+   // ── Language Split — same rewire
    var compByTrack = track.completions_by_track || [];
    var engCount = 0, spaCount = 0;
    compByTrack.forEach(function(t) {
@@ -3894,27 +3890,7 @@
    var langPanels = tabTrack.querySelectorAll('h3');
    for (var li = 0; li < langPanels.length; li++) {
     if (langPanels[li].textContent.indexOf('Language Split') !== -1) {
-     var lsPanel = langPanels[li].parentElement;
-     var lsTotal = lsPanel.querySelector('.ls-total'); if (lsTotal) lsTotal.textContent = totalLang;
-     var lsBar = lsPanel.querySelector('.prop-bar');
-     if (lsBar) {
-      var lsSegs = lsBar.children;
-      if (lsSegs.length >= 2) {
-       lsSegs[0].style.flex = engPct || 1;
-       lsSegs[1].style.flex = spaPct || 1;
-       lsSegs[0].setAttribute('title', engCount + ' tracks');
-       lsSegs[1].setAttribute('title', spaCount + ' tracks');
-       var lsTip0 = lsSegs[0].querySelector('.pb-tip > div'); if (lsTip0) lsTip0.textContent = engCount + ' tracks';
-       var lsTip1 = lsSegs[1].querySelector('.pb-tip > div'); if (lsTip1) lsTip1.textContent = spaCount + ' tracks';
-      }
-     }
-     var pctEn = lsPanel.querySelector('.pbl-pct-en'); if (pctEn) pctEn.textContent = engPct + '%';
-     var pctEs = lsPanel.querySelector('.pbl-pct-es'); if (pctEs) pctEs.textContent = spaPct + '%';
-     var lsRows = lsPanel.querySelectorAll('.pbl-row');
-     if (lsRows.length >= 2) {
-      lsRows[0].setAttribute('title', engCount + ' tracks');
-      lsRows[1].setAttribute('title', spaCount + ' tracks');
-     }
+     _renderTwoSliceDonut(langPanels[li].parentElement, engPct, engCount, spaPct, spaCount, 'English', 'Spanish', totalLang, '[data-hydrate="lang-split-n"]');
      // Validation: language total should match total closed tracks
      var totalClosedFromTce = (tce.total_completions || 0) + (tce.total_incompletes || 0);
      if (totalLang !== totalClosedFromTce && totalLang > 0) {
@@ -3923,6 +3899,8 @@
      break;
     }
    }
+   // Re-apply donut overlap shim now that slices have new dasharrays
+   if (window.__closeDonutGaps__) window.__closeDonutGaps__();
 
    // ── Closed and Completed by Track (combined chart, .tcc-* DOM)
    //    Replaces the prior Share-of-Tracks vbar wireup AND the
@@ -4221,12 +4199,24 @@
   }
 
   // ── N<30 RELIABILITY UTILITIES ──────────────────────────────────────────
+  // RD 4/25/26: Single 'Interpret with caution' flag, threshold 30.
+  // Per Cristina's spec, ONLY rate displays (KPI hero cards, per-track learning
+  // progress) get flagged. Proportions (hbar rows, donut slices, prop-bar
+  // segments) don't get flags — proportions don't have a meaningful
+  // "denominator-too-small" warning. Auto-applier skips proportion contexts.
   var N_THRESHOLD = 30;
   function nWarnBadge(n) {
    if (n == null || n >= N_THRESHOLD) return '';
-   return '<span class="n-warn">Interpret with caution<span class="tip">This figure is based on a small number of moms. The direction is meaningful but the exact number may shift as more moms are added.</span></span>';
+   return '<span class="n-warn">Interpret with caution<span class="tip">Sample size below 30. The direction is meaningful but the exact number may shift as more moms are added.</span></span>';
   }
   document.querySelectorAll('[data-n]').forEach(function(el) {
+   // Skip all proportion-display elements (hbar rows, donut slices, stacked-bar
+   // segments). Flags only apply to rate-display elements.
+   if (el.classList.contains('hbar-row')) return;
+   if (el.classList.contains('dn-slice')) return;
+   if (el.classList.contains('dn-track')) return;
+   var parent = el.parentElement;
+   if (parent && parent.classList && parent.classList.contains('prop-bar')) return;
    var n = parseInt(el.getAttribute('data-n'), 10);
    if (!isNaN(n) && n < N_THRESHOLD) {
     if (!el.querySelector('.n-warn')) {
@@ -4787,6 +4777,256 @@
    }
   }
 
+  // ── Referrals tab: hydrate "Where referrals come from" donut + legend
+  // (RD 4/25/26) Backend returns data.referral_sources as
+  // [{ referral_source, referrals_received, ... }, ...] sorted DESC by count.
+  // We take top 5 + "Other Sources" rollup, render donut slices and legend.
+  (function hydrateReferralDonut() {
+    var refs = (data.referral_sources || []).filter(function(r) { return r.referral_source && r.referral_source !== 'Not Recorded'; });
+    var totalRefs = refs.reduce(function(s, r) { return s + r.referrals_received; }, 0);
+    var top = refs.slice(0, 5);
+    var rest = refs.slice(5);
+    var otherCount = rest.reduce(function(s, r) { return s + r.referrals_received; }, 0);
+    var slices = top.map(function(r) {
+      return { label: r.referral_source, count: r.referrals_received, is_other: false };
+    });
+    if (otherCount > 0) {
+      slices.push({ label: 'Other Sources', count: otherCount, is_other: true });
+    }
+    // Header counts
+    var refSrcN = document.querySelector('[data-hydrate="refsrc-n"]');
+    if (refSrcN) refSrcN.textContent = fmt(totalRefs);
+    var refSrcCatN = document.querySelector('[data-hydrate="refsrc-cat-n"]');
+    if (refSrcCatN) refSrcCatN.textContent = fmt(slices.length);
+
+    // Render donut SVG slices + legend
+    var svg = document.getElementById('refSourceDonutSvg');
+    var legend = document.getElementById('refSourceLegend');
+    if (!svg || !legend || totalRefs === 0) return;
+    var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#c5d2d2'];
+    var R = 60, C = 2 * Math.PI * R;
+    var g = svg.querySelector('g');
+    // Strip any existing slices (idempotent on re-render)
+    g.querySelectorAll('circle.dn-slice').forEach(function(c) { c.remove(); });
+    legend.innerHTML = '';
+    var cumPct = 0;
+    slices.forEach(function(s, i) {
+      var pct = totalRefs > 0 ? (s.count / totalRefs * 100) : 0;
+      var slen = (pct / 100) * C;
+      var off = -(cumPct / 100) * C;
+      var color = s.is_other ? '#c5d2d2' : palette[i % palette.length];
+      var slice = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      slice.setAttribute('class', 'dn-slice');
+      slice.setAttribute('cx', '80'); slice.setAttribute('cy', '80'); slice.setAttribute('r', '60');
+      slice.setAttribute('stroke', color);
+      slice.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C - slen).toFixed(2));
+      slice.setAttribute('stroke-dashoffset', off.toFixed(2));
+      slice.setAttribute('data-label', s.label);
+      slice.setAttribute('data-pct', Math.round(pct));
+      slice.setAttribute('data-n', s.count);
+      slice.setAttribute('data-color', color);
+      slice.setAttribute('data-unit', 'referrals');
+      slice.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+      slice.setAttribute('onmousemove', 'dnTipMove(event)');
+      slice.setAttribute('onmouseleave', 'dnTipHide()');
+      g.appendChild(slice);
+      var row = document.createElement('div');
+      row.className = 'dl-row';
+      row.innerHTML =
+        '<div class="dl-dot" style="background:' + color + ';"></div>' +
+        '<div class="dl-label">' + escapeHtml(s.label) + '</div>' +
+        '<div class="dl-pct">' + Math.round(pct) + '%</div>';
+      legend.appendChild(row);
+      cumPct += pct;
+    });
+    // Apply overlap shim now that slices exist
+    if (window.__closeDonutGaps__) window.__closeDonutGaps__();
+  })();
+
+  // ── Demographics tab: hydrate Race / Age / Languages / Pregnancy
+  // (RD 4/25/26) Backend returns data.demographics = {race, age, languages, pregnancy}.
+  // All scoped to the active-during-period cohort. Re-fires on every renderDashboard
+  // call so affiliate slicer changes update the panels.
+  (function hydrateDemographics() {
+    var demo = data.demographics || {};
+    var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4', '#f8c486', '#c5d2d2'];
+    var R_dem = 60, C_dem = 2 * Math.PI * R_dem;
+    function setH(key, val) {
+      var el = document.querySelector('[data-hydrate="' + key + '"]');
+      if (el && val !== null && val !== undefined) el.textContent = val;
+    }
+
+    // ── Race donut ──
+    var race = demo.race || [];
+    var raceTotal = race.reduce(function(s, r) { return s + r.count; }, 0);
+    setH('race-n', fmt(raceTotal));
+    var raceDonutSvg = document.querySelectorAll('#tab-demographics .donut-svg')[0];
+    if (raceDonutSvg) {
+      var g = raceDonutSvg.querySelector('g');
+      g.querySelectorAll('circle.dn-slice').forEach(function(c) { c.remove(); });
+      var raceLegend = raceDonutSvg.parentElement.querySelector('.donut-legend');
+      if (raceLegend) raceLegend.innerHTML = '';
+      var rCum = 0;
+      race.forEach(function(slice, i) {
+        var pct = raceTotal > 0 ? (slice.count / raceTotal * 100) : 0;
+        var slen = (pct / 100) * C_dem;
+        var off = -(rCum / 100) * C_dem;
+        var color = slice.is_other ? '#c5d2d2' : palette[i % palette.length];
+        var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('class', 'dn-slice'); c.setAttribute('cx', '80'); c.setAttribute('cy', '80'); c.setAttribute('r', '60');
+        c.setAttribute('stroke', color);
+        c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
+        c.setAttribute('stroke-dashoffset', off.toFixed(2));
+        c.setAttribute('data-label', slice.label);
+        c.setAttribute('data-pct', Math.round(pct));
+        c.setAttribute('data-n', slice.count);
+        c.setAttribute('data-color', color);
+        c.setAttribute('data-unit', 'moms');
+        c.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+        c.setAttribute('onmousemove', 'dnTipMove(event)');
+        c.setAttribute('onmouseleave', 'dnTipHide()');
+        g.appendChild(c);
+        if (raceLegend) {
+          var row = document.createElement('div');
+          row.className = 'dl-row';
+          row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
+            '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+            '<div class="dl-pct">' + Math.round(pct) + '%</div>';
+          raceLegend.appendChild(row);
+        }
+        rCum += pct;
+      });
+    }
+
+    // ── Age bar chart ──
+    // Update existing <rect> + <text> elements in place. Bar geometry: chart
+    // baseline at y=182, max bar height ~168 (when count = max in domain).
+    // Using a fixed 40-mom domain matches the static template's y-axis scale.
+    var age = demo.age || [];
+    var ageTotal = age.reduce(function(s, r) { return s + r.count; }, 0);
+    setH('age-n', fmt(ageTotal));
+    var ageMap = {
+      'Under 18': 'under-18',
+      '18 to 24': '18-to-24',
+      '25 to 34': '25-to-34',
+      '35 to 44': '35-to-44',
+      '45+':      '45-and-up',
+    };
+    var ageMaxCount = age.reduce(function(m, r) { return Math.max(m, r.count); }, 0);
+    var ageDomain = Math.max(40, Math.ceil(ageMaxCount / 10) * 10);  // round up to nearest 10
+    age.forEach(function(b) {
+      var slug = ageMap[b.label];
+      if (!slug) return;
+      var rect = document.querySelector('[data-hydrate="age-' + slug + '-rect"]');
+      var pctEl = document.querySelector('[data-hydrate="age-' + slug + '-pct"]');
+      if (rect) {
+        var maxBarHeight = 168;
+        var height = ageDomain > 0 ? (b.count / ageDomain) * maxBarHeight : 0;
+        var y = 182 - height;
+        rect.setAttribute('height', height.toFixed(1));
+        rect.setAttribute('y', y.toFixed(1));
+        rect.setAttribute('data-pct', ageTotal > 0 ? Math.round(b.count / ageTotal * 100) : 0);
+        rect.setAttribute('data-n', b.count);
+      }
+      if (pctEl) {
+        pctEl.textContent = (ageTotal > 0 ? Math.round(b.count / ageTotal * 100) : 0) + '%';
+        pctEl.setAttribute('y', (182 - (ageDomain > 0 ? (b.count / ageDomain) * 168 : 0) - 6).toFixed(1));
+      }
+    });
+
+    // ── Languages hbar list ──
+    var langs = demo.languages || [];
+    // Lang denominator = active-during-period cohort total; use raceTotal as
+    // proxy (most active moms have race recorded too). Could be a separate
+    // backend field later.
+    var langDenom = raceTotal || (langs.length > 0 ? langs[0].count : 0);
+    setH('lang-n', fmt(langDenom));
+    var langPanels = document.querySelectorAll('#tab-demographics h3');
+    var langPanel = null;
+    for (var lpi = 0; lpi < langPanels.length; lpi++) {
+      if (langPanels[lpi].textContent.indexOf('languages spoken') !== -1) {
+        langPanel = langPanels[lpi].parentElement;
+        break;
+      }
+    }
+    if (langPanel) {
+      var langList = langPanel.querySelector('.hbar-list');
+      if (langList) {
+        langList.innerHTML = '';
+        var langPalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a'];
+        var langMaxCount = langs.reduce(function(m, r) { return Math.max(m, r.count); }, 0);
+        langs.slice(0, 5).forEach(function(L, i) {
+          var color = langPalette[i % langPalette.length];
+          var pct = langDenom > 0 ? Math.round(L.count / langDenom * 100) : 0;
+          var barWidth = langMaxCount > 0 ? (L.count / langMaxCount * 100).toFixed(1) : 0;
+          var row = document.createElement('div');
+          row.className = 'hbar-row';
+          row.setAttribute('data-label', L.label);
+          row.setAttribute('data-n', L.count);
+          row.setAttribute('data-color', color);
+          row.setAttribute('data-unit', 'moms');
+          row.innerHTML =
+            '<div class="hbar-label">' + escapeHtml(L.label) + '</div>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="background:' + color + ';width:' + barWidth + '%;"></div></div>' +
+            '<div class="hbar-meta">' + pct + '%</div>';
+          langList.appendChild(row);
+        });
+      }
+    }
+
+    // ── Pregnancy donut ──
+    var preg = demo.pregnancy || [];
+    var pregTotal = preg.reduce(function(s, r) { return s + r.count; }, 0);
+    setH('preg-n', fmt(pregTotal));
+    var pregPanel = null;
+    for (var ppi = 0; ppi < langPanels.length; ppi++) {
+      if (langPanels[ppi].textContent.indexOf('Pregnancy status') !== -1) {
+        pregPanel = langPanels[ppi].parentElement;
+        break;
+      }
+    }
+    if (pregPanel) {
+      var pregSvg = pregPanel.querySelector('.donut-svg');
+      var pregLegend = pregPanel.querySelector('.donut-legend');
+      if (pregSvg && pregLegend) {
+        var pregG = pregSvg.querySelector('g');
+        pregG.querySelectorAll('circle.dn-slice').forEach(function(c) { c.remove(); });
+        pregLegend.innerHTML = '';
+        var pPalette = ['#5e7d7d', '#f2a136'];
+        var pCum = 0;
+        preg.forEach(function(slice, i) {
+          var pct = pregTotal > 0 ? (slice.count / pregTotal * 100) : 0;
+          var slen = (pct / 100) * C_dem;
+          var off = -(pCum / 100) * C_dem;
+          var color = pPalette[i] || '#c5d2d2';
+          var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('class', 'dn-slice'); c.setAttribute('cx', '80'); c.setAttribute('cy', '80'); c.setAttribute('r', '60');
+          c.setAttribute('stroke', color);
+          c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
+          c.setAttribute('stroke-dashoffset', off.toFixed(2));
+          c.setAttribute('data-label', slice.label);
+          c.setAttribute('data-pct', Math.round(pct));
+          c.setAttribute('data-n', slice.count);
+          c.setAttribute('data-color', color);
+          c.setAttribute('data-unit', 'moms');
+          c.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+          c.setAttribute('onmousemove', 'dnTipMove(event)');
+          c.setAttribute('onmouseleave', 'dnTipHide()');
+          pregG.appendChild(c);
+          var row = document.createElement('div');
+          row.className = 'dl-row';
+          row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
+            '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+            '<div class="dl-pct">' + Math.round(pct) + '%</div>';
+          pregLegend.appendChild(row);
+          pCum += pct;
+        });
+      }
+    }
+
+    if (window.__closeDonutGaps__) window.__closeDonutGaps__();
+  })();
+
   // ── Service Area tab: hydrate map header counts + Counties Served + Top ZIPs
   // (RD 4/24/26) These elements live OUTSIDE the tab1 setH1 scope, so we use
   // document.querySelector directly. Re-fires on every renderDashboard call,
@@ -4838,30 +5078,52 @@
       });
     }
 
-    // Top ZIP Codes table. Row 1-5 numbered; "Other" row gets dimmed.
+    // Top ZIP Codes table — top 5 collapsed view by default + "Show all" toggle.
+    // (RD 4/25/26 item 22) Click "Show all" to expand to full ZIP list; click
+    // again to collapse back. Backend provides both data.top_zip_codes (top 5
+    // + Other rollup) and data.top_zip_codes_full (all ZIPs, no rollup).
     var zipsBody = document.getElementById('topZipsBody');
-    if (zipsBody) {
+    var zipsFull = data.top_zip_codes_full || zips;
+    function renderZipRow(z, rank) {
+      var tr = document.createElement('tr');
+      if (z.is_other) {
+        tr.style.color = 'var(--mid)';
+        tr.innerHTML =
+          '<td></td>' +
+          '<td><em>' + escapeHtml(z.city || 'Other ZIPs combined') + '</em></td>' +
+          '<td></td>' +
+          '<td><em>' + fmt(z.count) + '</em></td>';
+      } else {
+        tr.innerHTML =
+          '<td>' + rank + '</td>' +
+          '<td><strong>' + escapeHtml(z.zip) + '</strong></td>' +
+          '<td>' + escapeHtml(z.city || '') + '</td>' +
+          '<td>' + fmt(z.count) + '</td>';
+      }
+      return tr;
+    }
+    function renderZips(expanded) {
+      if (!zipsBody) return;
       zipsBody.innerHTML = '';
+      var rows = expanded ? zipsFull : zips;
       var rank = 1;
-      zips.forEach(function(z) {
-        var tr = document.createElement('tr');
-        if (z.is_other) {
-          tr.style.color = 'var(--mid)';
-          tr.innerHTML =
-            '<td></td>' +
-            '<td><em>' + escapeHtml(z.city || 'Other ZIPs combined') + '</em></td>' +
-            '<td></td>' +
-            '<td><em>' + fmt(z.count) + '</em></td>';
-        } else {
-          tr.innerHTML =
-            '<td>' + rank + '</td>' +
-            '<td><strong>' + escapeHtml(z.zip) + '</strong></td>' +
-            '<td>' + escapeHtml(z.city || '') + '</td>' +
-            '<td>' + fmt(z.count) + '</td>';
-          rank++;
-        }
-        zipsBody.appendChild(tr);
+      rows.forEach(function(z) {
+        zipsBody.appendChild(renderZipRow(z, z.is_other ? '' : rank));
+        if (!z.is_other) rank++;
       });
+      // Toggle row at the bottom
+      var toggleRow = document.createElement('tr');
+      toggleRow.className = 'zip-toggle-row';
+      var label = expanded ? 'Show top 5 only' : 'Show all (' + zipsFull.length + ' ZIPs)';
+      toggleRow.innerHTML = '<td colspan="4" style="text-align:center;padding:10px 0;">' +
+        '<button type="button" class="zip-toggle-btn" style="background:transparent;border:1px solid var(--border);border-radius:5px;padding:5px 14px;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green);cursor:pointer;">' + label + '</button>' +
+        '</td>';
+      var btn = toggleRow.querySelector('.zip-toggle-btn');
+      btn.addEventListener('click', function() { renderZips(!expanded); });
+      zipsBody.appendChild(toggleRow);
+    }
+    if (zipsBody && zipsFull.length > 0) {
+      renderZips(false);
     }
 
     // Re-fire map render so it reflects the new geographic_distribution.
@@ -4889,10 +5151,10 @@ function requestReferralExport(){
   if (!refs.length) { alert("No referral data to export."); return; }
   document.getElementById("refExportOverlay").classList.add("show");
   document.getElementById("refExportCheckbox").checked = false;
-  document.getElementById("refExportConfirm").disabled = true;
+  // Reset the .ready class so the confirm button starts disabled (greyed-out)
+  document.getElementById("refExportConfirm").classList.remove("ready");
 }
 function closeRefExport(){ document.getElementById("refExportOverlay").classList.remove("show"); }
-function refExportReady(){ document.getElementById("refExportConfirm").disabled = !document.getElementById("refExportCheckbox").checked; }
 function confirmReferralExport(){
   closeRefExport();
   var data = window.__EMA_DATA__ || {};
@@ -4940,7 +5202,13 @@ function confirmReferralExport(){
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
   link.href = url;
-  link.download = 'referral-sources-q1-2026-' + new Date().toISOString().slice(0,10) + '.csv';
+  // Filename includes affiliate scope so multiple downloads from different
+  // affiliate views are distinguishable (RD 4/25/26):
+  //   referrals-q1-2026-EMA-Broward.csv
+  //   referrals-q1-2026-All-Affiliates.csv
+  var affLabel = ((data.meta||{}).affiliate_name || 'All-Affiliates')
+    .replace(/Ē/g, 'E').replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '');
+  link.download = 'referrals-q1-2026-' + affLabel + '-' + new Date().toISOString().slice(0,10) + '.csv';
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -5223,22 +5491,50 @@ document.addEventListener('click', function(e) {
 });
 </script>
 
-<!-- ── Referral Export - Responsibility Acknowledgment Modal ── -->
-<div id="refExportOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center;">
- <div style="background:white;border-radius:12px;max-width:460px;width:90%;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-  <div style="font-family:'Shrikhand',serif;font-size:22px;color:var(--red);margin-bottom:6px;">Export Referral Data</div>
-  <div style="font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.5;">This export contains aggregated referral source data. It is subject to ĒMA data use policies.</div>
-  <label style="display:flex;align-items:flex-start;gap:10px;background:var(--red-light);border-left:3px solid var(--red);padding:12px 14px;border-radius:6px;cursor:pointer;margin-bottom:18px;">
-   <input type="checkbox" id="refExportCheckbox" onchange="refExportReady()" style="margin-top:2px;flex-shrink:0;">
-   <span style="font-size:12px;color:var(--dark);line-height:1.5;">I acknowledge my responsibility for the safe handling of this data and agree to use it in accordance with ĒMA data use policies.</span>
-  </label>
-  <div style="display:flex;gap:10px;justify-content:flex-end;">
-   <button onclick="closeRefExport()" style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--mid);background:transparent;border:1px solid var(--border);border-radius:5px;padding:8px 16px;cursor:pointer;">Cancel</button>
-   <button id="refExportConfirm" onclick="confirmReferralExport()" disabled style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:white;background:var(--red);border:none;border-radius:5px;padding:8px 16px;cursor:pointer;">Download CSV</button>
+<!-- ── Referral Export — Responsibility Acknowledgment Modal ──
+     Matches the .aor-overlay pattern used by Mom Report + Advocate Report
+     for UX consistency across all three exports. Keeps existing IDs
+     (refExportOverlay, refExportCheckbox, refExportConfirm) so the existing
+     JS handlers (requestReferralExport / confirmReferralExport) still work. -->
+<style>
+.aor-overlay-ref{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;align-items:center;justify-content:center}
+.aor-overlay-ref.show{display:flex}
+.aor-overlay-ref .aor-box{background:#fff;border-radius:14px;max-width:520px;width:92%;padding:30px 32px;box-shadow:0 12px 40px rgba(0,0,0,.22)}
+.aor-overlay-ref .aor-title{font-family:'Shrikhand',serif;font-size:24px;color:var(--red);margin-bottom:6px;line-height:1.15}
+.aor-overlay-ref .aor-subtitle{font-size:12.5px;color:var(--mid);margin-bottom:14px;line-height:1.55}
+.aor-overlay-ref .aor-ack{background:#fdf6f3;border-left:3px solid var(--red);padding:14px 16px;border-radius:6px;margin-bottom:16px}
+.aor-overlay-ref .aor-ack-title{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red-dark);margin-bottom:6px}
+.aor-overlay-ref .aor-ack p{font-size:11.5px;color:var(--dark);line-height:1.5;margin:0 0 6px 0}
+.aor-overlay-ref .aor-ack p:last-child{margin-bottom:0}
+.aor-overlay-ref .aor-confirm-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer}
+.aor-overlay-ref .aor-confirm-row input{margin-top:2px;flex-shrink:0}
+.aor-overlay-ref .aor-confirm-row span{font-size:12px;color:var(--dark);line-height:1.5}
+.aor-overlay-ref .aor-actions{display:flex;gap:10px;justify-content:flex-end}
+.aor-overlay-ref button{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;border-radius:5px;padding:9px 18px;cursor:pointer}
+.aor-overlay-ref .aor-cancel{color:var(--mid);background:transparent;border:1px solid var(--border)}
+.aor-overlay-ref .aor-confirm{color:#fff;background:var(--red);border:none;opacity:.4;pointer-events:none}
+.aor-overlay-ref .aor-confirm.ready{opacity:1;pointer-events:auto}
+</style>
+<div id="refExportOverlay" class="aor-overlay-ref">
+  <div class="aor-box">
+    <div class="aor-title">Export Referral Data</div>
+    <div class="aor-subtitle">This export contains aggregated referral source data for the selected affiliate scope. It is subject to ĒMA data use policies.</div>
+    <div class="aor-ack">
+      <div class="aor-ack-title">Acknowledgment of Responsibility</div>
+      <p>This export contains program-level data about referrals to ĒMA. You are authorized to access it for program oversight purposes only.</p>
+      <p>You must not share this file with unauthorized parties, use it for purposes outside of ĒMA program activities, or store it on unsecured personal devices.</p>
+      <p>Any suspected breach must be reported immediately to your supervisor and ĒMA leadership.</p>
+    </div>
+    <label class="aor-confirm-row">
+      <input type="checkbox" id="refExportCheckbox" onchange="document.getElementById('refExportConfirm').classList.toggle('ready', this.checked)">
+      <span>I acknowledge my responsibility for the safe handling of this data and confirm I am authorized to export it for ĒMA program use.</span>
+    </label>
+    <div class="aor-actions">
+      <button class="aor-cancel" onclick="closeRefExport()">Cancel</button>
+      <button class="aor-confirm" id="refExportConfirm" onclick="confirmReferralExport()">Download CSV</button>
+    </div>
   </div>
- </div>
 </div>
-<style>#refExportOverlay.show{display:flex !important}#refExportConfirm:disabled{opacity:0.4;cursor:not-allowed}</style>
 
 </body>
 </html>

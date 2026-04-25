@@ -1100,6 +1100,13 @@ function pillClear(i){if(window._pillClearFns&&window._pillClearFns[i])window._p
 function openDrawer(id){
   openId=id;
   var m=MOMS.find(function(x){return x.id===id;});
+  if(!m)return;
+  // Safe defaults for fields the backend may not return yet (RD 4/25/26).
+  // Without these, m.trackHistory.filter() etc. throw and the drawer never opens.
+  if(!Array.isArray(m.trackHistory))m.trackHistory=[];
+  if(!Array.isArray(m.children))m.children=[];
+  if(!Array.isArray(m.contactLog))m.contactLog=[];
+  if(!m.latestCoordNote)m.latestCoordNote=null;
   document.getElementById("d-name").textContent=m.name;
   var ca=dsa(m.lastContactDate);
   var cs=m.lastContactDate?(ca===0?"Today":ca+"d ago"):"No contact on file";
@@ -1274,12 +1281,12 @@ function confirmExport(){
     body:JSON.stringify({user:document.getElementById("nav-name")?.textContent||"unknown",
     timestamp:new Date().toISOString(),recordCount:list.length,recordIds:list.map(function(m){return m.id;})})
   }).catch(function(e){console.error('Audit log failed:',e);});
-  var hdr=["Name","Status","Track in Progress","Stalled","Sessions Done","Sessions Total","Last Contact","Days Since Contact","Last FWA","Days Since FWA","Phone","Email","Coordinator","Intake Date"];
+  var hdr=["Name","Status","Track in Progress","Stalled","Sessions Done","Sessions Total","Last Contact","Days Since Contact","Last FWA","Days Since FWA","Phone","Email","Coordinator"];
   var rows=[hdr];
   list.forEach(function(m){
     var t=m.inProgressTrack;
     rows.push([m.name,m.status,t?t.name:"",t?t.stalled?"Yes":"No":"",t?t.sessionsDone:"",t?t.sessionsTotal:"",
-      m.lastContactDate,dsa(m.lastContactDate),m.lastFwaDate||"",dsa(m.lastFwaDate),m.phone,m.email,m.coordinator,m.intakeDate]);
+      m.lastContactDate,dsa(m.lastContactDate),m.lastFwaDate||"",dsa(m.lastFwaDate),m.phone,m.email,m.coordinator]);
   });
   var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v===null||v===undefined?"":v).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
   var blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});

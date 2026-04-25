@@ -755,10 +755,13 @@ const SUB_BY_STATUS = {
 const ALL_SUBS = [...new Set(Object.values(SUB_BY_STATUS).flat())];
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
-function dbu(s){const b=new Date(s);let n=new Date(TODAY.getFullYear(),b.getMonth(),b.getDate());if(n<TODAY)n.setFullYear(TODAY.getFullYear()+1);return Math.ceil((n-TODAY)/86400000)}
-function dsa(s){return Math.floor((TODAY-new Date(s))/86400000)}
-function fmtS(s){return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-function fmtL(s){return new Date(s).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
+// Null-safe date helpers (RD 4/25/26): when birthday/lastNote is null, formerly
+// 'new Date(null)' coerced to 1970-01-01, displaying as 'Dec 31, 1969' and
+// satisfying any "<30 days" filter falsely. Now nulls return Infinity / em-dash.
+function dbu(s){if(!s)return Infinity;const b=new Date(s);if(isNaN(b))return Infinity;let n=new Date(TODAY.getFullYear(),b.getMonth(),b.getDate());if(n<TODAY)n.setFullYear(TODAY.getFullYear()+1);return Math.ceil((n-TODAY)/86400000)}
+function dsa(s){if(!s)return Infinity;const d=new Date(s);if(isNaN(d))return Infinity;return Math.floor((TODAY-d)/86400000)}
+function fmtS(s){if(!s)return"—";const d=new Date(s);if(isNaN(d))return"—";return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+function fmtL(s){if(!s)return"—";const d=new Date(s);if(isNaN(d))return"—";return d.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}
 function fmtMonths(m){
   if(!m||m<1)return"<1 mo";
   const y=Math.floor(m/12),mo=m%12;
@@ -1086,8 +1089,17 @@ function openDrawer(id){
   }
   if(!updHtml)updHtml='<div class="upd-empty">No updates on file.</div>';
   document.getElementById("d-updates").innerHTML=updHtml;
-  document.getElementById("d-pairings").innerHTML=a.pairings.length
-    ?a.pairings.slice().reverse().map(p=>{
+  // Sort pairings by end date DESC, with ongoing/null end dates pinned to top.
+  // 'Present' (or any non-parseable end string) is treated as +Infinity so it
+  // sorts above completed pairings; among completed, most recent end date first.
+  function _pairEndScore(p){
+    if(!p.end||p.end==="Present"||p.outcome==="active")return Infinity;
+    const t=Date.parse(p.end);
+    return isNaN(t)?Infinity:t;
+  }
+  const sortedPairings=a.pairings.slice().sort((x,y)=>_pairEndScore(y)-_pairEndScore(x));
+  document.getElementById("d-pairings").innerHTML=sortedPairings.length
+    ?sortedPairings.map(p=>{
       const isGroup=p.type==="Group";
       const primary=isGroup?(p.groupName||"Group"):p.mom;
       const memberStr=isGroup&&p.memberCount?` \u00b7 ${p.memberCount} moms`:"";

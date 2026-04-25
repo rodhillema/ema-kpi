@@ -8,7 +8,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { COUNTY_FIPS } = require('../lib/county-fips');
+const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
+const { lookupZipCounty } = require('../lib/zip-to-county');
 
 // Q1 2026 reporting window
 const PERIOD_START = '2026-01-01';
@@ -219,8 +220,7 @@ router.get('/', async (req, res) => {
       kpi3,
       intakeData,
       psMigrated,
-      geoDistRaw,
-      countiesServedRaw,
+      momLocationsRaw,
       topZipCodesRaw,
       raceDistRaw,
       ageDistRaw,
@@ -1365,15 +1365,21 @@ router.get('/', async (req, res) => {
           AND DATE_TRUNC('day', created_at) IN ('2025-11-30', '2025-12-17')
       `),
 
-      // ─── Service Area: geographic distribution (Cristina v3) ──
-      // Same active-during-period cohort as familiesServed (mom has a paired
-      // Pairing overlapping Q1). Text state/county comes raw from Mom;
-      // FIPS mapping happens in post-processing via STATE_FIPS / COUNTY_FIPS.
+      // ─── Service Area: per-mom location data (RD 4/25/26 item 23) ──
+      // Single query returns one row per active-during-period mom with raw
+      // state, county text, and ZIP. Post-processing in JS:
+      //   1. ZIP-derived county FIPS (via lib/zip-to-county.json) is PRIMARY
+      //   2. Text county field is FALLBACK when ZIP is missing/unrecognized
+      //   3. Aggregates feed both `geographic_distribution` (map) and
+      //      `counties_served` (panel) so they reconcile to the same cohort
+      // Cohort: same active-during-period (paired pairing overlapping Q1)
+      // as familiesServed. Replaces 2 prior county-aggregated queries.
       pool.query(`
-        SELECT
-          COALESCE(NULLIF(TRIM(m."primary_address_state"), ''), 'UNKNOWN')    AS state_name,
-          COALESCE(NULLIF(TRIM(m."primary_address_county_c"), ''), 'UNKNOWN') AS county_name,
-          COUNT(DISTINCT m."id")::int AS count
+        SELECT DISTINCT
+          m."id",
+          NULLIF(TRIM(m."primary_address_state"), '')      AS state_name,
+          NULLIF(TRIM(m."primary_address_county_c"), '')   AS county_name,
+          NULLIF(TRIM(m."primary_address_postalcode"), '') AS zip
         FROM "Mom" m
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
@@ -1382,27 +1388,6 @@ router.get('/', async (req, res) => {
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
           AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
           ${affWhere}
-        GROUP BY 1, 2
-      `, affParams),
-
-      // ─── Counties Served (Service Area panel) ────────────────
-      // Aggregates moms by primary_address_county_c (raw text). Post-processing
-      // takes top 5 + rolls up the rest into "Other Counties".
-      // Same active-during-period cohort as familiesServed.
-      pool.query(`
-        SELECT
-          COALESCE(NULLIF(TRIM(m."primary_address_county_c"), ''), 'Unknown') AS county_name,
-          COUNT(DISTINCT m."id")::int AS count
-        FROM "Mom" m
-        JOIN "Pairing" p ON p."momId" = m."id"
-        WHERE m."deleted_at" = 0
-          AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
-          ${affWhere}
-        GROUP BY 1
-        ORDER BY 2 DESC
       `, affParams),
 
       // ─── Top ZIP Codes (Service Area panel) ──────────────────
@@ -1566,50 +1551,66 @@ router.get('/', async (req, res) => {
     const kpi3Improved = kpi3.rows[0]?.improved || 0;
     const kpi3Rate = kpi3WithData > 0 ? Math.round(1000 * kpi3Improved / kpi3WithData) / 10 : null;
 
-    // ─── Service Area: map raw state/county text → FIPS codes ─
-    // Two-tier mapping:
-    //   1. State recognized + county recognized → emit row with both FIPS codes
-    //      (enables county-level shading when in county view)
-    //   2. State recognized but county not in COUNTY_FIPS lookup → emit
-    //      state-only row (county_fips = null) so the row still contributes
-    //      to state-level shading even though we can't pinpoint the county
-    //   3. State not recognized → drop the row entirely (logged)
-    //
-    // County text is run through normalizeCountyName first (strips ' county'
-    // suffix, case-folds, rejects street addresses / state values) so
-    // 'Broward', 'Broward county', 'BROWARD' all merge to one row.
-    const geoByKey = {};
+    // ─── Service Area: per-mom location → FIPS resolution (RD v3) ─
+    // For each active-during-period mom, derive (state_fips, county_fips)
+    // using a 3-tier resolution strategy:
+    //   1. ZIP → county FIPS via lib/zip-to-county.json (PRIMARY)
+    //      Most reliable — ZIPs are entered consistently and one ZIP
+    //      maps to one canonical county. Works nationwide.
+    //   2. Text county field via normalizeCountyName + COUNTY_FIPS lookup
+    //      (FALLBACK when ZIP missing/unrecognized)
+    //   3. State only (county_fips = null) when state recognized but
+    //      neither ZIP nor county text resolves — keeps the mom on the
+    //      map at state level even without county detail.
+    // Aggregates feed BOTH outputs (geographic_distribution + counties_served)
+    // so they reconcile to the same cohort.
+    const momLocations = [];
     let geoUnmapped = 0;
-    for (const r of (geoDistRaw.rows || [])) {
+    let resolvedByZip = 0, resolvedByText = 0;
+    for (const r of (momLocationsRaw.rows || [])) {
       const stateKey = normalizeName(r.state_name);
       const stateFips = STATE_FIPS[stateKey];
-      if (!stateFips) { geoUnmapped += r.count; continue; }
-      const cleanCounty = normalizeCountyName(r.county_name);
-      let countyFips = null;
-      if (cleanCounty) {
-        const countyKey = cleanCounty.toUpperCase();
-        countyFips = COUNTY_FIPS[stateFips]?.[countyKey] || null;
+      if (!stateFips) { geoUnmapped++; continue; }
+      // Tier 1: ZIP-derived county FIPS (works for any US state once HUD data is loaded)
+      let countyFips = lookupZipCounty(r.zip);
+      if (countyFips) {
+        resolvedByZip++;
+      } else {
+        // Tier 2: text county fallback (only resolves for states in COUNTY_FIPS)
+        const cleanCounty = normalizeCountyName(r.county_name);
+        if (cleanCounty) {
+          const countyKey = cleanCounty.toUpperCase();
+          countyFips = COUNTY_FIPS[stateFips]?.[countyKey] || null;
+          if (countyFips) resolvedByText++;
+        }
       }
-      // Key by county FIPS when available, else by 'STATE-only-<state>' so
-      // multiple unmapped-county rows in the same state aggregate together.
-      const k = countyFips || ('STATE-' + stateFips);
-      if (!geoByKey[k]) geoByKey[k] = { state_fips: stateFips, county_fips: countyFips, count: 0 };
-      geoByKey[k].count += r.count;
+      momLocations.push({ stateFips, countyFips });
+    }
+    if (geoUnmapped > 0) {
+      console.log(`[geo] ${geoUnmapped} moms dropped from map (state not recognized)`);
+    }
+    console.log(`[geo] resolved: ${resolvedByZip} via ZIP, ${resolvedByText} via text fallback, ${momLocations.length - resolvedByZip - resolvedByText} state-only`);
+
+    // Aggregate for the map (geographic_distribution): one row per county
+    // (or per state-only when county isn't resolved). Frontend's renderGeoMap
+    // auto-switches to state view when >2 distinct states present.
+    const geoByKey = {};
+    for (const loc of momLocations) {
+      const k = loc.countyFips || ('STATE-' + loc.stateFips);
+      if (!geoByKey[k]) geoByKey[k] = { state_fips: loc.stateFips, county_fips: loc.countyFips, count: 0 };
+      geoByKey[k].count++;
     }
     const geographicDistribution = Object.values(geoByKey);
-    if (geoUnmapped > 0) {
-      console.log(`[geographic_distribution] ${geoUnmapped} moms dropped from map (unmapped state/county)`);
-    }
 
-    // ─── Counties Served: normalize → re-aggregate → top 5 + Other ────
-    // Run each row through normalizeCountyName so:
-    //   - 'Broward' + 'Broward county' merge into one bucket
-    //   - Street addresses ('2582 Riverside Dr') and state values ('FL') go to 'Unknown'
-    //   - Display names get title-cased
+    // Aggregate for the Counties Served panel: top 5 by count + Other rollup.
+    // Display name comes from COUNTY_NAME_BY_FIPS (canonical), with 'Unknown'
+    // bucket for moms whose county couldn't be resolved.
     const countyBuckets = {};
-    for (const r of (countiesServedRaw.rows || [])) {
-      const clean = normalizeCountyName(r.county_name) || 'Unknown';
-      countyBuckets[clean] = (countyBuckets[clean] || 0) + r.count;
+    for (const loc of momLocations) {
+      const name = loc.countyFips
+        ? (COUNTY_NAME_BY_FIPS[loc.countyFips] || loc.countyFips)
+        : 'Unknown';
+      countyBuckets[name] = (countyBuckets[name] || 0) + 1;
     }
     const countiesNormalized = Object.entries(countyBuckets)
       .map(([name, count]) => ({ county_name: name, count }))
@@ -1744,13 +1745,24 @@ router.get('/', async (req, res) => {
       },
 
       // Tab 2: End of Q1 Snapshot
-      snapshot: {
+      // children_total (RD 4/25/26 item 9): solid count for moms WITH child records
+      // PLUS the assumed average applied to moms without records. This proxies
+      // children-served for moms whose kids haven't been entered into Trellis yet.
+      // Frontend can read the unprojected count via children_actual if needed.
+      snapshot: (() => {
+        const actual = childrenCount.rows[0].total;
+        const avg = avgChildren.rows[0]?.avg_children || 0;
+        const noRecords = momsNoChildren.rows[0].count;
+        const projected = Math.round(actual + (avg * noRecords));
+        return {
         families_served: familiesServed.rows[0].count,
         active_advocates: advocateCount.rows[0].count,
-        children_total: childrenCount.rows[0].total,
+        children_total: projected,
+        children_actual: actual,
+        children_proxy_added: projected - actual,
         moms_with_children: childrenCount.rows[0].moms_with_children,
-        avg_children_per_mom: avgChildren.rows[0]?.avg_children || 0,
-        moms_no_child_records: momsNoChildren.rows[0].count,
+        avg_children_per_mom: avg,
+        moms_no_child_records: noRecords,
         children_welfare_involvement: childWelfareInvolvement.rows[0].count,
         families_expanded: familiesServedExpanded.rows[0],
         intake: {
@@ -1771,7 +1783,8 @@ router.get('/', async (req, res) => {
         adv_approved: advocateQ1Activity.rows[0]?.approved || 0,
         adv_became_active: advocateQ1Activity.rows[0]?.became_active || 0,
         adv_became_inactive: advocateQ1Activity.rows[0]?.became_inactive || 0,
-      },
+        };
+      })(),
 
       // Tab 3: FSS Deep Dive
       fss: {

@@ -1482,12 +1482,13 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Demographics: Top languages spoken ──────────────────
-      // languages_c is an ARRAY column — UNNEST so multi-language moms
-      // count toward each language they speak (% sum can exceed 100).
+      // languages_c is an ARRAY of Language enum (USER-DEFINED type), not text.
+      // UNNEST returns the enum value; we ::text-cast inside the subquery so
+      // outer TRIM() / GROUP BY / display all work on plain strings.
       pool.query(`
         SELECT lang, COUNT(DISTINCT mom_id)::int AS count
         FROM (
-          SELECT m."id" AS mom_id, UNNEST(m."languages_c") AS lang
+          SELECT m."id" AS mom_id, UNNEST(m."languages_c")::text AS lang
           FROM "Mom" m
           JOIN "Pairing" p ON p."momId" = m."id"
           WHERE m."deleted_at" = 0

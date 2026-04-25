@@ -2975,13 +2975,9 @@
      </div></div>
     </div>
     <h3>Counties served</h3>
-    <div class="panel-n"><strong data-hydrate="county-n">182</strong> moms with county recorded</div>
-    <div class="hbar-list">
-     <div class="hbar-row" data-label="Broward County" data-pct="78" data-n="142" data-color="#123939" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Broward</div><div class="hbar-track"><div class="hbar-fill" style="background:#123939;width:100.0%;"></div></div><div class="hbar-meta" data-hydrate="county-broward-pct">78%</div></div>
-     <div class="hbar-row" data-label="Miami-Dade County" data-pct="12" data-n="22" data-color="#ec482f" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Miami-Dade</div><div class="hbar-track"><div class="hbar-fill" style="background:#ec482f;width:15.4%;"></div></div><div class="hbar-meta" data-hydrate="county-miamidade-pct">12%</div></div>
-     <div class="hbar-row" data-label="Palm Beach County" data-pct="8" data-n="14" data-color="#f2a136" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Palm Beach</div><div class="hbar-track"><div class="hbar-fill" style="background:#f2a136;width:10.3%;"></div></div><div class="hbar-meta" data-hydrate="county-palmbeach-pct">8%</div></div>
-     <div class="hbar-row" data-label="Hillsborough County" data-pct="2" data-n="4" data-color="#5e7d7d" data-unit="moms" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><div class="hbar-label">Hillsborough</div><div class="hbar-track"><div class="hbar-fill" style="background:#5e7d7d;width:2.6%;"></div></div><div class="hbar-meta" data-hydrate="county-hillsborough-pct">2%</div></div>
-    </div>
+    <div class="panel-n"><strong data-hydrate="county-n">0</strong> moms with county recorded</div>
+    <!-- Counties hbars rendered dynamically by renderCountiesServed(). -->
+    <div class="hbar-list" id="countiesServedList"></div>
    </div>
 
    <div class="panel accent-green" style="overflow:visible;">
@@ -2993,19 +2989,13 @@
      </div></div>
     </div>
     <h3>Top ZIP codes</h3>
-    <div class="panel-n"><strong data-hydrate="zip-n">122</strong> moms with ZIP recorded</div>
+    <div class="panel-n"><strong data-hydrate="zip-n">0</strong> moms with ZIP recorded</div>
     <table class="zip-table">
      <thead>
       <tr><th>#</th><th>ZIP</th><th>Area</th><th>Moms</th></tr>
      </thead>
-     <tbody id="topZipsBody">
-     <tr><td>1</td><td><strong>33442</strong></td><td>Coconut Creek</td><td>18</td></tr>
-     <tr><td>2</td><td><strong>33068</strong></td><td>Margate</td><td>15</td></tr>
-     <tr><td>3</td><td><strong>33063</strong></td><td>Pompano Beach</td><td>14</td></tr>
-     <tr><td>4</td><td><strong>33009</strong></td><td>Hallandale</td><td>12</td></tr>
-     <tr><td>5</td><td><strong>33060</strong></td><td>Pompano Beach</td><td>11</td></tr>
-     <tr style="color:var(--mid);"><td></td><td><em>Other ZIPs combined</em></td><td></td><td><em>52</em></td></tr>
-     </tbody>
+     <!-- ZIP rows rendered dynamically by renderTopZipCodes(). -->
+     <tbody id="topZipsBody"></tbody>
     </table>
    </div>
 
@@ -4797,6 +4787,96 @@
    }
   }
 
+  // ── Service Area tab: hydrate map header counts + Counties Served + Top ZIPs
+  // (RD 4/24/26) These elements live OUTSIDE the tab1 setH1 scope, so we use
+  // document.querySelector directly. Re-fires on every renderDashboard call,
+  // so affiliate slicer changes update them.
+  (function hydrateServiceArea() {
+    function setSA(key, value) {
+      var el = document.querySelector('[data-hydrate="' + key + '"]');
+      if (el && value !== null && value !== undefined) el.textContent = value;
+    }
+    var geoData = data.geographic_distribution || [];
+    var counties = data.counties_served || [];
+    var zips = data.top_zip_codes || [];
+
+    // Header counts
+    var totalAddressed = geoData.reduce(function(s, r) { return s + (r.count || 0); }, 0);
+    var totalCounty    = counties.reduce(function(s, r) { return s + (r.count || 0); }, 0);
+    var totalZip       = zips.reduce(function(s, r) { return s + (r.count || 0); }, 0);
+    setSA('geo-n',    fmt(totalAddressed));
+    setSA('county-n', fmt(totalCounty));
+    setSA('zip-n',    fmt(totalZip));
+
+    // Counties Served hbar list. Bar widths scaled relative to the largest
+    // county (top row = 100% width). Visual grammar matches Cristina's
+    // existing static hbars: dark teal / red-orange / yellow / sage / pink rotation.
+    var countiesEl = document.getElementById('countiesServedList');
+    if (countiesEl) {
+      countiesEl.innerHTML = '';
+      var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4'];
+      var maxCount = counties.reduce(function(m, r) { return Math.max(m, r.count || 0); }, 0);
+      counties.forEach(function(c, i) {
+        var color = c.is_other ? '#c5d2d2' : palette[i % palette.length];
+        var barWidth = maxCount > 0 ? (c.count / maxCount * 100).toFixed(1) : 0;
+        var pctTxt = (c.pct != null) ? (Math.round(c.pct * 10) / 10) + '%' : '';
+        var row = document.createElement('div');
+        row.className = 'hbar-row';
+        row.setAttribute('data-label', c.name + (c.is_other ? '' : ' County'));
+        row.setAttribute('data-pct', pctTxt);
+        row.setAttribute('data-n', c.count);
+        row.setAttribute('data-color', color);
+        row.setAttribute('data-unit', 'moms');
+        row.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+        row.setAttribute('onmousemove', 'dnTipMove(event)');
+        row.setAttribute('onmouseleave', 'dnTipHide()');
+        row.innerHTML =
+          '<div class="hbar-label">' + escapeHtml(c.name) + '</div>' +
+          '<div class="hbar-track"><div class="hbar-fill" style="background:' + color + ';width:' + barWidth + '%;"></div></div>' +
+          '<div class="hbar-meta">' + pctTxt + '</div>';
+        countiesEl.appendChild(row);
+      });
+    }
+
+    // Top ZIP Codes table. Row 1-5 numbered; "Other" row gets dimmed.
+    var zipsBody = document.getElementById('topZipsBody');
+    if (zipsBody) {
+      zipsBody.innerHTML = '';
+      var rank = 1;
+      zips.forEach(function(z) {
+        var tr = document.createElement('tr');
+        if (z.is_other) {
+          tr.style.color = 'var(--mid)';
+          tr.innerHTML =
+            '<td></td>' +
+            '<td><em>' + escapeHtml(z.city || 'Other ZIPs combined') + '</em></td>' +
+            '<td></td>' +
+            '<td><em>' + fmt(z.count) + '</em></td>';
+        } else {
+          tr.innerHTML =
+            '<td>' + rank + '</td>' +
+            '<td><strong>' + escapeHtml(z.zip) + '</strong></td>' +
+            '<td>' + escapeHtml(z.city || '') + '</td>' +
+            '<td>' + fmt(z.count) + '</td>';
+          rank++;
+        }
+        zipsBody.appendChild(tr);
+      });
+    }
+
+    // Re-fire map render so it reflects the new geographic_distribution.
+    // Safe even if Service Area tab isn't currently active — the function
+    // checks tab.classList before rendering.
+    if (window.__rerenderGeoMap__) window.__rerenderGeoMap__();
+  })();
+
+  // Local HTML escape helper (used by Service Area hydration above).
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   console.log('[ĒMA] Dashboard rendered with live data', { families: totalFamilies, advocates: snap.active_advocates, fwaCoverage: fwaCoveragePct + '%' });
  }
 
@@ -5049,19 +5129,22 @@ window.__DEMO_GEO__ = [
   { state_fips: '12', county_fips: '12057', count: 4 }
 ];
 
-/* Trigger render when Demographics tab becomes active.
-   Defers heavy fetch until the user actually clicks the tab. */
+/* Trigger render when Service Area tab becomes active.
+   Defers heavy map render until the user actually clicks the tab.
+   RD 4/24/26: Removed `renderedOnce` one-shot guard so the map re-renders
+   whenever (a) the user clicks the tab, or (b) affiliate slicer triggers
+   a data refresh and renderDashboard calls window.__rerenderGeoMap__().
+   Safe to re-fire — renderGeoMap is idempotent (replaces the SVG each call). */
 (function() {
-  var renderedOnce = false;
   function maybeRender() {
-    if (renderedOnce) return;
     var saTab = document.getElementById('tab-service-area');
     if (saTab && saTab.classList.contains('active')) {
-      renderedOnce = true;
       var geoData = (window.__EMA_DATA__ && window.__EMA_DATA__.geographic_distribution) || window.__DEMO_GEO__;
       window.renderGeoMap(geoData);
     }
   }
+  // Expose so renderDashboard can re-fire after affiliate changes
+  window.__rerenderGeoMap__ = maybeRender;
   document.addEventListener('click', function(e) {
     if (e.target && e.target.matches && e.target.matches('button.tab-btn')) {
       setTimeout(maybeRender, 50);

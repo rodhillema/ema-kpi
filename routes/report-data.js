@@ -70,30 +70,41 @@ function normalizeName(s) {
 
 // Normalize a raw county text value into a clean county name suitable for
 // lookup AND display, OR return null if it's clearly junk (street address,
-// state code, etc.). Used by both the map FIPS lookup and the Counties
-// Served panel so duplicates merge and junk surfaces as 'Unknown'.
+// state code, country name, etc.). Used by both the map FIPS lookup and
+// the Counties Served panel so duplicates merge and junk surfaces as 'Unknown'.
 //
 // Examples:
-//   'Broward'        → 'Broward'
-//   'Broward county' → 'Broward'  (suffix stripped)
-//   'BROWARD'        → 'Broward'  (case-folded)
-//   'Miami-Dade'     → 'Miami-Dade'
-//   '2582 Riverside Dr' → null  (street address)
-//   'FL' / 'Florida'    → null  (state value in county field)
-//   ''               → null
-const STREET_SUFFIX_RE = /\b(St|Street|Dr|Drive|Ave|Avenue|Blvd|Boulevard|Rd|Road|Ln|Lane|Ct|Court|Way|Pkwy|Parkway|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway)\b/i;
+//   'Broward'             → 'Broward'
+//   'Broward county'      → 'Broward'  (suffix stripped)
+//   'BROWARD'             → 'Broward'  (case-folded)
+//   'Miami-Dade'          → 'Miami-Dade'
+//   '2582 Riverside Dr'   → null  (street address)
+//   '1217 Star Dust'      → null  (leading digits = address-shaped)
+//   'FL' / 'Florida'      → null  (state value in county field)
+//   'United States' / 'USA' → null (country in county field)
+//   ''                    → null
+const NON_COUNTY_TOKENS = new Set([
+  'UNITED STATES', 'USA', 'U.S.', 'U.S.A.', 'AMERICA', 'US',
+  'NULL', 'NONE', 'N/A', 'NA', 'TBD', 'TEST',
+]);
 function normalizeCountyName(raw) {
   if (raw == null) return null;
   let s = String(raw).trim();
   if (!s || s.toLowerCase() === 'unknown') return null;
-  // Street-address heuristic: contains digits + a common street suffix word.
-  if (/\d/.test(s) && STREET_SUFFIX_RE.test(s)) return null;
+  // Address-shaped: any string containing a digit is almost certainly not
+  // a county (US county names are alpha-only). This catches '2582 Riverside Dr',
+  // '1217 Star Dust', '#42', etc. without needing a perfect street-suffix list.
+  if (/\d/.test(s)) return null;
   // Strip trailing ' county' (case-insensitive) so 'Broward county' = 'Broward'.
   s = s.replace(/\s+county\s*$/i, '').trim();
   if (!s) return null;
-  // Reject if what remains is a state code or full state name (someone
-  // entered the state into the county field).
-  if (STATE_FIPS[s.toUpperCase()]) return null;
+  const upper = s.toUpperCase();
+  // Reject state codes/full state names (someone entered the state in the county field).
+  if (STATE_FIPS[upper]) return null;
+  // Reject known country names and meaningless placeholders.
+  if (NON_COUNTY_TOKENS.has(upper)) return null;
+  // Reject very short single tokens that aren't real county names (e.g. 'XX', 'Z').
+  if (s.length < 3) return null;
   // Title-case for display: 'BROWARD' → 'Broward', 'miami-dade' → 'Miami-Dade'.
   s = s.toLowerCase()
        .split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')

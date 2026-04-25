@@ -1530,17 +1530,15 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // ─── Top ZIP Codes: privacy floor + top 5 + Other rollup ──
-    // Per Cristina's spec: ZIPs with fewer than 5 moms are rolled into "Other ZIPs"
-    // for mother privacy. Then take top 5 of the remaining, roll the rest into "Other".
+    // ─── Top ZIP Codes: top 5 by count + "Other ZIPs" rollup ──
+    // Privacy floor dropped (RD 4/24/26) — for internal HQ admin oversight,
+    // surfacing low-count ZIPs is acceptable and the panel was useless when
+    // small affiliates had nothing above a 5-mom threshold. Re-add a floor
+    // before any external publishing of this data.
     const zipsRowsAll = (topZipCodesRaw.rows || []).filter((r) => r.zip && r.zip !== 'Unknown');
-    const zipsAboveFloor = zipsRowsAll.filter((r) => r.count >= 5);
-    const zipsBelowFloor = zipsRowsAll.filter((r) => r.count < 5);
-    const zipsTop = zipsAboveFloor.slice(0, 5);
-    const zipsRest = zipsAboveFloor.slice(5);
-    const zipsOtherCount =
-      zipsBelowFloor.reduce((s, r) => s + r.count, 0) +
-      zipsRest.reduce((s, r) => s + r.count, 0);
+    const zipsTop = zipsRowsAll.slice(0, 5);
+    const zipsRest = zipsRowsAll.slice(5);
+    const zipsOtherCount = zipsRest.reduce((s, r) => s + r.count, 0);
     const topZipCodes = zipsTop.map((r) => ({
       zip: r.zip,
       city: r.city || '',

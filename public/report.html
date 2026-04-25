@@ -5071,14 +5071,18 @@ window.__DEMO_GEO__ = [
 
 /* ── Donut slice overlap shim (RD 4/24/26) ──────────────────────
    SVG stroke-based donuts leave a 1–2px anti-aliasing gap between
-   adjacent slices; the panel background shows through as a visible
-   white wedge. Fix: extend each slice's dasharray[0] by 1 unit so
-   slices overlap at their boundary. The later slice (drawn on top
-   in DOM order) covers the previous slice's 1-unit extension, making
-   the boundary seamless with no visible gap.
+   adjacent slices. Fix: extend each slice's dasharray[0] by 1 unit
+   so adjacent slices overlap at their boundary; the later slice
+   (drawn on top in DOM order) covers the previous slice's tail.
 
-   Idempotent via data-overlap-applied flag. MutationObserver re-applies
-   when hydration code rewrites dasharrays with real data.
+   Idempotent via data-overlap-applied flag. One-shot on load — if
+   hydration rewrites dasharrays later, call window.__closeDonutGaps__
+   again manually after the rewrite.
+
+   IMPORTANT: Do NOT wire a MutationObserver to re-apply on dasharray
+   change. setAttribute triggers the observer, which triggers another
+   setAttribute, which compounds the extension until dash exceeds
+   circumference and later slices visually cover earlier ones.
 */
 (function closeDonutGaps() {
   function applyOverlap(slice) {
@@ -5089,8 +5093,10 @@ window.__DEMO_GEO__ = [
     if (parts.length !== 2) return;
     var len = parseFloat(parts[0]);
     var rest = parseFloat(parts[1]);
-    if (isNaN(len) || isNaN(rest) || len <= 0) return;
-    // Don't overlap full-circle single-slice cases
+    if (isNaN(len) || isNaN(rest)) return;
+    // Skip zero-length slices (0% categories) — extending would make them visible
+    if (len <= 0) return;
+    // Skip near-full-circle slices (no boundary to overlap)
     if (rest < 1) return;
     slice.setAttribute('stroke-dasharray', (len + 1).toFixed(2) + ' ' + (rest - 1).toFixed(2));
     slice.setAttribute('data-overlap-applied', '1');
@@ -5098,28 +5104,12 @@ window.__DEMO_GEO__ = [
   function sweep() {
     document.querySelectorAll('circle.dn-slice').forEach(applyOverlap);
   }
-  function init() {
-    sweep();
-    // Re-apply if hydration rewrites dasharrays. Strip our flag when dasharray
-    // changes (meaning hydration wrote new values), then re-apply.
-    try {
-      var observer = new MutationObserver(function(muts) {
-        muts.forEach(function(m) {
-          if (m.type === 'attributes' && m.attributeName === 'stroke-dasharray') {
-            m.target.removeAttribute('data-overlap-applied');
-            applyOverlap(m.target);
-          }
-        });
-      });
-      document.querySelectorAll('circle.dn-slice').forEach(function(s) {
-        observer.observe(s, { attributes: true, attributeFilter: ['stroke-dasharray'] });
-      });
-    } catch (e) { /* MutationObserver not supported — one-time sweep still worked */ }
-  }
+  // Expose manual re-invoke for hydration code, if needed.
+  window.__closeDonutGaps__ = sweep;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', sweep);
   } else {
-    init();
+    sweep();
   }
 })();
 

@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { COUNTY_FIPS } = require('../lib/county-fips');
 
 // Q1 2026 reporting window
 const PERIOD_START = '2026-01-01';
@@ -57,29 +58,9 @@ const STATE_FIPS = {
   'WV':'54','WEST VIRGINIA':'54','WI':'55','WISCONSIN':'55','WY':'56','WYOMING':'56',
 };
 
-// County name → county FIPS (5-digit, includes state prefix).
-// Nested by state for scoping. Add new states as ĒMA expands.
-// Current: all 67 Florida counties.
-// Normalization: uppercased + "ST." and "ST " collapsed, "SAINT" allowed.
-const COUNTY_FIPS = {
-  '12': {
-    'ALACHUA':'12001','BAKER':'12003','BAY':'12005','BRADFORD':'12007','BREVARD':'12009',
-    'BROWARD':'12011','CALHOUN':'12013','CHARLOTTE':'12015','CITRUS':'12017','CLAY':'12019',
-    'COLLIER':'12021','COLUMBIA':'12023','DESOTO':'12027','DIXIE':'12029','DUVAL':'12031',
-    'ESCAMBIA':'12033','FLAGLER':'12035','FRANKLIN':'12037','GADSDEN':'12039','GILCHRIST':'12041',
-    'GLADES':'12043','GULF':'12045','HAMILTON':'12047','HARDEE':'12049','HENDRY':'12051',
-    'HERNANDO':'12053','HIGHLANDS':'12055','HILLSBOROUGH':'12057','HOLMES':'12059','INDIAN RIVER':'12061',
-    'JACKSON':'12063','JEFFERSON':'12065','LAFAYETTE':'12067','LAKE':'12069','LEE':'12071',
-    'LEON':'12073','LEVY':'12075','LIBERTY':'12077','MADISON':'12079','MANATEE':'12081',
-    'MARION':'12083','MARTIN':'12085','MIAMI-DADE':'12086','MIAMI DADE':'12086','DADE':'12086',
-    'MONROE':'12087','NASSAU':'12089','OKALOOSA':'12091','OKEECHOBEE':'12093','ORANGE':'12095',
-    'OSCEOLA':'12097','PALM BEACH':'12099','PASCO':'12101','PINELLAS':'12103','POLK':'12105',
-    'PUTNAM':'12107','ST. JOHNS':'12109','ST JOHNS':'12109','SAINT JOHNS':'12109',
-    'ST. LUCIE':'12111','ST LUCIE':'12111','SAINT LUCIE':'12111',
-    'SANTA ROSA':'12113','SARASOTA':'12115','SEMINOLE':'12117','SUMTER':'12119','SUWANNEE':'12121',
-    'TAYLOR':'12123','UNION':'12125','VOLUSIA':'12127','WAKULLA':'12129','WALTON':'12131','WASHINGTON':'12133',
-  },
-};
+// COUNTY_FIPS now lives in lib/county-fips.js (8 states: FL/OH/AZ/CA/IN/NY/KY/GA,
+// 661 counties total — covers ~95% of ĒMA mom volume per the 4/24/26 distinct-state
+// query). Add states there as ĒMA expands.
 
 // Normalize a county/state name for lookup: uppercase, trim, collapse multi-space.
 function normalizeName(s) {
@@ -1473,21 +1454,32 @@ router.get('/', async (req, res) => {
     const kpi3Rate = kpi3WithData > 0 ? Math.round(1000 * kpi3Improved / kpi3WithData) / 10 : null;
 
     // ─── Service Area: map raw state/county text → FIPS codes ─
+    // Two-tier mapping:
+    //   1. State recognized + county recognized → emit row with both FIPS codes
+    //      (enables county-level shading when in county view)
+    //   2. State recognized but county not in COUNTY_FIPS lookup → emit
+    //      state-only row (county_fips = null) so the row still contributes
+    //      to state-level shading even though we can't pinpoint the county
+    //   3. State not recognized → drop the row entirely (logged)
+    //
     // County text is run through normalizeCountyName first (strips ' county'
     // suffix, case-folds, rejects street addresses / state values) so
-    // 'Broward', 'Broward county', 'BROWARD' all merge to one map row.
-    // Rows unmappable by either lookup are dropped silently with a debug log.
+    // 'Broward', 'Broward county', 'BROWARD' all merge to one row.
     const geoByKey = {};
     let geoUnmapped = 0;
     for (const r of (geoDistRaw.rows || [])) {
       const stateKey = normalizeName(r.state_name);
-      const cleanCounty = normalizeCountyName(r.county_name);
       const stateFips = STATE_FIPS[stateKey];
-      if (!stateFips || !cleanCounty) { geoUnmapped += r.count; continue; }
-      const countyKey = cleanCounty.toUpperCase();
-      const countyFips = COUNTY_FIPS[stateFips]?.[countyKey];
-      if (!countyFips) { geoUnmapped += r.count; continue; }
-      const k = countyFips;
+      if (!stateFips) { geoUnmapped += r.count; continue; }
+      const cleanCounty = normalizeCountyName(r.county_name);
+      let countyFips = null;
+      if (cleanCounty) {
+        const countyKey = cleanCounty.toUpperCase();
+        countyFips = COUNTY_FIPS[stateFips]?.[countyKey] || null;
+      }
+      // Key by county FIPS when available, else by 'STATE-only-<state>' so
+      // multiple unmapped-county rows in the same state aggregate together.
+      const k = countyFips || ('STATE-' + stateFips);
       if (!geoByKey[k]) geoByKey[k] = { state_fips: stateFips, county_fips: countyFips, count: 0 };
       geoByKey[k].count += r.count;
     }

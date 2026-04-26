@@ -24,18 +24,32 @@ Do not skip or summarize — these rules are load-bearing.
 ├── db.js                   # pg Pool — Railway PostgreSQL connection
 ├── middleware/
 │   └── auth.js             # Trellis login, bcrypt verify, role + affiliate lookup, requireAuth
+├── lib/
+│   └── email.js            # SendGrid wrapper + branded invite/reset email templates
 ├── routes/
-│   ├── tickets.js          # Ticket CRUD
+│   ├── report-data.js      # Main KPI endpoint — large Promise.all; mind array order (see note)
+│   ├── advocates.js        # /api/advocates for Advocate Care Report
+│   ├── champions.js        # /api/admin/champions — CRUD + bulk import (whitelisted admin only)
+│   ├── champion-auth.js    # /api/champion/* — public token-based set/reset password
+│   ├── tickets.js          # Ticket CRUD (legacy)
 │   ├── schemas.js          # Form schema API
 │   ├── team.js             # Team management
 │   ├── attachments.js      # File upload (Cloudinary)
-│   ├── reports.js          # Report data endpoints
+│   ├── reports.js          # Report data endpoints (legacy)
 │   ├── timelogs.js         # Time log tracking
 │   └── comments.js         # Ticket comments
 ├── public/
+│   ├── hub.html            # Impact Hub landing page with login
+│   ├── report.html         # Q1 Quarterly Impact Report — Cristina's layer
+│   ├── advocate-care.html  # Advocate Care Report (coordinator-facing)
+│   ├── admin-champions.html # Champion management UI (whitelisted admin only)
+│   ├── set-password.html   # Champion invite token landing
+│   ├── reset-password.html # Champion reset token landing
+│   ├── integrity.html      # Data integrity explainer
 │   ├── index.html          # Ticket submission portal (public)
-│   ├── admin.html          # Ticket admin dashboard (auth required)
-│   ├── report.html         # KPI Report — Cristina's layer, do not rewrite arbitrarily
+│   ├── admin.html          # Ticket admin dashboard
+│   ├── email-logo.png      # White ē logo referenced by email templates via APP_URL
+│   ├── favicon.png         # Yellow ē favicon
 │   ├── style.css           # Global styles
 │   └── js/                 # Frontend scripts
 ├── package.json
@@ -270,22 +284,95 @@ AdvocacyGroup.state:      'active', 'completed', 'deleted', 'planned'
 
 ## KPI Definitions
 
+**All KPIs are period-anchored** — they reflect activity during the reporting quarter specifically, not a rolling window from today. A Q1 2026 report viewed in April, July, or next year should yield identical numbers. Period constants in `routes/report-data.js`:
+- `PERIOD_START = '2026-01-01'`
+- `PERIOD_END = '2026-03-31'`
+- `PERIOD_GRACE_END = '2026-04-30'` (30-day grace for late entries)
+
+**All KPIs exclude PromiseServes Legacy assessments** (pre-Trellis migration data). Only current-system Trellis assessment templates count. See Assessment Data Capture Status below.
+
 **KPI 1 — 85% Family Preservation Rate**
 - Unit: child profiles (not moms)
-- Numerator: child profiles with family intact at FWA
-- Denominator: children linked to moms with a valid in-window FWA
-- FWA window: 3-month (confirm with RD if changed)
-- Exclude: children with permanent custody removal
+- Numerator: children whose `family_preservation_impact` is `prevented_from_cps_involvement` OR `prevented_from_foster_care_placement`
+- Denominator: children linked to moms who had at least one FWA logged between `PERIOD_START` and `PERIOD_GRACE_END` in a current Trellis template
+- Does NOT require mom.status='active' currently — moms who were active during the period are included even if now inactive
+- Exclude: PromiseServes Legacy template; children whose moms have no period-valid FWA in current Trellis templates (shown separately as "excluded" count)
 
 **KPI 2 — 70% Improved FSS (Family Stability Score)**
-- Composite across 11 FWA domains (Child Welfare domain excluded from composite)
-- Measured at intake, throughout program, and at completion
-- Historical FWA baseline issue may affect improvement rate — flag if querying pre-Trellis data
+- Composite across life-area question responses in `AssessmentResultQuestionResponse`
+- Anchored on `Pairing.completed_on` falling in Q1 (same cohort as KPI 3). Assessment dates themselves not constrained — only track completion date.
+- Denominator: moms who completed a pairing in Q1 AND have both a pre AND post assessment from current Trellis templates
+- Numerator: subset where mom's overall post composite > overall pre composite
+- Does NOT require mom.status='active' currently
+- Exclude: PromiseServes Legacy template
 
 **KPI 3 — 70% Learning Progress**
-- % of mothers completing Nurturing Parenting or Roadmap to Resilience tracks with measurable improvement
+- Anchored on `Pairing.completed_on` in Q1 + `p.status='pairing_complete'` + `complete_reason_sub_status IS NOT NULL`
+- Denominator: Q1 pairing completions with both pre and post AssessmentResult from current Trellis templates
+- Numerator: subset where post composite > pre composite
+- Exclude: PromiseServes Legacy template; NPP completions (no AAPI template exists in Trellis — see Assessment Data Capture Status)
 
 **Always show numerator AND denominator for every rate — never a bare percentage.**
+
+---
+
+## Assessment Data Capture Status (Critical — as of April 2026)
+
+**This section documents a major operational finding and affects all assessment-based KPIs.**
+
+### Assessment templates in Trellis (`Assessment` table)
+Only 5 templates exist:
+1. Empowered Parenting Pre
+2. Empowered Parenting Post
+3. Resilience Pre-Assessment
+4. Resilience Post-Assessment
+5. PromiseServes Assessment (Legacy) — migrated pre-Trellis data, all timestamps 2021-2025
+
+**No AAPI template exists.** `AAPIScore` table is empty. NPP (largest track) produces no assessment data in Trellis.
+
+### Assessment row counts (as of April 2026)
+```
+PromiseServes Legacy:  3,057 rows (2,259 pre + 798 post) — ALL pre-Q1, migration data
+Empowered Parenting Pre:    34 rows (Q1 2026 dates)
+Empowered Parenting Post:    0 rows
+Resilience Pre-Assessment:  25 rows (Q1 2026 dates)
+Resilience Post-Assessment:  2 rows (Q1 2026 dates)
+```
+
+**~60 non-legacy assessments entered org-wide since Trellis launched December 2025.** Current-system assessment capture is not happening at scale — coordinators either aren't using Trellis for assessments or aren't closing the loop (many pres, almost no posts).
+
+### Why KPI 2 / KPI 3 show "No Data" for most affiliates
+Not a bug. Legitimate data reality:
+- NPP-only affiliates have no assessment data (no AAPI template)
+- Even EP/RR affiliates rarely have matching pre/post pairs in current Trellis
+- Broward shows numbers because of its larger EP/RR volume; smaller affiliates don't
+
+### Open decisions (pending Cristina)
+1. Create AAPI template in Trellis + define AAPI→KPI scoring rules?
+2. Import AAPI data from wherever it's currently captured (paper/Sheets/elsewhere)?
+3. Assessment capture workflow — why aren't coordinators closing pres→posts?
+4. Accept Q1 2026 limitations and re-check for Q2?
+
+### Rule
+When writing KPI queries that touch `AssessmentResult`:
+- Always `JOIN "Assessment" a ON a."id" = ar."assessmentId"`
+- Always filter `a."name" NOT ILIKE '%Legacy%'`
+- Always constrain by period-anchored date (Pairing.completed_on or assessment completedAt/lastSaved in period + grace)
+- Never use `m.status='active'` as a denominator filter — moms who were active-during-period should count regardless of current status
+
+---
+
+## Q1 Activity Methodology (advocates)
+
+**Advocate Q1 Activity tile does NOT use `AuditLog`.** Attempt to diagnose AuditLog JSON shape via Railway query editor was unsuccessful (editor timeouts on JSONB column reads). Current query reads from `User` table directly:
+
+- Applications = advocate users (advocate_status IS NOT NULL) whose User record was created in Q1
+- Trained = Q1-created advocates with sub_status past Training_Completed (includes Paired, Waiting_To_Be_Paired, etc.)
+- Approved = Q1-created advocates at Training_Completed specifically (excludes Taking_A_Break)
+- Became Active = User records with status='Active' whose `updated_at` falls in Q1
+- Became Inactive = same for status='Inactive'
+
+**Limitation:** State-based proxy, not event-based. Won't capture advocates cycling through multiple states in Q1. Event-based tracking can be revisited when AuditLog JSON shape is diagnosable.
 
 ---
 
@@ -355,11 +442,80 @@ A mom may appear to have a "current" FWA when only one field was touched.
 
 ---
 
+## Champion Management
+
+Admin tooling at `/admin/champions` for managing Champion users (board members, donors, external viewers). Restricted to the `CHAMPION_ADMIN_WHITELIST` in `routes/champions.js` — currently `['rd.hill']`. Even other administrators don't see it.
+
+### Features
+- Create / list / edit / disable / permanently delete Champion users
+- Resend invite email (fresh 48-hour token)
+- Admin-triggered password reset (fresh 48-hour token, branded email)
+- Bulk CSV import with preview, validation, and per-row results
+- Per-row audit logging to Railway console
+
+### Champion auth flow
+- Trellis login fallback: `middleware/auth.js` tries `User` table first, then falls back to `ChampionUser` table
+- Invite token (48hr) → `/set-password` → bcrypt store → login
+- Reset token (48hr) → `/reset-password` → bcrypt update
+- Self-service forgot-password was removed — admin handles all resets via `/admin/champions`. Trellis V2 will consolidate user management across the org.
+
+### Three-layer access control on `/admin/champions`
+1. Hub sidebar link hidden via JS for non-whitelisted users
+2. Page-level check on `admin-champions.html` redirects non-whitelisted away
+3. Backend `requireAdmin` middleware returns 403 for non-whitelisted
+
+To add another admin, update `CHAMPION_ADMIN_WHITELIST` in `routes/champions.js` AND the frontend lists in `admin-champions.html` + `hub.html`.
+
+---
+
+## Email Infrastructure
+
+**SendGrid** is the transactional email provider. Invite and reset emails use branded templates in `lib/email.js`.
+
+### Configured via Railway env vars
+- `SENDGRID_API_KEY` — from the SendGrid trial account
+- `FROM_EMAIL` — `trellissupport@ema.org` (verified as Single Sender in SendGrid)
+- `APP_URL` — `https://web-production-6efb7.up.railway.app` (or custom `impact.ema.org` if set)
+
+### Domain authentication
+`impact.ema.org` is authenticated for DKIM in SendGrid via 3 CNAME records in GoDaddy DNS:
+- `em9200.impact.ema.org` → `u97689932.wl183.sendgrid.net`
+- `s1._domainkey.impact.ema.org` → `s1.domainkey.u97689932.wl183.sendgrid.net`
+- `s2._domainkey.impact.ema.org` → `s2.domainkey.u97689932.wl183.sendgrid.net`
+
+Set as default DKIM domain in SendGrid. ema.org's existing DMARC uses relaxed alignment (default), so DKIM-signing with `impact.ema.org` is valid for `From: trellissupport@ema.org` under DMARC.
+
+### Trellis's separate SendGrid account
+Existing records at `_domainkey.ema.org` point to SendGrid account `u51724003` — Trellis's email-sending account. Do NOT overwrite those records. Impact Hub uses a different account (`u97689932`) and a subdomain to avoid conflict.
+
+### Email template notes
+- Google Fonts (Shrikhand, Oswald, Lato) are stripped by most email clients — fallbacks render: Georgia for serif, Helvetica/Arial for sans
+- Logo served from `public/email-logo.png` via `${appUrl}/email-logo.png` (white ē mark, matches hub nav)
+- Template colors match hub brand: red header (#ec482f), pink title bar, dark teal footer
+
+---
+
+## Promise.all Array Order (routes/report-data.js)
+
+**Critical gotcha:** The `Promise.all([...])` array order MUST match the `const [ ... ] =` destructuring order. There's no compiler check — a mismatch silently assigns the wrong query's result to each variable.
+
+A bug caused `advocate_q1_activity`, `families_served_expanded`, `advocate_active_breakdown`, and `children_welfare_involvement` to all show wrong data for a while because these 4 were misaligned. Fixed in commit `11f526c` by reordering the destructuring to match the query code order.
+
+### Rule
+When adding or moving queries in the `Promise.all`:
+1. Count the position in the array (index from 0)
+2. Match that exact position in the destructuring at the top
+3. Test every downstream field on the page after the change
+
+---
+
 ## Open Data Sourcing Gaps (as of Q1 2026)
 
+- **AAPI assessment capture** (most urgent) — NPP tracks cannot be scored for KPI 2/3 until an AAPI template is added to Trellis and results are logged. Cristina decision pending.
+- **EP/RR assessment capture** — only ~60 non-Legacy assessments logged org-wide since December 2025; coordinators start pres but rarely complete posts. Workflow adoption issue.
+- **AuditLog JSON shape** — Railway query editor cannot render rows for diagnosis. When tooling improves (psql terminal or staging env), investigate to enable event-based Q1 Activity tracking.
 - Q1 program spend — not in Trellis; needed for Cost Per Family; source TBD (finance)
 - Staff headcount — not in Trellis; definition of "staff" needs alignment (coordinators only vs. broader)
-- Advocate status stages — confirm Trellis fields map to Interested → Trained → Active before publishing
 
 ---
 

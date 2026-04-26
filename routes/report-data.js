@@ -727,8 +727,13 @@ router.get('/', async (req, res) => {
             WHERE s."deleted_at" = 0
               AND s."legacy_ps_id" IS NULL
               AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
-              AND s."created_at" >= '${PERIOD_START}'
-              AND s."created_at" <= '${PERIOD_END} 23:59:59'
+              -- Q1 anchor on updated_at (RD 4/25/26): captures AAPI rows where
+              -- the post was entered in Q1 even when the pre was filled earlier.
+              -- Filtering on created_at missed ~96% of NPP completions because
+              -- AAPIScore rows are typically created at intake (pre filled),
+              -- then updated months later when post is logged.
+              AND s."updated_at" >= '${PERIOD_START}'
+              AND s."updated_at" <= '${PERIOD_END} 23:59:59'
               AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
               AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
               AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
@@ -1015,6 +1020,12 @@ router.get('/', async (req, res) => {
       // capture advocates who cycled through multiple statuses in Q1) but
       // produces real numbers that reflect Q1 activity.
       //
+      // RD 4/25/26 (item #5 fix): Added ${affWhereUser} to all 5 sub-SELECTs.
+      // Previously the Q1 activity numbers were always org-wide regardless of
+      // the affiliate slicer. Diagnostic confirmed: org-wide returned 38/69/24
+      // while Broward-scoped returned 8/8/8 — the report was always showing
+      // the org-wide numbers because the SQL ignored the affiliate filter.
+      //
       // Filters:
       // - advocate_status IS NOT NULL → user was onboarded as an advocate
       // - deleted_at = 0 → active user record
@@ -1030,6 +1041,7 @@ router.get('/', async (req, res) => {
               AND u."deleted_at" = 0
               AND u."created_at" >= '${PERIOD_START}'
               AND u."created_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
           ) AS applications,
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."deleted_at" = 0
@@ -1039,6 +1051,7 @@ router.get('/', async (req, res) => {
               )
               AND u."created_at" >= '${PERIOD_START}'
               AND u."created_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
           ) AS trained,
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."deleted_at" = 0
@@ -1047,20 +1060,23 @@ router.get('/', async (req, res) => {
               )
               AND u."created_at" >= '${PERIOD_START}'
               AND u."created_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
           ) AS approved,
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."deleted_at" = 0
               AND u."advocate_status"::text = 'Active'
               AND u."updated_at" >= '${PERIOD_START}'
               AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
           ) AS became_active,
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."deleted_at" = 0
               AND u."advocate_status"::text = 'Inactive'
               AND u."updated_at" >= '${PERIOD_START}'
               AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
           ) AS became_inactive
-      `),
+      `, affParams),
 
       // ─── NEW: Children with Welfare Involvement ─────────────
 
@@ -1238,7 +1254,7 @@ router.get('/', async (req, res) => {
       //   RR  → AssessmentResult + Assessment.name LIKE 'Resilience%'
       //
       // Denominator: pairs with both pre AND post on file. Completion status IGNORED
-      // (pairing.completed_on NOT the anchor per Cristina). Time scoping: post date in Q1.
+      // (pairing.completed_on NOT the anchor per Cristina).
       //
       // NPP multi-enrollment: most recent AAPIScore.created_at before next NPP pairing
       // start (unbounded if no next pairing). Post scores can legitimately be entered
@@ -1277,8 +1293,13 @@ router.get('/', async (req, res) => {
             WHERE s."deleted_at" = 0
               AND s."legacy_ps_id" IS NULL
               AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
-              AND s."created_at" >= '${PERIOD_START}'
-              AND s."created_at" <= '${PERIOD_END} 23:59:59'
+              -- Q1 anchor on updated_at (RD 4/25/26): captures AAPI rows where
+              -- the post was entered in Q1 even when the pre was filled earlier.
+              -- Filtering on created_at missed ~96% of NPP completions because
+              -- AAPIScore rows are typically created at intake (pre filled),
+              -- then updated months later when post is logged.
+              AND s."updated_at" >= '${PERIOD_START}'
+              AND s."updated_at" <= '${PERIOD_END} 23:59:59'
               AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
               AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
               AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL

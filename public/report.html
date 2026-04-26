@@ -1785,15 +1785,15 @@
       <div class="ip-body">
        <div class="ip-block">
         <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Moms whose <strong>composite Family Stability Score</strong> increased from their starting Family Wellbeing Assessment to their most recent one. The composite covers 11 life-area domains.</div>
+        <div class="ip-block-body">Moms whose <strong>composite Family Stability Score</strong> went up between her starting and most recent Family Wellbeing Assessment. The composite is the sum of 11 life-area domain scores (housing, financial, social support, education, child care, transportation, wellness, etc.).</div>
        </div>
        <div class="ip-block">
         <div class="ip-block-label">Excluded</div>
-        <div class="ip-block-body">Moms missing either a starting or current Family Wellbeing Assessment on file. Legacy assessments from the prior system are excluded; only current assessments count.</div>
+        <div class="ip-block-body">Moms with only one Family Wellbeing Assessment on file (no before/after comparison possible). Legacy assessments from the prior system are also excluded.</div>
        </div>
        <div class="ip-block warn">
-        <div class="ip-block-label">Known limitation</div>
-        <div class="ip-block-body">A small edit to any part of an assessment updates the assessment date, so "recent" doesn't always mean a full re-assessment. Current-system data has been entered sparingly so far; the pathway is being rebuilt.</div>
+        <div class="ip-block-label">Interpret with care</div>
+        <div class="ip-block-body">Family Wellbeing Assessment capture is still ramping up across affiliates. Sample sizes are small and the rate can shift noticeably as more moms reach a second assessment. The direction is meaningful; the exact percentage may not yet be stable.</div>
        </div>
       </div>
      </div>
@@ -1819,15 +1819,15 @@
       <div class="ip-body">
        <div class="ip-block">
         <div class="ip-block-label">What counts</div>
-        <div class="ip-block-body">Any <strong>score increase</strong> between a mom's start-of-track and end-of-track learning assessment. Each track counts separately, so a mom completing two tracks counts twice.</div>
+        <div class="ip-block-body">Any <strong>score increase</strong> between a mom's start-of-track and end-of-track learning assessment. Each track counts separately, so a mom completing two tracks counts twice. NPP scores come from the AAPI assessment (5 constructs); EP and RR scores from their post-track assessments.</div>
        </div>
        <div class="ip-block">
         <div class="ip-block-label">Excluded</div>
-        <div class="ip-block-body">Tracks missing a pre or post assessment, and entries where the post date is earlier than the pre date. NPP completers are not yet scored.</div>
+        <div class="ip-block-body">Tracks missing a pre or post assessment. Legacy assessments from the prior system are excluded.</div>
        </div>
        <div class="ip-block warn">
-        <div class="ip-block-label">Known limitation</div>
-        <div class="ip-block-body">Pre and post assessments are sparse since the current system launched. NPP (the largest track) produces no scored assessments yet, so this rate reflects EP and RR only.</div>
+        <div class="ip-block-label">Interpret with care</div>
+        <div class="ip-block-body">Sample sizes vary by curriculum — see the per-curriculum breakdown on the Track Completions tab for confidence flags. The direction is meaningful; the exact percentage may shift as more tracks complete.</div>
        </div>
       </div>
      </div>
@@ -1842,7 +1842,7 @@
      </div>
     </div>
     <div class="hc-label">Learning Progress</div>
-    <div class="hc-context"><span data-hydrate="kpi3-num">13</span> of <span data-hydrate="kpi3-den">18</span> eligible completions improved &nbsp;&middot;&nbsp; EP and RR only (NPP pending AAPI template)</div>
+    <div class="hc-context"><span data-hydrate="kpi3-num">13</span> of <span data-hydrate="kpi3-den">18</span> eligible completions improved &nbsp;&middot;&nbsp; see Track Completions tab for per-curriculum breakdown</div>
    </div>
 
   </div>
@@ -4088,29 +4088,34 @@
      //    Until RD provides the correct payload field for Client Choice
      //    exits, this cell stays at its static demo value. A console
      //    warning fires when payload arrives so the gap stays visible.
+     // RD 4/25/26 (item #15): Cristina's spec — DNI (incomplete_no_advocate)
+     // is EXCLUDED from this panel entirely. "A mom can't fail to complete
+     // a track she never started." DNI surfaces in intake-to-track funnel.
+     // Client Choice cell stays at 0 since no Trellis enum maps to it
+     // (per Cristina's notes, the assumed mapping to incomplete_no_advocate
+     // was wrong — that field IS the DNI count).
+     var dniN = tce.incomplete_no_advocate || 0;
+     // Panel-specific total excludes DNI from denominator and bar math.
+     var panelIncomplete = Math.max(0, totalIncomplete - dniN);
      if (frVals.length >= 5) {
       if (tce.incomplete_priorities_shifted != null) {
        frVals[0].textContent = tce.incomplete_priorities_shifted; // Track Requirements Unmet
       }
-      // frVals[1] = Client Choice - INTENTIONALLY UNWIRED, see note above
+      frVals[1].textContent = 0;                                  // Client Choice — no Trellis enum maps here yet
       if (tce.incomplete_achieved_outcomes != null) {
        frVals[2].textContent = tce.incomplete_achieved_outcomes;  // Relocated
       }
       // frVals[3] = Other (synthesized below)
-      frVals[4].textContent = totalIncomplete;                    // Hidden total span
-      if (tce.incomplete_no_advocate != null) {
-       console.warn('[DATA] incomplete_no_advocate field present in payload (value=' + tce.incomplete_no_advocate + '). Per locked methodology this is the DNI count and should be excluded from Why Tracks Ended Early. Client Choice cell intentionally not hydrated - RD to confirm the correct payload field.');
-      }
+      frVals[4].textContent = panelIncomplete;                    // Hidden total span (DNI-excluded)
      }
-     // ── Compute and write fr-pct labels + bar widths
-     //    Updated 4/23/26 alongside the How panel hydration.
+     // ── Compute and write fr-pct labels + bar widths (DNI-excluded denominator)
      var wPanel = completionPanels[wi];
-     var pctW = function(n) { return totalIncomplete > 0 ? Math.round((n / totalIncomplete) * 100) + '%' : '0%'; };
+     var pctW = function(n) { return panelIncomplete > 0 ? Math.round((n / panelIncomplete) * 100) + '%' : '0%'; };
      var requnmetN     = tce.incomplete_priorities_shifted || 0;
-     var clientchoiceN = tce.incomplete_no_advocate || 0;
+     var clientchoiceN = 0;  // Cristina's note: no Trellis enum maps here. DNI was wrong assumption.
      var relocatedN    = tce.incomplete_achieved_outcomes || 0;
-     // Other = remainder (totalIncomplete minus the three known)
-     var otherN = Math.max(0, totalIncomplete - requnmetN - clientchoiceN - relocatedN);
+     // Other = remainder (DNI-excluded total minus the three known)
+     var otherN = Math.max(0, panelIncomplete - requnmetN - clientchoiceN - relocatedN);
      var setWHY = function(key, val) {
       var el = wPanel.querySelector('[data-hydrate="' + key + '"]');
       if (el) el.textContent = val;
@@ -4123,14 +4128,13 @@
      var wVals = [requnmetN, clientchoiceN, relocatedN, otherN];
      wRows.forEach(function(row, idx) {
       var bar = row.querySelector('.fr-bar');
-      if (bar && totalIncomplete > 0) bar.style.width = Math.round((wVals[idx] / totalIncomplete) * 100) + '%';
+      if (bar && panelIncomplete > 0) bar.style.width = Math.round((wVals[idx] / panelIncomplete) * 100) + '%';
       var wrap = row.querySelector('.fr-bar-wrap');
       if (wrap) wrap.setAttribute('title', wVals[idx] + (wVals[idx] === 1 ? ' track' : ' tracks'));
      });
-     // Update subtitle why-total
-     var wTotal = wPanel.querySelector('.why-total'); if (wTotal) wTotal.textContent = totalIncomplete;
-     // ⚠ Write the synthesized "Other" count into the hidden 4th .fr-val
-     //    (frVals[3]) so RD's downstream consumers stay consistent.
+     // Update subtitle why-total to reflect DNI-excluded count
+     var wTotal = wPanel.querySelector('.why-total'); if (wTotal) wTotal.textContent = panelIncomplete;
+     // Write synthesized "Other" into hidden 4th .fr-val
      if (frVals.length >= 5) frVals[3].textContent = otherN;
      break;
     }

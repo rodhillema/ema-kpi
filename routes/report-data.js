@@ -604,37 +604,112 @@ router.get('/', async (req, res) => {
         ORDER BY t."title", 2, 3
       `, affParams),
 
-      // ─── NEW: Track Completions Expanded ────────────────────
-
+      // ─── Track Completions Expanded ─────────────────────────
+      // RD 4/25/26 (item #18): Completion bucketing is DATA-DERIVED per
+      // Cristina's quarterly-impact.html spec, not from p.complete_reason_sub_status
+      // dropdown. Cristina's definitions (line 2357 of her v3 file):
+      //   - Full Track: required curriculum sessions held + ≥1 support session + post-assessment on file
+      //   - Without Support Sessions: curriculum complete + post on file + 0 support sessions
+      //   - Without Post Assessment: curriculum complete + no post-assessment on file
+      // Mutually-exclusive precedence:
+      //   IF post AND support>=1 → Full Track
+      //   ELIF post AND support=0 → Without Support Sessions
+      //   ELSE (no post)         → Without Post Assessment
+      //
+      // "Required" sessions per curriculum: NPP/Crianza-con=10, EP/Crianza-empoderada=8,
+      // RR/Roadmap/Hoja-de-ruta=4.
+      //
+      // Post-assessment lookup is dual-source (matches KPI 3 split):
+      //   NPP   → AAPIScore row exists with any post column populated
+      //   EP/RR → AssessmentResult.type='post' with matching Assessment.name
+      //
+      // Incomplete buckets stay on the dropdown enum — "why" is inherently
+      // subjective (Client Choice, Relocated, Other) and not derivable.
       pool.query(`
+        WITH q1_pairings AS (
+          SELECT p."id" AS pairing_id, p."momId",
+            p."complete_reason_sub_status"::text AS complete_reason,
+            p."incomplete_reason_sub_status"::text AS incomplete_reason,
+            CASE
+              WHEN t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%' THEN 10
+              WHEN t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%' THEN 8
+              WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%' THEN 4
+              ELSE NULL
+            END AS required_track_sessions,
+            CASE
+              WHEN t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%' THEN 'NPP'
+              WHEN t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%' THEN 'EP'
+              WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%' THEN 'RR'
+              ELSE 'Other'
+            END AS track_group
+          FROM "Pairing" p
+          JOIN "Track" t ON t."id" = p."trackId"
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
+            ${affWhere}
+        ),
+        completed_only AS (
+          SELECT * FROM q1_pairings WHERE complete_reason IS NOT NULL
+        ),
+        session_counts AS (
+          SELECT
+            qp.pairing_id,
+            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session')::int AS track_held,
+            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session')::int AS support_held
+          FROM completed_only qp
+          LEFT JOIN "Session" s ON s."pairing_id" = qp.pairing_id AND s."deleted_at" = 0
+          GROUP BY qp.pairing_id
+        ),
+        post_assessment AS (
+          SELECT qp.pairing_id,
+            CASE
+              WHEN qp.track_group = 'NPP' THEN EXISTS (
+                SELECT 1 FROM "AAPIScore" a
+                WHERE a."mom_id" = qp."momId" AND a."deleted_at" = 0 AND a."legacy_ps_id" IS NULL
+                  AND (a."constructAPostAssessment" IS NOT NULL OR a."constructBPostAssessment" IS NOT NULL
+                       OR a."constructCPostAssessment" IS NOT NULL OR a."constructDPostAssessment" IS NOT NULL
+                       OR a."constructEPostAssessment" IS NOT NULL)
+              )
+              WHEN qp.track_group IN ('EP','RR') THEN EXISTS (
+                SELECT 1 FROM "AssessmentResult" ar
+                JOIN "Assessment" a ON a."id" = ar."assessmentId"
+                WHERE ar."momId" = qp."momId" AND ar."deleted_at" = 0
+                  AND ar."type"::text = 'post' AND a."name" NOT ILIKE '%Legacy%'
+                  AND (
+                    (qp.track_group = 'EP' AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'))
+                    OR (qp.track_group = 'RR' AND (a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%'))
+                  )
+              )
+              ELSE FALSE
+            END AS has_post
+          FROM completed_only qp
+        ),
+        bucketed AS (
+          SELECT
+            CASE
+              WHEN sc.track_held >= COALESCE(qp.required_track_sessions, 0) AND pa.has_post AND sc.support_held >= 1 THEN 'full_track'
+              WHEN sc.track_held >= COALESCE(qp.required_track_sessions, 0) AND pa.has_post AND sc.support_held = 0 THEN 'without_support'
+              WHEN NOT pa.has_post THEN 'without_post'
+              ELSE 'other'
+            END AS bucket
+          FROM completed_only qp
+          JOIN session_counts sc ON sc.pairing_id = qp.pairing_id
+          JOIN post_assessment pa ON pa.pairing_id = qp.pairing_id
+        )
         SELECT
-          SUM(CASE WHEN p."complete_reason_sub_status" IS NOT NULL
-          THEN 1 ELSE 0 END)::int AS total_completions,
-          SUM(CASE WHEN p."incomplete_reason_sub_status" IS NOT NULL
-          THEN 1 ELSE 0 END)::int AS total_incompletes,
-          SUM(CASE WHEN p."complete_reason_sub_status"::text = 'completed_full_track'
-          THEN 1 ELSE 0 END)::int AS completed_full_track,
-          SUM(CASE WHEN p."complete_reason_sub_status"::text = 'completed_without_post_assessment'
-          THEN 1 ELSE 0 END)::int AS completed_without_post_assessment,
-          SUM(CASE WHEN p."complete_reason_sub_status"::text = 'completed_without_support_sessions'
-          THEN 1 ELSE 0 END)::int AS completed_without_support_sessions,
-          SUM(CASE WHEN p."incomplete_reason_sub_status"::text = 'achieved_outcomes'
-          THEN 1 ELSE 0 END)::int AS incomplete_achieved_outcomes,
-          SUM(CASE WHEN p."incomplete_reason_sub_status"::text = 'extended_wait'
-          THEN 1 ELSE 0 END)::int AS incomplete_extended_wait,
-          SUM(CASE WHEN p."incomplete_reason_sub_status"::text = 'no_advocate'
-          THEN 1 ELSE 0 END)::int AS incomplete_no_advocate,
-          SUM(CASE WHEN p."incomplete_reason_sub_status"::text = 'priorities_shifted'
-          THEN 1 ELSE 0 END)::int AS incomplete_priorities_shifted
-        FROM "Pairing" p
-        JOIN "Mom" m ON m."id" = p."momId"
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'pairing_complete'
-          AND p."completed_on" >= '${PERIOD_START}'
-          AND p."completed_on" <= '${PERIOD_END} 23:59:59'
-          AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
-          AND m."deleted_at" = 0
-          ${affWhere}
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE complete_reason IS NOT NULL)   AS total_completions,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason IS NOT NULL) AS total_incompletes,
+          (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'full_track')      AS completed_full_track,
+          (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'without_post')    AS completed_without_post_assessment,
+          (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'without_support') AS completed_without_support_sessions,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason = 'achieved_outcomes')   AS incomplete_achieved_outcomes,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason = 'extended_wait')       AS incomplete_extended_wait,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason = 'no_advocate')         AS incomplete_no_advocate,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason = 'priorities_shifted')  AS incomplete_priorities_shifted
       `, affParams),
 
       // ─── Completions by delivery format (1:1 vs group) ─────

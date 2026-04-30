@@ -226,6 +226,10 @@ router.get('/', async (req, res) => {
       ageDistRaw,
       languageDistRaw,
       pregnancyDistRaw,
+      childrenInHomeRaw,
+      childrenAvgAgeRaw,
+      caregiverDistRaw,
+      maritalDistRaw,
       affiliates,
       affNameResult,
     ] = await Promise.all([
@@ -1620,6 +1624,119 @@ router.get('/', async (req, res) => {
         ORDER BY 2 DESC
       `, affParams),
 
+      // ─── Demographics: Children in home buckets ──────────────
+      // Count children per Mom in the active-during-period cohort. Bucket as
+      // 0 / 1 / 2 / 3 / 4+. Moms with no Child rows count toward the "0" bucket.
+      pool.query(`
+        SELECT bucket, COUNT(*)::int AS count
+        FROM (
+          SELECT m."id",
+            CASE
+              WHEN COUNT(c."id") = 0 THEN '0'
+              WHEN COUNT(c."id") = 1 THEN '1'
+              WHEN COUNT(c."id") = 2 THEN '2'
+              WHEN COUNT(c."id") = 3 THEN '3'
+              ELSE '4 or more'
+            END AS bucket
+          FROM "Mom" m
+          JOIN "Pairing" p ON p."momId" = m."id"
+          LEFT JOIN "Child" c ON c."mom_id" = m."id" AND c."deleted_at" = 0
+          WHERE m."deleted_at" = 0
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            ${affWhere}
+          GROUP BY m."id"
+        ) per_mom
+        GROUP BY bucket
+        ORDER BY CASE bucket
+          WHEN '0' THEN 0 WHEN '1' THEN 1 WHEN '2' THEN 2 WHEN '3' THEN 3
+          ELSE 4 END
+      `, affParams),
+
+      // ─── Demographics: Avg age of children + total ──────────
+      // Uses to_jsonb probe on the Child table — returns NULL if 'birthdate'
+      // doesn't exist as a column rather than erroring. Same pattern is
+      // safe for any other unknown column name we might want to try later.
+      pool.query(`
+        SELECT
+          COUNT(c."id")::int AS total_kids,
+          AVG(
+            CASE
+              WHEN (to_jsonb(c.*) ->> 'birthdate') IS NOT NULL
+              THEN DATE_PART('year', AGE('${PERIOD_END}'::date, (to_jsonb(c.*) ->> 'birthdate')::date))
+              ELSE NULL
+            END
+          )::float AS avg_age_yrs
+        FROM "Child" c
+        JOIN "Mom" m ON m."id" = c."mom_id"
+        JOIN "Pairing" p ON p."momId" = m."id"
+        WHERE c."deleted_at" = 0
+          AND m."deleted_at" = 0
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          ${affWhere}
+      `, affParams),
+
+      // ─── Demographics: Caregiver type ───────────────────────
+      // Trellis custom-field column name unknown — probe via to_jsonb so we
+      // don't blow up if the column doesn't exist. We try several plausible
+      // names; the first non-null wins per mom. Empty/Unknown rows are
+      // dropped so the panel shows only recorded responses.
+      pool.query(`
+        SELECT raw_value AS caregiver, COUNT(DISTINCT mom_id)::int AS count
+        FROM (
+          SELECT m."id" AS mom_id,
+            COALESCE(
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'caregiver_type_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'caregiver_role_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'caregiver_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'mom_type_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'parent_type_c'), '')
+            ) AS raw_value
+          FROM "Mom" m
+          JOIN "Pairing" p ON p."momId" = m."id"
+          WHERE m."deleted_at" = 0
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            ${affWhere}
+        ) probed
+        WHERE raw_value IS NOT NULL
+        GROUP BY raw_value
+        ORDER BY 2 DESC
+      `, affParams),
+
+      // ─── Demographics: Marital status ───────────────────────
+      // Same to_jsonb probe pattern. Trellis-style names tried first.
+      pool.query(`
+        SELECT raw_value AS marital, COUNT(DISTINCT mom_id)::int AS count
+        FROM (
+          SELECT m."id" AS mom_id,
+            COALESCE(
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'marital_status_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'marital_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'relationship_status_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'partner_status_c'), '')
+            ) AS raw_value
+          FROM "Mom" m
+          JOIN "Pairing" p ON p."momId" = m."id"
+          WHERE m."deleted_at" = 0
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            ${affWhere}
+        ) probed
+        WHERE raw_value IS NOT NULL
+        GROUP BY raw_value
+        ORDER BY 2 DESC
+      `, affParams),
+
       // ─── Affiliate list (for admin slicer) ──────────────────
 
       isOrgWideRole ? pool.query(`
@@ -1832,6 +1949,47 @@ router.get('/', async (req, res) => {
       { label: 'Pregnant at intake',     count: pregYes, pct: pregTotal > 0 ? Math.round(1000 * pregYes / pregTotal) / 10 : 0 },
     ];
 
+    // Children in home: SQL emits the canonical buckets in order.
+    const kidsRows = (childrenInHomeRaw.rows || []);
+    const kidsTotalMoms = kidsRows.reduce((s, r) => s + r.count, 0);
+    const childrenInHome = kidsRows.map((r) => ({
+      label: r.bucket,
+      count: r.count,
+      pct: kidsTotalMoms > 0 ? Math.round(1000 * r.count / kidsTotalMoms) / 10 : 0,
+    }));
+    const kidsAvgAgeRow = (childrenAvgAgeRaw.rows || [])[0] || {};
+    const kidsTotalChildren = kidsAvgAgeRow.total_kids || 0;
+    const kidsAvgAge = kidsAvgAgeRow.avg_age_yrs != null
+      ? Math.round(kidsAvgAgeRow.avg_age_yrs * 10) / 10
+      : null;
+
+    // Caregiver / Marital — light-touch label normalization. Raw enum values
+    // are usually snake_case ('biological_mom', 'foster_mom'); humanize them.
+    function humanizeEnum(v) {
+      if (!v) return v;
+      return String(v).replace(/_/g, ' ')
+        .replace(/\s+/g, ' ').trim()
+        .replace(/\b\w/g, (ch) => ch.toUpperCase())
+        // common touch-ups
+        .replace(/\bMom\b/g, 'mom')
+        .replace(/\bGuardian\b/g, 'guardian')
+        .replace(/^./, (ch) => ch.toUpperCase());
+    }
+    const careRows = (caregiverDistRaw.rows || []);
+    const careTotal = careRows.reduce((s, r) => s + r.count, 0);
+    const caregiverDistribution = careRows.map((r) => ({
+      label: humanizeEnum(r.caregiver),
+      count: r.count,
+      pct: careTotal > 0 ? Math.round(1000 * r.count / careTotal) / 10 : 0,
+    }));
+    const marRows = (maritalDistRaw.rows || []);
+    const marTotal = marRows.reduce((s, r) => s + r.count, 0);
+    const maritalDistribution = marRows.map((r) => ({
+      label: humanizeEnum(r.marital),
+      count: r.count,
+      pct: marTotal > 0 ? Math.round(1000 * r.count / marTotal) / 10 : 0,
+    }));
+
     // ─── Build response envelope ────────────────────────────
 
     res.json({
@@ -1978,6 +2136,14 @@ router.get('/', async (req, res) => {
         age: ageDistribution,
         languages: languageDistribution,
         pregnancy: pregnancyDistribution,
+        children_in_home: childrenInHome,
+        children_total: kidsTotalChildren,
+        children_avg_age: kidsAvgAge,
+        children_moms_n: kidsTotalMoms,
+        caregiver: caregiverDistribution,
+        caregiver_n: careTotal,
+        marital: maritalDistribution,
+        marital_n: marTotal,
       },
 
       // Affiliate slicer options (admin only)

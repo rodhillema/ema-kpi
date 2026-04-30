@@ -979,7 +979,23 @@ router.get('/', async (req, res) => {
           COUNT(*)::int AS referrals_received,
           SUM(CASE WHEN m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS intakes_completed,
           SUM(CASE WHEN m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
-          SUM(CASE WHEN m."prospect_status"::text IN ('prospect', 'prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending
+          SUM(CASE WHEN m."prospect_status"::text IN ('prospect', 'prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending,
+          -- Did Not Initiate (DNI): mom reached engaged_in_program but never had
+          -- a held session on any pairing. Back-traces the Track Completions DNI
+          -- cohort into referral-stage outcomes so accounting is consistent
+          -- across this tab. Pairing/Session may be missing entirely (no record
+          -- yet created for the mom), which still counts as DNI.
+          SUM(CASE
+            WHEN m."prospect_status"::text = 'engaged_in_program'
+              AND NOT EXISTS (
+                SELECT 1 FROM "Pairing" p
+                JOIN "Session" s ON s."pairing_id" = p."id"
+                WHERE p."momId" = m."id"
+                  AND p."deleted_at" = 0
+                  AND s."deleted_at" = 0
+                  AND s."status"::text = 'Held'
+              )
+            THEN 1 ELSE 0 END)::int AS did_not_initiate
         FROM "Mom" m
         LEFT JOIN "Agency" a ON a."id" = m."agency_id"
         WHERE m."deleted_at" = 0

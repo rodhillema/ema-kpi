@@ -142,13 +142,13 @@
 
 
   /* TAB NAV */
-  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; overflow-x: auto; }
+  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; overflow-x: auto; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
   .tab-btn { padding: 14px 18px; font-size: 12px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
   .tab-btn:hover { color: var(--red); }
   .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
 
   /* TAB PANELS */
-  .tab-panel { display: none; padding: 28px 32px; }
+  .tab-panel { display: none; padding: 28px 32px; max-width: 1200px; margin: 0 auto; box-sizing: border-box; width: 100%; }
   /* flex: 1 0 auto forces the active panel to grow and fill any
      remaining vertical space inside the flex-column portal-view.
      Combined with .portal-view { min-height: 100vh } and
@@ -1864,7 +1864,7 @@
   <div class="section-label">Program Status &nbsp;&middot;&nbsp; Q1 2026</div>
 
   <!-- ══ MOTHERS · accent identity = red ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:12px;overflow:visible;margin:0 auto 20px;position:relative;max-width:1200px;">
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:12px;overflow:visible;margin:0 0 20px;position:relative;">
    <div class="info-icon-wrap">
     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
     <div class="info-popover">
@@ -1919,7 +1919,7 @@
   </div>
 
   <!-- ══ CHILDREN · accent identity = green ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--green);border-radius:12px;overflow:visible;margin:0 auto 20px;position:relative;max-width:1200px;">
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--green);border-radius:12px;overflow:visible;margin:0 0 20px;position:relative;">
    <div class="info-icon-wrap">
     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
     <div class="info-popover">
@@ -1964,7 +1964,7 @@
   </div>
 
   <!-- ══ ADVOCATES · accent identity = yellow ══ -->
-  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--yellow);border-radius:12px;overflow:visible;position:relative;margin:0 auto;max-width:1200px;">
+  <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--yellow);border-radius:12px;overflow:visible;position:relative;margin:0;">
    <div class="info-icon-wrap">
     <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
     <div class="info-popover">
@@ -5081,6 +5081,129 @@
           pregLegend.appendChild(row);
           pCum += pct;
         });
+      }
+    }
+
+    // ── Children in the home (5-bar chart + hero stats) ──
+    var kids = demo.children_in_home || [];
+    var kidsTotalMoms = demo.children_moms_n || kids.reduce(function(s, r){ return s + r.count; }, 0);
+    var kidsTotalChildren = demo.children_total || 0;
+    var kidsAvgAge = demo.children_avg_age;
+    setH('kids-n', fmt(kidsTotalMoms));
+    setH('kids-total', fmt(kidsTotalChildren));
+    setH('kids-avg-age', kidsAvgAge != null ? kidsAvgAge.toFixed(1) : '—');
+    var kidsSlugMap = { '0':'0', '1':'1', '2':'2', '3':'3', '4 or more':'4-or-more' };
+    var kidsMaxCount = kids.reduce(function(m, r){ return Math.max(m, r.count); }, 0);
+    var kidsDomain = Math.max(50, Math.ceil(kidsMaxCount / 10) * 10);
+    kids.forEach(function(b) {
+      var slug = kidsSlugMap[b.label]; if (!slug) return;
+      var rect  = document.querySelector('[data-hydrate="kids-' + slug + '-rect"]');
+      var pctEl = document.querySelector('[data-hydrate="kids-' + slug + '-pct"]');
+      if (rect) {
+        var maxBarHeight = 168;
+        var height = kidsDomain > 0 ? (b.count / kidsDomain) * maxBarHeight : 0;
+        var y = 202 - height;
+        rect.setAttribute('height', height.toFixed(1));
+        rect.setAttribute('y', y.toFixed(1));
+        rect.setAttribute('data-pct', kidsTotalMoms > 0 ? Math.round(b.count / kidsTotalMoms * 100) : 0);
+        rect.setAttribute('data-n', b.count);
+      }
+      if (pctEl) {
+        pctEl.textContent = (kidsTotalMoms > 0 ? Math.round(b.count / kidsTotalMoms * 100) : 0) + '%';
+        pctEl.setAttribute('y', (202 - (kidsDomain > 0 ? (b.count / kidsDomain) * 168 : 0) - 6).toFixed(1));
+      }
+    });
+
+    // ── Caregiver donut ──
+    var care = demo.caregiver || [];
+    var careTotal = demo.caregiver_n || care.reduce(function(s, r){ return s + r.count; }, 0);
+    setH('care-n', fmt(careTotal));
+    var carePalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4'];
+    var carePanel = null;
+    var dgH3s = document.querySelectorAll('#tab-demographics h3');
+    for (var ci = 0; ci < dgH3s.length; ci++) {
+      if (dgH3s[ci].textContent.indexOf('Caregiver') !== -1) { carePanel = dgH3s[ci].parentElement; break; }
+    }
+    if (carePanel) {
+      var careSvg = carePanel.querySelector('.donut-svg');
+      var careLegend = carePanel.querySelector('.donut-legend');
+      if (careSvg && careLegend) {
+        var careG = careSvg.querySelector('g');
+        careG.querySelectorAll('circle.dn-slice').forEach(function(c){ c.remove(); });
+        careLegend.innerHTML = '';
+        if (care.length === 0) {
+          careLegend.innerHTML = '<div class="dl-row" style="color:var(--mid);font-style:italic;">No caregiver data recorded for this cohort.</div>';
+        } else {
+          var careCum = 0;
+          care.forEach(function(slice, i) {
+            var pct = careTotal > 0 ? (slice.count / careTotal * 100) : 0;
+            var slen = (pct / 100) * C_dem;
+            var off = -(careCum / 100) * C_dem;
+            var color = carePalette[i % carePalette.length];
+            var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('class', 'dn-slice'); c.setAttribute('cx','80'); c.setAttribute('cy','80'); c.setAttribute('r','60');
+            c.setAttribute('stroke', color);
+            c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
+            c.setAttribute('stroke-dashoffset', off.toFixed(2));
+            c.setAttribute('data-label', slice.label);
+            c.setAttribute('data-pct', Math.round(pct));
+            c.setAttribute('data-n', slice.count);
+            c.setAttribute('data-color', color);
+            c.setAttribute('data-unit', 'moms');
+            c.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+            c.setAttribute('onmousemove', 'dnTipMove(event)');
+            c.setAttribute('onmouseleave', 'dnTipHide()');
+            careG.appendChild(c);
+            var row = document.createElement('div');
+            row.className = 'dl-row';
+            row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
+              '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+              '<div class="dl-pct">' + Math.round(pct) + '%</div>';
+            careLegend.appendChild(row);
+            careCum += pct;
+          });
+        }
+      }
+    }
+
+    // ── Marital status hbar list ──
+    var mar = demo.marital || [];
+    var marTotal = demo.marital_n || mar.reduce(function(s, r){ return s + r.count; }, 0);
+    setH('mar-n', fmt(marTotal));
+    var marPanel = null;
+    for (var mi = 0; mi < dgH3s.length; mi++) {
+      if (dgH3s[mi].textContent.indexOf('Marital') !== -1) { marPanel = dgH3s[mi].parentElement; break; }
+    }
+    if (marPanel) {
+      var marList = marPanel.querySelector('.hbar-list');
+      if (marList) {
+        marList.innerHTML = '';
+        if (mar.length === 0) {
+          marList.innerHTML = '<div class="hbar-row" style="color:var(--mid);font-style:italic;">No marital status data recorded for this cohort.</div>';
+        } else {
+          var marPalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a'];
+          var marMaxCount = mar.reduce(function(m, r){ return Math.max(m, r.count); }, 0);
+          mar.forEach(function(M, i) {
+            var color = marPalette[i % marPalette.length];
+            var pct = marTotal > 0 ? Math.round(M.count / marTotal * 100) : 0;
+            var barWidth = marMaxCount > 0 ? (M.count / marMaxCount * 100).toFixed(1) : 0;
+            var row = document.createElement('div');
+            row.className = 'hbar-row';
+            row.setAttribute('data-label', M.label);
+            row.setAttribute('data-pct', pct);
+            row.setAttribute('data-n', M.count);
+            row.setAttribute('data-color', color);
+            row.setAttribute('data-unit', 'moms');
+            row.setAttribute('onmouseenter', 'dnTipShow(event,this)');
+            row.setAttribute('onmousemove', 'dnTipMove(event)');
+            row.setAttribute('onmouseleave', 'dnTipHide()');
+            row.innerHTML =
+              '<div class="hbar-label">' + escapeHtml(M.label) + '</div>' +
+              '<div class="hbar-track"><div class="hbar-fill" style="background:' + color + ';width:' + barWidth + '%;"></div></div>' +
+              '<div class="hbar-meta">' + pct + '%</div>';
+            marList.appendChild(row);
+          });
+        }
       }
     }
 

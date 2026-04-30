@@ -144,8 +144,10 @@
   /* TAB NAV */
   /* Tab nav: white BAR is full-width (matches the green header) but the
      buttons themselves stay aligned to the 1200px content column via
-     viewport-aware padding. RD 4/30/26. */
-  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; gap: 0; overflow-x: auto; padding: 0 max(32px, calc((100vw - 1200px) / 2 + 32px)); box-sizing: border-box; }
+     parent-aware padding. Uses 100% instead of 100vw so vertical-scrollbar
+     width is accounted for and we don't accidentally overflow horizontally
+     (which was rendering tiny browser scroll arrows on the right). */
+  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; gap: 0; padding: 0 max(32px, calc((100% - 1200px) / 2 + 32px)); box-sizing: border-box; }
   .tab-btn { padding: 14px 18px; font-size: 12px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
   .tab-btn:hover { color: var(--red); }
   .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
@@ -2138,25 +2140,27 @@
    </div>
    <h3>Referral outcomes</h3>
    <div class="panel-n"><strong data-hydrate="ref-total-2">38</strong> referrals total</div>
+   <!-- Brand-only palette: green (good) → red-orange (DNI) → yellow (pending) → red-dark (DNE).
+        No off-palette grey/sage. -->
    <div class="prop-bar" id="refOutcomeBar" style="margin-top:8px;margin-bottom:14px;">
     <div data-bucket="engaged" style="background:#123939;flex:76;"
          data-label="Engaged in Program" data-pct="76" data-n="29" data-color="#123939" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
-    <div data-bucket="dni" style="background:#c23018;flex:0;"
-         data-label="Did Not Initiate" data-pct="0" data-n="0" data-color="#c23018" data-unit="referrals"
+    <div data-bucket="dni" style="background:#ec482f;flex:0;"
+         data-label="Did Not Initiate" data-pct="0" data-n="0" data-color="#ec482f" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
     <div data-bucket="pending" style="background:#f2a136;flex:16;"
          data-label="Still Pending" data-pct="16" data-n="6" data-color="#f2a136" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
-    <div data-bucket="dne" style="background:#5e7d7d;flex:8;"
-         data-label="Did Not Engage" data-pct="8" data-n="3" data-color="#5e7d7d" data-unit="referrals"
+    <div data-bucket="dne" style="background:#c23018;flex:8;"
+         data-label="Did Not Engage" data-pct="8" data-n="3" data-color="#c23018" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
    </div>
    <div class="pb-legend" style="grid-template-columns:repeat(4, 1fr);">
     <div class="pbl-row"><div class="pbl-dot" style="background:#123939;"></div><span class="pbl-num"><span data-hydrate="ref-engaged">29</span></span> <span class="pbl-label">Engaged in Program</span></div>
-    <div class="pbl-row"><div class="pbl-dot" style="background:#c23018;"></div><span class="pbl-num"><span data-hydrate="ref-dni">0</span></span> <span class="pbl-label">Did Not Initiate</span></div>
+    <div class="pbl-row"><div class="pbl-dot" style="background:#ec482f;"></div><span class="pbl-num"><span data-hydrate="ref-dni">0</span></span> <span class="pbl-label">Did Not Initiate</span></div>
     <div class="pbl-row"><div class="pbl-dot" style="background:#f2a136;"></div><span class="pbl-num"><span data-hydrate="ref-pending">6</span></span> <span class="pbl-label">Still Pending</span></div>
-    <div class="pbl-row"><div class="pbl-dot" style="background:#5e7d7d;"></div><span class="pbl-num"><span data-hydrate="ref-didnotengage">3</span></span> <span class="pbl-label">Did Not Engage</span></div>
+    <div class="pbl-row"><div class="pbl-dot" style="background:#c23018;"></div><span class="pbl-num"><span data-hydrate="ref-didnotengage">3</span></span> <span class="pbl-label">Did Not Engage</span></div>
    </div>
   </div>
 
@@ -2338,7 +2342,7 @@
       </div>
       <div class="ip-block">
        <div class="ip-block-label">Excluded</div>
-       <div class="ip-block-body"><strong>Did Not Initiate Sessions</strong> (moms who enrolled but never attended a first session). They surface separately in the intake-to-track funnel; a mom can't fail to complete a track she never started. Same-day close/reopen duplicates are also excluded (data-entry pattern used to change track type, not a real exit).</div>
+       <div class="ip-block-body"><strong>Did Not Initiate Sessions has been removed from this tab entirely.</strong> A mom can't fail to complete a track she never started — those cases are now reported only on the Referral Sources tab as part of Referral Outcomes. Same-day close/reopen duplicates are also excluded (data-entry pattern used to change track type, not a real exit).</div>
       </div>
       <div class="ip-block warn">
        <div class="ip-block-label">Known limitation</div>
@@ -2427,17 +2431,13 @@
       </div>
       <div class="ip-block">
        <div class="ip-block-label">Excluded</div>
-       <div class="ip-block-body"><strong>Did Not Initiate Sessions</strong> (moms who enrolled but never attended a first session) is counted in the intake-to-track funnel instead. A mom can't fail to complete a track she never started.</div>
-      </div>
-      <div class="ip-block warn">
-       <div class="ip-block-label">Known limitation</div>
-       <div class="ip-block-body">"Did Not Initiate Sessions" cases functionally indicate non-engagement and should have moved to inactive in Trellis but the workflow did not always catch them. Coordinator review needed to confirm status alignment.</div>
+       <div class="ip-block-body"><strong>Did Not Initiate Sessions has been removed from this tab entirely.</strong> A mom can't fail to complete a track she never started — those cases are now reported only on the Referral Sources tab as part of Referral Outcomes.</div>
       </div>
      </div>
     </div>
    </div>
    <h3>Why Tracks Ended Early</h3>
-   <div style="font-size:11px;color:var(--mid);margin-bottom:14px;"><span class="why-total">13</span> tracks ended without completion &nbsp;&middot;&nbsp; "Did Not Initiate Sessions" excluded</div>
+   <div style="font-size:11px;color:var(--mid);margin-bottom:14px;"><span class="why-total">13</span> tracks ended without completion</div>
    <!-- RD: The four .fr-label text values below are static. If Trellis
         category definitions shift over time (per Cristina's 4/16 note),
         these labels may need to become dynamic from the data payload.
@@ -2844,6 +2844,13 @@
       <div class="khi-context">Across <strong data-hydrate="kids-total">284</strong> children of served moms</div>
      </div>
     </div>
+    <div class="kid-hero-inline">
+     <div class="khi-num" data-hydrate="kids-avg-per-mom">2.1</div>
+     <div class="khi-side">
+      <div class="khi-label">Average children per mom</div>
+      <div class="khi-context">Across <strong data-hydrate="kids-moms-n">150</strong> served moms</div>
+     </div>
+    </div>
    </div>
    <div class="panel-n"><strong data-hydrate="kids-n">150</strong> moms with household details recorded</div>
    <svg class="demo-bar-svg" viewBox="0 0 900 240" preserveAspectRatio="xMidYMid meet">
@@ -2981,12 +2988,12 @@
     <div class="info-icon-wrap">
      <button class="info-icon-btn" type="button" aria-label="How we counted this" aria-expanded="false" onclick="toggleInfo(this)">i</button>
      <div class="info-popover"><div class="ip-body">
-      <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">County recorded on mom's address.</div></div>
-      <div class="ip-block warn"><div class="ip-block-label">Known limitation</div><div class="ip-block-body">Some moms relocate during the period; the county shown reflects the most recent address on file.</div></div>
+      <div class="ip-block"><div class="ip-block-label">What counts</div><div class="ip-block-body">County is derived from the mother's <strong>ZIP code</strong> via the Census ZCTA-to-County crosswalk. The free-text county field on the Mom record is no longer used — ZIP-derived county is the source of truth and reconciles cleanly with the Top ZIPs panel (every mom in a given ZIP appears in the same county).</div></div>
+      <div class="ip-block warn"><div class="ip-block-label">Known limitation</div><div class="ip-block-body">Moms whose ZIP is missing or unrecognized fall into "Unknown" rather than being assigned a guess. Recent address moves are reflected — county follows the ZIP currently on file.</div></div>
      </div></div>
     </div>
     <h3>Counties served</h3>
-    <div class="panel-n"><strong data-hydrate="county-n">0</strong> moms with county recorded</div>
+    <div class="panel-n"><strong data-hydrate="county-n">0</strong> moms with ZIP-derived county</div>
     <!-- Counties hbars rendered dynamically by renderCountiesServed(). -->
     <div class="hbar-list" id="countiesServedList"></div>
    </div>
@@ -4671,12 +4678,18 @@
        else if (lt.indexOf('requirements unmet') !== -1 || lt.indexOf('achieved outcome') !== -1) frVal.textContent = tce.incomplete_achieved_outcomes || 0;
        else if (lt.indexOf('client choice') !== -1 || lt.indexOf('priorities shifted') !== -1) frVal.textContent = tce.incomplete_priorities_shifted || 0;
        else if (lt.indexOf('relocated') !== -1 || lt.indexOf('extended wait') !== -1) frVal.textContent = tce.incomplete_extended_wait || 0;
-       else if (lt.indexOf('did not initiate') !== -1 || lt.indexOf('no advocate') !== -1) frVal.textContent = tce.incomplete_no_advocate || 0;
-       else if (lt.indexOf('total incompletes') !== -1) frVal.textContent = tce.total_incompletes || 0;
+       // DNI (incomplete_no_advocate) explicitly NOT mapped here — it has been
+       // removed from the Track Completions tab entirely (RD 4/30/26).
+       // DNI lives only on Referral Sources → Referral Outcomes.
+       else if (lt.indexOf('total incompletes') !== -1) {
+        // Total excludes DNI to match the panel's denominator
+        frVal.textContent = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
+       }
        else if (lt.indexOf('incomplete') !== -1 && lt.indexOf('other') !== -1) {
-        // "Other" incomplete - compute as remainder
-        var knownIncompletes = (tce.incomplete_achieved_outcomes || 0) + (tce.incomplete_priorities_shifted || 0) + (tce.incomplete_extended_wait || 0) + (tce.incomplete_no_advocate || 0);
-        frVal.textContent = Math.max(0, (tce.total_incompletes || 0) - knownIncompletes);
+        // "Other" incomplete = total (DNI-excluded) − known categories (also DNI-excluded)
+        var totalEx = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
+        var knownIncompletes = (tce.incomplete_achieved_outcomes || 0) + (tce.incomplete_priorities_shifted || 0) + (tce.incomplete_extended_wait || 0);
+        frVal.textContent = Math.max(0, totalEx - knownIncompletes);
        }
       }
       break;
@@ -4687,11 +4700,12 @@
     for (var cp2 = 0; cp2 < completionPanels.length; cp2++) {
      var cpH3b = completionPanels[cp2].querySelector('h3');
      if (cpH3b && cpH3b.textContent.indexOf('Incomplete Reasons') !== -1) {
-      var totalInc = tce.total_incompletes || 0;
+      // DNI removed from Track Completions tab (RD 4/30/26) — denominator
+      // and reason rows both exclude `incomplete_no_advocate`.
+      var totalInc = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
       var reasons = [
        { label: 'Track Requirements Unmet', val: tce.incomplete_achieved_outcomes || 0, color: 'var(--red)', opacity: '0.75' },
        { label: 'Client Choice', val: tce.incomplete_priorities_shifted || 0, color: 'var(--yellow)', opacity: '1' },
-       { label: 'Did Not Initiate Sessions', val: tce.incomplete_no_advocate || 0, color: 'var(--yellow)', opacity: '1' },
        { label: 'Relocated', val: tce.incomplete_extended_wait || 0, color: 'var(--mid)', opacity: '0.5' }
       ];
       var knownInc = reasons.reduce(function(a, r) { return a + r.val; }, 0);
@@ -4862,7 +4876,7 @@
     var svg = document.getElementById('refSourceDonutSvg');
     var legend = document.getElementById('refSourceLegend');
     if (!svg || !legend || totalRefs === 0) return;
-    var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#c5d2d2'];
+    var palette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a', '#f8c486'];
     var R = 60, C = 2 * Math.PI * R;
     var g = svg.querySelector('g');
     // Strip any existing slices (idempotent on re-render)
@@ -4909,11 +4923,33 @@
   // Wrapped in try so a single failure doesn't kill the rest of the render.
   try { (function hydrateDemographics() {
     var demo = data.demographics || {};
-    var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4', '#f8c486', '#c5d2d2'];
+    // Brand-only palette (RD 4/30/26): no off-palette greys/sages.
+    // green, red-orange, yellow, red-dark, soft-pink, soft-yellow, sage-pink, soft-pink-2
+    var palette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a', '#f8c486', '#8da4a4', '#c5d2d2'];
     var R_dem = 60, C_dem = 2 * Math.PI * R_dem;
     function setH(key, val) {
       var el = document.querySelector('[data-hydrate="' + key + '"]');
       if (el && val !== null && val !== undefined) el.textContent = val;
+    }
+    // Humanize raw enum / lowercase values for display:
+    //   'haitian_creole' → 'Haitian Creole'
+    //   'english' → 'English'
+    //   'african american' → 'African American'
+    //   already-titlecased values pass through unchanged.
+    // Special-cased acronyms preserved in caps.
+    var ACRONYMS = { 'us': 'US', 'usa': 'USA', 'lgbtq': 'LGBTQ', 'na': 'N/A' };
+    function humanizeLabel(s) {
+      if (s == null) return s;
+      var str = String(s).trim();
+      if (!str) return str;
+      // If it's already mixed-case (has both upper and lower), trust it.
+      var hasUpper = /[A-Z]/.test(str), hasLower = /[a-z]/.test(str);
+      if (hasUpper && hasLower && !/_/.test(str)) return str;
+      return str.replace(/_/g, ' ').toLowerCase().split(/\s+/).map(function(w) {
+        if (!w) return w;
+        if (ACRONYMS[w]) return ACRONYMS[w];
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(' ');
     }
 
     // ── Race donut ──
@@ -4937,7 +4973,8 @@
         c.setAttribute('stroke', color);
         c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
         c.setAttribute('stroke-dashoffset', off.toFixed(2));
-        c.setAttribute('data-label', slice.label);
+        var raceLabel = humanizeLabel(slice.label);
+        c.setAttribute('data-label', raceLabel);
         c.setAttribute('data-pct', Math.round(pct));
         c.setAttribute('data-n', slice.count);
         c.setAttribute('data-color', color);
@@ -4950,7 +4987,7 @@
           var row = document.createElement('div');
           row.className = 'dl-row';
           row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
-            '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+            '<div class="dl-label">' + escapeHtml(raceLabel) + '</div>' +
             '<div class="dl-pct">' + Math.round(pct) + '%</div>';
           raceLegend.appendChild(row);
         }
@@ -5013,20 +5050,22 @@
       var langList = langPanel.querySelector('.hbar-list');
       if (langList) {
         langList.innerHTML = '';
-        var langPalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a'];
+        // Brand-only palette (no off-palette grey).
+        var langPalette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a'];
         var langMaxCount = langs.reduce(function(m, r) { return Math.max(m, r.count); }, 0);
         langs.slice(0, 5).forEach(function(L, i) {
           var color = langPalette[i % langPalette.length];
           var pct = langDenom > 0 ? Math.round(L.count / langDenom * 100) : 0;
           var barWidth = langMaxCount > 0 ? (L.count / langMaxCount * 100).toFixed(1) : 0;
+          var langLabel = humanizeLabel(L.label);
           var row = document.createElement('div');
           row.className = 'hbar-row';
-          row.setAttribute('data-label', L.label);
+          row.setAttribute('data-label', langLabel);
           row.setAttribute('data-n', L.count);
           row.setAttribute('data-color', color);
           row.setAttribute('data-unit', 'moms');
           row.innerHTML =
-            '<div class="hbar-label">' + escapeHtml(L.label) + '</div>' +
+            '<div class="hbar-label">' + escapeHtml(langLabel) + '</div>' +
             '<div class="hbar-track"><div class="hbar-fill" style="background:' + color + ';width:' + barWidth + '%;"></div></div>' +
             '<div class="hbar-meta">' + pct + '%</div>';
           langList.appendChild(row);
@@ -5052,19 +5091,21 @@
         var pregG = pregSvg.querySelector('g');
         pregG.querySelectorAll('circle.dn-slice').forEach(function(c) { c.remove(); });
         pregLegend.innerHTML = '';
-        var pPalette = ['#5e7d7d', '#f2a136'];
+        // Brand-only palette: green for "Not pregnant", yellow for "Pregnant".
+        var pPalette = ['#123939', '#f2a136'];
         var pCum = 0;
         preg.forEach(function(slice, i) {
           var pct = pregTotal > 0 ? (slice.count / pregTotal * 100) : 0;
           var slen = (pct / 100) * C_dem;
           var off = -(pCum / 100) * C_dem;
-          var color = pPalette[i] || '#c5d2d2';
+          var color = pPalette[i] || '#c23018';
+          var pregLabel = humanizeLabel(slice.label);
           var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
           c.setAttribute('class', 'dn-slice'); c.setAttribute('cx', '80'); c.setAttribute('cy', '80'); c.setAttribute('r', '60');
           c.setAttribute('stroke', color);
           c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
           c.setAttribute('stroke-dashoffset', off.toFixed(2));
-          c.setAttribute('data-label', slice.label);
+          c.setAttribute('data-label', pregLabel);
           c.setAttribute('data-pct', Math.round(pct));
           c.setAttribute('data-n', slice.count);
           c.setAttribute('data-color', color);
@@ -5076,7 +5117,7 @@
           var row = document.createElement('div');
           row.className = 'dl-row';
           row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
-            '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+            '<div class="dl-label">' + escapeHtml(pregLabel) + '</div>' +
             '<div class="dl-pct">' + Math.round(pct) + '%</div>';
           pregLegend.appendChild(row);
           pCum += pct;
@@ -5091,7 +5132,12 @@
     var kidsAvgAge = demo.children_avg_age;
     setH('kids-n', fmt(kidsTotalMoms));
     setH('kids-total', fmt(kidsTotalChildren));
+    setH('kids-moms-n', fmt(kidsTotalMoms));
     setH('kids-avg-age', kidsAvgAge != null ? kidsAvgAge.toFixed(1) : '—');
+    var avgPerMom = (kidsTotalMoms > 0)
+      ? Math.round((kidsTotalChildren / kidsTotalMoms) * 10) / 10
+      : null;
+    setH('kids-avg-per-mom', avgPerMom != null ? avgPerMom.toFixed(1) : '—');
     var kidsSlugMap = { '0':'0', '1':'1', '2':'2', '3':'3', '4 or more':'4-or-more' };
     var kidsMaxCount = kids.reduce(function(m, r){ return Math.max(m, r.count); }, 0);
     var kidsDomain = Math.max(50, Math.ceil(kidsMaxCount / 10) * 10);
@@ -5118,7 +5164,8 @@
     var care = demo.caregiver || [];
     var careTotal = demo.caregiver_n || care.reduce(function(s, r){ return s + r.count; }, 0);
     setH('care-n', fmt(careTotal));
-    var carePalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4'];
+    // Brand-only palette (no off-palette greys).
+    var carePalette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a', '#f8c486'];
     var carePanel = null;
     var dgH3s = document.querySelectorAll('#tab-demographics h3');
     for (var ci = 0; ci < dgH3s.length; ci++) {
@@ -5145,7 +5192,8 @@
             c.setAttribute('stroke', color);
             c.setAttribute('stroke-dasharray', slen.toFixed(2) + ' ' + (C_dem - slen).toFixed(2));
             c.setAttribute('stroke-dashoffset', off.toFixed(2));
-            c.setAttribute('data-label', slice.label);
+            var careLabel = humanizeLabel(slice.label);
+            c.setAttribute('data-label', careLabel);
             c.setAttribute('data-pct', Math.round(pct));
             c.setAttribute('data-n', slice.count);
             c.setAttribute('data-color', color);
@@ -5157,7 +5205,7 @@
             var row = document.createElement('div');
             row.className = 'dl-row';
             row.innerHTML = '<div class="dl-dot" style="background:' + color + ';"></div>' +
-              '<div class="dl-label">' + escapeHtml(slice.label) + '</div>' +
+              '<div class="dl-label">' + escapeHtml(careLabel) + '</div>' +
               '<div class="dl-pct">' + Math.round(pct) + '%</div>';
             careLegend.appendChild(row);
             careCum += pct;
@@ -5181,15 +5229,17 @@
         if (mar.length === 0) {
           marList.innerHTML = '<div class="hbar-row" style="color:var(--mid);font-style:italic;">No marital status data recorded for this cohort.</div>';
         } else {
-          var marPalette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a'];
+          // Brand-only palette (no off-palette grey).
+          var marPalette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a'];
           var marMaxCount = mar.reduce(function(m, r){ return Math.max(m, r.count); }, 0);
           mar.forEach(function(M, i) {
             var color = marPalette[i % marPalette.length];
             var pct = marTotal > 0 ? Math.round(M.count / marTotal * 100) : 0;
             var barWidth = marMaxCount > 0 ? (M.count / marMaxCount * 100).toFixed(1) : 0;
+            var marLabel = humanizeLabel(M.label);
             var row = document.createElement('div');
             row.className = 'hbar-row';
-            row.setAttribute('data-label', M.label);
+            row.setAttribute('data-label', marLabel);
             row.setAttribute('data-pct', pct);
             row.setAttribute('data-n', M.count);
             row.setAttribute('data-color', color);
@@ -5198,7 +5248,7 @@
             row.setAttribute('onmousemove', 'dnTipMove(event)');
             row.setAttribute('onmouseleave', 'dnTipHide()');
             row.innerHTML =
-              '<div class="hbar-label">' + escapeHtml(M.label) + '</div>' +
+              '<div class="hbar-label">' + escapeHtml(marLabel) + '</div>' +
               '<div class="hbar-track"><div class="hbar-fill" style="background:' + color + ';width:' + barWidth + '%;"></div></div>' +
               '<div class="hbar-meta">' + pct + '%</div>';
             marList.appendChild(row);
@@ -5238,7 +5288,7 @@
     var countiesEl = document.getElementById('countiesServedList');
     if (countiesEl) {
       countiesEl.innerHTML = '';
-      var palette = ['#123939', '#ec482f', '#f2a136', '#5e7d7d', '#f4a08a', '#8da4a4'];
+      var palette = ['#123939', '#ec482f', '#f2a136', '#c23018', '#f4a08a', '#f8c486'];
       var maxCount = counties.reduce(function(m, r) { return Math.max(m, r.count || 0); }, 0);
       counties.forEach(function(c, i) {
         var color = c.is_other ? '#c5d2d2' : palette[i % palette.length];

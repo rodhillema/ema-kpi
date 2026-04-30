@@ -142,7 +142,10 @@
 
 
   /* TAB NAV */
-  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; padding: 0 32px; gap: 0; overflow-x: auto; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  /* Tab nav: white BAR is full-width (matches the green header) but the
+     buttons themselves stay aligned to the 1200px content column via
+     viewport-aware padding. RD 4/30/26. */
+  .tab-nav { background: var(--white); border-bottom: 2px solid var(--border); display: flex; gap: 0; overflow-x: auto; padding: 0 max(32px, calc((100vw - 1200px) / 2 + 32px)); box-sizing: border-box; }
   .tab-btn { padding: 14px 18px; font-size: 12px; font-weight: 600; color: var(--mid); cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
   .tab-btn:hover { color: var(--red); }
   .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
@@ -1503,13 +1506,8 @@
     /* Consistent tab intro: one line per tab, italic, no box.
      Replaces the heavier .demo-intro panel on Demographics/Service Area. */
   .tab-intro {
-    margin: 0 0 22px 0;
-    font-family: 'Lato', sans-serif;
-    font-size: 13.5px;
-    color: var(--mid);
-    font-style: italic;
-    line-height: 1.5;
-    max-width: 720px;
+    /* Hidden globally per RD 4/30/26 — tab titles are self-explanatory. */
+    display: none;
   }
   .tab-intro strong {
     color: var(--dark);
@@ -1774,7 +1772,7 @@
      </div>
     </div>
     <div class="hc-label">Family Preservation Rate</div>
-    <div class="hc-context"><span data-hydrate="kpi1-num">28</span> of <span data-hydrate="kpi1-den">58</span> eligible children preserved &nbsp;&middot;&nbsp; <span data-hydrate="kpi1-excl">20</span> children excluded (no valid FWA)</div>
+    <div class="hc-context"><span data-hydrate="kpi1-num">28</span> of <span data-hydrate="kpi1-den">58</span> eligible children preserved &nbsp;&middot;&nbsp; <span data-hydrate="kpi1-excl">20</span> children excluded</div>
    </div>
 
    <!-- KPI 2 · Family Stability Score Improvement · accent identity = green -->
@@ -1808,7 +1806,7 @@
      </div>
     </div>
     <div class="hc-label">Family Stability Score Improvement</div>
-    <div class="hc-context"><span data-hydrate="kpi2-num">37</span> of <span data-hydrate="kpi2-den">52</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">23</span> moms excluded (missing pre or post)</div>
+    <div class="hc-context"><span data-hydrate="kpi2-num">37</span> of <span data-hydrate="kpi2-den">52</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">23</span> moms excluded</div>
    </div>
 
    <!-- KPI 3 · Learning Progress · accent identity = yellow -->
@@ -1885,6 +1883,7 @@
    <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
     <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Mothers</div>
     <span data-hydrate="mom-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--red);line-height:1;letter-spacing:0.5px;">94</span>
+    <span style="font-size:12px;color:var(--mid);">active during Q1</span>
    </div>
 
    <div style="padding:18px 26px 22px;border-top:1px solid #f0ece5;margin-top:6px;">
@@ -1944,6 +1943,7 @@
    <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
     <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-family:'Oswald',sans-serif;flex-shrink:0;">Children</div>
     <span data-hydrate="child-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--green);line-height:1;letter-spacing:0.5px;">142</span>
+    <span style="font-size:12px;color:var(--mid);">active during Q1</span>
    </div>
 
    <div style="padding:0 26px 18px;border-top:1px solid #f0ece5;">
@@ -3381,7 +3381,7 @@
   // TAB 1 - KPI GAUGES: Render from live data
   // ════════════════════════════════════════════════════════
   var kpiDefs = [
-   { key: 'kpi1', label: 'KPI 1', anchorTpl: '{num} of {den} eligible children preserved \u00B7 {excl} children excluded (no valid FWA)' },
+   { key: 'kpi1', label: 'KPI 1', anchorTpl: '{num} of {den} eligible children preserved \u00B7 {excl} children excluded' },
    { key: 'kpi2', label: 'KPI 2', anchorTpl: '{num} of {den} moms show composite FSS improvement' },
    { key: 'kpi3', label: 'KPI 3', anchorTpl: '{num} of {den} completions show measurable improvement' },
   ];

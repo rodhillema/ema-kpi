@@ -1795,30 +1795,27 @@ router.get('/', async (req, res) => {
     // so they reconcile to the same cohort.
     const momLocations = [];
     let geoUnmapped = 0;
-    let resolvedByZip = 0, resolvedByText = 0;
+    let resolvedByZip = 0;
     for (const r of (momLocationsRaw.rows || [])) {
       const stateKey = normalizeName(r.state_name);
       const stateFips = STATE_FIPS[stateKey];
       if (!stateFips) { geoUnmapped++; continue; }
-      // Tier 1: ZIP-derived county FIPS (works for any US state once HUD data is loaded)
-      let countyFips = lookupZipCounty(r.zip);
-      if (countyFips) {
-        resolvedByZip++;
-      } else {
-        // Tier 2: text county fallback (only resolves for states in COUNTY_FIPS)
-        const cleanCounty = normalizeCountyName(r.county_name);
-        if (cleanCounty) {
-          const countyKey = cleanCounty.toUpperCase();
-          countyFips = COUNTY_FIPS[stateFips]?.[countyKey] || null;
-          if (countyFips) resolvedByText++;
-        }
-      }
+      // ZIP-derived county FIPS only (RD 4/30/26): the text county field
+      // (m.primary_address_county_c) is unreliable — coordinators enter free
+      // text with inconsistent capitalization, abbreviations, and sometimes
+      // the wrong county for the ZIP. Deriving county from ZIP via the
+      // Census ZCTA crosswalk is the source of truth, and it makes the
+      // Counties Served panel reconcile cleanly with the Top ZIPs panel
+      // (every mom in a ZIP appears in the same county). Moms without a
+      // resolvable ZIP fall into the 'Unknown' bucket.
+      const countyFips = lookupZipCounty(r.zip);
+      if (countyFips) resolvedByZip++;
       momLocations.push({ stateFips, countyFips });
     }
     if (geoUnmapped > 0) {
       console.log(`[geo] ${geoUnmapped} moms dropped from map (state not recognized)`);
     }
-    console.log(`[geo] resolved: ${resolvedByZip} via ZIP, ${resolvedByText} via text fallback, ${momLocations.length - resolvedByZip - resolvedByText} state-only`);
+    console.log(`[geo] resolved: ${resolvedByZip} via ZIP, ${momLocations.length - resolvedByZip} unresolved (no/invalid ZIP)`);
 
     // Aggregate for the map (geographic_distribution): one row per county
     // (or per state-only when county isn't resolved). Frontend's renderGeoMap
@@ -1869,7 +1866,27 @@ router.get('/', async (req, res) => {
     // before any external publishing of this data.
     // V2 (RD 4/25/26): Also expose top_zip_codes_full so the frontend can offer
     // a "show all" toggle that expands beyond the top-5 default view.
-    const zipsRowsAll = (topZipCodesRaw.rows || []).filter((r) => r.zip && r.zip !== 'Unknown');
+    // Combine all rows with the same ZIP regardless of city spelling
+    // (RD 4/30/26): the SQL groups by (zip, city), so a single ZIP with
+    // multiple free-text city variants (Ft. Lauderdale / Fort Lauderdale,
+    // Lauderhill / Lauderhill FL, etc.) shows up as duplicate rows. Roll
+    // them up to one row per ZIP and pick a canonical city — most common
+    // wins, alphabetical break for ties.
+    const zipMap = {};
+    for (const r of (topZipCodesRaw.rows || [])) {
+      if (!r.zip || r.zip === 'Unknown') continue;
+      if (!zipMap[r.zip]) zipMap[r.zip] = { zip: r.zip, count: 0, cityVotes: {} };
+      zipMap[r.zip].count += r.count;
+      const cityClean = (r.city || '').trim();
+      if (cityClean) {
+        zipMap[r.zip].cityVotes[cityClean] = (zipMap[r.zip].cityVotes[cityClean] || 0) + r.count;
+      }
+    }
+    const zipsRowsAll = Object.values(zipMap).map((z) => {
+      const ranked = Object.entries(z.cityVotes)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      return { zip: z.zip, city: ranked[0]?.[0] || '', count: z.count };
+    }).sort((a, b) => b.count - a.count || a.zip.localeCompare(b.zip));
     const zipsTop = zipsRowsAll.slice(0, 5);
     const zipsRest = zipsRowsAll.slice(5);
     const zipsOtherCount = zipsRest.reduce((s, r) => s + r.count, 0);

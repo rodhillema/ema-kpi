@@ -52,48 +52,39 @@ async function login(req, res) {
     // ── Try Trellis User first ──
     if (userResult.rows.length > 0) {
       const user = userResult.rows[0];
+      const passwordValid = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
 
-      // 2. Verify password against bcrypt hash
-      const passwordValid = await bcrypt.compare(password, user.passwordHash);
-      if (!passwordValid) {
-        return res.status(401).json({ error: 'Invalid username or password' });
+      if (passwordValid) {
+        const roleResult = await pool.query(
+          `SELECT r."key"
+           FROM "UserRole" ur
+           JOIN "Role" r ON r."id" = ur."role_id"
+           WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
+           LIMIT 1`,
+          [user.id]
+        );
+        const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
+        const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
+
+        if (isWhitelisted || ALLOWED_ROLES.includes(roleKey)) {
+          req.session.user = {
+            id: user.id,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: roleKey,
+            affiliateId: user.affiliateId,
+            affiliateName: user.affiliateName,
+          };
+          return res.json({
+            success: true,
+            firstName: user.firstName,
+            role: roleKey,
+            affiliateName: user.affiliateName,
+          });
+        }
       }
-
-      // 3. Look up role
-      const roleResult = await pool.query(
-        `SELECT r."key"
-         FROM "UserRole" ur
-         JOIN "Role" r ON r."id" = ur."role_id"
-         WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
-         LIMIT 1`,
-        [user.id]
-      );
-
-      const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
-
-      // 4. Access check: whitelisted users bypass role check, others need coordinator+
-      const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
-      if (!isWhitelisted && !ALLOWED_ROLES.includes(roleKey)) {
-        return res.status(403).json({ error: 'Access denied — coordinator role or above required' });
-      }
-
-      // 5. Create session
-      req.session.user = {
-        id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: roleKey,
-        affiliateId: user.affiliateId,
-        affiliateName: user.affiliateName,
-      };
-
-      return res.json({
-        success: true,
-        firstName: user.firstName,
-        role: roleKey,
-        affiliateName: user.affiliateName,
-      });
+      // Password wrong or role insufficient — fall through to ChampionUser
     }
 
     // ── Fallback: try ChampionUser table ──

@@ -448,7 +448,7 @@ async function resendInvite(id) {
 
 // ── Send Password Reset (admin-triggered) ───────────────
 async function sendPasswordReset(id, email) {
-  if (!confirm('Send a password reset email to ' + email + '?\n\nThey will receive a branded ĒMA email with a link to set a new password. The link expires in 1 hour.')) return;
+  if (!confirm('Send a password reset email to ' + email + '?\n\nThey will receive a branded ĒMA email with a link to set a new password. The link expires in 48 hours.')) return;
   try {
     const res = await fetch(`${API_BASE}/${id}/send-password-reset`, { method: 'POST' });
     const data = await res.json();

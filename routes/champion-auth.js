@@ -164,7 +164,7 @@ router.post('/forgot-password', async (req, res) => {
       // Generate secure reset token
       const resetToken = crypto.randomBytes(32).toString('hex');
 
-      // Set token with 1-hour expiry
+      // Set token with 48-hour expiry
       await pool.query(
         `UPDATE "ChampionUser"
          SET "resetToken" = $1,

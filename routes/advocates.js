@@ -33,9 +33,10 @@ router.get('/', async (req, res) => {
     let paramIdx = 1;
 
     // Determine if this user is org-wide
-    const isOrgWide = role === 'administrator' || (role === 'champion' && !user.affiliateId);
+    const ORG_WIDE_USERNAMES = ['cristina.galloway'];
+    const isOrgWide = role === 'administrator' || (role === 'champion' && !user.affiliateId) || ORG_WIDE_USERNAMES.includes((user.username || '').toLowerCase());
 
-    if (role === 'coordinator') {
+    if (!isOrgWide && role === 'coordinator') {
       // Coordinator sees advocates they've written notes about
       conditions.push(`EXISTS (SELECT 1 FROM "CoordinatorNote" cn WHERE cn."advocate_id" = u."id" AND cn."coordinator_id" = $${paramIdx} AND cn."deleted_at" = 0)`);
       params.push(user.id);

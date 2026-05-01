@@ -38,6 +38,7 @@ app.use('/api/report-data', requireAuth, requireRole, require('./routes/report-d
 app.use('/api/advocates', require('./routes/advocates'));
 app.use('/api/mom-status', require('./routes/mom-status'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
+app.use('/api/admin/export', require('./routes/admin-export'));
 app.use('/api/champion', require('./routes/champion-auth'));
 
 // Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.

@@ -25,9 +25,10 @@ router.get('/', async (req, res) => {
     const params = [];
     let paramIdx = 1;
 
-    const isOrgWide = role === 'administrator';
+    const ORG_WIDE_USERNAMES = ['cristina.galloway'];
+    const isOrgWide = role === 'administrator' || ORG_WIDE_USERNAMES.includes((user.username || '').toLowerCase());
 
-    if (role === 'coordinator') {
+    if (!isOrgWide && role === 'coordinator') {
       // Coordinator sees all moms in their affiliate.
       // Frontend "My Moms" button further narrows to moms they're assigned to.
       conditions.push(`m."affiliate_id" = $${paramIdx}`);

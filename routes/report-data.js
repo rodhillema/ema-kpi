@@ -25,6 +25,9 @@ const PERIOD_LABEL = 'Q1 2026';
 // Champions are org-wide only if they have no affiliateId (checked at line 36).
 const ORG_WIDE_ROLES = ['administrator'];
 
+// Usernames granted org-wide access regardless of role
+const ORG_WIDE_USERNAMES = ['cristina.galloway'];
+
 // Required sessions per track for fidelity
 const REQUIRED_SESSIONS = {
   'Nurturing Parenting Program': 10,
@@ -115,11 +118,11 @@ function normalizeCountyName(raw) {
 
 router.get('/', async (req, res) => {
   try {
-    const { role, affiliateId } = req.session.user;
+    const { role, affiliateId, username } = req.session.user;
 
     // Determine affiliate filter
     // Champions with no affiliateId are org-wide (like admin)
-    const isOrgWideRole = ORG_WIDE_ROLES.includes(role) || (role === 'champion' && !affiliateId);
+    const isOrgWideRole = ORG_WIDE_ROLES.includes(role) || (role === 'champion' && !affiliateId) || ORG_WIDE_USERNAMES.includes((username || '').toLowerCase());
     let affiliateFilter = affiliateId;
     const excludeAffiliateId = req.query.exclude_affiliate_id || null;
     if (isOrgWideRole && req.query.affiliate_id) {

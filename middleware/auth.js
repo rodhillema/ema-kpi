@@ -66,21 +66,40 @@ async function login(req, res) {
         const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
         const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
 
-        if (isWhitelisted || ALLOWED_ROLES.includes(roleKey)) {
+        // Check for ChampionAccess grant — overrides role + affiliate scope for the Hub.
+        // Lets a Trellis advocate (or any Trellis user) be promoted to champion-level
+        // Hub access without managing a second password.
+        const grantResult = await pool.query(
+          `SELECT ca."id", ca."affiliateId", a."name" AS "affiliateName"
+           FROM "ChampionAccess" ca
+           LEFT JOIN "Affiliate" a ON a."id" = ca."affiliateId"
+           WHERE ca."userId" = $1 AND ca."deleted_at" = 0
+           LIMIT 1`,
+          [user.id]
+        );
+        const grant = grantResult.rows[0] || null;
+
+        if (isWhitelisted || ALLOWED_ROLES.includes(roleKey) || grant) {
+          const effectiveRole = grant ? 'champion' : roleKey;
+          const effectiveAffiliateId = grant ? grant.affiliateId : user.affiliateId;
+          const effectiveAffiliateName = grant ? grant.affiliateName : user.affiliateName;
+
           req.session.user = {
             id: user.id,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,
-            role: roleKey,
-            affiliateId: user.affiliateId,
-            affiliateName: user.affiliateName,
+            role: effectiveRole,
+            affiliateId: effectiveAffiliateId,
+            affiliateName: effectiveAffiliateName,
+            championAccessId: grant ? grant.id : null,
+            trellisRole: grant ? roleKey : null,
           };
           return res.json({
             success: true,
             firstName: user.firstName,
-            role: roleKey,
-            affiliateName: user.affiliateName,
+            role: effectiveRole,
+            affiliateName: effectiveAffiliateName,
           });
         }
       }

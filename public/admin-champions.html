@@ -260,6 +260,53 @@ tbody tr:hover{background:var(--red-lt)}
     </div>
   </div>
 
+  <!-- Trellis-Linked Champion Access -->
+  <div class="card">
+    <div class="card-title">Grant Champion Access to Trellis User</div>
+    <p style="font-size:13px;color:var(--mid);margin-bottom:14px;line-height:1.5;">
+      Promote an existing Trellis user (e.g. an advocate or coordinator) to champion-level Impact Hub access
+      <strong>using their existing Trellis password</strong>. Their Trellis role and affiliate are unchanged —
+      this only affects what they see in the Hub.
+    </p>
+    <div class="form-row">
+      <div class="form-group" style="position:relative;">
+        <label for="grantSearch">Trellis User</label>
+        <input type="text" id="grantSearch" placeholder="Search by username or name (min 2 chars)" autocomplete="off">
+        <div id="grantSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-top:none;border-radius:0 0 7px 7px;max-height:240px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.08);"></div>
+      </div>
+      <div class="form-group">
+        <label for="grantAffiliate">Hub Affiliate Scope</label>
+        <select id="grantAffiliate">
+          <option value="">Org-wide (full visibility)</option>
+        </select>
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-end">
+        <button type="button" class="btn btn-primary" id="grantBtn" onclick="createGrant()" disabled>Grant Access</button>
+      </div>
+    </div>
+    <div id="grantSelected" style="display:none;background:var(--green-lt);border:1px solid rgba(18,57,57,.15);border-radius:7px;padding:10px 14px;font-size:13px;color:var(--green);margin-top:4px;"></div>
+  </div>
+
+  <!-- Trellis-Linked Grants Table -->
+  <div class="card">
+    <div class="card-title">Trellis-Linked Champions</div>
+    <div id="grantsLoading" class="loading">Loading grants...</div>
+    <div id="grantsEmpty" class="empty" style="display:none">No Trellis-linked champions yet. Use the form above to grant access.</div>
+    <table id="grantsTable" style="display:none">
+      <thead>
+        <tr>
+          <th>Trellis User</th>
+          <th>Trellis Affiliate</th>
+          <th>Hub Scope</th>
+          <th>Granted By</th>
+          <th>Granted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="grantsBody"></tbody>
+    </table>
+  </div>
+
   <!-- Champions Table -->
   <div class="card">
     <div class="card-title">Champions</div>
@@ -298,6 +345,7 @@ async function checkAuth() {
     currentUser = user;
     loadAffiliates();
     loadChampions();
+    loadGrants();
   } catch {
     window.location.href = '/';
   }
@@ -327,11 +375,14 @@ async function loadAffiliates() {
     const data = await res.json();
     const sel = document.getElementById('fAffiliate');
     if (data.affiliates && Array.isArray(data.affiliates)) {
+      const grantSel = document.getElementById('grantAffiliate');
       data.affiliates.forEach(a => {
         const opt = document.createElement('option');
         opt.value = a.id;
         opt.textContent = a.name;
         sel.appendChild(opt);
+        const opt2 = opt.cloneNode(true);
+        grantSel.appendChild(opt2);
       });
     }
   } catch (err) {
@@ -763,6 +814,162 @@ function showResults(result) {
       </div>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TRELLIS-LINKED CHAMPION ACCESS (ChampionAccess grants)
+// ═══════════════════════════════════════════════════════════
+let grantSelectedUser = null;
+let grantSearchTimer = null;
+
+document.getElementById('grantSearch').addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  clearGrantSelection();
+  clearTimeout(grantSearchTimer);
+  if (q.length < 2) {
+    document.getElementById('grantSearchResults').style.display = 'none';
+    return;
+  }
+  grantSearchTimer = setTimeout(() => searchTrellisUsers(q), 200);
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#grantSearch') && !e.target.closest('#grantSearchResults')) {
+    document.getElementById('grantSearchResults').style.display = 'none';
+  }
+});
+
+const grantSearchCache = {}; // userId -> user object
+
+async function searchTrellisUsers(q) {
+  try {
+    const res = await fetch(`${API_BASE}/trellis-users?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const users = await res.json();
+    const box = document.getElementById('grantSearchResults');
+    if (users.length === 0) {
+      box.innerHTML = '<div style="padding:10px 14px;color:var(--light);font-size:13px;">No matching Trellis users</div>';
+      box.style.display = 'block';
+      return;
+    }
+    users.forEach(u => { grantSearchCache[u.id] = u; });
+    box.innerHTML = users.map(u => {
+      const disabled = u.hasGrant;
+      const aff = u.affiliateName ? esc(u.affiliateName) : 'Org-wide';
+      const note = disabled ? '<span style="color:var(--red-dk);font-size:11px;margin-left:6px;">already granted</span>' : '';
+      return `
+        <div data-user-id="${esc(u.id)}" data-disabled="${disabled ? '1' : '0'}"
+             style="padding:9px 14px;border-bottom:1px solid var(--border);cursor:${disabled ? 'not-allowed' : 'pointer'};${disabled ? 'opacity:0.5;' : ''}">
+          <div style="font-size:13px;color:var(--dark);"><strong>${esc(u.firstName || '')} ${esc(u.lastName || '')}</strong> <span style="color:var(--mid);">@${esc(u.username)}</span>${note}</div>
+          <div style="font-size:11px;color:var(--light);">Trellis affiliate: ${aff}</div>
+        </div>
+      `;
+    }).join('');
+    box.style.display = 'block';
+    // Wire up clicks via delegation
+    box.querySelectorAll('[data-user-id]').forEach(el => {
+      el.addEventListener('mouseenter', () => { if (el.dataset.disabled === '0') el.style.background = 'var(--red-lt)'; });
+      el.addEventListener('mouseleave', () => { el.style.background = ''; });
+      el.addEventListener('click', () => {
+        if (el.dataset.disabled === '1') return;
+        const u = grantSearchCache[el.dataset.userId];
+        if (u) selectGrantUser(u);
+      });
+    });
+  } catch (err) {
+    console.error('Trellis user search failed:', err);
+  }
+}
+
+function selectGrantUser(user) {
+  grantSelectedUser = user;
+  document.getElementById('grantSearch').value = `${user.firstName || ''} ${user.lastName || ''} (@${user.username})`.trim();
+  document.getElementById('grantSearchResults').style.display = 'none';
+  const sel = document.getElementById('grantSelected');
+  sel.textContent = `Selected: ${user.firstName || ''} ${user.lastName || ''} — @${user.username}`;
+  sel.style.display = 'block';
+  document.getElementById('grantBtn').disabled = false;
+}
+
+function clearGrantSelection() {
+  grantSelectedUser = null;
+  document.getElementById('grantSelected').style.display = 'none';
+  document.getElementById('grantBtn').disabled = true;
+}
+
+async function createGrant() {
+  if (!grantSelectedUser) return;
+  const affiliateId = document.getElementById('grantAffiliate').value || null;
+  try {
+    const res = await fetch(`${API_BASE}/grants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: grantSelectedUser.id, affiliateId }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to grant access'); return; }
+    showAlert('success', `Granted champion access to @${grantSelectedUser.username}`);
+    document.getElementById('grantSearch').value = '';
+    document.getElementById('grantAffiliate').value = '';
+    clearGrantSelection();
+    loadGrants();
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
+}
+
+async function loadGrants() {
+  const loading = document.getElementById('grantsLoading');
+  const empty = document.getElementById('grantsEmpty');
+  const table = document.getElementById('grantsTable');
+  const tbody = document.getElementById('grantsBody');
+
+  loading.style.display = 'block';
+  empty.style.display = 'none';
+  table.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/grants`);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const grants = await res.json();
+    loading.style.display = 'none';
+    if (grants.length === 0) { empty.style.display = 'block'; return; }
+    tbody.innerHTML = grants.map(g => {
+      const trellisAff = g.trellisAffiliateName || 'Org-wide';
+      const hubScope = g.grantAffiliateName || '<span style="color:var(--green);font-weight:600;">Org-wide</span>';
+      const granted = g.granted_at ? new Date(g.granted_at).toLocaleDateString() : '';
+      return `
+        <tr>
+          <td><strong>${esc(g.firstName || '')} ${esc(g.lastName || '')}</strong><br><span style="font-size:11px;color:var(--light)">@${esc(g.username)}</span></td>
+          <td>${esc(trellisAff)}</td>
+          <td>${hubScope}</td>
+          <td>${esc(g.granted_by || '')}</td>
+          <td>${esc(granted)}</td>
+          <td class="actions"><button class="btn btn-sm btn-danger" onclick="revokeGrant('${g.id}','${esc(g.username)}')">Revoke</button></td>
+        </tr>
+      `;
+    }).join('');
+    table.style.display = 'table';
+  } catch (err) {
+    loading.style.display = 'none';
+    showAlert('error', 'Failed to load grants');
+    console.error(err);
+  }
+}
+
+async function revokeGrant(id, username) {
+  if (!confirm(`Revoke champion access for @${username}? They will go back to their normal Trellis role and lose Hub access (unless their Trellis role is coordinator+).`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/grants/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { showAlert('error', data.error || 'Failed to revoke'); return; }
+    showAlert('success', `Access revoked for @${username}`);
+    loadGrants();
+  } catch (err) {
+    showAlert('error', 'Network error');
+    console.error(err);
+  }
 }
 
 // ── Escape HTML ─────────────────────────────────────────

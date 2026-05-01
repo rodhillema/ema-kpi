@@ -545,4 +545,129 @@ router.post('/:id/send-password-reset', async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════
+// Trellis-linked Champion Access (ChampionAccess table)
+// Grants champion-level Hub access to existing Trellis users so
+// they can reuse their Trellis password instead of managing two.
+// ════════════════════════════════════════════════════════════
+
+// GET /trellis-users?q=foo — Typeahead search of Trellis users for granting access
+// Returns up to 20 matches by username/firstName/lastName.
+router.get('/trellis-users', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim().toLowerCase();
+    if (q.length < 2) return res.json([]);
+
+    const like = `%${q}%`;
+    const { rows } = await pool.query(
+      `SELECT u."id", u."username", u."firstName", u."lastName",
+              u."affiliateId", a."name" AS "affiliateName",
+              EXISTS (
+                SELECT 1 FROM "ChampionAccess" ca
+                WHERE ca."userId" = u."id" AND ca."deleted_at" = 0
+              ) AS "hasGrant"
+       FROM "User" u
+       LEFT JOIN "Affiliate" a ON a."id" = u."affiliateId"
+       WHERE u."deleted_at" = 0
+         AND (LOWER(u."username") LIKE $1
+              OR LOWER(u."firstName") LIKE $1
+              OR LOWER(u."lastName") LIKE $1
+              OR LOWER(u."firstName" || ' ' || u."lastName") LIKE $1)
+       ORDER BY u."username"
+       LIMIT 20`,
+      [like]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error searching Trellis users:', err);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
+// GET /grants — List all active ChampionAccess grants joined with Trellis user info
+router.get('/grants', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        ca."id",
+        ca."userId",
+        ca."affiliateId",
+        ca."granted_by",
+        ca."granted_at",
+        u."username",
+        u."firstName",
+        u."lastName",
+        u."affiliateId" AS "trellisAffiliateId",
+        ta."name"      AS "trellisAffiliateName",
+        ga."name"      AS "grantAffiliateName"
+      FROM "ChampionAccess" ca
+      JOIN "User"      u  ON u."id"  = ca."userId"
+      LEFT JOIN "Affiliate" ta ON ta."id" = u."affiliateId"
+      LEFT JOIN "Affiliate" ga ON ga."id" = ca."affiliateId"
+      WHERE ca."deleted_at" = 0
+      ORDER BY ca."granted_at" DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error listing champion access grants:', err);
+    res.status(500).json({ error: 'Failed to fetch grants' });
+  }
+});
+
+// POST /grants — Create a ChampionAccess grant for an existing Trellis user
+// Body: { userId, affiliateId } — affiliateId null = org-wide
+router.post('/grants', async (req, res) => {
+  try {
+    const { userId, affiliateId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    // Verify the Trellis user exists and is not deleted
+    const userCheck = await pool.query(
+      `SELECT "id", "username" FROM "User" WHERE "id" = $1 AND "deleted_at" = 0 LIMIT 1`,
+      [userId]
+    );
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Trellis user not found' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO "ChampionAccess" ("userId", "affiliateId", "granted_by")
+       VALUES ($1, $2, $3)
+       RETURNING "id", "userId", "affiliateId", "granted_by", "granted_at"`,
+      [userId, affiliateId || null, req.session.user.username]
+    );
+
+    console.log(`[AUDIT] Champion access granted: ${userCheck.rows[0].username} (${userId}) by ${req.session.user.username}, affiliate=${affiliateId || 'org-wide'}`);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'This Trellis user already has an active champion grant' });
+    }
+    console.error('Error creating champion access grant:', err);
+    res.status(500).json({ error: 'Failed to create grant' });
+  }
+});
+
+// DELETE /grants/:id — Revoke a ChampionAccess grant (soft delete)
+router.delete('/grants/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = Math.floor(Date.now() / 1000);
+    const { rowCount, rows } = await pool.query(
+      `UPDATE "ChampionAccess"
+       SET "deleted_at" = $1
+       WHERE "id" = $2 AND "deleted_at" = 0
+       RETURNING "userId"`,
+      [now, id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Grant not found or already revoked' });
+
+    console.log(`[AUDIT] Champion access revoked: grant=${id}, userId=${rows[0].userId} by ${req.session.user.username}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error revoking champion access grant:', err);
+    res.status(500).json({ error: 'Failed to revoke grant' });
+  }
+});
+
 module.exports = router;

@@ -503,7 +503,7 @@ router.post('/:id/resend-invite', async (req, res) => {
 });
 
 // POST /:id/send-password-reset — Admin-triggered password reset email for an active champion
-// Generates a reset token (1-hour expiry) and sends the branded reset email.
+// Generates a reset token (48-hour expiry) and sends the branded reset email.
 // Used when a champion forgets their password — replaces the self-service forgot-password flow.
 router.post('/:id/send-password-reset', async (req, res) => {
   try {

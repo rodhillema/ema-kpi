@@ -55,51 +55,49 @@ async function login(req, res) {
       const passwordValid = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
 
       if (passwordValid) {
-        const roleResult = await pool.query(
-          `SELECT r."key"
-           FROM "UserRole" ur
-           JOIN "Role" r ON r."id" = ur."role_id"
-           WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
-           LIMIT 1`,
-          [user.id]
-        );
+        // ChampionAccess grant lets a Trellis user (e.g. an advocate) get
+        // champion-level Hub access using their existing Trellis password.
+        const [roleResult, grantResult] = await Promise.all([
+          pool.query(
+            `SELECT r."key"
+             FROM "UserRole" ur
+             JOIN "Role" r ON r."id" = ur."role_id"
+             WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
+             LIMIT 1`,
+            [user.id]
+          ),
+          pool.query(
+            `SELECT ca."affiliateId", a."name" AS "affiliateName"
+             FROM "ChampionAccess" ca
+             LEFT JOIN "Affiliate" a ON a."id" = ca."affiliateId"
+             WHERE ca."userId" = $1 AND ca."deleted_at" = 0
+             LIMIT 1`,
+            [user.id]
+          ),
+        ]);
         const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
+        const grant = grantResult.rows[0] || null;
         const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
 
-        // Check for ChampionAccess grant — overrides role + affiliate scope for the Hub.
-        // Lets a Trellis advocate (or any Trellis user) be promoted to champion-level
-        // Hub access without managing a second password.
-        const grantResult = await pool.query(
-          `SELECT ca."id", ca."affiliateId", a."name" AS "affiliateName"
-           FROM "ChampionAccess" ca
-           LEFT JOIN "Affiliate" a ON a."id" = ca."affiliateId"
-           WHERE ca."userId" = $1 AND ca."deleted_at" = 0
-           LIMIT 1`,
-          [user.id]
-        );
-        const grant = grantResult.rows[0] || null;
-
         if (isWhitelisted || ALLOWED_ROLES.includes(roleKey) || grant) {
-          const effectiveRole = grant ? 'champion' : roleKey;
-          const effectiveAffiliateId = grant ? grant.affiliateId : user.affiliateId;
-          const effectiveAffiliateName = grant ? grant.affiliateName : user.affiliateName;
+          const role = grant ? 'champion' : roleKey;
+          const affiliateId = grant ? grant.affiliateId : user.affiliateId;
+          const affiliateName = grant ? grant.affiliateName : user.affiliateName;
 
           req.session.user = {
             id: user.id,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,
-            role: effectiveRole,
-            affiliateId: effectiveAffiliateId,
-            affiliateName: effectiveAffiliateName,
-            championAccessId: grant ? grant.id : null,
-            trellisRole: grant ? roleKey : null,
+            role,
+            affiliateId,
+            affiliateName,
           };
           return res.json({
             success: true,
             firstName: user.firstName,
-            role: effectiveRole,
-            affiliateName: effectiveAffiliateName,
+            role,
+            affiliateName,
           });
         }
       }

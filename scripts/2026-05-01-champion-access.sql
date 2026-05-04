@@ -3,9 +3,9 @@
 -- Run once against Railway PostgreSQL.
 
 CREATE TABLE IF NOT EXISTS "ChampionAccess" (
-  "id"          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  "userId"      uuid        NOT NULL,
-  "affiliateId" uuid        NULL,
+  "id"          text        PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "userId"      text        NOT NULL,
+  "affiliateId" text        NULL,
   "granted_by"  text        NOT NULL,
   "granted_at"  timestamptz NOT NULL DEFAULT NOW(),
   "deleted_at"  integer     NOT NULL DEFAULT 0,

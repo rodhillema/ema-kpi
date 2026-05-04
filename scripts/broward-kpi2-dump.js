@@ -180,8 +180,8 @@ async function main() {
     ${psParamCte}
     SELECT
       m."id"          AS mom_id,
-      m."firstName",
-      m."lastName",
+      m."first_name" AS "firstName",
+      m."last_name"  AS "lastName",
       m."status"::text AS mom_status,
       m."prospect_status"::text AS prospect_status,
       m."affiliate_id" AS affiliate_id,

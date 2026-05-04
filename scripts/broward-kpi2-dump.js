@@ -40,6 +40,11 @@ const MILESTONE_FWA_DAYS_MAX = 120;
 // PS-migrated batch dates (from existing INTAKE_CTE in report-data.js)
 const PS_BATCH_DATES = ["2025-11-30", "2025-12-17"];
 
+// Assessment-role tags written into the Pull #1 CSV
+const ROLE_INITIAL       = 'initial';
+const ROLE_MILESTONE_3MO = 'milestone_3mo';
+const ROLE_DELTA_SUMMARY = 'delta_summary';
+
 // ─── CSV helpers ────────────────────────────────────────────
 function csvEsc(v) {
   if (v === null || v === undefined) return '';
@@ -63,13 +68,15 @@ function initialsOf(first, last) {
 async function main() {
   console.log('Broward KPI 2 dump — read-only.\n');
 
-  // 1. Probe schema: does cw_score exist on WellnessAssessment?
-  const colsRes = await pool.query(`
-    SELECT column_name FROM information_schema.columns
-    WHERE table_name = 'WellnessAssessment'
-  `);
+  // 1. Probes in parallel: WA columns, ps_params presence, Broward affiliate
+  const [colsRes, psParamProbe, browRes] = await Promise.all([
+    pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'WellnessAssessment'`),
+    pool.query(`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ltd_people_params') AS present`),
+    pool.query(`SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 AND LOWER("name") LIKE '%broward%' ORDER BY "name"`),
+  ]);
   const waCols = new Set(colsRes.rows.map(r => r.column_name));
   const hasCwScore = waCols.has('cw_score');
+  const hasPsParams = psParamProbe.rows[0].present;
   console.log(`WellnessAssessment.cw_score present: ${hasCwScore}`);
   console.log(`WellnessAssessment columns of interest: ${
     ['cpi_total','cw_score','cc_score','ats_score','naa_score','soc_score','res_score',
@@ -77,17 +84,11 @@ async function main() {
      'completed_ahead','completed_date','last_fwa']
       .filter(c => waCols.has(c)).join(', ')
   }`);
-  console.log('');
+  console.log(`ltd_people_params table present: ${hasPsParams}\n`);
 
   // SQL fragment for cw_score that degrades gracefully if column is absent
   const cwExpr = hasCwScore ? `wa."cw_score"` : `NULL::numeric`;
 
-  // 2. Find Broward affiliate id
-  const browRes = await pool.query(`
-    SELECT "id", "name" FROM "Affiliate"
-    WHERE "deleted_at" = 0 AND LOWER("name") LIKE '%broward%'
-    ORDER BY "name"
-  `);
   if (browRes.rows.length === 0) {
     console.error('No Broward affiliate found. Aborting.');
     process.exit(1);
@@ -125,7 +126,17 @@ async function main() {
   Numerator:           moms where post_fss > pre_fss (strict >)
 `);
 
-  // 4. Compute rate (a): actual deployed cohort, Broward
+  // PS detection uses two signals:
+  //   (a) the existing batch-date heuristic (2025-11-30 / 2025-12-17)
+  //   (b) ltd_people_params.param_name='intake_form' predating Trellis launch (2025-12-01)
+  const psParamCte = hasPsParams ? `
+    , ps_param AS (
+      SELECT lpp."person_id" AS mom_id, MIN(lpp."created_at") AS ps_intake_at
+      FROM "ltd_people_params" lpp
+      WHERE lpp."param_name" = 'intake_form'
+      GROUP BY lpp."person_id"
+    )` : `, ps_param AS (SELECT NULL::text AS mom_id, NULL::timestamptz AS ps_intake_at LIMIT 0)`;
+
   const deployedQ = `
     WITH scored_was AS (
       SELECT
@@ -157,35 +168,7 @@ async function main() {
     FROM mom_pre_post
     WHERE wa_count >= 2 AND pre_fss IS NOT NULL AND post_fss IS NOT NULL
   `;
-  const dep = (await pool.query(deployedQ, [browardId])).rows[0];
 
-  // ─── Cohort discovery: every Broward mom + her intake info ─
-  // Reuses the report-data.js INTAKE_CTE pattern (engaged_in_program audit).
-  // Adds PS detection via:
-  //   (a) the existing batch-date heuristic (2025-11-30 / 2025-12-17), AND
-  //   (b) ltd_people_params with param_name='intake_form' predating Trellis launch (2025-12-01)
-  // Tries both to give Cristina a fuller PS picture.
-  const psParamProbe = await pool.query(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.tables WHERE table_name = 'ltd_people_params'
-    ) AS present
-  `);
-  const hasPsParams = psParamProbe.rows[0].present;
-  console.log(`ltd_people_params table present: ${hasPsParams}\n`);
-
-  const psParamCte = hasPsParams ? `
-    , ps_param AS (
-      SELECT lpp."person_id" AS mom_id, MIN(lpp."created_at") AS ps_intake_at
-      FROM "ltd_people_params" lpp
-      WHERE lpp."param_name" = 'intake_form'
-      GROUP BY lpp."person_id"
-    )` : `, ps_param AS (SELECT NULL::text AS mom_id, NULL::timestamptz AS ps_intake_at LIMIT 0)`;
-  const psParamJoin = `LEFT JOIN ps_param pp ON pp.mom_id = m."id"`;
-
-  // 5. Build Broward cohort base
-  //    - first_engaged_at: MIN(audit log engaged_in_program) per mom
-  //    - cohort_status: trellis-native | ps-migrated | ambiguous
-  //    - prior_track_count: number of distinct pairings on file
   const cohortBaseQ = `
     WITH first_engaged AS (
       SELECT data->>'id' AS mom_id, MIN(created_at) AS coordinator_engaged_date
@@ -227,17 +210,10 @@ async function main() {
         ORDER BY p."created_at" DESC LIMIT 1) AS most_recent_pairing_status
     FROM "Mom" m
     LEFT JOIN first_engaged fe ON fe.mom_id = m."id"
-    ${psParamJoin}
+    LEFT JOIN ps_param pp ON pp.mom_id = m."id"
     WHERE m."deleted_at" = 0 AND m."affiliate_id" = $1
   `;
-  const cohortRows = (await pool.query(cohortBaseQ, [browardId])).rows;
-  console.log(`Broward moms in cohort base: ${cohortRows.length}`);
-  const cohortByStatus = cohortRows.reduce((acc, r) => {
-    acc[r.cohort_status] = (acc[r.cohort_status] || 0) + 1; return acc;
-  }, {});
-  console.log(`  cohort_status breakdown: ${JSON.stringify(cohortByStatus)}\n`);
 
-  // 6. Pull all scored WAs for Broward moms
   const waQ = `
     SELECT
       wa."id"          AS wa_id,
@@ -266,8 +242,23 @@ async function main() {
       AND m."affiliate_id" = $1
     ORDER BY wa."mom_id", wa."created_at" ASC
   `;
-  const waRows = (await pool.query(waQ, [browardId])).rows;
-  console.log(`Broward WellnessAssessment rows: ${waRows.length}`);
+
+  const [depRes, cohortRes, waRes] = await Promise.all([
+    pool.query(deployedQ,   [browardId]),
+    pool.query(cohortBaseQ, [browardId]),
+    pool.query(waQ,         [browardId]),
+  ]);
+  const dep        = depRes.rows[0];
+  const cohortRows = cohortRes.rows;
+  const waRows     = waRes.rows;
+
+  console.log(`Broward moms in cohort base: ${cohortRows.length}`);
+  const cohortByStatus = cohortRows.reduce((acc, r) => {
+    acc[r.cohort_status] = (acc[r.cohort_status] || 0) + 1; return acc;
+  }, {});
+  console.log(`  cohort_status breakdown: ${JSON.stringify(cohortByStatus)}`);
+  console.log(`Broward WellnessAssessment rows: ${waRows.length}\n`);
+
   const wasByMom = waRows.reduce((acc, r) => {
     (acc[r.mom_id] = acc[r.mom_id] || []).push(r); return acc;
   }, {});
@@ -347,7 +338,7 @@ async function main() {
       pull1Rows.push({
         ...baseRow,
         days_at_program_at_assessment: daysBetween(fe, w.created_at),
-        assessment_role: w.wa_id === initial.wa_id ? 'initial' : 'milestone_3mo',
+        assessment_role: w.wa_id === initial.wa_id ? ROLE_INITIAL : ROLE_MILESTONE_3MO,
         assessment_date: w.created_at,
         track_status_at_assessment: '',  // populated below per pairing-window join
         cpi_total: num(w.cpi_total),
@@ -381,7 +372,7 @@ async function main() {
     pull1Rows.push({
       ...baseRow,
       days_at_program_at_assessment: '',
-      assessment_role: 'delta_summary',
+      assessment_role: ROLE_DELTA_SUMMARY,
       assessment_date: '',
       track_status_at_assessment: '',
       cpi_total: delta('cpi_total'),
@@ -411,9 +402,9 @@ async function main() {
   }
 
   // 7b. Annotate track_status_at_assessment using Pairing windows
-  // For each WA row in pull1Rows (assessment_role != 'delta_summary'),
+  // For each WA row in pull1Rows (skip the delta_summary rows),
   // find any pairing for that mom whose window contains the assessment_date.
-  const dataRowMomIds = [...new Set(pull1Rows.filter(r => r.assessment_role !== 'delta_summary').map(r => r.mom_id))];
+  const dataRowMomIds = [...new Set(pull1Rows.filter(r => r.assessment_role !== ROLE_DELTA_SUMMARY).map(r => r.mom_id))];
   if (dataRowMomIds.length > 0) {
     const pairingsRes = await pool.query(`
       SELECT p."momId" AS mom_id, p."created_at", p."completed_on", p."status"::text AS status,
@@ -426,7 +417,7 @@ async function main() {
     const pairingsByMom = {};
     for (const p of pairingsRes.rows) (pairingsByMom[p.mom_id] = pairingsByMom[p.mom_id] || []).push(p);
     for (const r of pull1Rows) {
-      if (r.assessment_role === 'delta_summary') continue;
+      if (r.assessment_role === ROLE_DELTA_SUMMARY) continue;
       const ps = pairingsByMom[r.mom_id] || [];
       const t = new Date(r.assessment_date);
       let inWindow = null;
@@ -453,18 +444,16 @@ async function main() {
   //            failed Pull #1 due to FWA gaps (only 1 WA, only legacy, etc).
   const scoredCountByMom = {};
   const wellnessCountByMom = {};
-  for (const w of waRows) {
-    wellnessCountByMom[w.mom_id] = (wellnessCountByMom[w.mom_id] || 0) + 1;
-    if (w.cpi_total !== null) scoredCountByMom[w.mom_id] = (scoredCountByMom[w.mom_id] || 0) + 1;
-  }
-  const deployedActualSet = new Set(Object.keys(scoredCountByMom).filter(k => scoredCountByMom[k] >= 2));
-
   const earliestByMom = {};
   const latestByMom = {};
   for (const w of waRows) {
-    if (!earliestByMom[w.mom_id] || new Date(w.created_at) < new Date(earliestByMom[w.mom_id])) earliestByMom[w.mom_id] = w.created_at;
-    if (!latestByMom[w.mom_id]   || new Date(w.created_at) > new Date(latestByMom[w.mom_id]))   latestByMom[w.mom_id]   = w.created_at;
+    wellnessCountByMom[w.mom_id] = (wellnessCountByMom[w.mom_id] || 0) + 1;
+    if (w.cpi_total !== null) scoredCountByMom[w.mom_id] = (scoredCountByMom[w.mom_id] || 0) + 1;
+    const t = new Date(w.created_at);
+    if (!earliestByMom[w.mom_id] || t < new Date(earliestByMom[w.mom_id])) earliestByMom[w.mom_id] = w.created_at;
+    if (!latestByMom[w.mom_id]   || t > new Date(latestByMom[w.mom_id]))   latestByMom[w.mom_id]   = w.created_at;
   }
+  const deployedActualSet = new Set(Object.keys(scoredCountByMom).filter(k => scoredCountByMom[k] >= 2));
 
   const pull2Rows = [];
   const intendedSet = pull1MomSet;
@@ -554,13 +543,16 @@ async function main() {
   }
 
   // 9. Compute intended-cohort rate
+  const pull1RowsByMom = pull1Rows.reduce((acc, r) => {
+    (acc[r.mom_id] = acc[r.mom_id] || []).push(r); return acc;
+  }, {});
   let intendedNum = 0, intendedDenom = 0;
   for (const momId of pull1MomSet) {
-    const rows = pull1Rows.filter(r => r.mom_id === momId && r.assessment_role !== 'delta_summary');
-    if (rows.length !== 2) continue;
+    const momRows = (pull1RowsByMom[momId] || []).filter(r => r.assessment_role !== ROLE_DELTA_SUMMARY);
+    if (momRows.length !== 2) continue;
     intendedDenom++;
-    const initial = rows.find(r => r.assessment_role === 'initial');
-    const milestone = rows.find(r => r.assessment_role === 'milestone_3mo');
+    const initial   = momRows.find(r => r.assessment_role === ROLE_INITIAL);
+    const milestone = momRows.find(r => r.assessment_role === ROLE_MILESTONE_3MO);
     if (initial.composite_deployed !== null && milestone.composite_deployed !== null
         && milestone.composite_deployed > initial.composite_deployed) {
       intendedNum++;

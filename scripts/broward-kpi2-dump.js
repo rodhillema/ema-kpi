@@ -220,7 +220,6 @@ async function main() {
       wa."mom_id",
       wa."created_at",
       wa."updated_at",
-      wa."last_fwa",
       wa."completed_ahead",
       wa."completed_date",
       wa."cpi_total",

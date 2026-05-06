@@ -449,9 +449,8 @@ async function main() {
   for (const w of waRows) {
     wellnessCountByMom[w.mom_id] = (wellnessCountByMom[w.mom_id] || 0) + 1;
     if (w.cpi_total !== null) scoredCountByMom[w.mom_id] = (scoredCountByMom[w.mom_id] || 0) + 1;
-    const t = new Date(w.created_at);
-    if (!earliestByMom[w.mom_id] || t < new Date(earliestByMom[w.mom_id])) earliestByMom[w.mom_id] = w.created_at;
-    if (!latestByMom[w.mom_id]   || t > new Date(latestByMom[w.mom_id]))   latestByMom[w.mom_id]   = w.created_at;
+    if (!earliestByMom[w.mom_id] || w.created_at < earliestByMom[w.mom_id]) earliestByMom[w.mom_id] = w.created_at;
+    if (!latestByMom[w.mom_id]   || w.created_at > latestByMom[w.mom_id])   latestByMom[w.mom_id]   = w.created_at;
   }
   const deployedActualSet = new Set(Object.keys(scoredCountByMom).filter(k => scoredCountByMom[k] >= 2));
 

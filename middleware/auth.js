@@ -12,6 +12,9 @@ const pool = require('../db');
 // Approved usernames — these bypass the role check entirely
 const WHITELISTED_USERNAMES = ['rd.hill', 'cristina.galloway'];
 
+// Usernames granted org-wide (all-affiliate) access regardless of role
+const ORG_WIDE_USERNAMES = ['cristina.galloway'];
+
 // Roles allowed to access the KPI dashboard (coordinator and above + champion)
 const ALLOWED_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator', 'champion'];
 
@@ -92,6 +95,7 @@ async function login(req, res) {
             role,
             affiliateId,
             affiliateName,
+            isOrgWide: role === 'administrator' || ORG_WIDE_USERNAMES.includes(normalizedUsername) || (role === 'champion' && !affiliateId),
           };
           return res.json({
             success: true,
@@ -143,6 +147,7 @@ async function login(req, res) {
       role: 'champion',
       affiliateId: champion.affiliateId,
       affiliateName: champion.affiliateName,
+      isOrgWide: !champion.affiliateId,
     };
 
     res.json({

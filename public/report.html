@@ -3060,7 +3060,7 @@
   if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
   /* Affiliate scope display in nav */
   var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
-  var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
+  var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId)||!!u.isOrgWide;
   if(scope&&scopeVal){
    scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"-");
    scope.style.display="";

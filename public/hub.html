@@ -286,7 +286,7 @@ if(champLink&&!CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
 // Affiliate scope display
 var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
 if(scope&&scopeVal){
-var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);
+var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId)||!!u.isOrgWide;
 scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"");
 scope.style.display="";
 if(scopeSep)scopeSep.style.display="";

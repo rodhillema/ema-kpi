@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<!--
+  ĒMA User Directory — Demo Preview
+  Mock data only — no DB connection
+  Role switcher simulates all four access tiers
+-->
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ĒMA — User Directory (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;--red-pink:#f9ece8;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--border:#E0E0E0;
+  --bg:#fdf7f3;--white:#fff;
+}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;font-size:14px}
+
+/* ── NAV ─────────────────────────────────────────────────────── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18)}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-mark{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:'Shrikhand',cursive;font-size:22px;color:var(--white);line-height:1}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-hub a{color:rgba(255,255,255,.8);text-decoration:none;transition:color .15s}
+.nav-hub a:hover{color:var(--white)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+
+/* ── DEMO BANNER ──────────────────────────────────────────────── */
+.demo-banner{background:#1a1a2e;color:rgba(255,255,255,.85);padding:9px 32px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.demo-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#f2a136}
+.demo-btns{display:flex;gap:6px;flex-wrap:wrap}
+.demo-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;padding:4px 11px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s}
+.demo-btn:hover{border-color:rgba(255,255,255,.45);color:var(--white)}
+.demo-btn.active{background:var(--red);border-color:var(--red);color:var(--white)}
+
+/* ── REPORT HEADER (green) ────────────────────────────────────── */
+.report-header{background:var(--green);padding:20px 32px 18px;color:var(--white)}
+.report-header h1{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--white)}
+.report-header-sub{font-family:'Lato',sans-serif;font-size:12px;color:rgba(255,255,255,.65);margin-top:3px}
+
+/* ── MAIN CONTENT ─────────────────────────────────────────────── */
+.main{max-width:1200px;margin:0 auto;padding:28px 32px 64px}
+
+/* ── SCOPE BANNER (non-admin) ─────────────────────────────────── */
+.scope-banner{background:var(--red-pink);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:10px 16px;margin-bottom:22px;display:flex;align-items:center;gap:10px;font-size:13px}
+.scope-banner strong{font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+.scope-banner.hidden{display:none}
+
+/* ── STAT CARDS ───────────────────────────────────────────────── */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:18px 20px;cursor:default;transition:all .15s;position:relative}
+.card.clickable{cursor:pointer}
+.card.clickable:hover{border-color:#ccc;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.card.selected{border-color:var(--red);box-shadow:0 0 0 2px rgba(236,72,47,.15)}
+.card-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.card-num{font-family:'Oswald',sans-serif;font-size:32px;font-weight:600;color:var(--dark);line-height:1}
+.card.selected .card-num{color:var(--red)}
+.card-sub{font-size:11px;color:var(--light);margin-top:4px}
+
+/* ── TOOLBAR ──────────────────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 13px 9px 36px;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.search-wrap input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(236,72,47,.1)}
+.search-wrap input::placeholder{color:#c8c8c8}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#ccc;font-size:14px;pointer-events:none}
+.export-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;background:var(--green);color:var(--white);border:none;border-radius:7px;cursor:pointer;transition:background .15s;white-space:nowrap}
+.export-btn:hover{background:#0d2b2b}
+
+/* ── FILTER PILLS ─────────────────────────────────────────────── */
+.filters{margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
+.filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-group-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--light);min-width:60px}
+.pill{font-family:'Oswald',sans-serif;font-size:10px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s;white-space:nowrap}
+.pill:hover{border-color:#aaa;color:var(--dark)}
+.pill.active{background:var(--green);border-color:var(--green);color:var(--white)}
+.pill .pill-count{opacity:.7;font-size:9px;margin-left:3px}
+.clear-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;padding:4px 12px;border:none;background:none;color:var(--red);cursor:pointer;text-decoration:underline;transition:color .15s}
+.clear-btn:hover{color:var(--red-dk)}
+
+/* ── TABLE ────────────────────────────────────────────────────── */
+.table-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px}
+table{width:100%;border-collapse:collapse}
+thead{background:#f8f6f4;border-bottom:1.5px solid var(--border)}
+th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);padding:11px 14px;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
+th:hover{color:var(--dark)}
+th.sorted{color:var(--green)}
+th .sort-arrow{margin-left:4px;font-size:9px;opacity:.5}
+th.sorted .sort-arrow{opacity:1}
+td{padding:11px 14px;border-bottom:1px solid #f2f0ee;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#faf9f8}
+.td-name{font-weight:700;color:var(--dark)}
+.td-user{color:var(--mid);font-size:12px}
+.td-email{color:var(--mid);font-size:12px}
+.role-tag{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--green-lt);color:var(--green);margin:1px 2px 1px 0}
+.role-tag.tag-admin{background:#fef0ed;color:#c23018}
+.role-tag.tag-super{background:#f3f0ff;color:#534AB7}
+.role-tag.tag-staff{background:#e8f4f0;color:#1a5c4a}
+.role-tag.tag-coord{background:var(--green-lt);color:var(--green)}
+.role-tag.tag-adv{background:#f5f5f5;color:#666}
+.status-badge{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.status-active{background:#e8f4f0;color:#0f6e56}
+.status-inactive{background:#f5f5f5;color:#999}
+.empty-state{padding:48px;text-align:center;color:var(--mid);font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.5px;text-transform:uppercase}
+
+/* ── PAGINATION ───────────────────────────────────────────────── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.pagination-info{font-size:12px;color:var(--mid)}
+.pagination-pages{display:flex;gap:4px;align-items:center}
+.page-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;min-width:30px;height:30px;padding:0 6px;border:1.5px solid var(--border);background:var(--white);color:var(--mid);border-radius:5px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.page-btn:hover:not(:disabled){border-color:#aaa;color:var(--dark)}
+.page-btn.active{background:var(--green);border-color:var(--green);color:var(--white)}
+.page-btn:disabled{opacity:.35;cursor:default}
+.page-ellipsis{color:var(--light);font-size:12px;padding:0 2px}
+
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.main{padding:20px 16px 48px}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-logo-mark">ē</div>
+    <div class="nav-hub"><a href="/hub.html">Impact Hub</a></div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-scope" id="navScope">
+      <span class="nav-scope-lbl">Viewing</span>
+      <span class="nav-scope-val" id="navScopeVal">All Affiliates</span>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="navAvatar">RH</div>
+      <div>
+        <div class="nav-name" id="navName">RD Hill</div>
+        <div class="nav-role" id="navRoleLabel">HQ Admin</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- DEMO BANNER -->
+<div class="demo-banner">
+  <span class="demo-label">Demo Mode</span>
+  <div class="demo-btns">
+    <button class="demo-btn active" data-persona="admin" onclick="switchPersona(this)">RD Hill — HQ Admin</button>
+    <button class="demo-btn" data-persona="supervisor" onclick="switchPersona(this)">Laura Kim — Supervisor (Broward)</button>
+    <button class="demo-btn" data-persona="staff" onclick="switchPersona(this)">Marcus Webb — Staff Advocate (Charlotte)</button>
+    <button class="demo-btn" data-persona="coordinator" onclick="switchPersona(this)">Sarah Monroe — Coordinator (Columbus)</button>
+  </div>
+</div>
+
+<!-- REPORT HEADER -->
+<div class="report-header">
+  <h1>User Directory</h1>
+  <div class="report-header-sub" id="reportSub">All affiliates · All roles · <span id="reportDate"></span></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SCOPE BANNER (non-admin) -->
+  <div class="scope-banner hidden" id="scopeBanner">
+    <span>📍</span>
+    <span id="scopeBannerText"></span>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Total Users</div>
+      <div class="card-num" id="statTotal">—</div>
+      <div class="card-sub">in your scope</div>
+    </div>
+    <div class="card clickable" id="cardActive" onclick="toggleStatusCard('Active')">
+      <div class="card-label">Active</div>
+      <div class="card-num" id="statActive">—</div>
+      <div class="card-sub">click to filter</div>
+    </div>
+    <div class="card clickable" id="cardInactive" onclick="toggleStatusCard('Inactive')">
+      <div class="card-label">Inactive</div>
+      <div class="card-num" id="statInactive">—</div>
+      <div class="card-sub">click to filter</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Showing</div>
+      <div class="card-num" id="statShowing">—</div>
+      <div class="card-sub" id="statShowingSub">matching filters</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="search" id="searchInput" placeholder="Search by name, username, email, role…" oninput="onSearch()">
+    </div>
+    <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+
+  <!-- FILTER PILLS -->
+  <div class="filters">
+    <div class="filter-row" id="roleFilters">
+      <span class="filter-group-label">Role</span>
+    </div>
+    <div class="filter-row" id="affiliateFilters" style="display:none">
+      <span class="filter-group-label">Affiliate</span>
+    </div>
+    <div class="filter-row" id="statusFilters">
+      <span class="filter-group-label">Status</span>
+    </div>
+    <div class="filter-row" id="clearRow" style="display:none">
+      <span class="filter-group-label"></span>
+      <button class="clear-btn" onclick="clearFilters()">Clear all filters</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr id="tableHead"></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="pagination">
+    <span class="pagination-info" id="pageInfo"></span>
+    <div class="pagination-pages" id="pageBtns"></div>
+  </div>
+
+</div>
+
+<script>
+// ── MOCK DATA ──────────────────────────────────────────────────
+const AFFILIATES = [
+  {id:'aff-1', name:'ĒMA Broward'},
+  {id:'aff-2', name:'ĒMA Charlotte'},
+  {id:'aff-3', name:'ĒMA Columbus'},
+  {id:'aff-4', name:'ĒMA Dallas'},
+  {id:'aff-5', name:'ĒMA Jacksonville'},
+];
+
+// roles assigned in order: role key, display label, tag class
+const ROLE_META = {
+  administrator:  {label:'Administrator', tag:'tag-admin'},
+  supervisor:     {label:'Supervisor',    tag:'tag-super'},
+  staff_advocate: {label:'Staff Advocate',tag:'tag-staff'},
+  coordinator:    {label:'Coordinator',   tag:'tag-coord'},
+  advocate:       {label:'Advocate',      tag:'tag-adv'},
+};
+
+const USERS = [
+  // ĒMA Broward
+  {id:1,  first:'RD',       last:'Hill',       username:'rd.hill',           email:'rd@ema.org',              status:'Active',   affiliateId:'aff-1', roles:['administrator']},
+  {id:2,  first:'Cristina', last:'Galloway',   username:'cristina.galloway', email:'cristina@ema.org',        status:'Active',   affiliateId:'aff-1', roles:['supervisor']},
+  {id:3,  first:'Laura',    last:'Kim',        username:'l.kim',             email:'l.kim@ema.org',           status:'Active',   affiliateId:'aff-1', roles:['supervisor']},
+  {id:4,  first:'Charnelle',last:'Boyd',       username:'c.boyd',            email:'c.boyd@ema.org',          status:'Active',   affiliateId:'aff-1', roles:['coordinator']},
+  {id:5,  first:'Deja',     last:'Reeves',     username:'d.reeves',          email:'d.reeves@ema.org',        status:'Active',   affiliateId:'aff-1', roles:['staff_advocate']},
+  {id:6,  first:'Nadia',    last:'Torres',     username:'n.torres',          email:'n.torres@ema.org',        status:'Active',   affiliateId:'aff-1', roles:['advocate']},
+  {id:7,  first:'Keisha',   last:'Williams',   username:'k.williams',        email:'k.williams@broward.ema',  status:'Active',   affiliateId:'aff-1', roles:['advocate']},
+  {id:8,  first:'Patricia', last:'Osei',       username:'p.osei',            email:'p.osei@broward.ema',      status:'Inactive', affiliateId:'aff-1', roles:['advocate']},
+  {id:9,  first:'Marcus',   last:'Fernandez',  username:'m.fernandez',       email:'m.fernandez@broward.ema', status:'Active',   affiliateId:'aff-1', roles:['advocate']},
+  {id:10, first:'Tanya',    last:'Okafor',     username:'t.okafor',          email:'t.okafor@broward.ema',    status:'Active',   affiliateId:'aff-1', roles:['advocate']},
+  {id:11, first:'Gina',     last:'Russo',      username:'g.russo',           email:'g.russo@broward.ema',     status:'Inactive', affiliateId:'aff-1', roles:['coordinator','staff_advocate']},
+  {id:12, first:'Imani',    last:'Jackson',    username:'i.jackson',         email:'i.jackson@broward.ema',   status:'Active',   affiliateId:'aff-1', roles:['advocate']},
+  // ĒMA Charlotte
+  {id:13, first:'Sarah',    last:'Monroe',     username:'s.monroe',          email:'s.monroe@ema.org',        status:'Active',   affiliateId:'aff-2', roles:['coordinator']},
+  {id:14, first:'Marcus',   last:'Webb',       username:'m.webb',            email:'m.webb@ema.org',          status:'Active',   affiliateId:'aff-2', roles:['staff_advocate']},
+  {id:15, first:'Renee',    last:'Nguyen',     username:'r.nguyen',          email:'r.nguyen@charlotte.ema',  status:'Active',   affiliateId:'aff-2', roles:['advocate']},
+  {id:16, first:'Cassandra',last:'Price',      username:'c.price',           email:'c.price@charlotte.ema',   status:'Active',   affiliateId:'aff-2', roles:['advocate']},
+  {id:17, first:'Darnell',  last:'Clark',      username:'d.clark',           email:'d.clark@charlotte.ema',   status:'Inactive', affiliateId:'aff-2', roles:['advocate']},
+  {id:18, first:'Yvonne',   last:'Baptiste',   username:'y.baptiste',        email:'y.baptiste@charlotte.ema',status:'Active',   affiliateId:'aff-2', roles:['advocate']},
+  {id:19, first:'Tamara',   last:'Ellis',      username:'t.ellis',           email:'t.ellis@charlotte.ema',   status:'Active',   affiliateId:'aff-2', roles:['staff_advocate']},
+  {id:20, first:'Leila',    last:'Hassan',     username:'l.hassan',          email:'l.hassan@charlotte.ema',  status:'Active',   affiliateId:'aff-2', roles:['advocate']},
+  {id:21, first:'Jordan',   last:'Pierce',     username:'j.pierce',          email:'j.pierce@charlotte.ema',  status:'Active',   affiliateId:'aff-2', roles:['advocate']},
+  {id:22, first:'Vanessa',  last:'Owens',      username:'v.owens',           email:'v.owens@charlotte.ema',   status:'Inactive', affiliateId:'aff-2', roles:['advocate']},
+  // ĒMA Columbus
+  {id:23, first:'Angela',   last:'Steele',     username:'a.steele',          email:'a.steele@ema.org',        status:'Active',   affiliateId:'aff-3', roles:['supervisor']},
+  {id:24, first:'Priya',    last:'Shah',       username:'p.shah',            email:'p.shah@ema.org',          status:'Active',   affiliateId:'aff-3', roles:['coordinator']},
+  {id:25, first:'Jerome',   last:'Watts',      username:'j.watts',           email:'j.watts@columbus.ema',    status:'Active',   affiliateId:'aff-3', roles:['staff_advocate']},
+  {id:26, first:'Destiny',  last:'Moore',      username:'d.moore',           email:'d.moore@columbus.ema',    status:'Active',   affiliateId:'aff-3', roles:['advocate']},
+  {id:27, first:'Aaliyah',  last:'Grant',      username:'a.grant',           email:'a.grant@columbus.ema',    status:'Active',   affiliateId:'aff-3', roles:['advocate']},
+  {id:28, first:'Crystal',  last:'Chambers',   username:'c.chambers',        email:'c.chambers@columbus.ema', status:'Inactive', affiliateId:'aff-3', roles:['advocate']},
+  {id:29, first:'Tonya',    last:'Robinson',   username:'t.robinson',        email:'t.robinson@columbus.ema', status:'Active',   affiliateId:'aff-3', roles:['advocate']},
+  {id:30, first:'Heather',  last:'Dixon',      username:'h.dixon',           email:'h.dixon@columbus.ema',    status:'Active',   affiliateId:'aff-3', roles:['advocate']},
+  {id:31, first:'Brianna',  last:'Foster',     username:'b.foster',          email:'b.foster@columbus.ema',   status:'Active',   affiliateId:'aff-3', roles:['advocate']},
+  {id:32, first:'Olivia',   last:'Banks',      username:'o.banks',           email:'o.banks@columbus.ema',    status:'Inactive', affiliateId:'aff-3', roles:['advocate']},
+  // ĒMA Dallas
+  {id:33, first:'Jessie',   last:'Vega',       username:'j.vega',            email:'jessie@ema.org',          status:'Active',   affiliateId:'aff-4', roles:['coordinator']},
+  {id:34, first:'Rafael',   last:'Morales',    username:'r.morales',         email:'r.morales@dallas.ema',    status:'Active',   affiliateId:'aff-4', roles:['staff_advocate']},
+  {id:35, first:'Monica',   last:'Chen',       username:'m.chen',            email:'m.chen@dallas.ema',       status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:36, first:'Tiffany',  last:'Brown',      username:'t.brown',           email:'t.brown@dallas.ema',      status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:37, first:'Sandra',   last:'Flores',     username:'s.flores',          email:'s.flores@dallas.ema',     status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:38, first:'Elijah',   last:'Garrett',    username:'e.garrett',         email:'e.garrett@dallas.ema',    status:'Inactive', affiliateId:'aff-4', roles:['advocate']},
+  {id:39, first:'Zoe',      last:'Hamilton',   username:'z.hamilton',        email:'z.hamilton@dallas.ema',   status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:40, first:'Nikki',    last:'Hudson',     username:'n.hudson',          email:'n.hudson@dallas.ema',     status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:41, first:'Carmen',   last:'Reyes',      username:'c.reyes',           email:'c.reyes@dallas.ema',      status:'Active',   affiliateId:'aff-4', roles:['advocate']},
+  {id:42, first:'Alicia',   last:'Simmons',    username:'a.simmons',         email:'a.simmons@dallas.ema',    status:'Active',   affiliateId:'aff-4', roles:['staff_advocate']},
+  // ĒMA Jacksonville
+  {id:43, first:'Denise',   last:'Lawrence',   username:'d.lawrence',        email:'d.lawrence@ema.org',      status:'Active',   affiliateId:'aff-5', roles:['supervisor']},
+  {id:44, first:'Monique',  last:'Arnold',     username:'m.arnold',          email:'m.arnold@jax.ema',        status:'Active',   affiliateId:'aff-5', roles:['coordinator']},
+  {id:45, first:'Felicia',  last:'Byrd',       username:'f.byrd',            email:'f.byrd@jax.ema',          status:'Active',   affiliateId:'aff-5', roles:['staff_advocate']},
+  {id:46, first:'Sheryl',   last:'Cooper',     username:'s.cooper',          email:'s.cooper@jax.ema',        status:'Active',   affiliateId:'aff-5', roles:['advocate']},
+  {id:47, first:'Brenda',   last:'Murphy',     username:'b.murphy',          email:'b.murphy@jax.ema',        status:'Inactive', affiliateId:'aff-5', roles:['advocate']},
+  {id:48, first:'Latoya',   last:'Nelson',     username:'l.nelson',          email:'l.nelson@jax.ema',        status:'Active',   affiliateId:'aff-5', roles:['advocate']},
+  {id:49, first:'Rochelle', last:'Parker',     username:'r.parker',          email:'r.parker@jax.ema',        status:'Active',   affiliateId:'aff-5', roles:['advocate']},
+  {id:50, first:'Gayle',    last:'Quinn',      username:'g.quinn',           email:'g.quinn@jax.ema',         status:'Active',   affiliateId:'aff-5', roles:['advocate']},
+  {id:51, first:'Tamika',   last:'Ross',       username:'t.ross',            email:'t.ross@jax.ema',          status:'Inactive', affiliateId:'aff-5', roles:['advocate']},
+  {id:52, first:'Wanda',    last:'Scott',      username:'w.scott',           email:'w.scott@jax.ema',         status:'Active',   affiliateId:'aff-5', roles:['advocate']},
+];
+
+// ── PERSONA CONFIGS ────────────────────────────────────────────
+const PERSONAS = {
+  admin:      {firstName:'RD',       lastName:'Hill',    role:'administrator', affiliateId:null,    initials:'RH', roleLabel:'HQ Admin'},
+  supervisor: {firstName:'Laura',    lastName:'Kim',     role:'supervisor',    affiliateId:'aff-1', initials:'LK', roleLabel:'Supervisor'},
+  staff:      {firstName:'Marcus',   lastName:'Webb',    role:'staff_advocate',affiliateId:'aff-2', initials:'MW', roleLabel:'Staff Advocate'},
+  coordinator:{firstName:'Sarah',    lastName:'Monroe',  role:'coordinator',   affiliateId:'aff-3', initials:'SM', roleLabel:'Coordinator'},
+};
+
+// ── STATE ──────────────────────────────────────────────────────
+const state = {
+  persona: 'admin',
+  search: '',
+  activeRoles: new Set(),
+  activeAffiliates: new Set(),
+  activeStatuses: new Set(),
+  sort: {col:'last', dir:'asc'},
+  page: 1,
+  perPage: 25,
+};
+
+// Role visibility by viewer role
+const VISIBLE_ROLES = {
+  administrator:  ['administrator','supervisor','staff_advocate','coordinator','advocate'],
+  supervisor:     ['staff_advocate','coordinator','advocate'],
+  staff_advocate: ['coordinator','advocate'],
+  coordinator:    ['advocate'],
+};
+
+function getPersona()  { return PERSONAS[state.persona]; }
+function getViewerRole(){ return getPersona().role; }
+
+function scopedUsers() {
+  const p = getPersona();
+  const visible = VISIBLE_ROLES[p.role];
+  return USERS.filter(u => {
+    if (p.affiliateId && u.affiliateId !== p.affiliateId) return false;
+    return u.roles.some(r => visible.includes(r));
+  });
+}
+
+function filteredUsers() {
+  let users = scopedUsers();
+  const q = state.search.trim().toLowerCase();
+  if (q) {
+    users = users.filter(u => {
+      const aff = AFFILIATES.find(a => a.id === u.affiliateId);
+      const haystack = [
+        u.first, u.last, u.username, u.email, u.status,
+        aff ? aff.name : '',
+        ...u.roles.map(r => ROLE_META[r]?.label || r)
+      ].join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+  }
+  if (state.activeRoles.size > 0) {
+    users = users.filter(u => u.roles.some(r => state.activeRoles.has(r)));
+  }
+  if (state.activeAffiliates.size > 0) {
+    users = users.filter(u => state.activeAffiliates.has(u.affiliateId));
+  }
+  if (state.activeStatuses.size > 0) {
+    users = users.filter(u => state.activeStatuses.has(u.status));
+  }
+  return users;
+}
+
+function sortedUsers(users) {
+  const {col, dir} = state.sort;
+  return [...users].sort((a, b) => {
+    let av, bv;
+    if (col === 'last')   { av = a.last;      bv = b.last; }
+    else if (col === 'first')  { av = a.first; bv = b.first; }
+    else if (col === 'username') { av = a.username; bv = b.username; }
+    else if (col === 'email')    { av = a.email;    bv = b.email; }
+    else if (col === 'affiliate'){ av = (AFFILIATES.find(x=>x.id===a.affiliateId)||{}).name||''; bv = (AFFILIATES.find(x=>x.id===b.affiliateId)||{}).name||''; }
+    else if (col === 'status')   { av = a.status;   bv = b.status; }
+    else { av = a.last; bv = b.last; }
+    const cmp = String(av).localeCompare(String(bv));
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────
+function render() {
+  renderNav();
+  renderScopeBanner();
+  renderCards();
+  renderFilters();
+  renderTable();
+}
+
+function renderNav() {
+  const p = getPersona();
+  document.getElementById('navAvatar').textContent = p.initials;
+  document.getElementById('navName').textContent = p.firstName + ' ' + p.lastName;
+  document.getElementById('navRoleLabel').textContent = p.roleLabel;
+  const isOrgWide = p.role === 'administrator';
+  const aff = AFFILIATES.find(a => a.id === p.affiliateId);
+  document.getElementById('navScopeVal').textContent = isOrgWide ? 'All Affiliates' : (aff ? aff.name : '—');
+  document.getElementById('reportSub').innerHTML =
+    (isOrgWide ? 'All affiliates' : (aff ? aff.name : '—')) +
+    ' &middot; ' + p.roleLabel + ' view &middot; <span id="reportDate"></span>';
+  document.getElementById('reportDate').textContent = 'Demo — ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+
+function renderScopeBanner() {
+  const p = getPersona();
+  const banner = document.getElementById('scopeBanner');
+  if (p.role === 'administrator') { banner.classList.add('hidden'); return; }
+  banner.classList.remove('hidden');
+  const aff = AFFILIATES.find(a => a.id === p.affiliateId);
+  const visibleLabels = VISIBLE_ROLES[p.role].map(r => ROLE_META[r]?.label || r).join(', ');
+  document.getElementById('scopeBannerText').innerHTML =
+    '<strong>' + p.roleLabel + ' View</strong> — Showing ' + (aff ? aff.name : 'your affiliate') + ' · Visible roles: ' + visibleLabels;
+}
+
+function renderCards() {
+  const all = scopedUsers();
+  const active   = all.filter(u => u.status === 'Active').length;
+  const inactive = all.filter(u => u.status === 'Inactive').length;
+  const filtered = filteredUsers().length;
+  document.getElementById('statTotal').textContent    = all.length;
+  document.getElementById('statActive').textContent   = active;
+  document.getElementById('statInactive').textContent = inactive;
+  document.getElementById('statShowing').textContent  = filtered;
+  document.getElementById('cardActive').classList.toggle('selected', state.activeStatuses.has('Active'));
+  document.getElementById('cardInactive').classList.toggle('selected', state.activeStatuses.has('Inactive'));
+}
+
+function renderFilters() {
+  const p = getPersona();
+  const visible = VISIBLE_ROLES[p.role];
+  const all = scopedUsers();
+  const anyActive = state.activeRoles.size > 0 || state.activeAffiliates.size > 0 || state.activeStatuses.size > 0 || state.search.trim();
+
+  // Role pills
+  const roleRow = document.getElementById('roleFilters');
+  roleRow.innerHTML = '<span class="filter-group-label">Role</span>';
+  visible.forEach(r => {
+    const count = all.filter(u => u.roles.includes(r)).length;
+    const pill = document.createElement('button');
+    pill.className = 'pill' + (state.activeRoles.has(r) ? ' active' : '');
+    pill.innerHTML = (ROLE_META[r]?.label || r) + '<span class="pill-count">(' + count + ')</span>';
+    pill.onclick = () => toggleFilter('role', r);
+    roleRow.appendChild(pill);
+  });
+
+  // Affiliate pills (admin only)
+  const affRow = document.getElementById('affiliateFilters');
+  if (p.role === 'administrator') {
+    affRow.style.display = '';
+    affRow.innerHTML = '<span class="filter-group-label">Affiliate</span>';
+    AFFILIATES.forEach(a => {
+      const count = all.filter(u => u.affiliateId === a.id).length;
+      const pill = document.createElement('button');
+      pill.className = 'pill' + (state.activeAffiliates.has(a.id) ? ' active' : '');
+      pill.innerHTML = a.name + '<span class="pill-count">(' + count + ')</span>';
+      pill.onclick = () => toggleFilter('affiliate', a.id);
+      affRow.appendChild(pill);
+    });
+  } else {
+    affRow.style.display = 'none';
+  }
+
+  // Status pills
+  const statusRow = document.getElementById('statusFilters');
+  statusRow.innerHTML = '<span class="filter-group-label">Status</span>';
+  ['Active','Inactive'].forEach(s => {
+    const count = all.filter(u => u.status === s).length;
+    const pill = document.createElement('button');
+    pill.className = 'pill' + (state.activeStatuses.has(s) ? ' active' : '');
+    pill.innerHTML = s + '<span class="pill-count">(' + count + ')</span>';
+    pill.onclick = () => toggleFilter('status', s);
+    statusRow.appendChild(pill);
+  });
+
+  document.getElementById('clearRow').style.display = anyActive ? '' : 'none';
+}
+
+function renderTable() {
+  const p = getPersona();
+  const isAdmin = p.role === 'administrator';
+  const filtered = filteredUsers();
+  const sorted   = sortedUsers(filtered);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / state.perPage));
+  if (state.page > totalPages) state.page = totalPages;
+  const start = (state.page - 1) * state.perPage;
+  const pageUsers = sorted.slice(start, start + state.perPage);
+
+  // Header
+  const cols = [
+    {key:'last',      label:'Name',      sortable:true},
+    {key:'username',  label:'Username',  sortable:true},
+    {key:'email',     label:'Email',     sortable:true},
+    {key:'roles',     label:'Roles',     sortable:false},
+    ...(isAdmin ? [{key:'affiliate', label:'Affiliate', sortable:true}] : []),
+    {key:'status',    label:'Status',    sortable:true},
+  ];
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = '';
+  cols.forEach(c => {
+    const th = document.createElement('th');
+    th.className = state.sort.col === c.key ? 'sorted' : '';
+    const arrow = c.sortable ? '<span class="sort-arrow">' + (state.sort.col === c.key ? (state.sort.dir === 'asc' ? '▲' : '▼') : '▲') + '</span>' : '';
+    th.innerHTML = c.label + arrow;
+    if (c.sortable) th.onclick = () => onSort(c.key);
+    else th.style.cursor = 'default';
+    thead.appendChild(th);
+  });
+
+  // Body
+  const tbody = document.getElementById('tableBody');
+  if (pageUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="empty-state">No users match your filters</td></tr>';
+  } else {
+    tbody.innerHTML = pageUsers.map(u => {
+      const aff = AFFILIATES.find(a => a.id === u.affiliateId);
+      const roleTags = u.roles.map(r => {
+        const m = ROLE_META[r] || {};
+        return '<span class="role-tag ' + (m.tag||'') + '">' + (m.label||r) + '</span>';
+      }).join('');
+      const badge = u.status === 'Active'
+        ? '<span class="status-badge status-active">Active</span>'
+        : '<span class="status-badge status-inactive">Inactive</span>';
+      const affCol = isAdmin ? '<td>' + (aff ? aff.name : '—') + '</td>' : '';
+      return '<tr>' +
+        '<td><div class="td-name">' + u.last + ', ' + u.first + '</div></td>' +
+        '<td class="td-user">' + u.username + '</td>' +
+        '<td class="td-email">' + u.email + '</td>' +
+        '<td>' + roleTags + '</td>' +
+        affCol +
+        '<td>' + badge + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // Pagination
+  document.getElementById('pageInfo').textContent =
+    sorted.length === 0 ? 'No results' :
+    'Showing ' + (start+1) + '–' + Math.min(start + state.perPage, sorted.length) + ' of ' + sorted.length + ' users';
+
+  renderPageBtns(totalPages);
+}
+
+function renderPageBtns(total) {
+  const container = document.getElementById('pageBtns');
+  container.innerHTML = '';
+  if (total <= 1) return;
+
+  const cur = state.page;
+  const btn = (label, page, disabled, active) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled && !active) b.onclick = () => { state.page = page; renderTable(); };
+    container.appendChild(b);
+  };
+  const ellipsis = () => {
+    const s = document.createElement('span');
+    s.className = 'page-ellipsis';
+    s.textContent = '…';
+    container.appendChild(s);
+  };
+
+  btn('‹', cur-1, cur===1, false);
+  const pages = [];
+  for (let i=1; i<=total; i++) {
+    if (i===1 || i===total || Math.abs(i-cur)<=1) pages.push(i);
+    else if (pages[pages.length-1] !== '…') pages.push('…');
+  }
+  pages.forEach(p => {
+    if (p === '…') ellipsis();
+    else btn(p, p, false, p===cur);
+  });
+  btn('›', cur+1, cur===total, false);
+}
+
+// ── INTERACTIONS ───────────────────────────────────────────────
+function switchPersona(el) {
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  state.persona = el.dataset.persona;
+  state.activeRoles.clear();
+  state.activeAffiliates.clear();
+  state.activeStatuses.clear();
+  state.search = '';
+  state.page = 1;
+  document.getElementById('searchInput').value = '';
+  render();
+}
+
+function onSearch() {
+  state.search = document.getElementById('searchInput').value;
+  state.page = 1;
+  render();
+}
+
+function toggleFilter(type, val) {
+  if (type === 'role')      { state.activeRoles.has(val)      ? state.activeRoles.delete(val)      : state.activeRoles.add(val); }
+  if (type === 'affiliate') { state.activeAffiliates.has(val) ? state.activeAffiliates.delete(val) : state.activeAffiliates.add(val); }
+  if (type === 'status')    { state.activeStatuses.has(val)   ? state.activeStatuses.delete(val)   : state.activeStatuses.add(val); }
+  state.page = 1;
+  render();
+}
+
+function toggleStatusCard(status) {
+  toggleFilter('status', status);
+}
+
+function clearFilters() {
+  state.activeRoles.clear();
+  state.activeAffiliates.clear();
+  state.activeStatuses.clear();
+  state.search = '';
+  state.page = 1;
+  document.getElementById('searchInput').value = '';
+  render();
+}
+
+function onSort(col) {
+  if (state.sort.col === col) {
+    state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sort.col = col;
+    state.sort.dir = 'asc';
+  }
+  state.page = 1;
+  renderTable();
+}
+
+function exportCSV() {
+  const p = getPersona();
+  const isAdmin = p.role === 'administrator';
+  const users = sortedUsers(filteredUsers());
+
+  const headers = ['Last Name','First Name','Username','Email','Roles',
+    ...(isAdmin ? ['Affiliate'] : []), 'Status'];
+
+  const rows = users.map(u => {
+    const aff = AFFILIATES.find(a => a.id === u.affiliateId);
+    const roleLabels = u.roles.map(r => ROLE_META[r]?.label || r).join('; ');
+    const cols = [u.last, u.first, u.username, u.email, roleLabels,
+      ...(isAdmin ? [aff ? aff.name : ''] : []), u.status];
+    return cols.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',');
+  });
+
+  const csv = '﻿' + headers.join(',') + '\n' + rows.join('\n');
+
+  // Build filename from active filters
+  const parts = ['ema-users'];
+  if (state.activeStatuses.size === 1) parts.push([...state.activeStatuses][0].toLowerCase());
+  if (state.activeRoles.size === 1) parts.push([...state.activeRoles][0].replace('_','-'));
+  if (state.activeAffiliates.size === 1) {
+    const aff = AFFILIATES.find(a => a.id === [...state.activeAffiliates][0]);
+    if (aff) parts.push(aff.name.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase().replace(/-+/g,'-'));
+  }
+  const today = new Date().toISOString().slice(0,10);
+  parts.push(today);
+  const filename = parts.join('-') + '.csv';
+
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

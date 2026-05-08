@@ -35,6 +35,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/timelogs', require('./routes/timelogs'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/report-data', requireAuth, requireRole, require('./routes/report-data'));
+app.use('/api/flagged-needs', requireAuth, requireRole, require('./routes/flagged-needs'));
 app.use('/api/advocates', require('./routes/advocates'));
 app.use('/api/mom-status', require('./routes/mom-status'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));

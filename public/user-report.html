@@ -169,7 +169,7 @@ tr:last-child td{border-bottom:none}
 <div class="login-view">
 <div class="login-box">
   <div style="text-align:center;margin-bottom:20px">
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#ec482f"/><text x="16" y="21" text-anchor="middle" font-family="serif" font-size="18" fill="white">ē</text></svg>
+    <img src="/favicon.png" style="height:44px;width:auto;display:inline-block;">
   </div>
   <div class="login-title">ĒMA Impact Hub</div>
   <div class="login-sub">User Report · Trellis Live<br>Sign in with your Trellis credentials</div>
@@ -188,7 +188,7 @@ tr:last-child td{border-bottom:none}
 <nav class="nav">
   <div class="nav-left">
     <a href="/" class="nav-logo-link">
-      <svg class="nav-logo" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="rgba(255,255,255,0.15)"/><text x="16" y="21" text-anchor="middle" font-family="serif" font-size="18" fill="white">ē</text></svg>
+      <img class="nav-logo" src="/favicon.png" style="height:30px;width:auto;display:block;">
       <span class="nav-hub">Impact Hub</span>
     </a>
   </div>
@@ -303,7 +303,6 @@ var IS_ADMIN = false;    // show affiliate column + filter
 
 var activeStatuses   = new Set();
 var activeRoles      = new Set();
-var activeAffiliates = new Set();
 var slicedAffiliate  = '';   // header slicer — single affiliate, admin only
 var searchQuery = '';
 var sortCol = 'name';
@@ -422,8 +421,6 @@ function filtered() {
       var userRoles = (u.roles||'').split(', ');
       if(!userRoles.some(function(r){return activeRoles.has(r);})) return false;
     }
-    // Affiliate pills
-    if(activeAffiliates.size && !activeAffiliates.has(u.affiliateName)) return false;
     // Search
     if(q) {
       var hay = [u.firstName,u.lastName,u.username,u.email,u.roles,u.affiliateName]
@@ -495,7 +492,7 @@ function renderTable() {
   renderPager(pages);
 
   // Clear button
-  var anyFilter = activeStatuses.size||activeRoles.size||activeAffiliates.size||searchQuery;
+  var anyFilter = activeStatuses.size||activeRoles.size||slicedAffiliate||searchQuery;
   document.getElementById('clear-btn').className='clear-btn'+(anyFilter?' show':'');
 }
 
@@ -552,11 +549,6 @@ function buildFilterPills() {
   ALL.forEach(function(u){(u.roles||'').split(', ').filter(Boolean).forEach(function(r){roleSet.add(r);});});
   var roles=ROLE_ORDER.filter(function(r){return roleSet.has(r);});
 
-  // Affiliates (admin only)
-  var affSet=new Set();
-  if(IS_ADMIN) ALL.forEach(function(u){if(u.affiliateName)affSet.add(u.affiliateName);});
-  var affs=Array.from(affSet).sort();
-
   var html='';
   // Role pills
   if(roles.length){
@@ -566,7 +558,7 @@ function buildFilterPills() {
       html+='<span class="pill" data-role="'+esc(r)+'" onclick="togglePill(\'role\',\''+esc(r)+'\')">'+esc(r)+' <span class="pill-count">'+cnt+'</span></span>';
     });
     html+='</div>';
-    if(affs.length||true) html+='<div class="pill-sep"></div>';
+    html+='<div class="pill-sep"></div>';
   }
   // Status pills
   var statuses=['Active','Inactive'];
@@ -576,16 +568,6 @@ function buildFilterPills() {
     html+='<span class="pill" data-status="'+s+'" onclick="togglePill(\'status\',\''+s+'\')">'+s+' <span class="pill-count">'+cnt+'</span></span>';
   });
   html+='</div>';
-  // Affiliate pills (admin only)
-  if(IS_ADMIN && affs.length){
-    html+='<div class="pill-sep"></div>';
-    html+='<div class="pill-group" id="pills-aff">';
-    affs.forEach(function(a){
-      var cnt=ALL.filter(function(u){return u.affiliateName===a;}).length;
-      html+='<span class="pill" data-aff="'+esc(a)+'" onclick="togglePill(\'aff\',\''+esc(a)+'\')">'+esc(a)+' <span class="pill-count">'+cnt+'</span></span>';
-    });
-    html+='</div>';
-  }
   document.getElementById('filter-row').innerHTML=html;
 }
 
@@ -597,8 +579,6 @@ function togglePill(type, val) {
     // sync stat cards
     document.getElementById('card-active').className='metric'+(activeStatuses.has('Active')?' active':'');
     document.getElementById('card-inactive').className='metric'+(activeStatuses.has('Inactive')?' active':'');
-  } else if(type==='aff'){
-    if(activeAffiliates.has(val)) activeAffiliates.delete(val); else activeAffiliates.add(val);
   }
   currentPage=1; syncPills(); renderTable();
 }
@@ -609,9 +589,6 @@ function syncPills() {
   });
   document.querySelectorAll('[data-status]').forEach(function(el){
     el.className='pill'+(activeStatuses.has(el.dataset.status)?' on':'');
-  });
-  document.querySelectorAll('[data-aff]').forEach(function(el){
-    el.className='pill'+(activeAffiliates.has(el.dataset.aff)?' on':'');
   });
 }
 
@@ -649,7 +626,7 @@ function setSort(col) {
 
 // ── Clear ─────────────────────────────────────────────────────────────
 function clearFilters() {
-  activeStatuses.clear(); activeRoles.clear(); activeAffiliates.clear();
+  activeStatuses.clear(); activeRoles.clear();
   slicedAffiliate='';
   searchQuery='';
   document.getElementById('srch-input').value='';

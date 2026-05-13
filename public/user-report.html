@@ -84,6 +84,13 @@ body.logged-in .portal-view{display:flex}
 .rh-badge{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--red);border-radius:20px;padding:3px 10px;white-space:nowrap;display:flex;align-items:center;gap:5px}
 .rdot{width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block;animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.rh-right{display:flex;align-items:center;gap:10px}
+.rh-aff-wrap{display:none;align-items:center;gap:7px}
+.rh-aff-wrap.show{display:flex}
+.rh-aff-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);white-space:nowrap}
+.rh-aff-sel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;transition:border-color .15s;max-width:220px}
+.rh-aff-sel:focus{outline:none;border-color:var(--green)}
+.rh-aff-sel.scoped{border-color:var(--green);color:var(--green);font-weight:600}
 
 /* ── SCOPE BANNER ── */
 .scope-banner{background:var(--green-lt);border:1px solid rgba(18,57,57,.15);border-radius:7px;padding:9px 14px;margin:14px 0 0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:.6px;text-transform:uppercase;color:var(--green);display:none}
@@ -211,6 +218,14 @@ tr:last-child td{border-bottom:none}
       <div class="rh-title">User Report</div>
       <div class="rh-badge"><span class="rdot"></span> Live</div>
     </div>
+    <div class="rh-right">
+      <div class="rh-aff-wrap" id="rhAffWrap">
+        <span class="rh-aff-lbl">Affiliate</span>
+        <select id="affiliateSlicer" class="rh-aff-sel" onchange="onAffiliateSlice()">
+          <option value="">All Affiliates</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- Loading overlay -->
@@ -289,6 +304,7 @@ var IS_ADMIN = false;    // show affiliate column + filter
 var activeStatuses   = new Set();
 var activeRoles      = new Set();
 var activeAffiliates = new Set();
+var slicedAffiliate  = '';   // header slicer — single affiliate, admin only
 var searchQuery = '';
 var sortCol = 'name';
 var sortDir = 'asc';
@@ -357,8 +373,8 @@ async function loadUsers() {
     }
 
     buildHeader();
-    updateStatCards();
     buildFilterPills();
+    populateAffiliateSlicer();
     renderTable();
     document.body.classList.remove('ur-loading');
   } catch(err) {
@@ -397,14 +413,16 @@ function buildHeader() {
 function filtered() {
   var q = searchQuery.toLowerCase();
   return ALL.filter(function(u){
-    // Status card filter
+    // Header affiliate slicer (single-select, admin only)
+    if(slicedAffiliate && u.affiliateName !== slicedAffiliate) return false;
+    // Status filter
     if(activeStatuses.size && !activeStatuses.has(u.status)) return false;
     // Role pills
     if(activeRoles.size) {
       var userRoles = (u.roles||'').split(', ');
       if(!userRoles.some(function(r){return activeRoles.has(r);})) return false;
     }
-    // Affiliate pills (admin only)
+    // Affiliate pills
     if(activeAffiliates.size && !activeAffiliates.has(u.affiliateName)) return false;
     // Search
     if(q) {
@@ -434,6 +452,7 @@ function sorted(arr) {
 
 // ── Render ────────────────────────────────────────────────────────────
 function renderTable() {
+  updateStatCards();
   var rows  = sorted(filtered());
   var total = rows.length;
   var pages = Math.ceil(total/PAGE_SIZE)||1;
@@ -506,14 +525,16 @@ function renderPager(pages) {
 
 function goPage(n) { currentPage=n; renderTable(); }
 
-// ── Stat cards ────────────────────────────────────────────────────────
+// ── Stat cards ── update from current filtered set ────────────────────
 function updateStatCards() {
-  var active=ALL.filter(function(u){return u.status==='Active';}).length;
-  var inactive=ALL.filter(function(u){return u.status==='Inactive';}).length;
-  document.getElementById('val-total').textContent=ALL.length;
-  document.getElementById('val-active').textContent=active;
-  document.getElementById('val-inactive').textContent=inactive;
-  document.getElementById('val-showing').textContent=ALL.length;
+  var rows    = filtered();
+  var total   = rows.length;
+  var active  = rows.filter(function(u){return u.status==='Active';}).length;
+  var inactive= rows.filter(function(u){return u.status==='Inactive';}).length;
+  document.getElementById('val-total').textContent   = total;
+  document.getElementById('val-active').textContent  = active;
+  document.getElementById('val-inactive').textContent= inactive;
+  document.getElementById('val-showing').textContent = total;
 }
 
 function toggleStatus(s) {
@@ -594,6 +615,25 @@ function syncPills() {
   });
 }
 
+// ── Affiliate slicer (header, admin only) ─────────────────────────────
+function populateAffiliateSlicer() {
+  var sel  = document.getElementById('affiliateSlicer');
+  var wrap = document.getElementById('rhAffWrap');
+  if(!IS_ADMIN || !AFFS.length) return;
+  AFFS.forEach(function(a){
+    var o=document.createElement('option');
+    o.value=a.name; o.textContent=a.name; sel.appendChild(o);
+  });
+  wrap.classList.add('show');
+}
+
+function onAffiliateSlice() {
+  var sel=document.getElementById('affiliateSlicer');
+  slicedAffiliate=sel.value;
+  sel.classList.toggle('scoped', !!slicedAffiliate);
+  currentPage=1; renderTable();
+}
+
 // ── Search ────────────────────────────────────────────────────────────
 function onSearch() {
   searchQuery=document.getElementById('srch-input').value;
@@ -610,10 +650,13 @@ function setSort(col) {
 // ── Clear ─────────────────────────────────────────────────────────────
 function clearFilters() {
   activeStatuses.clear(); activeRoles.clear(); activeAffiliates.clear();
+  slicedAffiliate='';
   searchQuery='';
   document.getElementById('srch-input').value='';
   document.getElementById('card-active').className='metric';
   document.getElementById('card-inactive').className='metric';
+  var sel=document.getElementById('affiliateSlicer');
+  if(sel){sel.value='';sel.classList.remove('scoped');}
   currentPage=1; syncPills(); renderTable();
 }
 

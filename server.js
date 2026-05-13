@@ -37,6 +37,7 @@ app.use('/api/comments', require('./routes/comments'));
 app.use('/api/report-data', requireAuth, requireRole, require('./routes/report-data'));
 app.use('/api/advocates', require('./routes/advocates'));
 app.use('/api/mom-status', require('./routes/mom-status'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
 app.use('/api/admin/export', require('./routes/admin-export'));
 app.use('/api/champion', require('./routes/champion-auth'));
@@ -100,6 +101,7 @@ app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 're
 app.get('/report/quarterly/q1-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname, 'public', 'advocate-care.html')));
 app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mom-status-report.html')));
+app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user-report.html')));
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
 
 app.listen(PORT, () => {

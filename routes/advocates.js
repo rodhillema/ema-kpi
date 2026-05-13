@@ -37,9 +37,9 @@ router.get('/', async (req, res) => {
     const isOrgWide = role === 'administrator' || (role === 'champion' && !user.affiliateId) || ORG_WIDE_USERNAMES.includes((user.username || '').toLowerCase());
 
     if (!isOrgWide && role === 'coordinator') {
-      // Coordinator sees advocates they've written notes about
-      conditions.push(`EXISTS (SELECT 1 FROM "CoordinatorNote" cn WHERE cn."advocate_id" = u."id" AND cn."coordinator_id" = $${paramIdx} AND cn."deleted_at" = 0)`);
-      params.push(user.id);
+      // Coordinator sees all advocates at their affiliate
+      conditions.push(`u."affiliateId" = $${paramIdx}`);
+      params.push(user.affiliateId);
       paramIdx++;
     } else if (role === 'supervisor' || role === 'staff_advocate') {
       // Supervisor and staff_advocate are affiliate-scoped

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  Trellis Live · User Report                                  ║
+     ║  Sub-page of hub.html. Session shared via cookie.            ║
+     ║  Nav/footer match hub.html exactly.                          ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Report · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fff3dc;
+  --pink:#f9ece8;--lpink:#fdf7f3;
+  --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
+  --faint:#f4f6f3;--white:#fff;
+}
+html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
+
+/* ── LOGIN ── */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none !important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:5px}
+.field input{width:100%;font-family:'Lato',sans-serif;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--dark);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green)}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.login-btn:hover{background:var(--red-dk)}
+.login-trellis{display:flex;align-items:center;justify-content:center;margin-top:16px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;transition:color .15s}
+.login-trellis:hover{color:var(--green)}
+
+/* ── PORTAL ── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+.ur-loading .toolbar,.ur-loading .metrics-wrap,.ur-loading .filter-row,.ur-loading .table-wrap,.ur-loading .scope-banner{visibility:hidden;height:0;overflow:hidden;margin:0;padding:0}
+.ur-loading-overlay{display:none;text-align:center;padding:120px 20px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)}
+.ur-loading .ur-loading-overlay{display:block}
+.ur-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{width:28px;height:28px}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+.main{flex:1;overflow-y:auto;padding:0 26px 32px;min-width:0}
+
+/* ── REPORT HEADER ── */
+.report-hdr{background:var(--lpink);border-bottom:2px solid var(--red);padding:14px 26px;margin:0 -26px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rh-left{display:flex;align-items:center;gap:12px}
+.rh-title{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark)}
+.rh-badge{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--red);border-radius:20px;padding:3px 10px;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.rdot{width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── SCOPE BANNER ── */
+.scope-banner{background:var(--green-lt);border:1px solid rgba(18,57,57,.15);border-radius:7px;padding:9px 14px;margin:14px 0 0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:.6px;text-transform:uppercase;color:var(--green);display:none}
+.scope-banner.show{display:block}
+
+/* ── METRICS ── */
+.metrics-wrap{margin:14px 0 0}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metric{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:8px;padding:12px 14px 11px;cursor:pointer;transition:border-color .15s,box-shadow .15s;user-select:none}
+.metric:hover{border-color:var(--green);border-top-color:var(--green);box-shadow:0 2px 8px rgba(18,57,57,.08)}
+.metric.active{background:var(--green);border-color:var(--green);border-top-color:rgba(255,255,255,.3);box-shadow:0 2px 12px rgba(18,57,57,.18)}
+.metric.active .metric-lbl,.metric.active .metric-sub{color:rgba(255,255,255,.6)}
+.metric.active .metric-val{color:#fff}
+.metric-lbl{font-family:'Oswald',sans-serif;font-weight:300;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:4px}
+.metric-val{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);line-height:1;margin-bottom:2px}
+.metric-sub{font-size:10px;color:var(--mid);line-height:1.3}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 6px;flex-wrap:wrap}
+.toolbar-title{font-family:'Oswald',sans-serif;font-weight:300;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);flex:1}
+.srch{position:relative}
+.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--mid);fill:none;pointer-events:none;stroke-width:2}
+.srch input{font-family:'Lato',sans-serif;font-size:13px;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--dark);width:210px;outline:none;transition:border-color .15s}
+.srch input:focus{border-color:var(--green)}
+.clear-btn{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);background:none;border:1px solid var(--border);border-radius:5px;padding:6px 11px;cursor:pointer;transition:all .15s;display:none}
+.clear-btn.show{display:inline-block}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+.export-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--green);border:none;border-radius:5px;padding:7px 14px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:5px}
+.export-btn:hover{background:var(--red)}
+.export-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── FILTER PILLS ── */
+.filter-row{display:flex;gap:8px;align-items:flex-start;margin:0 0 8px;flex-wrap:wrap}
+.pill-group{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pill-sep{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0;align-self:center}
+.pill{font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mid);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none}
+.pill:hover{border-color:var(--green);color:var(--green)}
+.pill.on{background:var(--green);color:#fff;border-color:var(--green)}
+.pill-count{opacity:.6;font-size:9px;margin-left:3px}
+
+/* ── TABLE ── */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+thead tr th{background:var(--green);font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green-lt);padding:10px 10px;text-align:left;white-space:nowrap}
+.th-inner{display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.th-inner:hover{color:#fff}
+.th-inner.sorted{color:var(--yellow)}
+.arr{font-size:9px;opacity:.5}
+.th-inner.sorted .arr{opacity:1}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tbody tr:nth-child(even) td{background:#faf9f7}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.b-active{background:#d4ede4;color:#0d4a33}
+.b-inactive{background:#fde8e5;color:#8b2212}
+.role-tag{display:inline-block;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:4px;background:var(--green-lt);color:var(--green);margin:1px 2px 1px 0;white-space:nowrap}
+.no-results{padding:48px;text-align:center;color:var(--mid);font-size:13px;font-family:'Oswald',sans-serif;font-weight:300;letter-spacing:.5px}
+
+/* Column widths */
+.c-name{width:16%}.c-user{width:13%}.c-email{width:22%}.c-roles{width:auto}.c-aff{width:15%}.c-status{width:8%}
+
+/* ── PAGINATION ── */
+.pager{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);background:var(--faint)}
+.pager-info{font-family:'Oswald',sans-serif;font-weight:300;font-size:11px;letter-spacing:.5px;color:var(--mid)}
+.pager-pages{display:flex;gap:4px;align-items:center}
+.pg-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:var(--mid);background:var(--white);border:1px solid var(--border);border-radius:5px;padding:4px 9px;cursor:pointer;transition:all .15s;min-width:30px;text-align:center}
+.pg-btn:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.pg-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.pg-btn:disabled{opacity:.35;cursor:default}
+.pg-ellipsis{font-family:'Oswald',sans-serif;font-size:11px;color:var(--mid);padding:0 3px}
+</style>
+</head>
+<body class="ur-loading">
+
+<!-- ══ LOGIN ══ -->
+<div class="login-view">
+<div class="login-box">
+  <div style="text-align:center;margin-bottom:20px">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#ec482f"/><text x="16" y="21" text-anchor="middle" font-family="serif" font-size="18" fill="white">ē</text></svg>
+  </div>
+  <div class="login-title">ĒMA Impact Hub</div>
+  <div class="login-sub">User Report · Trellis Live<br>Sign in with your Trellis credentials</div>
+  <div class="login-err" id="login-err"></div>
+  <div class="field"><label>Username</label><input id="login-user" type="text" autocomplete="username" autocapitalize="none"></div>
+  <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
+  <button class="login-btn" onclick="doLogin()">Sign In</button>
+  <a href="/" class="login-trellis" style="margin-top:18px">&#8592; Back to Impact Hub</a>
+</div>
+</div>
+
+<!-- ══ PORTAL ══ -->
+<div class="portal-view">
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <a href="/" class="nav-logo-link">
+      <svg class="nav-logo" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="rgba(255,255,255,0.15)"/><text x="16" y="21" text-anchor="middle" font-family="serif" font-size="18" fill="white">ē</text></svg>
+      <span class="nav-hub">Impact Hub</span>
+    </a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-scope" id="nav-scope">
+      <span class="nav-scope-lbl">Scope</span>
+      <span class="nav-scope-val" id="nav-scope-val"></span>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar"></div>
+      <div>
+        <div class="nav-name" id="nav-name"></div>
+        <div class="nav-role" id="nav-role"></div>
+      </div>
+    </div>
+    <button class="nav-signout" id="btn-signout">Sign out</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="layout"><div class="main">
+
+  <!-- Report header -->
+  <div class="report-hdr">
+    <div class="rh-left">
+      <div class="rh-title">User Report</div>
+      <div class="rh-badge"><span class="rdot"></span> Live</div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="ur-loading-overlay">
+    <div class="ur-spinner"></div>
+    Loading users&hellip;
+  </div>
+
+  <!-- Scope banner (non-admin) -->
+  <div class="scope-banner" id="scope-banner"></div>
+
+  <!-- Stat cards -->
+  <div class="metrics-wrap">
+    <div class="metrics">
+      <div class="metric" id="card-total">
+        <div class="metric-lbl">Total Users</div>
+        <div class="metric-val" id="val-total">—</div>
+        <div class="metric-sub">in scope</div>
+      </div>
+      <div class="metric" id="card-active" onclick="toggleStatus('Active')">
+        <div class="metric-lbl">Active</div>
+        <div class="metric-val" id="val-active">—</div>
+        <div class="metric-sub">click to filter</div>
+      </div>
+      <div class="metric" id="card-inactive" onclick="toggleStatus('Inactive')">
+        <div class="metric-lbl">Inactive</div>
+        <div class="metric-val" id="val-inactive">—</div>
+        <div class="metric-sub">click to filter</div>
+      </div>
+      <div class="metric" id="card-showing">
+        <div class="metric-lbl">Showing</div>
+        <div class="metric-val" id="val-showing">—</div>
+        <div class="metric-sub">after filters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="toolbar-title">Users</span>
+    <div class="srch">
+      <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
+      <input id="srch-input" type="text" placeholder="Search name, username, email, role…" oninput="onSearch()">
+    </div>
+    <button class="clear-btn" id="clear-btn" onclick="clearFilters()">Clear Filters</button>
+    <button class="export-btn" onclick="doExport()">
+      <svg viewBox="0 0 16 16"><path d="M2 11v3h12v-3M8 2v8M5 7l3 3 3-3"/></svg>
+      Export CSV
+    </button>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="filter-row" id="filter-row"></div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="user-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager" id="pager" style="display:none">
+      <span class="pager-info" id="pager-info"></span>
+      <div class="pager-pages" id="pager-pages"></div>
+    </div>
+  </div>
+
+</div></div><!-- /layout /main -->
+</div><!-- /portal-view -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+var ALL     = [];        // full RBAC-scoped dataset from API
+var AFFS    = [];        // affiliates list
+var IS_ADMIN = false;    // show affiliate column + filter
+
+var activeStatuses   = new Set();
+var activeRoles      = new Set();
+var activeAffiliates = new Set();
+var searchQuery = '';
+var sortCol = 'name';
+var sortDir = 'asc';
+var currentPage = 1;
+var PAGE_SIZE = 25;
+
+var ROLE_DISPLAY = {
+  'Administrator':'HQ Admin','Supervisor':'Supervisor',
+  'Staff Advocate':'Staff Advocate','Coordinator':'Coordinator','Advocate':'Advocate'
+};
+var ROLE_ORDER = ['Administrator','Supervisor','Staff Advocate','Coordinator','Advocate'];
+
+// ── Auth + session ─────────────────────────────────────────────────────
+var ROLE_LABELS = {coordinator:'Coordinator',supervisor:'Supervisor',
+  staff_advocate:'Staff Advocate',administrator:'HQ Admin',champion:'Champion'};
+
+function applySession(u) {
+  document.body.classList.add('logged-in');
+  var av=document.getElementById('nav-avatar'),
+      nm=document.getElementById('nav-name'),
+      rl=document.getElementById('nav-role'),
+      sc=document.getElementById('nav-scope-val');
+  if(av) av.textContent=((u.firstName||'').charAt(0)+(u.lastName||'').charAt(0)).toUpperCase();
+  if(nm) nm.textContent=(u.firstName||'')+' '+(u.lastName||'');
+  if(rl) rl.textContent=ROLE_LABELS[u.role]||u.role;
+  var isOrgWide=u.isOrgWide||(u.role==='administrator')||(!u.affiliateId&&u.role==='champion');
+  if(sc) sc.textContent=isOrgWide?'All Affiliates':(u.affiliateName||'');
+}
+
+async function doLogin() {
+  var e=document.getElementById('login-err');
+  e.className='login-err';
+  var un=document.getElementById('login-user').value.trim().toLowerCase(),
+      pw=document.getElementById('login-pass').value;
+  if(!un||!pw){e.textContent='Username and password required';e.className='login-err show';return;}
+  try{
+    var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:un,password:pw})});
+    var d=await r.json();
+    if(!r.ok){e.textContent=d.error||'Login failed';e.className='login-err show';return;}
+    var mr=await fetch('/api/me');
+    if(mr.ok){var md=await mr.json();if(md.user)applySession(md.user);}
+    loadUsers();
+  }catch(x){e.textContent='Connection error — check your network';e.className='login-err show';}
+}
+
+// ── Data load ──────────────────────────────────────────────────────────
+async function loadUsers() {
+  document.body.classList.add('ur-loading');
+  try {
+    var r = await fetch('/api/users');
+    if(r.status===401){document.body.classList.remove('logged-in');document.body.classList.add('show-login');document.body.classList.remove('ur-loading');return;}
+    if(!r.ok){throw new Error('HTTP '+r.status);}
+    var d = await r.json();
+    ALL      = d.users     || [];
+    AFFS     = d.affiliates|| [];
+    IS_ADMIN = d.isOrgWide || false;
+
+    // Scope banner
+    var banner = document.getElementById('scope-banner');
+    if(!IS_ADMIN && d.viewerAffiliateId) {
+      var affName = (AFFS.find(a=>a.id===d.viewerAffiliateId)||{}).name || 'your affiliate';
+      var roleLabel = ROLE_LABELS[d.viewerRole]||d.viewerRole;
+      banner.textContent = 'Scoped to '+affName+' · '+roleLabel+' view';
+      banner.classList.add('show');
+    }
+
+    buildHeader();
+    updateStatCards();
+    buildFilterPills();
+    renderTable();
+    document.body.classList.remove('ur-loading');
+  } catch(err) {
+    console.error('loadUsers error:', err);
+    document.body.classList.remove('ur-loading');
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────
+function buildHeader() {
+  var cols = [
+    {key:'name',   label:'Name',      cls:'c-name'},
+    {key:'username',label:'Username', cls:'c-user'},
+    {key:'email',  label:'Email',     cls:'c-email'},
+    {key:'roles',  label:'Roles',     cls:'c-roles', noSort:true},
+  ];
+  if(IS_ADMIN) cols.push({key:'affiliateName',label:'Affiliate',cls:'c-aff'});
+  cols.push({key:'status',label:'Status',cls:'c-status'});
+
+  var html='<tr>';
+  cols.forEach(function(c){
+    var sorted = sortCol===c.key;
+    var arrow  = sorted ? (sortDir==='asc'?'&#9650;':'&#9660;') : '&#9650;';
+    if(c.noSort){
+      html+='<th class="'+c.cls+'"><span style="font-family:Oswald,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1px">'+c.label+'</span></th>';
+    } else {
+      html+='<th class="'+c.cls+'"><div class="th-inner'+(sorted?' sorted':'')+'" onclick="setSort(\''+c.key+'\')">'
+        +c.label+' <span class="arr">'+arrow+'</span></div></th>';
+    }
+  });
+  html+='</tr>';
+  document.getElementById('thead').innerHTML=html;
+}
+
+// ── Filtering ─────────────────────────────────────────────────────────
+function filtered() {
+  var q = searchQuery.toLowerCase();
+  return ALL.filter(function(u){
+    // Status card filter
+    if(activeStatuses.size && !activeStatuses.has(u.status)) return false;
+    // Role pills
+    if(activeRoles.size) {
+      var userRoles = (u.roles||'').split(', ');
+      if(!userRoles.some(function(r){return activeRoles.has(r);})) return false;
+    }
+    // Affiliate pills (admin only)
+    if(activeAffiliates.size && !activeAffiliates.has(u.affiliateName)) return false;
+    // Search
+    if(q) {
+      var hay = [u.firstName,u.lastName,u.username,u.email,u.roles,u.affiliateName]
+        .join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+}
+
+function sorted(arr) {
+  return arr.slice().sort(function(a,b){
+    var av, bv;
+    if(sortCol==='name'){
+      av=(a.lastName||'')+(a.firstName||'');
+      bv=(b.lastName||'')+(b.firstName||'');
+    } else {
+      av=(a[sortCol]||'').toLowerCase();
+      bv=(b[sortCol]||'').toLowerCase();
+    }
+    if(av<bv) return sortDir==='asc'?-1:1;
+    if(av>bv) return sortDir==='asc'?1:-1;
+    return 0;
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────────────
+function renderTable() {
+  var rows  = sorted(filtered());
+  var total = rows.length;
+  var pages = Math.ceil(total/PAGE_SIZE)||1;
+  if(currentPage>pages) currentPage=1;
+
+  document.getElementById('val-showing').textContent=total;
+
+  var start = (currentPage-1)*PAGE_SIZE;
+  var page  = rows.slice(start, start+PAGE_SIZE);
+
+  var tbody='';
+  if(!page.length){
+    var cols=IS_ADMIN?6:5;
+    tbody='<tr><td colspan="'+cols+'" class="no-results">No users match the current filters.</td></tr>';
+  } else {
+    page.forEach(function(u){
+      var name='<strong>'+esc(u.lastName)+'</strong>, '+esc(u.firstName);
+      var roleTags=(u.roles||'').split(', ').filter(Boolean)
+        .map(function(r){return '<span class="role-tag">'+esc(r)+'</span>';}).join('');
+      var statusBadge=u.status==='Active'
+        ?'<span class="badge b-active">Active</span>'
+        :'<span class="badge b-inactive">Inactive</span>';
+      tbody+='<tr>';
+      tbody+='<td class="c-name">'+name+'</td>';
+      tbody+='<td class="c-user">'+esc(u.username||'—')+'</td>';
+      tbody+='<td class="c-email" style="color:var(--green);font-size:12px">'+esc(u.email||'—')+'</td>';
+      tbody+='<td class="c-roles" style="white-space:normal;line-height:1.6">'+roleTags+'</td>';
+      if(IS_ADMIN) tbody+='<td class="c-aff">'+esc(u.affiliateName||'—')+'</td>';
+      tbody+='<td class="c-status">'+statusBadge+'</td>';
+      tbody+='</tr>';
+    });
+  }
+  document.getElementById('tbody').innerHTML=tbody;
+
+  // Pagination
+  var pager=document.getElementById('pager');
+  if(total<=PAGE_SIZE){pager.style.display='none';return;}
+  pager.style.display='flex';
+  document.getElementById('pager-info').textContent=(start+1)+'–'+Math.min(start+PAGE_SIZE,total)+' of '+total;
+  renderPager(pages);
+
+  // Clear button
+  var anyFilter = activeStatuses.size||activeRoles.size||activeAffiliates.size||searchQuery;
+  document.getElementById('clear-btn').className='clear-btn'+(anyFilter?' show':'');
+}
+
+function renderPager(pages) {
+  var html='';
+  var p=currentPage;
+  // Prev
+  html+='<button class="pg-btn" onclick="goPage('+(p-1)+')"'+(p<=1?' disabled':'')+'>&#8592;</button>';
+  // Page numbers with ellipsis
+  var toShow=[];
+  if(pages<=7){for(var i=1;i<=pages;i++)toShow.push(i);}
+  else{
+    toShow=[1];
+    if(p>3)toShow.push('…');
+    for(var i=Math.max(2,p-1);i<=Math.min(pages-1,p+1);i++)toShow.push(i);
+    if(p<pages-2)toShow.push('…');
+    toShow.push(pages);
+  }
+  toShow.forEach(function(x){
+    if(x==='…'){html+='<span class="pg-ellipsis">…</span>';}
+    else{html+='<button class="pg-btn'+(x===p?' active':'')+'" onclick="goPage('+x+')">'+x+'</button>';}
+  });
+  // Next
+  html+='<button class="pg-btn" onclick="goPage('+(p+1)+')"'+(p>=pages?' disabled':'')+'>&#8594;</button>';
+  document.getElementById('pager-pages').innerHTML=html;
+}
+
+function goPage(n) { currentPage=n; renderTable(); }
+
+// ── Stat cards ────────────────────────────────────────────────────────
+function updateStatCards() {
+  var active=ALL.filter(function(u){return u.status==='Active';}).length;
+  var inactive=ALL.filter(function(u){return u.status==='Inactive';}).length;
+  document.getElementById('val-total').textContent=ALL.length;
+  document.getElementById('val-active').textContent=active;
+  document.getElementById('val-inactive').textContent=inactive;
+  document.getElementById('val-showing').textContent=ALL.length;
+}
+
+function toggleStatus(s) {
+  if(activeStatuses.has(s)) activeStatuses.delete(s);
+  else activeStatuses.add(s);
+  document.getElementById('card-active').className='metric'+(activeStatuses.has('Active')?' active':'');
+  document.getElementById('card-inactive').className='metric'+(activeStatuses.has('Inactive')?' active':'');
+  currentPage=1; syncPills(); renderTable();
+}
+
+// ── Filter pills ──────────────────────────────────────────────────────
+function buildFilterPills() {
+  // Collect unique roles in hierarchy order
+  var roleSet=new Set();
+  ALL.forEach(function(u){(u.roles||'').split(', ').filter(Boolean).forEach(function(r){roleSet.add(r);});});
+  var roles=ROLE_ORDER.filter(function(r){return roleSet.has(r);});
+
+  // Affiliates (admin only)
+  var affSet=new Set();
+  if(IS_ADMIN) ALL.forEach(function(u){if(u.affiliateName)affSet.add(u.affiliateName);});
+  var affs=Array.from(affSet).sort();
+
+  var html='';
+  // Role pills
+  if(roles.length){
+    html+='<div class="pill-group" id="pills-role">';
+    roles.forEach(function(r){
+      var cnt=ALL.filter(function(u){return (u.roles||'').split(', ').includes(r);}).length;
+      html+='<span class="pill" data-role="'+esc(r)+'" onclick="togglePill(\'role\',\''+esc(r)+'\')">'+esc(r)+' <span class="pill-count">'+cnt+'</span></span>';
+    });
+    html+='</div>';
+    if(affs.length||true) html+='<div class="pill-sep"></div>';
+  }
+  // Status pills
+  var statuses=['Active','Inactive'];
+  html+='<div class="pill-group" id="pills-status">';
+  statuses.forEach(function(s){
+    var cnt=ALL.filter(function(u){return u.status===s;}).length;
+    html+='<span class="pill" data-status="'+s+'" onclick="togglePill(\'status\',\''+s+'\')">'+s+' <span class="pill-count">'+cnt+'</span></span>';
+  });
+  html+='</div>';
+  // Affiliate pills (admin only)
+  if(IS_ADMIN && affs.length){
+    html+='<div class="pill-sep"></div>';
+    html+='<div class="pill-group" id="pills-aff">';
+    affs.forEach(function(a){
+      var cnt=ALL.filter(function(u){return u.affiliateName===a;}).length;
+      html+='<span class="pill" data-aff="'+esc(a)+'" onclick="togglePill(\'aff\',\''+esc(a)+'\')">'+esc(a)+' <span class="pill-count">'+cnt+'</span></span>';
+    });
+    html+='</div>';
+  }
+  document.getElementById('filter-row').innerHTML=html;
+}
+
+function togglePill(type, val) {
+  if(type==='role'){
+    if(activeRoles.has(val)) activeRoles.delete(val); else activeRoles.add(val);
+  } else if(type==='status'){
+    if(activeStatuses.has(val)) activeStatuses.delete(val); else activeStatuses.add(val);
+    // sync stat cards
+    document.getElementById('card-active').className='metric'+(activeStatuses.has('Active')?' active':'');
+    document.getElementById('card-inactive').className='metric'+(activeStatuses.has('Inactive')?' active':'');
+  } else if(type==='aff'){
+    if(activeAffiliates.has(val)) activeAffiliates.delete(val); else activeAffiliates.add(val);
+  }
+  currentPage=1; syncPills(); renderTable();
+}
+
+function syncPills() {
+  document.querySelectorAll('[data-role]').forEach(function(el){
+    el.className='pill'+(activeRoles.has(el.dataset.role)?' on':'');
+  });
+  document.querySelectorAll('[data-status]').forEach(function(el){
+    el.className='pill'+(activeStatuses.has(el.dataset.status)?' on':'');
+  });
+  document.querySelectorAll('[data-aff]').forEach(function(el){
+    el.className='pill'+(activeAffiliates.has(el.dataset.aff)?' on':'');
+  });
+}
+
+// ── Search ────────────────────────────────────────────────────────────
+function onSearch() {
+  searchQuery=document.getElementById('srch-input').value;
+  currentPage=1; renderTable();
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────
+function setSort(col) {
+  if(sortCol===col) sortDir=sortDir==='asc'?'desc':'asc';
+  else{sortCol=col;sortDir='asc';}
+  currentPage=1; buildHeader(); renderTable();
+}
+
+// ── Clear ─────────────────────────────────────────────────────────────
+function clearFilters() {
+  activeStatuses.clear(); activeRoles.clear(); activeAffiliates.clear();
+  searchQuery='';
+  document.getElementById('srch-input').value='';
+  document.getElementById('card-active').className='metric';
+  document.getElementById('card-inactive').className='metric';
+  currentPage=1; syncPills(); renderTable();
+}
+
+// ── Export ────────────────────────────────────────────────────────────
+function doExport() {
+  var rows = sorted(filtered());
+  var BOM  = '﻿';
+  var cols = ['firstName','lastName','username','email','roles'];
+  if(IS_ADMIN) cols.push('affiliateName');
+  cols.push('status');
+  var headers = {firstName:'First Name',lastName:'Last Name',username:'Username',
+    email:'Email',roles:'Roles',affiliateName:'Affiliate',status:'Status'};
+
+  function csvEsc(v){
+    var s=v==null?'':String(v);
+    return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }
+
+  var lines=[cols.map(function(c){return csvEsc(headers[c]);}).join(',')];
+  rows.forEach(function(u){
+    lines.push(cols.map(function(c){return csvEsc(u[c]||'');}).join(','));
+  });
+
+  // Build context-aware filename
+  var d=new Date();
+  var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var parts=['ema-users'];
+  if(activeStatuses.size) parts.push(Array.from(activeStatuses).map(function(s){return s.toLowerCase();}).join('-'));
+  if(activeRoles.size)    parts.push(Array.from(activeRoles).map(function(r){return r.toLowerCase().replace(/\s+/g,'-');}).join('-'));
+  if(IS_ADMIN&&activeAffiliates.size) parts.push(Array.from(activeAffiliates).map(function(a){return a.toLowerCase().replace(/\s+/g,'-');}).join('-'));
+  if(searchQuery)         parts.push('filtered');
+  parts.push(ds);
+  var fname=parts.join('-')+'.csv';
+
+  // Trigger download
+  var blob=new Blob([BOM+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=fname; document.body.appendChild(a);
+  a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+
+  // Audit log
+  var ids=rows.map(function(u){return u.id;});
+  fetch('/api/export-audit',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      timestamp:new Date().toISOString(),
+      recordCount:rows.length,
+      recordIds:ids.slice(0,200),
+      filters:{
+        statuses:Array.from(activeStatuses),
+        roles:Array.from(activeRoles),
+        affiliates:Array.from(activeAffiliates),
+        search:searchQuery
+      }
+    })
+  }).catch(function(){});
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function esc(s){
+  if(s==null)return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+document.getElementById('btn-signout').addEventListener('click',async function(ev){
+  ev.preventDefault();
+  try{await fetch('/api/logout',{method:'POST'});}catch(e){}
+  window.location.href='/';
+});
+document.getElementById('login-user').addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();document.getElementById('login-pass').focus();}});
+document.getElementById('login-pass').addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();doLogin();}});
+
+// Restore session or show login
+(async function(){
+  try{
+    var r=await fetch('/api/me');
+    if(r.ok){
+      var d=await r.json();
+      if(d.user){applySession(d.user);loadUsers();return;}
+    }
+    document.body.classList.remove('ur-loading');
+    document.body.classList.add('show-login');
+  }catch(x){
+    document.body.classList.remove('ur-loading');
+    document.body.classList.add('show-login');
+  }
+})();
+</script>
+</body></html>

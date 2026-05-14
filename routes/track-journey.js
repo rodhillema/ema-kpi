@@ -248,12 +248,25 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       else if (dsh !== null && dsh >= 14)  currentStall = { type: 'general',    days: dsh };
     }
 
-    // Assessment marks (graceful — tables may not exist or have no rows)
+    // Assessment marks — pre + post for EP/RR (AssessmentResult) and NPP (AAPIScore).
+    // Each side includes name, date, type, and a total_score when computable.
     let assessments = { pre: null, post: null };
     try {
       const { rows: aRows } = await pool.query(`
-        SELECT ar."completedAt" AS "date",
-               a."name"        AS "aname"
+        SELECT
+          ar."completedAt" AS "date",
+          a."name"         AS "aname",
+          ar."type"::text  AS "atype",
+          (SELECT SUM(arqr."intResponse")::int
+             FROM "AssessmentResultQuestionResponse" arqr
+            WHERE arqr."assessmentResultId" = ar."id"
+              AND arqr."deleted_at" = 0
+              AND arqr."intResponse" IS NOT NULL) AS "total_score",
+          (SELECT COUNT(*)::int
+             FROM "AssessmentResultQuestionResponse" arqr
+            WHERE arqr."assessmentResultId" = ar."id"
+              AND arqr."deleted_at" = 0
+              AND arqr."intResponse" IS NOT NULL) AS "questions_answered"
           FROM "AssessmentResult" ar
           JOIN "Assessment" a ON a."id" = ar."assessmentId"
          WHERE ar."momId" = (
@@ -264,9 +277,60 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
          ORDER BY ar."completedAt"
       `, [pairingId]);
       for (const r of aRows) {
-        const isPre = /pre/i.test(r.aname);
-        if (isPre  && !assessments.pre)  assessments.pre  = { date: r.date };
-        if (!isPre && !assessments.post) assessments.post = { date: r.date };
+        const isPre = (r.atype === 'pre') || /pre/i.test(r.aname);
+        const payload = {
+          date: r.date,
+          name: r.aname,
+          type: isPre ? 'pre' : 'post',
+          totalScore: r.total_score,
+          questionsAnswered: r.questions_answered,
+        };
+        if (isPre  && !assessments.pre)  assessments.pre  = payload;
+        if (!isPre && !assessments.post) assessments.post = payload;
+      }
+
+      // NPP — AAPIScore (5 constructs A–E, pre+post on same row). Only fill
+      // in if the EP/RR query didn't find anything (NPP tracks won't have
+      // AssessmentResult rows for their curriculum).
+      if (!assessments.pre && !assessments.post) {
+        const { rows: aapiRows } = await pool.query(`
+          SELECT "created_at" AS "date",
+                 "constructAPreAssessment",  "constructBPreAssessment",
+                 "constructCPreAssessment",  "constructDPreAssessment",
+                 "constructEPreAssessment",
+                 "constructAPostAssessment", "constructBPostAssessment",
+                 "constructCPostAssessment", "constructDPostAssessment",
+                 "constructEPostAssessment"
+            FROM "AAPIScore"
+           WHERE "mom_id" = (
+                 SELECT "momId" FROM "Pairing"
+                  WHERE "id" = $1 AND "deleted_at" = 0)
+             AND "deleted_at" = 0
+             AND "legacy_ps_id" IS NULL
+           ORDER BY "created_at"
+           LIMIT 1
+        `, [pairingId]);
+        if (aapiRows.length) {
+          const r = aapiRows[0];
+          const preParts  = [r.constructAPreAssessment,  r.constructBPreAssessment,  r.constructCPreAssessment,  r.constructDPreAssessment,  r.constructEPreAssessment];
+          const postParts = [r.constructAPostAssessment, r.constructBPostAssessment, r.constructCPostAssessment, r.constructDPostAssessment, r.constructEPostAssessment];
+          const hasPre  = preParts.some(v => v != null);
+          const hasPost = postParts.some(v => v != null);
+          if (hasPre) {
+            assessments.pre = {
+              date: r.date, name: 'AAPI Pre-Assessment', type: 'pre',
+              totalScore: preParts.reduce((s, v) => s + (v || 0), 0),
+              constructs: { A: r.constructAPreAssessment, B: r.constructBPreAssessment, C: r.constructCPreAssessment, D: r.constructDPreAssessment, E: r.constructEPreAssessment },
+            };
+          }
+          if (hasPost) {
+            assessments.post = {
+              date: r.date, name: 'AAPI Post-Assessment', type: 'post',
+              totalScore: postParts.reduce((s, v) => s + (v || 0), 0),
+              constructs: { A: r.constructAPostAssessment, B: r.constructBPostAssessment, C: r.constructCPostAssessment, D: r.constructDPostAssessment, E: r.constructEPostAssessment },
+            };
+          }
+        }
       }
     } catch (_) { /* assessment data unavailable */ }
 

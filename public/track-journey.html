@@ -3513,21 +3513,38 @@ function renderDetail(pairing, sessions, assessments) {
 
   // Assessment detail panel
   var ac = document.getElementById('assess-container');
-  var styles = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--mid);padding-top:8px;line-height:1.6;';
-  if (!assessments.pre) {
-    ac.innerHTML = '<div style="' + styles + '">No pre-assessment on file for this pairing.</div>';
-  } else if (!assessments.post) {
-    ac.innerHTML =
-      '<div style="' + styles + '">'
-      + 'Pre-assessment · ' + fmtDate(assessments.pre.date) + '<br>'
-      + '<span style="display:block;margin-top:4px;">Post-assessment pending.</span>'
-      + '</div>';
+  var styles     = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:8px;line-height:1.6;';
+  var subStyles  = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
+  var lblStyles  = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
+
+  function renderAsmt(a, kind) {
+    if (!a) {
+      return '<div style="' + subStyles + 'font-style:italic;">' + kind + '-assessment pending.</div>';
+    }
+    var out = '<div style="margin-bottom:10px;">';
+    out += '<div style="' + lblStyles + '">' + kind + '-Assessment</div>';
+    out += '<div style="' + styles + '">' + (a.name || 'Assessment') + '</div>';
+    out += '<div style="' + subStyles + '">Completed ' + fmtDate(a.date) + '</div>';
+    if (a.totalScore != null) {
+      var q = (a.questionsAnswered != null && a.questionsAnswered > 0)
+        ? ' &nbsp;·&nbsp; ' + a.questionsAnswered + ' question' + (a.questionsAnswered === 1 ? '' : 's')
+        : '';
+      out += '<div style="' + subStyles + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+    }
+    if (a.constructs) {
+      var ks = ['A','B','C','D','E'].map(function(k){
+        return a.constructs[k] != null ? k + ': ' + a.constructs[k] : null;
+      }).filter(Boolean).join(' &nbsp;·&nbsp; ');
+      if (ks) out += '<div style="' + subStyles + 'margin-top:2px;">' + ks + '</div>';
+    }
+    out += '</div>';
+    return out;
+  }
+
+  if (!assessments.pre && !assessments.post) {
+    ac.innerHTML = '<div style="' + subStyles + 'padding-top:8px;">No assessment data on file for this pairing.</div>';
   } else {
-    ac.innerHTML =
-      '<div style="' + styles + 'color:var(--dark);">'
-      + 'Pre · ' + fmtDate(assessments.pre.date) + '<br>'
-      + 'Post · ' + fmtDate(assessments.post.date)
-      + '</div>';
+    ac.innerHTML = renderAsmt(assessments.pre, 'Pre') + renderAsmt(assessments.post, 'Post');
   }
 }
 

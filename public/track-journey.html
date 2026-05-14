@@ -2665,6 +2665,32 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   color: var(--dark);
   flex: 1;
 }
+
+/* ── Stall Drawer ───────────────────────────────────────────── */
+.stall-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:399}
+.stall-overlay.show{display:block}
+.stall-drawer{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--white);border-left:1px solid var(--border);box-shadow:-6px 0 28px rgba(0,0,0,.12);z-index:400;transition:right .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.stall-drawer.open{right:0}
+.sd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--red);flex-shrink:0}
+.sd-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.8px;color:var(--white)}
+.sd-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);font-size:22px;line-height:1;padding:2px 4px}
+.sd-close:hover{color:var(--white)}
+.sd-body{flex:1;overflow-y:auto}
+.sd-sec{padding:14px 18px;border-bottom:1px solid var(--border)}
+.sd-sec:last-child{border-bottom:none}
+.sd-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:8px}
+.sd-stall-type{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--red);margin-bottom:3px}
+.sd-stall-since{font-family:'Lato',sans-serif;font-size:12px;color:var(--mid)}
+.sd-row{font-family:'Lato',sans-serif;font-size:12px;color:var(--dark);padding:3px 0;display:flex;gap:6px}
+.sd-row-date{color:var(--mid);flex-shrink:0}
+.sd-empty{font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);font-style:italic}
+.sd-note{padding:8px 0;border-bottom:1px dashed var(--border)}
+.sd-note:last-child{border-bottom:none}
+.sd-note-date{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:4px}
+.sd-note-text{font-family:'Lato',sans-serif;font-size:12px;color:var(--dark);font-style:italic;line-height:1.5;margin-bottom:3px}
+.sd-note-author{font-family:'Lato',sans-serif;font-size:11px;color:var(--mid)}
+.pb-flag-stall{cursor:pointer}
+.pb-flag-stall:hover{background:rgba(236,72,47,.18)}
 </style>
 </head>
 <body>
@@ -3208,7 +3234,12 @@ document.getElementById('mom-search-input').addEventListener('keydown', function
 });
 
 // ── Render ────────────────────────────────────────────────────────────────────
+var CURRENT_JOURNEY_DATA = null;
+
 function renderJourney(data) {
+  CURRENT_JOURNEY_DATA = data;
+  closeStallDrawer();
+
   var pairing     = data.pairing;
   var sessions    = data.sessions;
   var stalls      = data.stalls;
@@ -3252,15 +3283,17 @@ function renderJourney(data) {
   document.getElementById('pb-length').textContent =
     totalDays + ' days · ~' + weeks + ' weeks';
 
-  // Stall flag in header
+  // Stall flag in header — clickable to open stall drawer
   var stallFlag = document.getElementById('pb-stall-flag');
   if (pairing.currentStall) {
     stallFlag.style.display = '';
     stallFlag.className     = 'pb-flag pb-flag-stall';
-    var label = pairing.currentStall.type === 'curriculum' ? 'Curriculum stall' : 'Stalled';
-    stallFlag.textContent   = label + ' · ' + pairing.currentStall.days + ' days';
+    var label = pairing.currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'Stalled';
+    stallFlag.textContent   = label + ' · ' + pairing.currentStall.days + 'd — click for detail';
+    stallFlag.onclick       = function() { openStallDrawer(); };
   } else {
     stallFlag.style.display = 'none';
+    stallFlag.onclick       = null;
   }
 
   // Track selector (display-only)
@@ -3561,11 +3594,128 @@ function renderDetail(pairing, sessions, assessments) {
   }
 }
 
+// ── Stall Drawer ─────────────────────────────────────────────────────────────
+
+function openStallDrawer() {
+  var data = CURRENT_JOURNEY_DATA;
+  if (!data || !data.pairing.currentStall) return;
+
+  var pairing          = data.pairing;
+  var sessions         = data.sessions || [];
+  var stalls           = data.stalls   || [];
+  var notes            = data.coordinatorNotes || [];
+  var currentStall     = pairing.currentStall;
+
+  // Find the active stall band to know its start date
+  var activeStallBand  = null;
+  for (var i = stalls.length - 1; i >= 0; i--) {
+    if (stalls[i].isActive) { activeStallBand = stalls[i]; break; }
+  }
+  var stallStart = activeStallBand ? new Date(activeStallBand.startDate) : null;
+
+  // Last held session of any type
+  var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
+  var lastHeld = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
+
+  // Sessions during the stall window (Planned or NotHeld, date >= stallStart)
+  var missedSessions = stallStart
+    ? sessions.filter(function(s){
+        return (s.status === 'Planned' || s.status === 'NotHeld')
+            && new Date(s.date) >= stallStart;
+      })
+    : [];
+
+  // Coordinator notes during (or just before) the stall window — limit 5
+  var filteredNotes = stallStart
+    ? notes.filter(function(n){ return new Date(n.date) >= stallStart; })
+    : notes.slice(0, 5);
+
+  function sessionTypeLabel(t) {
+    if (t === 'Track_Session') return 'Track Session';
+    if (t === 'Support_Session') return 'Support Session';
+    return t ? t.replace(/_/g,' ') : 'Session';
+  }
+
+  var html = '';
+
+  // ── Stall summary
+  html += '<div class="sd-sec">';
+  html += '<div class="sd-lbl">Current Stall</div>';
+  var stallTypeLabel = currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'General Stall';
+  html += '<div class="sd-stall-type">⚠ ' + stallTypeLabel + ' — ' + currentStall.days + ' days</div>';
+  if (stallStart) {
+    html += '<div class="sd-stall-since">Stall started ' + fmtDate(stallStart.toISOString()) + '</div>';
+  }
+  html += '</div>';
+
+  // ── Last held session
+  html += '<div class="sd-sec">';
+  html += '<div class="sd-lbl">Last Held Session</div>';
+  if (lastHeld) {
+    html += '<div class="sd-row"><span class="sd-row-date">' + fmtDate(lastHeld.date) + '</span>' + escHtml(sessionTypeLabel(lastHeld.type)) + '</div>';
+  } else {
+    html += '<div class="sd-empty">No held sessions on record</div>';
+  }
+  html += '</div>';
+
+  // ── Sessions during stall (Planned / NotHeld)
+  html += '<div class="sd-sec">';
+  html += '<div class="sd-lbl">Scheduled During Stall</div>';
+  if (missedSessions.length) {
+    missedSessions.forEach(function(s) {
+      var sl = s.status === 'Planned' ? 'Planned' : 'Not Held';
+      html += '<div class="sd-row"><span class="sd-row-date">' + fmtDate(s.date) + '</span>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</div>';
+    });
+  } else {
+    html += '<div class="sd-empty">No scheduled sessions in this window</div>';
+  }
+  html += '</div>';
+
+  // ── Coordinator notes
+  html += '<div class="sd-sec">';
+  html += '<div class="sd-lbl">Coordinator Notes' + (stallStart ? ' Since Stall Started' : '') + '</div>';
+  if (filteredNotes.length) {
+    filteredNotes.forEach(function(n) {
+      html += '<div class="sd-note">';
+      html += '<div class="sd-note-date">' + fmtDate(n.date) + '</div>';
+      if (n.text) html += '<div class="sd-note-text">“' + escHtml(n.text) + '”</div>';
+      if (n.coordinatorName) html += '<div class="sd-note-author">— ' + escHtml(n.coordinatorName) + '</div>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div class="sd-empty">No coordinator notes in this window</div>';
+  }
+  html += '</div>';
+
+  document.getElementById('sd-body').innerHTML = html;
+  document.getElementById('stall-drawer').classList.add('open');
+  document.getElementById('stall-overlay').classList.add('show');
+}
+
+function closeStallDrawer() {
+  document.getElementById('stall-drawer').classList.remove('open');
+  document.getElementById('stall-overlay').classList.remove('show');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeStallDrawer();
+});
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 (async function() {
   var user = await checkSession();
   if (user) { CURRENT_USER = user; await init(); }
 })();
 </script>
+
+<!-- ── Stall Drawer ──────────────────────────────────────────────── -->
+<div class="stall-overlay" id="stall-overlay" onclick="closeStallDrawer()"></div>
+<div class="stall-drawer" id="stall-drawer">
+  <div class="sd-head">
+    <span class="sd-title">Stall Detail</span>
+    <button class="sd-close" onclick="closeStallDrawer()">×</button>
+  </div>
+  <div class="sd-body" id="sd-body"></div>
+</div>
 </body>
 </html>

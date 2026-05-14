@@ -41,6 +41,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
 app.use('/api/admin/export', require('./routes/admin-export'));
 app.use('/api/champion', require('./routes/champion-auth'));
+app.use('/api/track-journey', require('./routes/track-journey'));
 
 // Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.
 // Both pages POST { timestamp, recordCount, recordIds, filters } here on CSV export.
@@ -103,9 +104,7 @@ app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname,
 app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mom-status-report.html')));
 app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user-report.html')));
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
-app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-pre.html')));
-app.get('/track-journey/post-demo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-post.html')));
-app.get('/track-journey/empty-demo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-pre-empty.html')));
+app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey.html')));
 
 // Startup migrations — idempotent ALTER TABLE statements for new columns
 pool.query(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "availability" text`)

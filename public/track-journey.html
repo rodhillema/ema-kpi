@@ -3085,14 +3085,27 @@ async function init() {
 async function loadPairings(affiliateId) {
   try {
     var url = '/api/track-journey/pairings' + (affiliateId ? '?affiliate_id=' + affiliateId : '');
-    ALL_PAIRINGS = await fetch(url).then(function(r){ return r.json(); });
+    var res = await fetch(url);
+    if (!res.ok) {
+      console.error('[track-journey] /pairings returned HTTP ' + res.status);
+      var errBody = await res.text().catch(function(){ return ''; });
+      if (errBody) console.error('[track-journey] body:', errBody);
+      ALL_PAIRINGS = [];
+    } else {
+      var json = await res.json();
+      ALL_PAIRINGS = Array.isArray(json) ? json : [];
+      if (!Array.isArray(json)) {
+        console.error('[track-journey] /pairings returned non-array:', json);
+      }
+    }
     buildMomList(ALL_PAIRINGS);
-    // If a pairing was already selected and is still in the list, keep it
     if (SELECTED_PAIRING && !ALL_PAIRINGS.find(function(p){ return p.pairingId === SELECTED_PAIRING.pairingId; })) {
       clearMomSelection();
     }
   } catch (e) {
     console.error('Failed to load pairings', e);
+    ALL_PAIRINGS = [];
+    buildMomList(ALL_PAIRINGS);
   }
 }
 

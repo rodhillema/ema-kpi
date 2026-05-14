@@ -644,19 +644,19 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Track Completions Expanded ─────────────────────────
-      // RD 4/25/26 (item #18): Completion bucketing is DATA-DERIVED per
-      // Cristina's quarterly-impact.html spec, not from p.complete_reason_sub_status
-      // dropdown. Cristina's definitions (line 2357 of her v3 file):
-      //   - Full Track: required curriculum sessions held + ≥1 support session + post-assessment on file
-      //   - Without Support Sessions: curriculum complete + post on file + 0 support sessions
-      //   - Without Post Assessment: curriculum complete + no post-assessment on file
+      // Bucketing (Cristina 5/14/26): every coordinator-marked completion
+      // (complete_reason_sub_status IS NOT NULL) lands in one of three buckets
+      // based purely on post-assessment + support-session presence. The
+      // curriculum-sessions-held threshold is intentionally NOT applied here —
+      // session-data coverage in Trellis is incomplete and was leaving ~half
+      // of completions in an invisible "other" bucket. Reinstate the threshold
+      // (75% of required: NPP=8/10, EP=6/8, RR=3/4) once session data is
+      // reliable.
+      //
       // Mutually-exclusive precedence:
       //   IF post AND support>=1 → Full Track
       //   ELIF post AND support=0 → Without Support Sessions
       //   ELSE (no post)         → Without Post Assessment
-      //
-      // "Required" sessions per curriculum: NPP/Crianza-con=10, EP/Crianza-empoderada=8,
-      // RR/Roadmap/Hoja-de-ruta=4.
       //
       // Post-assessment lookup is dual-source (matches KPI 3 split):
       //   NPP   → AAPIScore row exists with any post column populated
@@ -730,10 +730,9 @@ router.get('/', async (req, res) => {
         bucketed AS (
           SELECT
             CASE
-              WHEN sc.track_held >= COALESCE(qp.required_track_sessions, 0) AND pa.has_post AND sc.support_held >= 1 THEN 'full_track'
-              WHEN sc.track_held >= COALESCE(qp.required_track_sessions, 0) AND pa.has_post AND sc.support_held = 0 THEN 'without_support'
-              WHEN NOT pa.has_post THEN 'without_post'
-              ELSE 'other'
+              WHEN pa.has_post AND sc.support_held >= 1 THEN 'full_track'
+              WHEN pa.has_post AND sc.support_held = 0 THEN 'without_support'
+              ELSE 'without_post'
             END AS bucket
           FROM completed_only qp
           JOIN session_counts sc ON sc.pairing_id = qp.pairing_id

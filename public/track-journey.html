@@ -2766,12 +2766,8 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
       </div>
 
       <!-- Empty state before a mom is selected -->
-      <div id="tj-empty-state">
-        <div class="card">
-          <div style="padding:40px 20px;text-align:center;color:var(--mid);font-family:'Lato',sans-serif;font-size:14px;">
-            Select a mom above to view her Track Journey.
-          </div>
-        </div>
+      <div id="tj-empty-state" style="padding:60px 20px;text-align:center;color:var(--mid);font-family:'Lato',sans-serif;font-size:14px;">
+        Search for a mom above to view her Track Journey.
       </div>
 
       <!-- Journey content (shown after pairing is selected) -->
@@ -3057,9 +3053,7 @@ var SELECTED_PAIRING  = null; // {pairingId, momName, …}
 var CURRENT_USER      = null;
 
 async function init() {
-  var isOrgWide = CURRENT_USER &&
-    (CURRENT_USER.role === 'administrator' ||
-     (CURRENT_USER.role === 'champion' && !CURRENT_USER.affiliateId));
+  var isOrgWide = CURRENT_USER && CURRENT_USER.isOrgWide;
 
   if (isOrgWide) {
     document.body.classList.add('org-wide');

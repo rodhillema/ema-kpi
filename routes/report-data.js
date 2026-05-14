@@ -429,7 +429,8 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 5: Track Oversight ─────────────────────────────
 
-      // Stalled moms: active pairing, last held session > 14 days ago
+      // Stalled moms: active pairing, flagged by communication stall (14 days since any held session)
+      // OR curriculum stall (30 days since last held Track_Session).
       pool.query(`
         SELECT
           m."id" AS mom_id,
@@ -440,7 +441,15 @@ router.get('/', async (req, res) => {
           u."firstName" AS advocate_first,
           u."lastName" AS advocate_last,
           last_held."last_held_date",
-          EXTRACT(DAY FROM NOW() - last_held."last_held_date")::int AS days_since_held
+          EXTRACT(DAY FROM NOW() - last_held."last_held_date")::int AS days_since_held,
+          last_track."last_track_session_date",
+          EXTRACT(DAY FROM NOW() - last_track."last_track_session_date")::int AS days_since_track_session,
+          CASE
+            WHEN last_track."last_track_session_date" IS NULL
+              OR EXTRACT(EPOCH FROM NOW() - last_track."last_track_session_date") / 86400 > 30
+              THEN 'curriculum'
+            ELSE 'communication'
+          END AS stall_type
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
         LEFT JOIN "Track" t ON t."id" = p."trackId"
@@ -452,10 +461,23 @@ router.get('/', async (req, res) => {
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
         ) last_held ON true
+        LEFT JOIN LATERAL (
+          SELECT MAX(s."date_start") AS last_track_session_date
+          FROM "Session" s
+          WHERE s."pairing_id" = p."id"
+            AND s."deleted_at" = 0
+            AND s."status"::text = 'Held'
+            AND s."session_type"::text = 'Track_Session'
+        ) last_track ON true
         WHERE p."deleted_at" = 0
           AND p."status"::text = 'paired'
           AND m."deleted_at" = 0
-          AND (last_held."last_held_date" IS NULL OR last_held."last_held_date" < NOW() - INTERVAL '14 days')
+          AND (
+            last_held."last_held_date" IS NULL
+            OR last_held."last_held_date" < NOW() - INTERVAL '14 days'
+            OR last_track."last_track_session_date" IS NULL
+            OR last_track."last_track_session_date" < NOW() - INTERVAL '30 days'
+          )
           ${affWhere}
         ORDER BY last_held."last_held_date" ASC NULLS FIRST
       `, affParams),
@@ -709,7 +731,7 @@ router.get('/', async (req, res) => {
         )
         SELECT
           (SELECT COUNT(*)::int FROM q1_pairings WHERE complete_reason IS NOT NULL)   AS total_completions,
-          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason IS NOT NULL) AS total_incompletes,
+          (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason IS NOT NULL AND incomplete_reason != 'no_advocate') AS total_incompletes,
           (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'full_track')      AS completed_full_track,
           (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'without_post')    AS completed_without_post_assessment,
           (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'without_support') AS completed_without_support_sessions,
@@ -1249,7 +1271,9 @@ router.get('/', async (req, res) => {
         )
         SELECT
           COUNT(c."id")::int AS denominator,
-          SUM(CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN 1 ELSE 0 END)::int AS numerator
+          SUM(CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN 1 ELSE 0 END)::int AS numerator,
+          SUM(CASE WHEN c."family_preservation_impact" = 'prevented_from_cps_involvement' THEN 1 ELSE 0 END)::int AS cps_prevented,
+          SUM(CASE WHEN c."family_preservation_impact" = 'prevented_from_foster_care_placement' THEN 1 ELSE 0 END)::int AS foster_prevented
         FROM "Child" c
         JOIN moms_with_period_fwa f ON f."momId" = c."mom_id"
         WHERE c."deleted_at" = 0
@@ -1292,56 +1316,57 @@ router.get('/', async (req, res) => {
 
       // KPI 2 — FSS Improvement Rate (target 70%)
       //
-      // V3 (Cristina 4/24): Moved off AssessmentResult onto WellnessAssessment.
-      //   - FSS formula: ats_score + cc_score + edu_score + ei_score + fin_cpi_sum
-      //                + home_score + naa_score + res_score + soc_score
-      //                + trnprt_score + well_score   (11 domains, max 356)
-      //   - cw_score is EXCLUDED from FSS (tracked separately for KPI 1)
-      //   - cpi_total is NOT used (turned out to not be a clean sum of domain scores)
-      //   - Pre/post: no type column on WA, so derived temporally:
-      //       pre  = earliest scored WA per mom by created_at
-      //       post = latest   scored WA per mom by created_at
-      //       Mom eligible only if earliest != latest AND both rows have all 11 scores
-      //   - "Scored" = cpi_total IS NOT NULL (333 of 453 rows qualify; same population
-      //      in practice as checking each score column individually)
-      //   - ei_score chosen over ei_cpi_sum per Cristina's default; they differ on
-      //      34% of rows — revisit if she changes her mind.
-      //   - No Pairing.completed_on anchor: Cristina's v3 spec derives pre/post
-      //      directly from the WA population. Flag if she meant to keep pairing anchor.
+      // V4 (RD 5/14/26 per Fix 5 spec): Pairing-anchored cohort.
+      //   - Cohort: moms with an active pairing (status='paired') in scope
+      //   - Pre WA: most recent scored WA within 30 days of pairing start
+      //   - Post WA: most recent scored WA ≥ 60 days after pairing start
+      //   - FSS formula: ats + cc + edu + ei + fin_cpi_sum + home + naa + res + soc + trnprt + well (11 domains)
+      //   - "Scored" = cpi_total IS NOT NULL
+      //   - Returns NULL for numerator/denominator when cohort < 5 (Data Pending state)
+      //   - cohort_n always returns the actual count (even when < 5) so frontend can explain the null
       pool.query(`
-        WITH scored_was AS (
+        WITH active_pairings AS (
+          SELECT DISTINCT ON (p."momId")
+            p."momId",
+            p."created_at" AS pairing_start
+          FROM "Pairing" p
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            ${affWhere}
+          ORDER BY p."momId", p."created_at" DESC
+        ),
+        scored_was AS (
           SELECT
             wa."mom_id",
             wa."created_at",
             (COALESCE(wa."ats_score",0) + COALESCE(wa."cc_score",0) + COALESCE(wa."edu_score",0)
              + COALESCE(wa."ei_score",0) + COALESCE(wa."fin_cpi_sum",0) + COALESCE(wa."home_score",0)
              + COALESCE(wa."naa_score",0) + COALESCE(wa."res_score",0) + COALESCE(wa."soc_score",0)
-             + COALESCE(wa."trnprt_score",0) + COALESCE(wa."well_score",0)) AS fss_total,
-            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" ASC)  AS rn_asc,
-            ROW_NUMBER() OVER (PARTITION BY wa."mom_id" ORDER BY wa."created_at" DESC) AS rn_desc,
-            COUNT(*)        OVER (PARTITION BY wa."mom_id")                              AS wa_count
+             + COALESCE(wa."trnprt_score",0) + COALESCE(wa."well_score",0)) AS fss_total
           FROM "WellnessAssessment" wa
-          JOIN "Mom" m ON m."id" = wa."mom_id"
-          WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
-            AND wa."cpi_total" IS NOT NULL
-            ${affWhere}
+          WHERE wa."deleted_at" = 0 AND wa."cpi_total" IS NOT NULL
         ),
-        mom_pre_post AS (
+        mom_fss AS (
           SELECT
-            "mom_id",
-            MAX(CASE WHEN rn_asc  = 1 THEN fss_total END) AS pre_fss,
-            MAX(CASE WHEN rn_desc = 1 THEN fss_total END) AS post_fss,
-            MAX(wa_count) AS wa_count
-          FROM scored_was
-          GROUP BY "mom_id"
+            ap."momId",
+            MAX(CASE WHEN sw."created_at" <= ap.pairing_start + INTERVAL '30 days'
+                THEN sw.fss_total END) AS pre_fss,
+            MAX(CASE WHEN sw."created_at" >= ap.pairing_start + INTERVAL '60 days'
+                THEN sw.fss_total END) AS post_fss
+          FROM active_pairings ap
+          JOIN scored_was sw ON sw."mom_id" = ap."momId"
+          GROUP BY ap."momId", ap.pairing_start
+        ),
+        eligible AS (
+          SELECT * FROM mom_fss WHERE pre_fss IS NOT NULL AND post_fss IS NOT NULL
         )
         SELECT
-          COUNT(*)::int AS denominator,
-          SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int AS numerator
-        FROM mom_pre_post
-        WHERE wa_count >= 2
-          AND pre_fss IS NOT NULL
-          AND post_fss IS NOT NULL
+          COUNT(*)::int AS cohort_n,
+          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END AS denominator,
+          CASE WHEN COUNT(*) < 5 THEN NULL
+               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END AS numerator
+        FROM eligible
       `, affParams),
 
       // KPI 3 — Learning Progress (target 70%)
@@ -1770,11 +1795,14 @@ router.get('/', async (req, res) => {
     // KPI 1 rates
     const kpi1Num = kpi1.rows[0]?.numerator || 0;
     const kpi1Den = kpi1.rows[0]?.denominator || 0;
+    const kpi1CpsPrevented = kpi1.rows[0]?.cps_prevented || 0;
+    const kpi1FosterPrevented = kpi1.rows[0]?.foster_prevented || 0;
     const kpi1Rate = kpi1Den > 0 ? Math.round(1000 * kpi1Num / kpi1Den) / 10 : null;
 
     // KPI 2 rates
-    const kpi2Num = kpi2.rows[0]?.numerator || 0;
-    const kpi2Den = kpi2.rows[0]?.denominator || 0;
+    const kpi2Num = kpi2.rows[0]?.numerator ?? 0;
+    const kpi2Den = kpi2.rows[0]?.denominator ?? 0;
+    const kpi2CohortN = kpi2.rows[0]?.cohort_n || 0;
     const kpi2Rate = kpi2Den > 0 ? Math.round(1000 * kpi2Num / kpi2Den) / 10 : null;
 
     // KPI 3 rates
@@ -2029,8 +2057,8 @@ router.get('/', async (req, res) => {
         active_in_track: activeInTrack.rows[0].count,
         membership_community: membershipCommunity.rows[0].count,
         sessions_in_period: sessionsInPeriod.rows,
-        kpi1: { rate: kpi1Rate, numerator: kpi1Num, denominator: kpi1Den, excluded: kpi1Excluded.rows[0]?.count || 0, target: 85 },
-        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, target: 70 },
+        kpi1: { rate: kpi1Rate, numerator: kpi1Num, denominator: kpi1Den, cps_prevented: kpi1CpsPrevented, foster_prevented: kpi1FosterPrevented, dollar_impact: kpi1FosterPrevented * 38850, excluded: kpi1Excluded.rows[0]?.count || 0, target: 85 },
+        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, status: kpi2Rate !== null ? 'ok' : 'pending', target: 70 },
         kpi3: { rate: kpi3Rate, numerator: kpi3Improved, denominator: kpi3WithData, total_completions: kpi3Total, target: 70 },
       },
 

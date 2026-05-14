@@ -1,0 +1,3341 @@
+<!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  Track Journey · ĒMA Impact Hub                             ║
+     ║  Mom-level view. Part of Hub Section 2 (Trellis Live).     ║
+     ║  Nav/footer match hub.html exactly.                         ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Journey · Tasha Mitchell · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+
+/* ── HUB SHELL ──────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fff3dc;
+  --pink:#f9ece8;--lpink:#fdf7f3;
+  --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
+  --faint:#f4f6f3;--white:#fff;
+}
+html{font-size:14px}
+
+/* ── LOGIN OVERLAY ── */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none !important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:5px}
+.field input{width:100%;font-family:'Lato',sans-serif;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--dark);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green)}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;box-shadow:0 2px 8px rgba(236,72,47,.2);transition:background .15s,transform .1s}
+.login-btn:hover{background:var(--red-dk);transform:translateY(-1px)}
+.login-trellis{display:flex;align-items:center;justify-content:center;margin-top:16px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;transition:color .15s}
+.login-trellis:hover{color:var(--green)}
+
+/* ── PORTAL VIEW ── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+
+/* ── NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{height:30px;width:auto;display:block}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 40px;min-width:0}
+
+
+/* ── Track Journey: info rows + selectors ── */
+.tj-info{background:var(--white);padding:14px 26px 16px;margin:0 -26px 20px;display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--border)}
+.tj-row1{display:flex;align-items:center;gap:0;padding-bottom:12px;flex-wrap:wrap}
+.tj-row2{display:flex;align-items:center;gap:0;padding:12px 0 0;border-top:1px solid var(--border);flex-wrap:wrap}
+.tj-title-block{display:flex;flex-direction:column;gap:2px}
+.tj-name{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark);font-weight:400}
+.tj-sub{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid)}
+.tj-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rh-flag{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;padding:4px 10px;border-radius:12px;white-space:nowrap}
+.rh-flag-stall{background:rgba(236,72,47,.1);color:var(--red);border:1px solid rgba(236,72,47,.2)}
+.rh-flag-warn{background:var(--yellow-light);color:#8a5a00;border:1px solid rgba(242,161,54,.3)}
+.rh-flag-complete{background:var(--green-light);color:#1a4a4a;border:1px solid rgba(18,57,57,.15)}
+.tj-sel-group{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.tj-sel-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid)}
+.tj-sel{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 28px 5px 12px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;min-width:160px;max-width:220px;white-space:nowrap}
+.tj-sel:focus{outline:none;border-color:var(--green)}
+.pb-block{display:flex;flex-direction:column;gap:3px;padding-right:20px}
+.pb-block:not(:first-child){padding-left:20px}
+.pb-divider{width:1px;height:32px;background:var(--border);flex-shrink:0}
+.pb-flag{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.pb-flag-stall{background:rgba(236,72,47,.1);color:var(--red);border:1px solid rgba(236,72,47,.2)}
+.pb-flag-warn{background:var(--yellow-light);color:#8a5a00;border:1px solid rgba(242,161,54,.3)}
+.pb-flag-complete{background:var(--green-light);color:#1a4a4a;border:1px solid rgba(18,57,57,.15)}
+.pb-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.2px;color:var(--mid)}
+.pb-val{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--dark);display:flex;align-items:center;gap:5px}
+.pb-icon{width:12px;height:12px;opacity:.45;flex-shrink:0}
+.track-threshold-pill{display:inline-flex;align-items:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:10px;white-space:nowrap;vertical-align:middle}
+.track-threshold-pill.above{background:var(--green-light);color:#1a4a4a}
+.track-threshold-pill.below{background:var(--red-lt);color:var(--red-dk)}
+
+/* ── REPORT HEADER ── */
+.report-hdr{background:var(--lpink);border-bottom:2px solid var(--red);padding:14px 26px;margin:0 -26px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.rh-title-group{display:flex;flex-direction:column;gap:2px}
+.rh-title{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark)}
+.rh-right{display:flex;align-items:flex-end;gap:12px;flex-wrap:nowrap}
+.rh-sub{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.7px;text-transform:uppercase;color:var(--mid)}
+
+/* ── FOOTER ── */
+.footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.footer-brand{opacity:.8}
+.footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
+.footer-integrity:hover{color:var(--white)}
+
+/* ── TRACK JOURNEY HUB OVERRIDES ── */
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);padding:0}
+.main .card:first-child,.main .card:first-of-type{margin-top:24px}
+@media(max-width:860px){.nav{padding:0 16px}.main{padding:0 16px 40px}}
+
+
+/* ── TRACK JOURNEY COMPONENT STYLES ──────────────────────────── */
+:root {
+  --red: #ec482f;
+  --green: #123939;
+  --green-mid: #1e5454;
+  --green-light: #e8f0f0;
+  --green-pale: #f2f7f7;
+  --green-soft: #b8d4d0;
+  --teal: #5a9a93;
+  --teal-light: #8ab9b3;
+  --amber: #f2a136;
+  --amber-bg: #fef3e8;
+  --amber-border: #f2a136;
+  --mid: #6b7280;
+  --light: #f4f4f2;
+  --white: #ffffff;
+  --dark: #1a1a1a;
+  --border: #e2e2de;
+  --pre-color: #f2a136;
+  --post-color: #123939;
+  --stall-band: rgba(236, 72, 47, 0.08);
+  --stall-border: rgba(236, 72, 47, 0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* body styles handled by hub shell */
+
+.page-title {
+  font-family: 'Shrikhand', serif;
+  color: var(--green);
+  font-size: 24px;
+  margin-bottom: 4px;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.demo-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--mid);
+  max-width: 1180px;
+  margin: 36px auto 12px;
+  padding: 10px 16px;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid var(--green);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.demo-label .demo-sub {
+  font-weight: 300;
+  color: var(--dark);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+/* Outstanding questions section - bottom of page */
+.questions-block {
+  max-width: 1180px;
+  margin: 36px auto 28px;
+  background: white;
+  border-radius: 12px;
+  padding: 28px 32px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border-top: 4px solid var(--amber);
+}
+
+.questions-block h2 {
+  font-family: 'Shrikhand', serif;
+  color: var(--green);
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.questions-block .qb-sub {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 22px;
+}
+
+.qb-section {
+  margin-bottom: 22px;
+}
+
+.qb-section:last-child { margin-bottom: 0; }
+
+.qb-section-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.qb-question {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.qb-num {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  background: var(--green);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.qb-content {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dark);
+}
+
+.qb-content .qb-q {
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.qb-content .qb-context {
+  color: var(--mid);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.qb-content .qb-assumed {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--amber);
+  background: var(--amber-bg);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.qb-owners {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.qb-owner-pill {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: var(--green-pale);
+  color: var(--green);
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--green-soft);
+}
+.page-sub {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 32px;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  max-width: 1180px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+/* Header has explicit corner radius now that card no longer clips */
+.card .hdr {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.card.detail-card {
+  margin-top: 0;
+}
+
+/* HEADER */
+.hdr {
+  background: var(--red);
+  padding: 18px 26px 16px;
+  color: white;
+}
+
+.hdr-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hdr-name-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hdr-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: white;
+  letter-spacing: 0.3px;
+}
+
+.hdr-track {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.85);
+  padding: 4px 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.hdr-stall {
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.2);
+  color: #ffe88a;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,232,138,0.3);
+  /* Reset button-default styles when used as a <button> element */
+  font-weight: normal;
+  line-height: normal;
+}
+
+/* Missing pre-assessment warning pill – same shape as the stall pill,
+   amber-toned to signal "data integrity action needed" rather than
+   "engagement risk." Uses brand amber on a soft amber-cream background
+   so it reads as an action prompt, not an alarm. */
+.hdr-stall.hdr-prewarn {
+  background: var(--amber);
+  color: white;
+  border-color: var(--amber);
+}
+
+.pairing-strip {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+  flex-wrap: wrap;
+}
+
+.ps-block { display: flex; flex-direction: column; gap: 1px; }
+
+.ps-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+
+.ps-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ps-icon {
+  width: 13px;
+  height: 13px;
+  color: rgba(255,255,255,0.85);
+  flex-shrink: 0;
+}
+
+.ps-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255,255,255,0.18);
+}
+
+/* SECTION HEADER */
+.section-header {
+  padding: 22px 26px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--mid);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Progress bar */
+.j-prog-bar {
+  height: 5px;
+  background: var(--light);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 14px 26px 22px;
+}
+
+.j-prog-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 3px;
+}
+
+/* TIMELINE */
+.timeline-section {
+  padding: 0 26px 22px;
+}
+
+.timeline-wrap {
+  position: relative;
+  padding-left: 100px;
+  padding-right: 30px;
+}
+
+/* Timeline */
+.tl {
+  position: relative;
+  height: 200px;
+}
+
+/* Stall band - clickable button that opens the drawer */
+.stall-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--stall-band);
+  border: none;
+  border-left: 2px dashed var(--stall-border);
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  z-index: 1;
+  border-radius: 0 4px 4px 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.stall-band:hover {
+  background: rgba(236, 72, 47, 0.16);
+}
+
+.stall-band-label {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--red);
+  white-space: nowrap;
+  background: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--stall-border);
+  pointer-events: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.stall-band:hover .stall-band-label {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+
+/* Past stall band – historical, clickable for that period's drawer.
+   Two visual variants based on type:
+     .stall-band.past         = General Stall (engagement gap), faded red
+     .stall-band.past.curr-stall = Curriculum Stall (no curriculum but support happened), amber dashed */
+.stall-band.past {
+  cursor: pointer;
+  background: rgba(236, 72, 47, 0.03);
+  border-left: 2px dotted rgba(236, 72, 47, 0.45);
+  /* Reset button defaults when used as <button> */
+  font: inherit;
+  text-align: left;
+}
+.stall-band.past:hover {
+  background: rgba(236, 72, 47, 0.08);
+}
+.stall-band.past .stall-band-label {
+  background: white;
+  color: rgba(236, 72, 47, 0.75);
+  border: 1px dashed rgba(236, 72, 47, 0.4);
+  font-weight: 400;
+}
+.stall-band.past:hover .stall-band-label {
+  background: white;
+  color: var(--red);
+  border-color: rgba(236, 72, 47, 0.6);
+}
+
+/* Curriculum stall variant – softer amber treatment for "no curriculum
+   but support is keeping engagement alive" pattern */
+.stall-band.curr-stall {
+  background: rgba(242, 161, 54, 0.05);
+  border-left: 2px dashed rgba(242, 161, 54, 0.55);
+}
+.stall-band.curr-stall:hover {
+  background: rgba(242, 161, 54, 0.10);
+}
+.stall-band.curr-stall .stall-band-label {
+  background: white;
+  color: var(--amber);
+  border: 1px dashed rgba(242, 161, 54, 0.55);
+  font-weight: 400;
+}
+.stall-band.curr-stall:hover .stall-band-label {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+/* Hover tooltip on past stall bands – same vocabulary as mark-tip */
+.stall-band:hover .mark-tip { opacity: 1; }
+.stall-band .mark-tip {
+  /* Place above the band, near the left edge so wide bands don't drift offscreen */
+  left: 28px;
+  transform: translateX(0);
+}
+.stall-band .mark-tip::after {
+  left: 18px;
+  transform: translateX(0);
+}
+
+/* Lanes */
+.lane {
+  position: absolute;
+  left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  height: 26px;
+  z-index: 2;
+}
+
+.lane.curriculum { top: 50px; }
+.lane.support { top: 105px; }
+.lane.flagged { top: 158px; }
+
+.lane-bg {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lane.curriculum .lane-bg { background: var(--green-soft); }
+.lane.support .lane-bg { background: var(--teal-light); opacity: 0.5; }
+.lane.flagged .lane-bg { background: var(--amber); opacity: 0.35; }
+
+.lane-label {
+  position: absolute;
+  left: -96px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dark);
+  text-align: right;
+  width: 88px;
+  line-height: 1.3;
+}
+
+.lane-label .lane-sub {
+  display: block;
+  font-weight: 300;
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  margin-top: 1px;
+  color: var(--mid);
+}
+
+/* Marks */
+.mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  z-index: 3;
+}
+
+.mark:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 10;
+  opacity: 1 !important;
+}
+
+/* Curriculum marks - completed (current/most recent attempt of a lesson) */
+.mark.curr {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  background: var(--green);
+  color: white;
+  border: 2.5px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Earlier attempts of a repeated lesson - faded */
+.mark.curr.earlier-attempt {
+  opacity: 0.4;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+/* Group-specific marker states */
+
+/* Cohort session that happened before the mom joined the group - very faded, not hers */
+.mark.curr.before-join {
+  background: white;
+  color: var(--mid);
+  border: 2px dashed var(--border);
+  opacity: 0.5;
+}
+
+/* Cohort session held but mom was absent - outlined red */
+.mark.curr.absent {
+  background: white;
+  color: var(--red);
+  border: 2.5px solid var(--red);
+  opacity: 0.7;
+}
+
+/* Make-up session attended outside cohort schedule - green like attended, but with small badge */
+.mark.curr.makeup {
+  background: var(--green);
+  color: white;
+  border: 2.5px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.mark.curr.makeup::after {
+  content: '↻';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: white;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid white;
+}
+
+/* Assumption callout box - placed on the demo card to flag what's pretend */
+.assumption-callout {
+  margin: 0 26px 18px;
+  padding: 12px 14px;
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-border);
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.assumption-callout-icon {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--amber);
+  background: white;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--amber-border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.assumption-callout-body {
+  font-size: 11px;
+  color: var(--dark);
+  line-height: 1.5;
+}
+
+.assumption-callout-body strong {
+  font-weight: 700;
+}
+
+/* ════════════════════════════════════
+   STALLED PILL → DRAWER
+   Pill becomes clickable when stall present.
+   Drawer slides in from the right showing
+   coordinator note + contact log.
+════════════════════════════════════ */
+
+/* Drawer overlay - covers page when drawer is open */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 200;
+  cursor: pointer;
+}
+
+body.drawer-open .drawer-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Drawer panel itself */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 92vw;
+  background: white;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 401;
+  display: flex;
+  flex-direction: column;
+}
+
+/* When body has drawer-open class, drawer slides in */
+body.drawer-open .drawer {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  background: var(--red);
+  color: white;
+  padding: 16px 22px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Drawer header color variants – set on the .drawer when opened */
+.drawer.is-curr-stall .drawer-header { background: var(--amber); }
+.drawer.is-flag .drawer-header { background: var(--amber); }
+.drawer.is-flag-resolved .drawer-header { background: var(--green); }
+
+.drawer-header-text {
+  flex: 1;
+}
+
+.drawer-eyebrow {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 2px;
+}
+
+.drawer-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.3px;
+  color: white;
+}
+
+.drawer-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 4px;
+}
+
+.drawer-close {
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.drawer-close:hover {
+  background: rgba(0,0,0,0.32);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 24px;
+}
+
+.drawer-section {
+  margin-bottom: 22px;
+}
+
+.drawer-section:last-child {
+  margin-bottom: 0;
+}
+
+.drawer-section-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.drawer-section-meta {
+  font-weight: 400;
+  font-size: 9px;
+  color: var(--mid);
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+/* Coordinator note card */
+.coord-note {
+  background: var(--green-pale);
+  border-left: 3px solid var(--green);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.coord-note-meta {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--green-mid);
+  margin-bottom: 5px;
+}
+
+.coord-note-body {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dark);
+}
+
+/* Contact log entries */
+.contact-entry {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.contact-entry:last-child { border-bottom: none; }
+
+.contact-entry-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mid);
+}
+
+.contact-entry-icon.text { background: rgba(90,154,147,0.15); color: var(--teal); }
+.contact-entry-icon.call { background: rgba(18,57,57,0.1); color: var(--green); }
+.contact-entry-icon.session { background: rgba(242,161,54,0.15); color: var(--amber); }
+.contact-entry-icon.no-contact { background: rgba(236,72,47,0.1); color: var(--red); }
+
+.contact-entry-body { flex: 1; }
+
+.contact-entry-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.contact-entry-type {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--dark);
+}
+
+.contact-entry-date {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+.contact-entry-author {
+  font-size: 10px;
+  color: var(--mid);
+  margin-bottom: 3px;
+}
+
+.contact-entry-note {
+  font-size: 12px;
+  color: var(--dark);
+  line-height: 1.45;
+}
+
+/* Last attempted contact callout */
+.last-attempt {
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.last-attempt-icon {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--amber);
+  width: 28px;
+  height: 28px;
+  background: white;
+  border: 1px solid var(--amber-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.last-attempt-body { flex: 1; }
+
+.last-attempt-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 2px;
+}
+
+.last-attempt-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dark);
+}
+
+/* Drawer link to fuller mom report */
+.drawer-link {
+  display: block;
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: var(--light);
+  border-radius: 6px;
+  text-align: center;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--green);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.drawer-link:hover {
+  background: var(--green-pale);
+}
+
+/* ════════════════════════════════════
+   UPDATES FEED (drawer body)
+   Single chronological list of every
+   update type. Type icon distinguishes.
+════════════════════════════════════ */
+
+.updates-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.update-entry {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.update-entry:first-child { padding-top: 0; }
+.update-entry:last-child { border-bottom: none; padding-bottom: 0; }
+
+.update-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.update-icon.note { background: var(--green-light); color: var(--green); }
+.update-icon.text { background: rgba(90,154,147,0.15); color: var(--teal); }
+.update-icon.call { background: rgba(18,57,57,0.1); color: var(--green); }
+.update-icon.session { background: rgba(242,161,54,0.18); color: var(--amber); }
+.update-icon.no-contact { background: rgba(236,72,47,0.12); color: var(--red); }
+
+.update-body { flex: 1; min-width: 0; }
+
+.update-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.update-type {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--dark);
+}
+
+.update-date {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+.update-author {
+  font-size: 10px;
+  color: var(--mid);
+  margin-bottom: 4px;
+}
+
+.update-text {
+  font-size: 12.5px;
+  color: var(--dark);
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════════
+   EMPTY STATE – pre-assessment pending
+════════════════════════════════════ */
+
+.empty-state-tl {
+  position: relative;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 100px;
+}
+
+.empty-pre-pending {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--amber-bg);
+  border: 1.5px dashed var(--amber-border);
+  border-radius: 8px;
+  max-width: 520px;
+}
+
+.empty-pre-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: white;
+  border: 2px dashed var(--amber-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  color: var(--amber);
+  flex-shrink: 0;
+}
+
+.empty-pre-content {
+  flex: 1;
+}
+
+.empty-pre-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--dark);
+  margin-bottom: 3px;
+}
+
+.empty-pre-body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--mid);
+}
+
+.empty-pre-body strong {
+  color: var(--dark);
+  font-weight: 700;
+}
+
+/* In-progress lesson - solid amber so the number stays readable. */
+.mark.curr.inprog {
+  background: var(--amber);
+  border: 2.5px solid white;
+  color: white;
+}
+
+/* Support marks - bolder, distinct color */
+.mark.supp {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  background: var(--teal);
+  color: white;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Support icon variants – switched via body[data-supp-icon].
+   Each .si span lives inside the .mark.supp; only one shows at a time. */
+.si { display: none; line-height: 1; }
+body[data-supp-icon="s"] .si-s,
+body[data-supp-icon="heart"] .si-heart,
+body[data-supp-icon="chat"] .si-chat,
+body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: center; justify-content: center; }
+
+.si-heart { font-size: 16px; }
+.si-quote {
+  font-family: 'Shrikhand', serif;
+  font-size: 18px;
+  margin-top: -3px;  /* visual centering for curly quote */
+}
+.si-chat svg { display: block; }
+
+/* Flagged-need marks – small amber outlined symbol on the flagged lane.
+   Demo placeholder; real source pending RD confirmation. */
+.mark.flag {
+  width: 22px;
+  height: 22px;
+  background: white;
+  color: var(--amber);
+  border: 2px solid var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.mark.flag svg { display: block; }
+.mark.flag.resolved {
+  background: var(--green-pale);
+  color: var(--green);
+  border-color: var(--green-soft);
+  opacity: 0.85;
+}
+
+/* Standalone connected service mark – ServiceReferral row not tied to a
+   BenevolenceNeed (proactive referral / nimble response). Same lane as
+   flags but a different icon (check) so they don't double-dip when a
+   flag already carries the referral. */
+.mark.service {
+  width: 22px;
+  height: 22px;
+  background: var(--green-pale);
+  color: var(--green);
+  border: 2px solid var(--green-soft);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.mark.service svg { display: block; }
+
+/* Paired event marker - distinct from session marks */
+.mark.paired {
+  width: 34px;
+  height: 34px;
+  background: white;
+  color: var(--green);
+  border: 2.5px solid var(--green);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Milestone marker (PRE, POST) on the curriculum line.
+   Reads as an event with a label rather than a numbered lesson. */
+.mark.milestone {
+  width: 38px;
+  height: 38px;
+  background: var(--green);
+  color: white;
+  border: 2.5px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+/* Pre-Assessment in MISSING state.
+   Same shape and position as the regular PRE milestone, but rendered
+   as a hollow amber outlined circle to signal "needed, not present."
+   Cursor stays default since the marker isn't routing anywhere yet. */
+.mark.milestone.pre-missing {
+  background: white;
+  color: var(--amber);
+  border: 2.5px dashed var(--amber);
+  box-shadow: 0 1px 3px rgba(242,161,54,0.25);
+  /* Reset button defaults */
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: default;
+}
+
+.milestone-label {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* PRE bookend (left) - smaller, doesn't dominate */
+.bookend {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 4;
+}
+
+.bookend.pre { top: 37px; }
+
+.bookend-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2.5px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform 0.15s;
+  position: relative;
+}
+
+.bookend-dot:hover {
+  transform: scale(1.15);
+}
+
+.bookend-dot:hover .mark-tip {
+  opacity: 1;
+}
+
+.bookend-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.bookend-date {
+  font-size: 9px;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+/* Date scale */
+.date-scale {
+  position: relative;
+  height: 18px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 5px;
+}
+
+.date-tick {
+  position: absolute;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--mid);
+  transform: translateX(-50%);
+}
+
+.date-tick.bold { font-weight: 600; color: var(--dark); }
+
+/* Tooltip */
+.mark-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dark);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.mark-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--dark);
+}
+
+.mark-tip-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.mark-tip-meta {
+  color: rgba(255,255,255,0.7);
+  font-size: 10px;
+}
+
+.mark:hover .mark-tip { opacity: 1; }
+
+/* Legend */
+.tl-legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.legend-mark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--mid);
+}
+
+.lm-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+
+.lm-dot.curr { background: var(--green); }
+.lm-dot.curr-faded { background: var(--green-soft); opacity: 0.6; }
+.lm-dot.curr-absent {
+  background: white;
+  border: 2px solid var(--red);
+}
+.lm-dot.curr-before-join {
+  background: white;
+  border: 2px dashed var(--border);
+}
+.lm-dot.curr-makeup {
+  background: var(--green);
+  position: relative;
+}
+.lm-dot.curr-inprog { background: var(--amber-bg); border-color: var(--amber-border); }
+.lm-dot.supp { background: var(--teal); width: 12px; height: 12px; }
+.lm-dot.paired {
+  background: white;
+  border: 2px solid var(--green);
+  width: 12px;
+  height: 12px;
+}
+.lm-dot.stall {
+  background: var(--stall-band);
+  border: 2px dashed var(--red);
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+/* TWO-COL SECTION */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  border-top: 1px solid var(--border);
+}
+
+.split-left {
+  padding: 22px 26px;
+  border-right: 1px solid var(--border);
+}
+
+.split-right {
+  padding: 22px 26px;
+}
+
+.panel-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-lbl-count {
+  color: var(--green);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+/* Lesson list */
+.seq {
+  position: relative;
+}
+
+.seq::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 13px;
+  width: 1.5px;
+  background: var(--border);
+}
+
+.seq-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 8px;
+  z-index: 1;
+}
+
+.seq-step:last-child { padding-bottom: 0; }
+
+.seq-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mid);
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.seq-step.done .seq-dot {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+
+.seq-step.inprog .seq-dot {
+  background: var(--amber-bg);
+  border-color: var(--amber-border);
+  color: var(--amber);
+}
+
+.seq-step.preassess .seq-dot,
+.seq-step.postassess .seq-dot {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+  font-size: 8px;
+  letter-spacing: 0.3px;
+}
+
+.seq-step.postassess.pending .seq-dot {
+  background: white;
+  border-style: dashed;
+  border-color: var(--mid);
+  color: var(--mid);
+}
+
+.seq-step.support-summary .seq-dot {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+  font-size: 12px;
+}
+
+.seq-content {
+  flex: 1;
+  padding-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.seq-step.preassess .seq-content,
+.seq-step.postassess .seq-content {
+  background: var(--green-pale);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: -3px;
+}
+
+.seq-step.postassess.pending .seq-content {
+  background: var(--light);
+  border: 1px dashed var(--border);
+}
+
+.seq-step.support-summary .seq-content {
+  background: rgba(90, 154, 147, 0.08);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: -3px;
+}
+
+.seq-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.3;
+}
+
+.seq-step.not-started .seq-name {
+  font-weight: 400;
+  color: var(--mid);
+}
+.seq-step.inprog .seq-name { color: #7a5c00; }
+.seq-step.preassess .seq-name,
+.seq-step.postassess .seq-name {
+  color: var(--green);
+  font-style: italic;
+  font-weight: 700;
+}
+.seq-step.postassess.pending .seq-name {
+  color: var(--mid);
+  font-weight: 400;
+}
+.seq-step.support-summary .seq-name {
+  color: var(--green-mid);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Pre-Assessment in MISSING state – curriculum panel row.
+   Amber-toned to read as an action prompt rather than alarm.
+   Adds a meta line below the name that explains the impact. */
+.seq-step.preassess.pre-missing .seq-dot {
+  background: white;
+  border-color: var(--amber);
+  border-style: dashed;
+  color: var(--amber);
+}
+.seq-step.preassess.pre-missing .seq-content {
+  background: var(--amber-bg);
+  border: 1px solid rgba(242, 161, 54, 0.35);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.seq-step.preassess.pre-missing .seq-name {
+  color: var(--amber);
+  font-style: normal;
+}
+.seq-step.preassess.pre-missing .seq-meta {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--mid);
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* Small "Needed" pill that sits next to "Pre-Assessment" in the row */
+.pre-missing-tag {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--amber);
+  color: white;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.seq-meta {
+  font-size: 10px;
+  color: var(--mid);
+  text-align: right;
+  white-space: nowrap;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.seq-step.done .seq-meta { color: var(--green); }
+.seq-step.preassess .seq-meta,
+.seq-step.postassess .seq-meta { color: var(--green-mid); font-weight: 400; }
+
+/* Inline date for pre-assessment row only - no pill */
+.seq-date-inline {
+  font-size: 10px;
+  color: var(--green-mid);
+  font-weight: 400;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Hover tooltip on lesson rows - replaces the always-visible status pill */
+.seq-step[data-tip] {
+  position: relative;
+  cursor: default;
+}
+
+.seq-step[data-tip]:hover {
+  z-index: 50;
+}
+
+.seq-step[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--dark);
+  color: white;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  pointer-events: none;
+}
+
+.seq-step[data-tip]:hover::before {
+  content: '';
+  position: absolute;
+  left: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-right-color: var(--dark);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.repeat-tag {
+  display: inline-block;
+  background: #fde8e4;
+  color: var(--red);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* Scores */
+.score-info {
+  font-size: 11px;
+  color: var(--mid);
+  font-style: italic;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  background: var(--amber-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--pre-color);
+}
+
+/* Knowledge increase summary stats */
+.knowledge-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--green-pale);
+  border-radius: 8px;
+  border-left: 3px solid var(--green);
+}
+
+.knowledge-summary.pending {
+  background: var(--light);
+  border-left-color: var(--mid);
+}
+
+.ks-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ks-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+/* ════════════════════════════════════
+   I-POPOVER (per pattern library)
+   - One wrap class .info-icon-wrap on the
+     panel label (max one per card).
+   - Hover or focus shows .info-popover.
+   - Three slots: what counts / excluded /
+     known limitation (.warn variant).
+════════════════════════════════════ */
+
+.info-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Variant: absolutely positioned in top-right corner of a panel/card */
+.info-icon-wrap.top-right {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 5;
+}
+
+/* Variant: anchored as a sibling inside a flex section header (right side) */
+.info-icon-wrap.section-anchor {
+  margin-left: auto;
+}
+
+.info-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #d8dcd0;
+  background: white;
+  color: var(--mid);
+  font-family: 'Lato', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.info-icon-btn:hover,
+.info-icon-btn:focus {
+  border-color: var(--green);
+  color: var(--green);
+  outline: none;
+}
+
+.info-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -8px;
+  width: 280px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  padding: 14px 16px;
+  font-family: 'Lato', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dark);
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
+  z-index: 100;
+}
+
+/* Left-anchored variant for popovers placed near the left edge */
+.info-popover.info-popover-left {
+  right: auto;
+  left: -8px;
+}
+
+.info-popover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 11px;
+  border: 6px solid transparent;
+  border-bottom-color: white;
+}
+
+.info-popover.info-popover-left::before {
+  right: auto;
+  left: 11px;
+}
+
+.info-icon-wrap:hover .info-popover,
+.info-icon-wrap:focus-within .info-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.ip-block {
+  margin-bottom: 12px;
+}
+
+.ip-block:last-child { margin-bottom: 0; }
+
+.ip-block-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 3px;
+}
+
+.ip-block.warn .ip-block-label {
+  color: var(--red);
+}
+
+.ip-block-body {
+  font-size: 12px;
+  color: var(--dark);
+  line-height: 1.5;
+}
+
+.ip-block-body strong {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ════════════════════════════════════
+   I-POPOVER LEGEND
+   Structured legend replacing prose
+   description. Used inside an .ip-block
+   in place of .ip-block-body when the
+   methodology is a visual vocabulary.
+   Groups → rows → mini-mark + label.
+════════════════════════════════════ */
+
+.ip-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lg-group-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2.5px 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--dark);
+}
+
+.lg-mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mini-marks mirror the actual timeline mark styles at smaller scale */
+.lg-mini {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lg-mini.curr-done {
+  background: var(--green);
+  border: 1.5px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.lg-mini.curr-faded {
+  background: var(--green-soft);
+  border: 1.5px solid white;
+  opacity: 0.5;
+}
+.lg-mini.curr-inprog {
+  background: var(--amber);
+  border: 1.5px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.lg-mini.supp {
+  background: var(--teal);
+  color: white;
+  border: 1.5px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.lg-mini.paired {
+  background: white;
+  color: var(--green);
+  border: 1.5px solid var(--green);
+}
+.lg-mini.flag-open {
+  background: white;
+  color: var(--amber);
+  border: 1.5px solid var(--amber);
+}
+.lg-mini.flag-met {
+  background: var(--green-pale);
+  color: var(--green);
+  border: 1.5px solid var(--green-soft);
+}
+.lg-mini.service {
+  background: var(--green-pale);
+  color: var(--green);
+  border: 1.5px solid var(--green-soft);
+}
+
+/* Stall band swatches – miniature representations of the actual bands */
+.lg-stall {
+  width: 26px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 0 2px 2px 0;
+}
+.lg-stall.general {
+  background: rgba(236, 72, 47, 0.10);
+  border-left: 2px solid var(--red);
+}
+.lg-stall.curr-stall {
+  background: rgba(242, 161, 54, 0.08);
+  border-left: 2px dashed var(--amber);
+}
+
+/* Italic clarifier under a legend group – used for the stall-clock anchor
+   note. Indented to line up with the row labels (past the mark column). */
+.lg-row-note {
+  margin-top: 5px;
+  padding-left: 26px;
+  font-size: 10px;
+  font-style: italic;
+  color: var(--mid);
+  line-height: 1.4;
+}
+
+.ks-value {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--green);
+  line-height: 1.1;
+}
+
+.ks-value.pending {
+  color: var(--mid);
+  font-weight: 400;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.ks-sub {
+  font-size: 9px;
+  color: var(--mid);
+  margin-top: 1px;
+}
+
+/* Per-construct delta tag */
+.delta-tag {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  letter-spacing: 0.3px;
+}
+
+.delta-tag.up { background: rgba(18,57,57,0.1); color: var(--green); }
+.delta-tag.down { background: rgba(236,72,47,0.1); color: var(--red); }
+.delta-tag.flat { background: var(--light); color: var(--mid); }
+
+.construct {
+  margin-bottom: 14px;
+  padding-top: 0;
+  padding-bottom: 0;
+  position: relative;
+}
+
+.construct[data-tip]:hover {
+  z-index: 50;
+}
+
+.construct[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  top: -32px;
+  background: var(--dark);
+  color: white;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  pointer-events: none;
+}
+
+.c-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dark);
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.c-scores-side {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+.c-scores-side .pre { color: var(--pre-color); }
+.c-scores-side .post { color: var(--post-color); }
+.c-scores-side .pending { color: var(--mid); opacity: 0.5; }
+
+/* Pill-bar score visualization.
+   Track is a soft gray pill; pre is a tan filled pill from left to score position.
+   When post arrives, a second darker pill overlays from left to post position.
+   Reads as "how far along the scale" without needing a marker dot. */
+
+/* Score track: 2-band container.
+   Pre fills the top half (lighter tan), Post fills the bottom half (green).
+   Both always visible; you read them as parallel pills showing where she
+   started vs where she ended. Stacked vertically so neither covers the other. */
+
+.score-track {
+  position: relative;
+  height: 18px;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.score-track::before,
+.score-track::after {
+  content: '';
+  flex: 1;
+  background: var(--light);
+  border-radius: 99px;
+}
+
+.score-fill {
+  position: absolute;
+  left: 0;
+  border-radius: 99px;
+  transition: width 0.2s ease;
+}
+
+.score-fill.pre {
+  background: #e8c98a;
+  top: 0;
+  height: 8px;
+}
+
+.score-fill.post {
+  background: var(--green);
+  bottom: 0;
+  height: 8px;
+}
+
+/* Pre-only state (no post yet) - collapse to a single 14px band so the
+   empty bottom half doesn't read as "missing data." */
+.score-track.pre-only {
+  height: 14px;
+  display: block;
+  background: var(--light);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.score-track.pre-only::before,
+.score-track.pre-only::after {
+  display: none;
+}
+.score-track.pre-only .score-fill.pre {
+  top: 0;
+  bottom: 0;
+  height: auto;
+}
+
+.score-marker.pre .score-marker-label { color: var(--pre-color); }
+.score-marker.post .score-marker-label { color: var(--post-color); }
+
+.scale-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 1px 0;
+}
+.scale-row span {
+  font-size: 8px;
+  color: var(--mid);
+  font-family: 'Oswald', sans-serif;
+}
+
+.score-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--mid);
+}
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.legend-dot.pre { background: var(--pre-color); }
+.legend-dot.post { background: var(--post-color); }
+
+.score-note {
+  font-size: 10px;
+  color: var(--mid);
+  margin-top: 8px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ════════════════════════════════════
+   SCORE EMPTY STATE
+   Replaces the score tracks when PRE
+   is missing. Centered card-like block
+   with icon + title + body + hint, all
+   amber-toned to match the pre-missing
+   warning vocabulary.
+════════════════════════════════════ */
+
+.score-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 18px;
+  background: var(--amber-bg);
+  border: 1px dashed rgba(242, 161, 54, 0.45);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.score-empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px dashed var(--amber);
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.score-empty-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+
+.score-empty-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dark);
+  max-width: 320px;
+  margin-bottom: 12px;
+}
+
+.score-empty-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mid);
+  font-style: italic;
+  max-width: 320px;
+}
+
+/* ════════════════════════════════════
+   ICON PICKER – demo affordance
+   Lets the team compare support-session
+   icons inline. Lives at top of page,
+   styled distinctly from report content
+   so it reads as a config tool, not data.
+════════════════════════════════════ */
+
+.icon-picker {
+  max-width: 1180px;
+  margin: 0 auto 14px;
+  padding: 10px 14px;
+  background: var(--green-pale);
+  border: 1px dashed var(--green-soft);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.icon-picker-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.icon-picker-sub {
+  font-size: 11px;
+  color: var(--mid);
+  font-style: italic;
+}
+
+.ip-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--green-soft);
+  background: white;
+  color: var(--teal);
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+
+.ip-btn:hover {
+  border-color: var(--teal);
+  transform: scale(1.05);
+}
+
+.ip-btn.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+  box-shadow: 0 0 0 3px rgba(90, 154, 147, 0.18);
+}
+
+.ip-btn svg { display: block; }
+
+.ip-btn-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-left: 2px;
+}
+
+/* ════════════════════════════════════
+   PANEL-LBL DURATION SUBLINE
+   Adds time-in-track display under the
+   "X / N Curriculum Lessons Completed"
+   count in the curriculum detail panel.
+════════════════════════════════════ */
+
+.panel-lbl-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.panel-lbl-duration {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+.panel-lbl-duration .pld-em {
+  color: var(--green);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+/* ════════════════════════════════════
+   FLAG DETAIL (drawer content)
+   Used inside the drawer body when a
+   flagged need / connected service
+   mark is clicked. Different shape
+   from the updates feed – emphasizes
+   description, status, and history.
+════════════════════════════════════ */
+
+.flag-detail-section {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.flag-detail-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.fd-section-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 6px;
+}
+
+.fd-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dark);
+}
+
+.fd-meta {
+  font-size: 11px;
+  color: var(--mid);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.fd-status-pill {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-top: 4px;
+}
+.fd-status-pill.open {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid var(--amber-border);
+}
+.fd-status-pill.connected {
+  background: var(--green-pale);
+  color: var(--green);
+  border: 1px solid var(--green-soft);
+}
+
+.fd-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.fd-event {
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--green-pale);
+  border-radius: 6px;
+  border-left: 3px solid var(--green-soft);
+}
+.fd-event.amber {
+  background: var(--amber-bg);
+  border-left-color: var(--amber-border);
+}
+.fd-event-date {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--mid);
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.fd-event-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dark);
+  flex: 1;
+}
+
+/* Drawer header outreach summary line – appears under the title/sub
+   to surface contact-attempt count for stalls (per the "no contact-log
+   row, but make the count visible" decision). */
+.drawer-outreach {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.18);
+}
+.drawer-outreach .do-em {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ════════════════════════════════════
+   DRAWER SECTIONED CONTENT
+   For stall drawers, we structure the
+   body in clear sections rather than
+   a single feed. Order:
+     1. AT A GLANCE – narrative summary
+     2. FACTORS – linked flagged needs
+     3. RESOLUTION (past) / OUTREACH (current)
+     4. ACTIVITY FEED – full chronology
+   Section labels use Oswald uppercase
+   with a divider under, matching the
+   panel-lbl pattern elsewhere.
+════════════════════════════════════ */
+
+.dsec {
+  margin-bottom: 22px;
+}
+.dsec:last-child {
+  margin-bottom: 0;
+}
+
+.dsec-label {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* At-a-glance summary block – narrative paragraph telling the
+   "what happened and why you should care" story. Color-coded
+   tint to match the drawer header type. */
+.dsec-glance {
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dark);
+  border-left: 3px solid var(--mid);
+  background: var(--green-pale);
+}
+.drawer.is-curr-stall .dsec-glance {
+  background: var(--amber-bg);
+  border-left-color: var(--amber-border);
+}
+.drawer:not(.is-curr-stall):not(.is-flag):not(.is-flag-resolved) .dsec-glance {
+  background: rgba(236, 72, 47, 0.05);
+  border-left-color: var(--red);
+}
+
+.dsec-glance strong {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Flag-link card – a referenced flagged need shown inline in
+   the stall drawer's Factors section. Visual hook only;
+   not clickable here (user clicks the actual timeline mark
+   for the flag drawer). */
+.flag-link {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--amber-bg);
+  border-left: 3px solid var(--amber-border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.flag-link:last-child { margin-bottom: 0; }
+
+.flag-link.connected {
+  background: var(--green-pale);
+  border-left-color: var(--green-soft);
+}
+
+.flag-link-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid var(--amber);
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.flag-link.connected .flag-link-icon {
+  border-color: var(--green-soft);
+  color: var(--green);
+}
+
+.flag-link-body { flex: 1; min-width: 0; }
+
+.flag-link-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--dark);
+  margin-bottom: 2px;
+}
+
+.flag-link-meta {
+  font-size: 11px;
+  color: var(--mid);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.flag-type-pill {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: white;
+  color: var(--amber);
+  border: 1px solid var(--amber-border);
+}
+.flag-type-pill.connected {
+  color: var(--green);
+  border-color: var(--green-soft);
+}
+
+/* Resolution event card – single highlighted event card showing
+   how/when a past stall ended. Different from a feed entry: it's
+   the one moment that mattered. */
+.resolution-event {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--green-pale);
+  border-left: 3px solid var(--green);
+  border-radius: 6px;
+}
+
+.resolution-event-date {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--green);
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.resolution-event-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dark);
+  flex: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN VIEW ─────────────────────────────────────────────── -->
+<div class="login-view">
+  <div class="login-box">
+    <img src="data:image/png;base64,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"
+ alt="ĒMA" class="login-logo">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Sign in with your Trellis credentials</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="first.last" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
+    <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
+    <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
+  </div>
+</div>
+
+<!-- ── PORTAL VIEW ────────────────────────────────────────────── -->
+<div class="portal-view">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="/" class="nav-logo-link">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo">
+        <div class="nav-hub">Impact Hub</div>
+      </a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar">?</div>
+        <div>
+          <div class="nav-name" id="nav-name">Loading</div>
+          <div class="nav-role" id="nav-role"></div>
+        </div>
+      </div>
+      <div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
+      <div class="nav-scope" id="nav-scope" style="display:none;">
+        <div class="nav-scope-lbl">Viewing</div>
+        <div class="nav-scope-val" id="nav-scope-val"></div>
+      </div>
+      <div class="nav-sep"></div>
+      <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
+      <div class="nav-sep"></div>
+      <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
+    </div>
+  </nav>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <div class="main" id="mainPanel">
+
+      <!-- REPORT HEADER -->
+      <div class="report-hdr">
+        <div class="rh-title">Track Journey</div>
+        <div class="rh-right">
+          <div class="tj-sel-group">
+            <span class="tj-sel-lbl">Mom</span>
+            <select class="tj-sel" id="sel-mom" onchange="onMomChange(this)">
+              <option value="Tasha Mitchell" selected>Tasha Mitchell</option>
+            </select>
+          </div>
+          <div class="tj-sel-group">
+            <span class="tj-sel-lbl">Track</span>
+            <select class="tj-sel" id="sel-track" onchange="onTrackChange(this)">
+              <option value="EP · Empowered Parenting" selected>EP · Empowered Parenting</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Track Journey: mom info rows -->
+      <div class="tj-info">
+        <div class="tj-row1">
+          <div class="pb-block"><span class="pb-lbl">Mom</span><span class="pb-val">Tasha Mitchell</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Track</span><span class="pb-val">EP · Empowered Parenting</span></div>
+          <span class="pb-flag pb-flag-warn" style="margin-left:auto;">Pre-Assessment needed</span>
+        </div>
+        <div class="tj-row2">
+          <div class="pb-block"><span class="pb-lbl">Advocate</span><span class="pb-val">Renee Holloway · 1:1</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Pairing Window</span><span class="pb-val">Apr 13, 2026 – present</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Track Length</span><span class="pb-val"><svg class="pb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>24 days · ~3 weeks</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Coordinator</span><span class="pb-val">Lily Pierre</span></div>
+        </div>
+      </div>
+
+      <!-- TRACK JOURNEY CONTENT -->
+<div class="card">
+
+
+
+  <!-- TIMELINE -->
+  <div class="section-header">
+    <span class="section-lbl">Track Timeline</span>
+
+    <!-- i-popover anchored top-right of the timeline section -->
+    <span class="info-icon-wrap section-anchor">
+      <span class="info-icon-btn" tabindex="0" role="button" aria-label="What the timeline marks mean">i</span>
+      <div class="info-popover">
+        <div class="ip-block">
+          <div class="ip-block-label">What counts</div>
+          <div class="ip-legend">
+
+            <div class="lg-group">
+              <div class="lg-group-name">Curriculum &middot; Learning</div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini curr-done"></span></span>
+                <span>Completed lesson</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini curr-faded"></span></span>
+                <span>Earlier attempt of same lesson</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini curr-inprog"></span></span>
+                <span>In progress</span>
+              </div>
+            </div>
+
+            <div class="lg-group">
+              <div class="lg-group-name">Support &middot; Belonging</div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini supp">
+                  <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+                  </svg>
+                </span></span>
+                <span>Held support session</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini paired">
+                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m11 17 2 2a1 1 0 1 0 3-3"/>
+                    <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/>
+                    <path d="m21 3 1 11h-2"/>
+                    <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/>
+                    <path d="M3 4h8"/>
+                  </svg>
+                </span></span>
+                <span>Pairing date</span>
+              </div>
+            </div>
+
+            <div class="lg-group">
+              <div class="lg-group-name">Flagged Needs &middot; Vital Supports</div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini flag-open">
+                  <svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                    <line x1="4" y1="22" x2="4" y2="15"/>
+                  </svg>
+                </span></span>
+                <span>Identified, open</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini flag-met">
+                  <svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                    <line x1="4" y1="22" x2="4" y2="15"/>
+                  </svg>
+                </span></span>
+                <span>Met or connected</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-mini service">
+                  <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 17H7A5 5 0 0 1 7 7h2"/>
+                    <path d="M15 7h2a5 5 0 1 1 0 10h-2"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                </span></span>
+                <span>Standalone connected service</span>
+              </div>
+            </div>
+
+            <div class="lg-group">
+              <div class="lg-group-name">Stall bands</div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-stall general"></span></span>
+                <span>General Stall &middot; 14+ days no pairing or held session</span>
+              </div>
+              <div class="lg-row">
+                <span class="lg-mark"><span class="lg-stall curr-stall"></span></span>
+                <span>Curriculum Stall &middot; 30+ days no curriculum</span>
+              </div>
+              <div class="lg-row-note">
+                Clock anchors to the most recent of: track start, pairing date, or held session.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="ip-block">
+          <div class="ip-block-label">Excluded</div>
+          <div class="ip-block-body">Cancellations and reschedules without a held session do not appear here. Phone calls and texts live inside the stall drawer rather than on the timeline.</div>
+        </div>
+        <div class="ip-block warn">
+          <div class="ip-block-label">Known limitation</div>
+          <div class="ip-block-body">Stalls can render for reasons other than real disengagement. <strong>Planned breaks</strong> (medical leave, family events, holidays) aren't documented in Trellis today, so legitimate pauses look like stalls. Stalls also appear when sessions have been held but <strong>session notes haven't been entered yet</strong>. Coordinator notes are the source of context in both cases.</div>
+        </div>
+      </div>
+    </span>
+  </div>
+
+  <div class="timeline-section" style="padding-top: 18px;">
+    <div class="timeline-wrap">
+
+      <div class="tl">
+
+        <!-- No stall bands. Tasha is actively engaged: 24 days in,
+             two support sessions held, one curriculum session attempted.
+             Showing only the true factors for her track right now. -->
+
+        <!-- CURRICULUM LANE – Learning component of the theory of change -->
+        <div class="lane curriculum">
+          <div class="lane-label">Curriculum<span class="lane-sub">Learning</span></div>
+          <div class="lane-bg"></div>
+
+          <!-- PRE event marker WITH WARNING STATE.
+               No PRE on file. The marker shows a warning treatment
+               and acts as a call to action: an empty dashed circle
+               with an exclamation, hover reveals what's missing. -->
+          <button type="button" class="mark milestone pre-mark pre-missing"
+                  aria-label="Pre-Assessment missing"
+                  style="left:3%;">
+            <span class="milestone-label">PRE</span>
+            <div class="mark-tip">
+              <div class="mark-tip-title">Pre-Assessment needed</div>
+              <div class="mark-tip-meta">Should have been completed before pairing &middot; not on file</div>
+            </div>
+          </button>
+
+          <!-- Lesson 1 attempted, in progress (not completed yet) -->
+          <div class="mark curr inprog" style="left:78%;">
+            1
+            <div class="mark-tip">
+              <div class="mark-tip-title">Lesson 1 &middot; Building a Strong Foundation</div>
+              <div class="mark-tip-meta">Held May 1, 2026 &middot; In Progress</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SUPPORT LANE – Belonging component of the theory of change.
+             Pairing event lives here too: belonging starts when an
+             advocate is paired and continues through every session. -->
+        <div class="lane support">
+          <div class="lane-label">Support<span class="lane-sub">Belonging</span></div>
+          <div class="lane-bg"></div>
+
+          <!-- PAIRED event marker – handshake icon -->
+          <div class="mark paired" style="left:25%;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m11 17 2 2a1 1 0 1 0 3-3"/>
+              <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/>
+              <path d="m21 3 1 11h-2"/>
+              <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/>
+              <path d="M3 4h8"/>
+            </svg>
+            <div class="mark-tip">
+              <div class="mark-tip-title">Paired with Renee Holloway</div>
+              <div class="mark-tip-meta">Apr 13, 2026 &middot; 1:1 &middot; Waiting period: 3 days</div>
+            </div>
+          </div>
+
+          <!-- Two support sessions, both held -->
+          <div class="mark supp" style="left:45%;">
+            <span class="si si-s">S</span>
+            <span class="si si-heart">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+              </svg>
+            </span>
+            <span class="si si-chat">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </span>
+            <span class="si si-quote">&ldquo;</span>
+            <div class="mark-tip">
+              <div class="mark-tip-title">Support Session</div>
+              <div class="mark-tip-meta">Held Apr 18, 2026</div>
+            </div>
+          </div>
+
+          <div class="mark supp" style="left:62%;">
+            <span class="si si-s">S</span>
+            <span class="si si-heart">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+              </svg>
+            </span>
+            <span class="si si-chat">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </span>
+            <span class="si si-quote">&ldquo;</span>
+            <div class="mark-tip">
+              <div class="mark-tip-title">Support Session</div>
+              <div class="mark-tip-meta">Held Apr 25, 2026</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- VITAL SUPPORTS LANE – empty for Tasha. No flagged needs
+             or connected services on file. Lane stays visible so the
+             theory of change framing reads consistently across moms. -->
+        <div class="lane flagged">
+          <div class="lane-label">Flagged Needs<span class="lane-sub">Vital Supports</span></div>
+          <div class="lane-bg"></div>
+        </div>
+
+      </div>
+
+      <!-- Date scale -->
+      <div class="date-scale">
+        <span class="date-tick bold" style="left:3%;">Apr 10</span>
+        <span class="date-tick" style="left:25%;">Apr 13</span>
+        <span class="date-tick" style="left:45%;">Apr 18</span>
+        <span class="date-tick" style="left:62%;">Apr 25</span>
+        <span class="date-tick" style="left:78%;">May 1</span>
+        <span class="date-tick bold" style="left:98%;">Today</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════
+     CARD 2: Curriculum Detail + Scores
+═══════════════════════════════════ -->
+
+<div class="card detail-card">
+
+  <!-- i-popover anchored top-right of the detail card (scores side).
+       Per pattern library: max one popover per card, three slots.
+       Absorbs methodology that was previously visible as sublines / score note. -->
+  <span class="info-icon-wrap top-right">
+    <span class="info-icon-btn" tabindex="0" role="button" aria-label="How knowledge change is measured">i</span>
+    <div class="info-popover">
+      <div class="ip-block">
+        <div class="ip-block-label">What counts</div>
+        <div class="ip-block-body">Knowledge change has two views. <strong>Domains Improved</strong> counts each domain where the post score is higher than the pre score – direction of growth. <strong>Overall Change</strong> sums every item across all domains and shows the percent difference from pre to post – magnitude of growth.</div>
+      </div>
+      <div class="ip-block">
+        <div class="ip-block-label">Minimum completion</div>
+        <div class="ip-block-body">ĒMA requires 75% curriculum completion. NPP: 8 of 10 lessons. EP: 6 of 8 lessons. RR: 3 of 4 lessons. The pill below shows whether this mom meets the completion standard.</div>
+      </div>
+      <div class="ip-block">
+        <div class="ip-block-label">Excluded</div>
+        <div class="ip-block-body">Domains with no change or a lower score are not counted as improved. Moms missing either a pre or post assessment are not measured.</div>
+      </div>
+      <div class="ip-block warn">
+        <div class="ip-block-label">Known limitation</div>
+        <div class="ip-block-body">In Overall Change, all items count equally. Domains with more items pull the overall number more strongly than smaller ones.</div>
+      </div>
+    </div>
+  </span>
+
+  <!-- TWO-COL: LESSONS LIST + SCORES -->
+  <div class="split">
+
+    <!-- LEFT: Lesson detail with 0/8 (EP track has 8 lessons) -->
+    <section class="split-left">
+      <div class="panel-lbl">
+        <span>Curriculum Detail</span>
+        <span class="panel-lbl-count">0 / 8 Curriculum Lessons Completed</span>
+        <span class="track-threshold-pill below">Below completion standard</span>
+      </div>
+
+      <div class="seq">
+
+        <!-- Pre-Assessment in MISSING state. Action-prompt styling
+             pulls eye here. Click would route to Trellis to enter PRE
+             (no real wiring in demo). -->
+        <div class="seq-step preassess pre-missing" data-tip="No Pre-Assessment on file. Should be completed before sessions begin.">
+          <div class="seq-dot">PRE</div>
+          <div class="seq-content">
+            <div class="seq-name">Pre-Assessment <span class="pre-missing-tag">Needed</span></div>
+            <div class="seq-meta">A session was held without one on file. This blocks learning progress measurement.</div>
+          </div>
+        </div>
+
+        <div class="seq-step inprog" data-tip="Renee Holloway · started May 1, 2026 · still open">
+          <div class="seq-dot">1</div>
+          <div class="seq-content">
+            <div class="seq-name">Building a Strong Foundation</div>
+          </div>
+        </div>
+
+        <div class="seq-step not-started"><div class="seq-dot">2</div><div class="seq-content"><div class="seq-name">Understanding Your Child</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">3</div><div class="seq-content"><div class="seq-name">Effective Communication</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">4</div><div class="seq-content"><div class="seq-name">Positive Discipline</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">5</div><div class="seq-content"><div class="seq-name">Managing Stress &amp; Emotions</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">6</div><div class="seq-content"><div class="seq-name">Building Resilience</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">7</div><div class="seq-content"><div class="seq-name">Healthy Relationships</div></div></div>
+        <div class="seq-step not-started"><div class="seq-dot">8</div><div class="seq-content"><div class="seq-name">Looking Ahead</div></div></div>
+
+        <div class="seq-step support-summary" data-tip="Held Apr 18 and Apr 25 · 1:1 with advocate">
+          <div class="seq-dot">
+            <span class="si si-s">S</span>
+            <span class="si si-heart">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+              </svg>
+            </span>
+            <span class="si si-chat">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </span>
+            <span class="si si-quote">&ldquo;</span>
+          </div>
+          <div class="seq-content">
+            <div class="seq-name">Support Sessions &middot; 2 held</div>
+          </div>
+        </div>
+
+        <!-- Post-Assessment row stays visible to communicate "not yet completed." -->
+        <div class="seq-step postassess pending" data-tip="Pending · scored after final lesson">
+          <div class="seq-dot">POST</div>
+          <div class="seq-content">
+            <div class="seq-name">Post-Assessment</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT: Scores in EMPTY/MISSING-PRE state -->
+    <aside class="split-right">
+      <div class="panel-lbl">
+        <span>Assessment Detail</span>
+      </div>
+
+      <!-- Empty state for missing PRE: explains why scores can't render
+           and what action would unblock measurement. Replaces the score
+           tracks rather than rendering empty bars (which would imply zero). -->
+      <div class="score-empty">
+        <div class="score-empty-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="score-empty-title">Pre-Assessment needed</div>
+        <div class="score-empty-body">
+          We can't show learning progress yet. This mom started sessions without a Pre-Assessment on file.
+        </div>
+        <div class="score-empty-hint">
+          The advocate or coordinator can enter the Pre-Assessment in Trellis. Once recorded, this panel will show baseline scores and grow with each Post-Assessment.
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+</div>
+
+<!-- DRAWER + TEMPLATES omitted: Tasha's timeline has no drawer triggers.
+     This file shows the data integrity warning state only. Maria's
+     and Aisha's versions retain the drawer infrastructure where it's used. -->
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">ĒMA &middot; Every Mother&rsquo;s Advocate</div>
+    <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+  </div>
+
+</div><!-- /portal-view -->
+
+<script>
+const DEMO_USERS = {
+  'demo':        {firstName:'Demo',lastName:'User',       role:'coordinator', affiliateName:'ĒMA Broward'},
+  'coordinator': {firstName:'Demo',lastName:'Coordinator',role:'coordinator', affiliateName:'ĒMA Broward'},
+  'supervisor':  {firstName:'Demo',lastName:'Supervisor', role:'supervisor',  affiliateName:'ĒMA Broward'},
+  'admin':       {firstName:'Demo',lastName:'Admin',      role:'administrator',affiliateName:''},
+};
+const ROLE_LABELS = {
+  coordinator:'Coordinator',supervisor:'Supervisor',
+  administrator:'Administrator',champion:'Champion',
+};
+
+function applySession(u){
+  document.body.classList.add('logged-in');
+  var av=document.getElementById('nav-avatar');
+  var nm=document.getElementById('nav-name');
+  var rl=document.getElementById('nav-role');
+  if(nm)nm.textContent=(u.firstName||'')+' '+(u.lastName||'');
+  if(rl)rl.textContent=ROLE_LABELS[u.role]||u.role;
+  if(av)av.textContent=((u.firstName||'').charAt(0)+(u.lastName||'').charAt(0)).toUpperCase();
+  var scope=document.getElementById('nav-scope');
+  var scopeVal=document.getElementById('nav-scope-val');
+  var scopeSep=document.getElementById('nav-scope-sep');
+  if(scope&&scopeVal){
+    var isOrgWide=u.role==='administrator'||(u.role==='champion'&&!u.affiliateId);
+    scopeVal.textContent=isOrgWide?'All Affiliates':(u.affiliateName||'');
+    scope.style.display='';
+    if(scopeSep)scopeSep.style.display='';
+  }
+}
+
+(async function(){
+  try{
+    var r=await fetch('/api/me');
+    if(r.ok){
+      var d=await r.json();
+      if(d.user){applySession(d.user);return;}
+    }
+    document.body.classList.add('show-login');
+  }catch(x){document.body.classList.add('show-login');}
+})();
+
+async function doLogin(){
+  var errEl=document.getElementById('login-err');
+  errEl.className='login-err';
+  var u=document.getElementById('login-user').value.trim().toLowerCase();
+  var p=document.getElementById('login-pass').value;
+  if(DEMO_USERS[u]&&p==='demo'){applySession(DEMO_USERS[u]);return;}
+  try{
+    var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    var d=await r.json();
+    if(!r.ok){errEl.textContent=d.error||'Login failed';errEl.className='login-err show';return;}
+    var mr=await fetch('/api/me');
+    if(mr.ok){var md=await mr.json();if(md.user){applySession(md.user);return;}}
+  }catch(x){
+    errEl.textContent='API unavailable. Demo: coordinator / supervisor / admin (password: demo)';
+    errEl.className='login-err show';
+  }
+}
+
+document.getElementById('btn-signout').addEventListener('click',async function(ev){
+  ev.preventDefault();
+  try{await fetch('/api/logout',{method:'POST'});}catch(e){}
+  window.location.href='/';
+});
+document.getElementById('login-user').addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();document.getElementById('login-pass').focus();}});
+document.getElementById('login-pass').addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();doLogin();}});
+
+// Default support icon = heart (locked in 4/30/26).
+  document.body.dataset.suppIcon = 'heart';
+
+  // No drawer JS in this file – Tasha's timeline has no drawer triggers.
+</script>
+</body>
+</html>

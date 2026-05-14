@@ -2439,15 +2439,13 @@
    </div>
    <h3>Why Tracks Ended Early</h3>
    <div style="font-size:11px;color:var(--mid);margin-bottom:14px;"><span class="why-total">13</span> tracks ended without completion</div>
-   <!-- RD: The four .fr-label text values below are static. If Trellis
-        category definitions shift over time (per Cristina's 4/16 note),
-        these labels may need to become dynamic from the data payload.
-        For now they map to these payload fields in document order:
+   <!-- Payload mapping per Cristina's Fix 2 spec (5/14/26):
           [0] Track Requirements Unmet  → incomplete_priorities_shifted
-          [1] Client Choice             → incomplete_no_advocate (VERIFY)
-          [2] Relocated                 → incomplete_achieved_outcomes
-          [3] Other                     → (not in expanded data)
-        See also the hydration comment block in the main script. -->
+          [1] Client Choice             → incomplete_achieved_outcomes
+          [2] Relocated                 → incomplete_extended_wait  (semantic mismatch flagged by Cristina; pending DB confirmation)
+          [3] Other                     → synthesized as panel total − known three
+          DNI (incomplete_no_advocate) is excluded from this panel entirely.
+        See hydration block in main script. -->
    <div class="funnel-row">
     <span class="fr-label"><strong>Track Requirements Unmet</strong></span>
     <div class="fr-bar-wrap" title="6 tracks">
@@ -3894,6 +3892,23 @@
    var totalClosed = totalCompleted + totalIncomplete;
    var completionPct = totalClosed > 0 ? Math.round(totalCompleted / totalClosed * 100) : 0;
 
+   // MECE integrity check per Cristina's Fix 2 spec:
+   //   complete + incomplete (excl DNI) + DNI must equal all closed pairings in period.
+   //   Mismatch indicates pairings with pairing_complete status but neither
+   //   complete_reason nor incomplete_reason set (data-entry gaps).
+   if (tce.total_closed_all != null) {
+    var meceSum = totalCompleted + totalIncomplete + (tce.incomplete_no_advocate || 0);
+    if (meceSum !== tce.total_closed_all) {
+     console.warn('[MECE] Track buckets do not reconcile:',
+       'complete=' + totalCompleted,
+       'incomplete(excl DNI)=' + totalIncomplete,
+       'DNI=' + (tce.incomplete_no_advocate || 0),
+       'sum=' + meceSum,
+       'total_closed_all=' + tce.total_closed_all,
+       'diff=' + (tce.total_closed_all - meceSum) + ' unclassified pairings');
+    }
+   }
+
    // ── Headline: "18" → total completions
    //    + Completion Rate hero ("58%") + context ("18 of 31")
    //    Uses data-hydrate hooks added 4/23/26 (was targeting an SVG gauge
@@ -4136,65 +4151,32 @@
 
    // ── Why Tracks Ended Early panel
    //
-   // ⚠ STRUCTURE CHANGED 4/23/26 (V1 merge):
-   //   Did Not Initiate Sessions was removed from this panel and is now
-   //   surfaced in the intake-to-track funnel (Tab 1 Mothers Q1 Activity)
-   //   plus in the popovers on this panel and the Completion Rate card.
-   //   The panel now has 5 .fr-val spans (4 reasons + 1 hidden total span),
-   //   not 6. The check below (length >= 6) currently no-ops as a result.
-   //
-   //   Remap applied below.
-   //
-   //   ALSO: per memory note, payload field for DNI is incomplete_no_advocate
-   //   (RD legacy name). If your incomplete_no_advocate field is the DNI
-   //   count, then the Client Choice mapping needs a different field.
-   //   Worth confirming the canonical field-to-label mapping before wiring.
+   // Mapping per Cristina's Fix 2 spec (5/14/26):
+   //   [0] Track Requirements Unmet → incomplete_priorities_shifted
+   //   [1] Client Choice            → incomplete_achieved_outcomes
+   //   [2] Relocated                → incomplete_extended_wait  (semantic mismatch; pending DB confirmation)
+   //   [3] Other                    → synthesized remainder
+   //   DNI (incomplete_no_advocate) excluded — surfaces in intake-to-track funnel only.
    for (var wi = 0; wi < completionPanels.length; wi++) {
     var wh3 = completionPanels[wi].querySelector('h3');
     if (wh3 && wh3.textContent.indexOf('Why Tracks Ended') !== -1) {
      var frVals = completionPanels[wi].querySelectorAll('.fr-val');
-     // Post DNI-removal: 5 spans (4 reasons + 1 hidden total).
-     //
-     // ⚠ Client Choice (frVals[1]) is intentionally NOT hydrated.
-     //    Per memory, the only available "incomplete_*" field that could
-     //    plausibly map to Client Choice is `incomplete_no_advocate` -
-     //    which is the DNI payload field. DNI is supposed to be excluded
-     //    from this panel entirely. Wiring it to Client Choice would
-     //    surface DNI cases under a wrong label and contradict the
-     //    panel's own "Did Not Initiate Sessions excluded" subtitle.
-     //
-     //    Until RD provides the correct payload field for Client Choice
-     //    exits, this cell stays at its static demo value. A console
-     //    warning fires when payload arrives so the gap stays visible.
-     // RD 4/25/26 (item #15): Cristina's spec — DNI (incomplete_no_advocate)
-     // is EXCLUDED from this panel entirely. "A mom can't fail to complete
-     // a track she never started." DNI surfaces in intake-to-track funnel.
-     // Client Choice cell stays at 0 since no Trellis enum maps to it
-     // (per Cristina's notes, the assumed mapping to incomplete_no_advocate
-     // was wrong — that field IS the DNI count).
-     var dniN = tce.incomplete_no_advocate || 0;
      // tce.total_incompletes already excludes no_advocate (DNI) on the backend.
-     // Use it directly — do NOT subtract dniN again.
      var panelIncomplete = totalIncomplete;
+     var requnmetN     = tce.incomplete_priorities_shifted || 0;
+     var clientchoiceN = tce.incomplete_achieved_outcomes  || 0;
+     var relocatedN    = tce.incomplete_extended_wait      || 0;
+     var otherN        = Math.max(0, panelIncomplete - requnmetN - clientchoiceN - relocatedN);
      if (frVals.length >= 5) {
-      if (tce.incomplete_priorities_shifted != null) {
-       frVals[0].textContent = tce.incomplete_priorities_shifted; // Track Requirements Unmet
-      }
-      frVals[1].textContent = 0;                                  // Client Choice — no Trellis enum maps here yet
-      if (tce.incomplete_achieved_outcomes != null) {
-       frVals[2].textContent = tce.incomplete_achieved_outcomes;  // Relocated
-      }
-      // frVals[3] = Other (synthesized below)
-      frVals[4].textContent = panelIncomplete;                    // Hidden total span (DNI-excluded)
+      frVals[0].textContent = requnmetN;       // Track Requirements Unmet
+      frVals[1].textContent = clientchoiceN;   // Client Choice
+      frVals[2].textContent = relocatedN;      // Relocated
+      // frVals[3] = Other (set below)
+      frVals[4].textContent = panelIncomplete; // Hidden total span (DNI-excluded)
      }
      // ── Compute and write fr-pct labels + bar widths (DNI-excluded denominator)
      var wPanel = completionPanels[wi];
      var pctW = function(n) { return panelIncomplete > 0 ? Math.round((n / panelIncomplete) * 100) + '%' : '0%'; };
-     var requnmetN     = tce.incomplete_priorities_shifted || 0;
-     var clientchoiceN = 0;  // Cristina's note: no Trellis enum maps here. DNI was wrong assumption.
-     var relocatedN    = tce.incomplete_achieved_outcomes || 0;
-     // Other = remainder (DNI-excluded total minus the three known)
-     var otherN = Math.max(0, panelIncomplete - requnmetN - clientchoiceN - relocatedN);
      var setWHY = function(key, val) {
       var el = wPanel.querySelector('[data-hydrate="' + key + '"]');
       if (el) el.textContent = val;
@@ -4693,9 +4675,13 @@
        else if (lt.indexOf('without support') !== -1) frVal.textContent = tce.completed_without_support_sessions || 0;
        else if (lt.indexOf('without post') !== -1) frVal.textContent = tce.completed_without_post_assessment || 0;
        else if (lt.indexOf('total completions') !== -1) frVal.textContent = tce.total_completions || 0;
-       else if (lt.indexOf('requirements unmet') !== -1 || lt.indexOf('achieved outcome') !== -1) frVal.textContent = tce.incomplete_achieved_outcomes || 0;
-       else if (lt.indexOf('client choice') !== -1 || lt.indexOf('priorities shifted') !== -1) frVal.textContent = tce.incomplete_priorities_shifted || 0;
-       else if (lt.indexOf('relocated') !== -1 || lt.indexOf('extended wait') !== -1) frVal.textContent = tce.incomplete_extended_wait || 0;
+       // Per Cristina's Fix 2 spec (5/14/26):
+       //   priorities_shifted → Track Requirements Unmet
+       //   achieved_outcomes  → Client Choice
+       //   extended_wait      → Relocated (semantic mismatch flagged; pending DB confirmation)
+       else if (lt.indexOf('requirements unmet') !== -1) frVal.textContent = tce.incomplete_priorities_shifted || 0;
+       else if (lt.indexOf('client choice') !== -1) frVal.textContent = tce.incomplete_achieved_outcomes || 0;
+       else if (lt.indexOf('relocated') !== -1) frVal.textContent = tce.incomplete_extended_wait || 0;
        // DNI (incomplete_no_advocate) explicitly NOT mapped here — it has been
        // removed from the Track Completions tab entirely (RD 4/30/26).
        // DNI lives only on Referral Sources → Referral Outcomes.
@@ -4720,9 +4706,11 @@
      if (cpH3b && cpH3b.textContent.indexOf('Incomplete Reasons') !== -1) {
       // tce.total_incompletes already excludes no_advocate (DNI) on the backend.
       var totalInc = tce.total_incompletes || 0;
+      // Per Cristina's Fix 2 spec (5/14/26): priorities_shifted → Requirements Unmet,
+      // achieved_outcomes → Client Choice, extended_wait → Relocated.
       var reasons = [
-       { label: 'Track Requirements Unmet', val: tce.incomplete_achieved_outcomes || 0, color: 'var(--red)', opacity: '0.75' },
-       { label: 'Client Choice', val: tce.incomplete_priorities_shifted || 0, color: 'var(--yellow)', opacity: '1' },
+       { label: 'Track Requirements Unmet', val: tce.incomplete_priorities_shifted || 0, color: 'var(--red)', opacity: '0.75' },
+       { label: 'Client Choice', val: tce.incomplete_achieved_outcomes || 0, color: 'var(--yellow)', opacity: '1' },
        { label: 'Relocated', val: tce.incomplete_extended_wait || 0, color: 'var(--mid)', opacity: '0.5' }
       ];
       var knownInc = reasons.reduce(function(a, r) { return a + r.val; }, 0);

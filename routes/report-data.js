@@ -740,6 +740,7 @@ router.get('/', async (req, res) => {
           JOIN post_assessment pa ON pa.pairing_id = qp.pairing_id
         )
         SELECT
+          (SELECT COUNT(*)::int FROM q1_pairings)                                                  AS total_closed_all,
           (SELECT COUNT(*)::int FROM q1_pairings WHERE complete_reason IS NOT NULL)   AS total_completions,
           (SELECT COUNT(*)::int FROM q1_pairings WHERE incomplete_reason IS NOT NULL AND incomplete_reason != 'no_advocate') AS total_incompletes,
           (SELECT COUNT(*)::int FROM bucketed WHERE bucket = 'full_track')      AS completed_full_track,

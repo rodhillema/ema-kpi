@@ -293,11 +293,19 @@ if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
 if(r)r.textContent=L[u.role]||u.role;
 if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
 if(w)w.textContent="Welcome back, "+(u.firstName||"");
-// Champion Management visibility: gated to specific usernames (not all admins)
-var CHAMPION_MGMT_ALLOWED=["rd.hill"];
+// Champion Management visibility: gated to specific usernames (not all admins).
+// Whitelisted users see the link AND the wrapping Standards & Admin section even
+// when their role is not administrator (e.g. cristina.galloway = supervisor).
+var CHAMPION_MGMT_ALLOWED=["rd.hill","cristina.galloway"];
 var champLink=document.getElementById("championMgmtLink");
-if(champLink&&!CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
-  champLink.style.display="none";
+if(champLink){
+  if(CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
+    champLink.style.display="flex";
+    var secAdmin=champLink.closest(".sec-admin");
+    if(secAdmin)secAdmin.style.display="block";
+  } else {
+    champLink.style.display="none";
+  }
 }
 // Affiliate scope display
 var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");

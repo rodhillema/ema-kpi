@@ -76,9 +76,9 @@ body.logged-in .portal-view{display:flex}
 
 
 /* ── Track Journey: info rows + selectors ── */
-.tj-info{background:var(--white);padding:14px 26px 16px;margin:0 -26px 20px;display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--border)}
-.tj-row1{display:flex;align-items:center;gap:0;padding-bottom:12px;flex-wrap:wrap}
-.tj-row2{display:flex;align-items:center;gap:0;padding:12px 0 0;border-top:1px solid var(--border);flex-wrap:wrap}
+.tj-info{background:var(--white);margin:0 -26px 20px;border-bottom:1px solid var(--border)}
+.tj-row1{display:flex;align-items:center;gap:0;padding:14px 26px 12px;flex-wrap:wrap;max-width:1232px;margin:0 auto;box-sizing:border-box}
+.tj-row2{display:flex;align-items:center;gap:0;padding:12px 26px 16px;border-top:1px solid var(--border);flex-wrap:wrap;max-width:1232px;margin:0 auto;box-sizing:border-box}
 .tj-title-block{display:flex;flex-direction:column;gap:2px}
 .tj-name{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark);font-weight:400}
 .tj-sub{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid)}
@@ -2731,9 +2731,6 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
               <option value="">All Affiliates</option>
             </select>
           </div>
-          <div class="rh-fresh" tabindex="0">Live
-            <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
-          </div>
           <!-- Searchable mom picker -->
           <div class="tj-sel-group">
             <span class="tj-sel-lbl">Mom</span>
@@ -2751,6 +2748,9 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
               <option id="sel-track-opt">—</option>
             </select>
           </div>
+          <div class="rh-fresh" tabindex="0">Live
+            <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
+          </div>
         </div>
       </div>
 
@@ -2760,6 +2760,8 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
           <div class="pb-block"><span class="pb-lbl">Mom</span><span class="pb-val" id="pb-mom">—</span></div>
           <div class="pb-divider"></div>
           <div class="pb-block"><span class="pb-lbl">Track</span><span class="pb-val" id="pb-track">—</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Program Status</span><span class="pb-val" id="pb-status">—</span></div>
           <span class="pb-flag" id="pb-stall-flag" style="margin-left:auto;display:none;"></span>
         </div>
         <div class="tj-row2">
@@ -2945,7 +2947,7 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 // ── Auth / session ────────────────────────────────────────────────────────────
 var ROLE_LABELS = {
   coordinator:'Coordinator', supervisor:'Supervisor',
-  administrator:'Administrator', staff_advocate:'Staff Advocate',
+  administrator:'HQ Admin', staff_advocate:'Staff Advocate',
   champion:'Champion',
 };
 
@@ -2961,14 +2963,10 @@ function applySession(u) {
   var scopeVal = document.getElementById('nav-scope-val');
   var scopeSep = document.getElementById('nav-scope-sep');
   if (scope && scopeVal) {
-    if (u.role === 'administrator' || u.role === 'champion' || u.isOrgWide) {
-      scope.style.display = 'none';
-      if (scopeSep) scopeSep.style.display = 'none';
-    } else {
-      scope.style.display = '';
-      if (scopeSep) scopeSep.style.display = '';
-      scopeVal.textContent = u.affiliateName || '';
-    }
+    var isOrgWide = u.role === 'administrator' || (u.role === 'champion' && !u.affiliateId) || !!u.isOrgWide;
+    scopeVal.textContent = isOrgWide ? 'All Affiliates' : (u.affiliateName || '');
+    scope.style.display = '';
+    if (scopeSep) scopeSep.style.display = '';
   }
 }
 
@@ -3213,7 +3211,25 @@ function renderJourney(data) {
   document.getElementById('pb-advocate').textContent = pairing.advocateName || '—';
   document.getElementById('pb-coord').textContent    = pairing.coordinatorName || '—';
 
-  var winStart  = new Date(pairing.startDate);
+  // Program Status — derived from pairing status
+  var statusMap = {
+    'paired': 'In Track',
+    'pairing_complete': 'Track Complete',
+    'waiting_to_be_paired': 'Waiting To Be Paired'
+  };
+  var pbStatus = document.getElementById('pb-status');
+  if (pbStatus) {
+    pbStatus.textContent = statusMap[pairing.status] || (pairing.status ? pairing.status.replace(/_/g,' ').replace(/\b\w/g, function(c){return c.toUpperCase();}) : '—');
+  }
+
+  // Timeline window — start at the earliest event date so off-window milestones
+  // (e.g. pre-assessment dated before the pairing) stay visible inside the chart.
+  var candidateStarts = [new Date(pairing.startDate)];
+  if (assessments && assessments.pre && assessments.pre.date) candidateStarts.push(new Date(assessments.pre.date));
+  if (sessions && sessions.length) {
+    sessions.forEach(function(s){ if (s.date) candidateStarts.push(new Date(s.date)); });
+  }
+  var winStart  = new Date(Math.min.apply(null, candidateStarts.map(function(d){return d.getTime();})));
   var winEnd    = pairing.endDate ? new Date(pairing.endDate) : new Date();
   var totalDays = daysBetween(winStart, winEnd);
   var weeks     = Math.round(totalDays / 7);
@@ -3497,21 +3513,38 @@ function renderDetail(pairing, sessions, assessments) {
 
   // Assessment detail panel
   var ac = document.getElementById('assess-container');
-  var styles = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--mid);padding-top:8px;line-height:1.6;';
-  if (!assessments.pre) {
-    ac.innerHTML = '<div style="' + styles + '">No pre-assessment on file for this pairing.</div>';
-  } else if (!assessments.post) {
-    ac.innerHTML =
-      '<div style="' + styles + '">'
-      + 'Pre-assessment · ' + fmtDate(assessments.pre.date) + '<br>'
-      + '<span style="display:block;margin-top:4px;">Post-assessment pending.</span>'
-      + '</div>';
+  var styles     = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:8px;line-height:1.6;';
+  var subStyles  = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
+  var lblStyles  = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
+
+  function renderAsmt(a, kind) {
+    if (!a) {
+      return '<div style="' + subStyles + 'font-style:italic;">' + kind + '-assessment pending.</div>';
+    }
+    var out = '<div style="margin-bottom:10px;">';
+    out += '<div style="' + lblStyles + '">' + kind + '-Assessment</div>';
+    out += '<div style="' + styles + '">' + (a.name || 'Assessment') + '</div>';
+    out += '<div style="' + subStyles + '">Completed ' + fmtDate(a.date) + '</div>';
+    if (a.totalScore != null) {
+      var q = (a.questionsAnswered != null && a.questionsAnswered > 0)
+        ? ' &nbsp;·&nbsp; ' + a.questionsAnswered + ' question' + (a.questionsAnswered === 1 ? '' : 's')
+        : '';
+      out += '<div style="' + subStyles + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+    }
+    if (a.constructs) {
+      var ks = ['A','B','C','D','E'].map(function(k){
+        return a.constructs[k] != null ? k + ': ' + a.constructs[k] : null;
+      }).filter(Boolean).join(' &nbsp;·&nbsp; ');
+      if (ks) out += '<div style="' + subStyles + 'margin-top:2px;">' + ks + '</div>';
+    }
+    out += '</div>';
+    return out;
+  }
+
+  if (!assessments.pre && !assessments.post) {
+    ac.innerHTML = '<div style="' + subStyles + 'padding-top:8px;">No assessment data on file for this pairing.</div>';
   } else {
-    ac.innerHTML =
-      '<div style="' + styles + 'color:var(--dark);">'
-      + 'Pre · ' + fmtDate(assessments.pre.date) + '<br>'
-      + 'Post · ' + fmtDate(assessments.post.date)
-      + '</div>';
+    ac.innerHTML = renderAsmt(assessments.pre, 'Pre') + renderAsmt(assessments.post, 'Post');
   }
 }
 

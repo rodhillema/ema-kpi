@@ -157,6 +157,123 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
   }
 });
 
+// GET /api/track-journey/debug/sessions?mom=<momId>
+// Admin-only diagnostic — dumps Session schema + every Session row reachable
+// from a mom via her pairings, plus her pairings' AdvocacyGroup links.
+// Used to diagnose group-delivered tracks where pairing_id may be null on
+// the Session row.
+router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
+  try {
+    const { role, username } = req.session.user;
+    const isAllowed = ORG_WIDE_ROLES.includes(role)
+      || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
+    if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
+
+    const momId = req.query.mom;
+    if (!momId) return res.status(400).json({ error: 'mom query param required' });
+
+    const out = {};
+
+    // 1. Session column list
+    const { rows: cols } = await pool.query(`
+      SELECT column_name, data_type
+        FROM information_schema.columns
+       WHERE table_name = 'Session'
+       ORDER BY ordinal_position
+    `);
+    out.sessionColumns = cols;
+
+    // 2. Mom's pairings (with group link if present)
+    const { rows: pairings } = await pool.query(`
+      SELECT p."id", p."status"::text AS status, p."created_at" AS "startDate",
+             p."completed_on" AS "endDate", p."advocateUserId",
+             p."trackId", t."title" AS "trackTitle",
+             p."advocacyGroupId"
+        FROM "Pairing" p
+        LEFT JOIN "Track" t ON t."id" = p."trackId"
+       WHERE p."momId" = $1 AND p."deleted_at" = 0
+       ORDER BY p."created_at" DESC
+    `, [momId]);
+    out.pairings = pairings;
+
+    // 3. Sessions by pairing_id for each pairing
+    out.sessionsByPairing = {};
+    for (const p of pairings) {
+      const { rows } = await pool.query(`
+        SELECT s."id", s."date_start" AS date, s."status"::text AS status,
+               s."session_type"::text AS type, s."pairing_id", s."deleted_at"
+          FROM "Session" s
+         WHERE s."pairing_id" = $1
+         ORDER BY s."date_start"
+      `, [p.id]);
+      out.sessionsByPairing[p.id] = rows;
+    }
+
+    // 4. Sessions by advocacy_group_id (if column exists) for each pairing's group
+    const hasGroupCol = cols.some(c => c.column_name === 'advocacy_group_id');
+    out.hasAdvocacyGroupIdOnSession = hasGroupCol;
+    out.sessionsByGroup = {};
+    if (hasGroupCol) {
+      for (const p of pairings) {
+        if (!p.advocacyGroupId) continue;
+        const { rows } = await pool.query(`
+          SELECT s."id", s."date_start" AS date, s."status"::text AS status,
+                 s."session_type"::text AS type, s."pairing_id",
+                 s."advocacy_group_id", s."deleted_at"
+            FROM "Session" s
+           WHERE s."advocacy_group_id" = $1
+           ORDER BY s."date_start"
+        `, [p.advocacyGroupId]);
+        out.sessionsByGroup[p.advocacyGroupId] = rows;
+      }
+    }
+
+    // 5. Find Vital Support / Needs table — Trellis surfaces this as
+    //    /vital-support with need_type, status, urgent, context_for_need.
+    //    Probe likely table names and capture columns + sample row for this mom.
+    const candidateTables = ['Need','VitalSupport','VitalSupportNeed','MomNeed','SupportNeed','VitalNeed','Needs'];
+    out.vitalSupportProbe = {};
+    for (const tbl of candidateTables) {
+      try {
+        const { rows: tcols } = await pool.query(`
+          SELECT column_name, data_type
+            FROM information_schema.columns
+           WHERE table_name = $1
+           ORDER BY ordinal_position
+        `, [tbl]);
+        if (!tcols.length) continue;
+        out.vitalSupportProbe[tbl] = { columns: tcols };
+
+        // Try to fetch rows for this mom — guess at the mom-FK column name.
+        const momFkCol = tcols.find(c => /mom/i.test(c.column_name))?.column_name;
+        if (momFkCol) {
+          const { rows: tRows } = await pool.query(
+            `SELECT * FROM "${tbl}" WHERE "${momFkCol}" = $1 LIMIT 5`,
+            [momId]
+          );
+          out.vitalSupportProbe[tbl].sampleRows = tRows;
+          out.vitalSupportProbe[tbl].momFkColumn = momFkCol;
+        }
+      } catch (_) { /* table doesn't exist — skip */ }
+    }
+
+    // 6. Also scan for any table whose name contains vital/need
+    const { rows: matchTables } = await pool.query(`
+      SELECT table_name
+        FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND (table_name ILIKE '%vital%' OR table_name ILIKE '%need%' OR table_name ILIKE '%support%')
+       ORDER BY table_name
+    `);
+    out.vitalLikeTables = matchTables.map(r => r.table_name);
+
+    res.json(out);
+  } catch (err) {
+    console.error('[track-journey] /debug/sessions error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/track-journey/:pairingId — full journey data for one pairing
 router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
   try {

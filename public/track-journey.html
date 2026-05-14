@@ -3303,7 +3303,7 @@ function renderJourney(data) {
     stallFlag.className     = 'pb-flag pb-flag-stall';
     var label = pairing.currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'Stalled';
     stallFlag.textContent   = label + ' · ' + pairing.currentStall.days + 'd — click for detail';
-    stallFlag.onclick       = function() { openStallDrawer(); };
+    stallFlag.onclick       = function() { openStallDrawer(null); };
   } else {
     stallFlag.style.display = 'none';
     stallFlag.onclick       = null;
@@ -3343,10 +3343,10 @@ function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd
     var lbl = s.type === 'curriculum' ? 'Curriculum Stall'
             : s.isActive              ? '⚠ Stalled'
             : 'General Stall';
-    if (s.isActive) {
-      el.style.cursor = 'pointer';
-      el.onclick = function(e) { e.stopPropagation(); openStallDrawer(); };
-    }
+    el.style.cursor = 'pointer';
+    (function(stall) {
+      el.onclick = function(e) { e.stopPropagation(); openStallDrawer(stall); };
+    })(s);
     el.innerHTML =
       '<span class="stall-band-label">' + lbl + ' · ' + s.days + 'd</span>'
       + '<div class="mark-tip">'
@@ -3613,22 +3613,30 @@ function renderDetail(pairing, sessions, assessments) {
 
 // ── Stall Drawer ─────────────────────────────────────────────────────────────
 
-function openStallDrawer() {
+function openStallDrawer(clickedStall) {
   var data = CURRENT_JOURNEY_DATA;
-  if (!data || !data.pairing.currentStall) return;
+  if (!data || !data.pairing) return;
 
   var pairing          = data.pairing;
   var sessions         = data.sessions || [];
   var stalls           = data.stalls   || [];
   var notes            = data.coordinatorNotes || [];
-  var currentStall     = pairing.currentStall;
 
-  // Find the active stall band to know its start date
-  var activeStallBand  = null;
-  for (var i = stalls.length - 1; i >= 0; i--) {
-    if (stalls[i].isActive) { activeStallBand = stalls[i]; break; }
+  // Prefer the clicked stall band; else fall back to most-recent active band;
+  // else fall back to pairing.currentStall (header badge); else nothing to show.
+  var stallBand = clickedStall || null;
+  if (!stallBand) {
+    for (var i = stalls.length - 1; i >= 0; i--) {
+      if (stalls[i].isActive) { stallBand = stalls[i]; break; }
+    }
   }
-  var stallStart = activeStallBand ? new Date(activeStallBand.startDate) : null;
+  if (!stallBand && stalls.length) stallBand = stalls[stalls.length - 1];
+  if (!stallBand && !pairing.currentStall) return;
+
+  var currentStall = stallBand
+    ? { type: stallBand.type, days: stallBand.days }
+    : pairing.currentStall;
+  var stallStart = stallBand ? new Date(stallBand.startDate) : null;
 
   // Last held session of any type
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });

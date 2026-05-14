@@ -82,10 +82,15 @@ async function login(req, res) {
         const grant = grantResult.rows[0] || null;
         const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
 
+        // Qualifying Trellis roles take precedence over a ChampionAccess grant.
+        // The grant is only for advocate-level users who need elevated Hub access.
+        const QUALIFYING_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator'];
+        const hasQualifyingRole = QUALIFYING_ROLES.includes(roleKey);
+
         if (isWhitelisted || ALLOWED_ROLES.includes(roleKey) || grant) {
-          const role = grant ? 'champion' : roleKey;
-          const affiliateId = grant ? grant.affiliateId : user.affiliateId;
-          const affiliateName = grant ? grant.affiliateName : user.affiliateName;
+          const role = hasQualifyingRole ? roleKey : (grant ? 'champion' : roleKey);
+          const affiliateId = hasQualifyingRole ? user.affiliateId : (grant ? grant.affiliateId : user.affiliateId);
+          const affiliateName = hasQualifyingRole ? user.affiliateName : (grant ? grant.affiliateName : user.affiliateName);
 
           req.session.user = {
             id: user.id,

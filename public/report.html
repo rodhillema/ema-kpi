@@ -627,6 +627,7 @@
   .hc-status.above .hcs-pill { background: var(--green-light); color: var(--green); }
   .hc-status.close .hcs-pill { background: var(--yellow-light); color: #b8791e; }
   .hc-status.below .hcs-pill { background: var(--red-light); color: var(--red-dark); }
+  .hc-status.pending .hcs-pill { background: var(--light); color: var(--mid); border: 1px solid var(--border); }
 
   /* HERO GRIDS */
   .hero-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -3515,11 +3516,21 @@
    if (k1.numerator != null)   setH1('kpi1-num', k1.numerator);
    if (k1.denominator != null) setH1('kpi1-den', k1.denominator);
    if (k1.excluded != null)    setH1('kpi1-excl', k1.excluded);
-   if (k2.rate != null) setH1('kpi2-rate', Math.round(k2.rate) + '%');
+   if (k2.rate != null) {
+     setH1('kpi2-rate', Math.round(k2.rate) + '%');
+   } else {
+     var k2RateEl = tab1.querySelector('[data-hydrate="kpi2-rate"]');
+     if (k2RateEl) k2RateEl.textContent = '—';
+   }
    if (k2.numerator != null)   setH1('kpi2-num', k2.numerator);
    if (k2.denominator != null) setH1('kpi2-den', k2.denominator);
    if (k2.excluded != null)    setH1('kpi2-excl', k2.excluded);
-   if (k3.rate != null) setH1('kpi3-rate', Math.round(k3.rate) + '%');
+   if (k3.rate != null) {
+     setH1('kpi3-rate', Math.round(k3.rate) + '%');
+   } else {
+     var k3RateEl = tab1.querySelector('[data-hydrate="kpi3-rate"]');
+     if (k3RateEl) k3RateEl.textContent = '—';
+   }
    if (k3.numerator != null)   setH1('kpi3-num', k3.numerator);
    if (k3.denominator != null) setH1('kpi3-den', k3.denominator);
 
@@ -3531,7 +3542,14 @@
    //   Rate == target reads as "on target" (green pill).
    function updateKpiPill(key, rate, target) {
      var pill = document.querySelector('[data-hydrate="' + key + '-status"]');
-     if (!pill || rate == null || target == null) return;
+     if (!pill) return;
+     pill.classList.remove('above', 'close', 'below', 'pending');
+     if (rate == null) {
+       pill.classList.add('pending');
+       var pendingEl = pill.querySelector('.hcs-pill');
+       if (pendingEl) pendingEl.innerHTML = 'Data Pending';
+       return;
+     }
      var delta = rate - target;
      var absDelta = Math.abs(Math.round(delta));
      var cls, arrow, text;
@@ -3548,7 +3566,6 @@
        arrow = '\u2193';
        text = absDelta + 'pt below target';
      }
-     pill.classList.remove('above', 'close', 'below');
      pill.classList.add(cls);
      var pillEl = pill.querySelector('.hcs-pill');
      if (pillEl) {

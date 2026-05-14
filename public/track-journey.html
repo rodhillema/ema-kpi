@@ -3210,7 +3210,20 @@ async function selectMom(p) {
   document.getElementById('mom-search-input').value = p.momName;
   closeMomList();
   try {
-    var data = await fetch('/api/track-journey/' + p.pairingId).then(function(r){ return r.json(); });
+    var res = await fetch('/api/track-journey/' + p.pairingId);
+    if (!res.ok) {
+      console.error('[track-journey] /:pairingId returned HTTP ' + res.status);
+      var errBody = await res.text().catch(function(){ return ''; });
+      if (errBody) console.error('[track-journey] body:', errBody);
+      alert('Could not load journey (HTTP ' + res.status + '). Check console for detail.');
+      return;
+    }
+    var data = await res.json();
+    if (!data || !data.pairing) {
+      console.error('[track-journey] /:pairingId returned malformed payload:', data);
+      alert('Could not load journey (malformed response). Check console.');
+      return;
+    }
     renderJourney(data);
   } catch (e) {
     console.error('Failed to load pairing', e);
@@ -3697,8 +3710,10 @@ function openStallDrawer() {
 }
 
 function closeStallDrawer() {
-  document.getElementById('stall-drawer').classList.remove('open');
-  document.getElementById('stall-overlay').classList.remove('show');
+  var d = document.getElementById('stall-drawer');
+  var o = document.getElementById('stall-overlay');
+  if (d) d.classList.remove('open');
+  if (o) o.classList.remove('show');
 }
 
 document.addEventListener('keydown', function(e) {

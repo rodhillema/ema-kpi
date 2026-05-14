@@ -2967,7 +2967,12 @@ function applySession(u) {
 async function checkSession() {
   try {
     var r = await fetch('/api/me');
-    if (r.ok) { var u = await r.json(); applySession(u); return u; }
+    if (r.ok) {
+      var data = await r.json();
+      var u = data.user || data;  // /api/me wraps in {user:...}
+      applySession(u);
+      return u;
+    }
   } catch (e) {}
   return null;
 }
@@ -2983,9 +2988,8 @@ async function doLogin() {
       body: JSON.stringify({username:u, password:p})
     });
     if (r.ok) {
-      var user = await r.json();
-      applySession(user);
-      await init();
+      var user = await checkSession();  // fetch full session (includes isOrgWide)
+      if (user) { CURRENT_USER = user; await init(); }
     } else {
       var d = await r.json().catch(function(){ return {error:'Login failed'}; });
       errEl.textContent = d.error || 'Login failed';

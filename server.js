@@ -103,6 +103,14 @@ app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname,
 app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mom-status-report.html')));
 app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user-report.html')));
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
+app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-pre.html')));
+app.get('/track-journey/post-demo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-post.html')));
+app.get('/track-journey/empty-demo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey-pre-empty.html')));
+
+// Startup migrations — idempotent ALTER TABLE statements for new columns
+pool.query(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "availability" text`)
+  .then(() => console.log('[startup] User.availability column ready'))
+  .catch(err => console.error('[startup] User.availability migration error:', err.message));
 
 app.listen(PORT, () => {
   console.log(`ĒMA KPI Dashboard running on port ${PORT}`);

@@ -79,6 +79,7 @@ router.get('/', async (req, res) => {
         u."created_at",
         u."updated_at",
         u."affiliateId",
+        u."availability",
         lnc."coordFirstName",
         lnc."coordLastName",
         (SELECT COUNT(*)::int FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."deleted_at" = 0) AS "totalPairings",
@@ -129,7 +130,14 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
-        ) AS "lastHeldSessionAt"
+        ) AS "lastHeldSessionAt",
+        (
+          SELECT MAX(s."date_start") FROM "Session" s
+          WHERE s."pairing_id" = p."id"
+            AND s."deleted_at" = 0
+            AND s."status"::text = 'Held'
+            AND s."session_type"::text = 'Track_Session'
+        ) AS "lastHeldTrackSessionAt"
       FROM "Pairing" p
       LEFT JOIN "Mom" m ON m."id" = p."momId"
       LEFT JOIN "Track" t ON t."id" = p."trackId"
@@ -279,7 +287,13 @@ router.get('/', async (req, res) => {
       const outcome = mapOutcome(p.status);
       const isActive = outcome === 'active';
       const daysSinceHeld = daysSince(p.lastHeldSessionAt);
-      const stalled = isActive && daysSinceHeld != null && daysSinceHeld > 14;
+      const daysSinceTrack = daysSince(p.lastHeldTrackSessionAt);
+      // Communication stall: no held session of any type in 14 days
+      const commStall = isActive && (daysSinceHeld == null || daysSinceHeld > 14);
+      // Curriculum stall: no held Track_Session in 30 days
+      const currStall = isActive && (daysSinceTrack == null || daysSinceTrack > 30);
+      const stalled = commStall || currStall;
+      const stall_type = currStall ? 'curriculum' : (commStall ? 'communication' : null);
       pairingsByAdvocate[p.advocateUserId].push({
         mom: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim() || 'Unknown',
         type: p.trackTitle || '1:1',
@@ -287,6 +301,7 @@ router.get('/', async (req, res) => {
         end: p.endDate ? fmtDate(p.endDate) : 'ongoing',
         outcome,
         stalled,
+        stall_type,
         // Keep original for back-compat
         momName: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim(),
         status: p.status,
@@ -390,6 +405,7 @@ router.get('/', async (req, res) => {
         subStatusSince: r.updated_at || null,
         latestNoteDate: r.latestNoteDate || null,
         latestNote: r.latestNote || null,
+        availability: r.availability || null,
         pairings: pairingsByAdvocate[r.id] || [],
         contactLog: contactLogByAdvocate[r.id] || [],
       };
@@ -399,6 +415,25 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Error fetching advocates:', err);
     res.status(500).json({ error: 'Failed to fetch advocates' });
+  }
+});
+
+// POST /api/advocates/:id/availability — save availability text for an advocate
+router.post('/:id/availability', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { availability } = req.body;
+    if (typeof availability !== 'string' && availability !== null) {
+      return res.status(400).json({ error: 'availability must be a string or null' });
+    }
+    await pool.query(
+      `UPDATE "User" SET "availability" = $1 WHERE "id" = $2 AND "deleted_at" = 0`,
+      [availability ?? null, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving availability:', err);
+    res.status(500).json({ error: 'Failed to save availability' });
   }
 });
 

@@ -28,17 +28,8 @@ router.get('/', async (req, res) => {
     const ORG_WIDE_USERNAMES = ['cristina.galloway'];
     const isOrgWide = role === 'administrator' || ORG_WIDE_USERNAMES.includes((user.username || '').toLowerCase());
 
-    if (!isOrgWide && role === 'coordinator') {
-      // Coordinator sees all moms in their affiliate.
-      // Frontend "My Moms" button further narrows to moms they're assigned to.
-      conditions.push(`m."affiliate_id" = $${paramIdx}`);
-      params.push(user.affiliateId);
-      paramIdx++;
-    } else if (role === 'supervisor' || role === 'staff_advocate') {
-      conditions.push(`m."affiliate_id" = $${paramIdx}`);
-      params.push(user.affiliateId);
-      paramIdx++;
-    } else if (isOrgWide) {
+    if (isOrgWide) {
+      // Org-wide users — optional filter via query param
       if (req.query.exclude_affiliate_id) {
         conditions.push(`m."affiliate_id" != $${paramIdx}`);
         params.push(req.query.exclude_affiliate_id);
@@ -48,6 +39,11 @@ router.get('/', async (req, res) => {
         params.push(req.query.affiliate_id);
         paramIdx++;
       }
+    } else if (role === 'coordinator' || role === 'supervisor' || role === 'staff_advocate') {
+      // Affiliate-scoped staff roles
+      conditions.push(`m."affiliate_id" = $${paramIdx}`);
+      params.push(user.affiliateId);
+      paramIdx++;
     }
 
     const whereClause = conditions.join(' AND ');

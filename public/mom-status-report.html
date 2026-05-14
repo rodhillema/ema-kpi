@@ -1311,7 +1311,7 @@ function applySession(u){
   if(rl)rl.textContent=ROLE_LABELS[u.role]||u.role;
   if(av)av.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
   var scope=document.getElementById("nav-scope"),sv=document.getElementById("nav-scope-val"),ss=document.getElementById("nav-scope-sep");
-  if(scope&&sv){var ow=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId);sv.textContent=ow?"All Affiliates":(u.affiliateName||"");scope.style.display="";if(ss)ss.style.display="";}
+  if(scope&&sv){var ow=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId)||!!u.isOrgWide;sv.textContent=ow?"All Affiliates":(u.affiliateName||"");scope.style.display="";if(ss)ss.style.display="";}
   initMyMoms();
 }
 (async function(){

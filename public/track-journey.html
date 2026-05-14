@@ -2947,7 +2947,7 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 // ── Auth / session ────────────────────────────────────────────────────────────
 var ROLE_LABELS = {
   coordinator:'Coordinator', supervisor:'Supervisor',
-  administrator:'Administrator', staff_advocate:'Staff Advocate',
+  administrator:'HQ Admin', staff_advocate:'Staff Advocate',
   champion:'Champion',
 };
 
@@ -2963,14 +2963,10 @@ function applySession(u) {
   var scopeVal = document.getElementById('nav-scope-val');
   var scopeSep = document.getElementById('nav-scope-sep');
   if (scope && scopeVal) {
-    if (u.role === 'administrator' || u.role === 'champion' || u.isOrgWide) {
-      scope.style.display = 'none';
-      if (scopeSep) scopeSep.style.display = 'none';
-    } else {
-      scope.style.display = '';
-      if (scopeSep) scopeSep.style.display = '';
-      scopeVal.textContent = u.affiliateName || '';
-    }
+    var isOrgWide = u.role === 'administrator' || (u.role === 'champion' && !u.affiliateId) || !!u.isOrgWide;
+    scopeVal.textContent = isOrgWide ? 'All Affiliates' : (u.affiliateName || '');
+    scope.style.display = '';
+    if (scopeSep) scopeSep.style.display = '';
   }
 }
 

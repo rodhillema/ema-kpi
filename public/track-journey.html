@@ -91,9 +91,14 @@ body.logged-in .portal-view{display:flex}
 .tj-sel-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid)}
 .tj-sel{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 28px 5px 12px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;min-width:160px;max-width:220px;white-space:nowrap}
 .tj-sel:focus{outline:none;border-color:var(--green)}
-/* Affiliate slicer — only shown for org-wide roles */
-#aff-sel-group{display:none}
-body.org-wide #aff-sel-group{display:flex}
+/* Affiliate slicer — matches advocate-care pattern */
+.rh-aff-wrap{display:none;align-items:center;gap:7px}
+.rh-aff-wrap.show{display:flex}
+.rh-aff-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);white-space:nowrap}
+.rh-aff-sel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.rh-fresh{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--red);border-radius:20px;padding:3px 10px;white-space:nowrap;position:relative;cursor:help}
+.rh-fresh .fresh-tip{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:500;width:240px;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:9px 11px;box-shadow:0 4px 14px rgba(0,0,0,.12);font-size:11px;font-weight:400;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.5;white-space:normal;letter-spacing:0;text-transform:none}
+.rh-fresh:hover .fresh-tip,.rh-fresh:focus .fresh-tip{display:block}
 /* Searchable mom picker */
 .tj-search-wrap{position:relative;min-width:200px;max-width:280px}
 .tj-search-input{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 12px;width:100%;box-sizing:border-box;outline:none;cursor:pointer}
@@ -2720,11 +2725,14 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
         <div class="rh-title">Track Journey</div>
         <div class="rh-right">
           <!-- Affiliate slicer — shown only for org-wide users -->
-          <div class="tj-sel-group" id="aff-sel-group">
-            <span class="tj-sel-lbl">Affiliate</span>
-            <select class="tj-sel" id="sel-affiliate" onchange="onAffiliateChange(this)">
+          <div class="rh-aff-wrap" id="rhAffWrap">
+            <span class="rh-aff-lbl">Affiliate</span>
+            <select class="rh-aff-sel" id="sel-affiliate" onchange="onAffiliateChange(this)">
               <option value="">All Affiliates</option>
             </select>
+          </div>
+          <div class="rh-fresh" tabindex="0">Live
+            <span class="fresh-tip">This report reads directly from Trellis. Reload the page to see the latest data.</span>
           </div>
           <!-- Searchable mom picker -->
           <div class="tj-sel-group">
@@ -2967,7 +2975,12 @@ function applySession(u) {
 async function checkSession() {
   try {
     var r = await fetch('/api/me');
-    if (r.ok) { var u = await r.json(); applySession(u); return u; }
+    if (r.ok) {
+      var data = await r.json();
+      var u = data.user || data;  // /api/me wraps in {user:...}
+      applySession(u);
+      return u;
+    }
   } catch (e) {}
   return null;
 }
@@ -2983,9 +2996,8 @@ async function doLogin() {
       body: JSON.stringify({username:u, password:p})
     });
     if (r.ok) {
-      var user = await r.json();
-      applySession(user);
-      await init();
+      var user = await checkSession();  // fetch full session (includes isOrgWide)
+      if (user) { CURRENT_USER = user; await init(); }
     } else {
       var d = await r.json().catch(function(){ return {error:'Login failed'}; });
       errEl.textContent = d.error || 'Login failed';
@@ -3056,7 +3068,6 @@ async function init() {
   var isOrgWide = CURRENT_USER && CURRENT_USER.isOrgWide;
 
   if (isOrgWide) {
-    document.body.classList.add('org-wide');
     try {
       var affs = await fetch('/api/affiliates').then(function(r){ return r.json(); });
       var sel = document.getElementById('sel-affiliate');
@@ -3066,6 +3077,7 @@ async function init() {
         opt.textContent = a.name;
         sel.appendChild(opt);
       });
+      document.getElementById('rhAffWrap').classList.add('show');
     } catch (e) { console.error('Failed to load affiliates', e); }
   }
 

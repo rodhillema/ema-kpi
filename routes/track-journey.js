@@ -105,14 +105,10 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
       JOIN "Mom" m  ON m."id" = p."momId" AND m."deleted_at" = 0
       LEFT JOIN "Track" t ON t."id" = p."trackId"
       WHERE p."deleted_at" = 0
-        AND (
-          p."status"::text = 'paired'
-          OR (p."status"::text = 'pairing_complete'
-              AND p."completed_on" >= NOW() - INTERVAL '90 days')
-        )
+        AND p."status"::text IN ('paired', 'pairing_complete')
         ${affWhere}
       ORDER BY (p."status"::text = 'paired') DESC,
-               "lastHeldAt" DESC NULLS LAST
+               COALESCE("lastHeldAt", p."created_at") DESC NULLS LAST
     `, params);
 
     const pairings = rows.map(p => {

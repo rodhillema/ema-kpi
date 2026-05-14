@@ -1326,7 +1326,7 @@ function applySession(u){
       if(d&&d.user){
         if(d.user.role==='champion'){window.location.href='/';return;}
         applySession(d.user);
-        if(d.user.role==='administrator'||(d.user.role==='champion'&&!d.user.affiliateId))loadAffiliateSlicer();
+        if(d.user.role==='administrator'||(d.user.role==='champion'&&!d.user.affiliateId)||!!d.user.isOrgWide)loadAffiliateSlicer();
         loadMoms();return;
       }
     }
@@ -1357,7 +1357,7 @@ async function doLogin(){
     var d=await r.json();
     if(!r.ok){errEl.textContent=d.error||"Login failed";errEl.className="login-err show";return;}
     var mr=await fetch("/api/me");
-    if(mr.ok){var md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);if(md.user.role==='administrator'||md.user.role==='supervisor')loadAffiliateSlicer();loadMoms();}}
+    if(mr.ok){var md=await mr.json();if(md.user){if(md.user.role==='champion'){window.location.href='/';return;}applySession(md.user);if(md.user.role==='administrator'||(md.user.role==='champion'&&!md.user.affiliateId)||!!md.user.isOrgWide)loadAffiliateSlicer();loadMoms();}}
   }catch(x){errEl.textContent="API unavailable. Demo: demo / coord / yeni (password: demo)";errEl.className="login-err show";}
 }
 document.getElementById("btn-signout").addEventListener("click",async function(ev){

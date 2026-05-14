@@ -91,6 +91,22 @@ body.logged-in .portal-view{display:flex}
 .tj-sel-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid)}
 .tj-sel{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 28px 5px 12px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;min-width:160px;max-width:220px;white-space:nowrap}
 .tj-sel:focus{outline:none;border-color:var(--green)}
+/* Affiliate slicer — only shown for org-wide roles */
+#aff-sel-group{display:none}
+body.org-wide #aff-sel-group{display:flex}
+/* Searchable mom picker */
+.tj-search-wrap{position:relative;min-width:200px;max-width:280px}
+.tj-search-input{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 12px;width:100%;box-sizing:border-box;outline:none;cursor:pointer}
+.tj-search-input::placeholder{color:var(--mid);font-weight:300}
+.tj-search-input:focus{border-color:var(--green);cursor:text}
+.tj-search-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.10);z-index:200;max-height:260px;overflow-y:auto}
+.tj-search-list.open{display:block}
+.tj-search-item{font-family:'Lato',sans-serif;font-size:13px;color:var(--dark);padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.3}
+.tj-search-item:last-child{border-bottom:none}
+.tj-search-item:hover,.tj-search-item.active{background:var(--lpink)}
+.tj-search-item .si-stall{font-size:11px;color:var(--red);margin-left:4px}
+.tj-search-empty{font-family:'Lato',sans-serif;font-size:13px;color:var(--mid);padding:10px 14px;font-style:italic}
+.tj-search-sep{height:1px;background:var(--border);margin:0}
 .pb-block{display:flex;flex-direction:column;gap:3px;padding-right:20px}
 .pb-block:not(:first-child){padding-left:20px}
 .pb-divider{width:1px;height:32px;background:var(--border);flex-shrink:0}
@@ -2703,12 +2719,24 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
       <div class="report-hdr">
         <div class="rh-title">Track Journey</div>
         <div class="rh-right">
-          <div class="tj-sel-group">
-            <span class="tj-sel-lbl">Mom</span>
-            <select class="tj-sel" id="sel-mom" onchange="onMomChange(this)">
-              <option value="">— select a mom —</option>
+          <!-- Affiliate slicer — shown only for org-wide users -->
+          <div class="tj-sel-group" id="aff-sel-group">
+            <span class="tj-sel-lbl">Affiliate</span>
+            <select class="tj-sel" id="sel-affiliate" onchange="onAffiliateChange(this)">
+              <option value="">All Affiliates</option>
             </select>
           </div>
+          <!-- Searchable mom picker -->
+          <div class="tj-sel-group">
+            <span class="tj-sel-lbl">Mom</span>
+            <div class="tj-search-wrap" id="mom-picker-wrap">
+              <input class="tj-search-input" id="mom-search-input"
+                     type="text" placeholder="Search moms…" autocomplete="off"
+                     onfocus="openMomList()" oninput="filterMomList(this.value)">
+              <div class="tj-search-list" id="mom-search-list"></div>
+            </div>
+          </div>
+          <!-- Track (display-only) -->
           <div class="tj-sel-group">
             <span class="tj-sel-lbl">Track</span>
             <select class="tj-sel" id="sel-track" disabled>
@@ -3023,43 +3051,144 @@ function minRequired(trackTitle) {
   return req ? Math.ceil(req * 0.75) : null;
 }
 
-// ── Init / selector ───────────────────────────────────────────────────────────
+// ── Init / selectors ──────────────────────────────────────────────────────────
+var ALL_PAIRINGS      = [];  // full list for current affiliate filter
+var SELECTED_PAIRING  = null; // {pairingId, momName, …}
+var CURRENT_USER      = null;
+
 async function init() {
+  var isOrgWide = CURRENT_USER &&
+    (CURRENT_USER.role === 'administrator' ||
+     (CURRENT_USER.role === 'champion' && !CURRENT_USER.affiliateId));
+
+  if (isOrgWide) {
+    document.body.classList.add('org-wide');
+    try {
+      var affs = await fetch('/api/affiliates').then(function(r){ return r.json(); });
+      var sel = document.getElementById('sel-affiliate');
+      affs.forEach(function(a) {
+        var opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.name;
+        sel.appendChild(opt);
+      });
+    } catch (e) { console.error('Failed to load affiliates', e); }
+  }
+
+  await loadPairings('');
+}
+
+async function loadPairings(affiliateId) {
   try {
-    var pairings = await fetch('/api/track-journey/pairings').then(function(r){ return r.json(); });
-    populateSelector(pairings);
+    var url = '/api/track-journey/pairings' + (affiliateId ? '?affiliate_id=' + affiliateId : '');
+    ALL_PAIRINGS = await fetch(url).then(function(r){ return r.json(); });
+    buildMomList(ALL_PAIRINGS);
+    // If a pairing was already selected and is still in the list, keep it
+    if (SELECTED_PAIRING && !ALL_PAIRINGS.find(function(p){ return p.pairingId === SELECTED_PAIRING.pairingId; })) {
+      clearMomSelection();
+    }
   } catch (e) {
     console.error('Failed to load pairings', e);
   }
 }
 
-function populateSelector(pairings) {
-  var sel = document.getElementById('sel-mom');
-  sel.innerHTML = '<option value="">— select a mom —</option>';
+async function onAffiliateChange(sel) {
+  clearMomSelection();
+  await loadPairings(sel.value);
+}
+
+// ── Searchable mom picker ─────────────────────────────────────────────────────
+function buildMomList(pairings) {
+  // Rebuild the dropdown items (don't open it yet)
+  renderMomItems(pairings);
+}
+
+function renderMomItems(pairings) {
+  var list = document.getElementById('mom-search-list');
+  list.innerHTML = '';
+  if (pairings.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'tj-search-empty';
+    empty.textContent = 'No moms found.';
+    list.appendChild(empty);
+    return;
+  }
   pairings.forEach(function(p) {
-    var opt = document.createElement('option');
-    opt.value = p.pairingId;
-    var stallNote = p.stall ? (' · ⚠ ' + p.stall.days + 'd stall') : '';
-    opt.textContent = p.momName + stallNote;
-    sel.appendChild(opt);
+    var item = document.createElement('div');
+    item.className = 'tj-search-item' + (SELECTED_PAIRING && SELECTED_PAIRING.pairingId === p.pairingId ? ' active' : '');
+    item.dataset.pairingId = p.pairingId;
+    var stall = p.stall ? '<span class="si-stall">· ⚠ ' + p.stall.days + 'd stall</span>' : '';
+    item.innerHTML = escHtml(p.momName) + stall;
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault(); // prevent input blur before click registers
+      selectMom(p);
+    });
+    list.appendChild(item);
   });
 }
 
-async function onMomChange(sel) {
-  var pairingId = sel.value;
-  if (!pairingId) {
-    document.getElementById('tj-info').style.display        = 'none';
-    document.getElementById('tj-content').style.display     = 'none';
-    document.getElementById('tj-empty-state').style.display = '';
-    return;
-  }
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openMomList() {
+  filterMomList(document.getElementById('mom-search-input').value);
+  document.getElementById('mom-search-list').classList.add('open');
+}
+
+function filterMomList(query) {
+  var q = query.trim().toLowerCase();
+  var filtered = q
+    ? ALL_PAIRINGS.filter(function(p){ return p.momName.toLowerCase().includes(q); })
+    : ALL_PAIRINGS;
+  renderMomItems(filtered);
+  document.getElementById('mom-search-list').classList.add('open');
+}
+
+function closeMomList() {
+  document.getElementById('mom-search-list').classList.remove('open');
+  // Restore input to selected mom name (or clear if nothing selected)
+  var input = document.getElementById('mom-search-input');
+  input.value = SELECTED_PAIRING ? SELECTED_PAIRING.momName : '';
+}
+
+function clearMomSelection() {
+  SELECTED_PAIRING = null;
+  document.getElementById('mom-search-input').value = '';
+  document.getElementById('tj-info').style.display        = 'none';
+  document.getElementById('tj-content').style.display     = 'none';
+  document.getElementById('tj-empty-state').style.display = '';
+  var opt = document.getElementById('sel-track-opt');
+  if (opt) opt.textContent = '—';
+}
+
+async function selectMom(p) {
+  SELECTED_PAIRING = p;
+  document.getElementById('mom-search-input').value = p.momName;
+  closeMomList();
   try {
-    var data = await fetch('/api/track-journey/' + pairingId).then(function(r){ return r.json(); });
+    var data = await fetch('/api/track-journey/' + p.pairingId).then(function(r){ return r.json(); });
     renderJourney(data);
   } catch (e) {
     console.error('Failed to load pairing', e);
   }
 }
+
+// Close dropdown when clicking outside the picker
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('mom-picker-wrap');
+  if (wrap && !wrap.contains(e.target)) closeMomList();
+});
+
+// Keyboard: Escape closes the list; Enter selects first visible item
+document.getElementById('mom-search-input').addEventListener('keydown', function(e) {
+  var list = document.getElementById('mom-search-list');
+  if (e.key === 'Escape') { closeMomList(); this.blur(); return; }
+  if (e.key === 'Enter') {
+    var first = list.querySelector('.tj-search-item');
+    if (first) first.dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
+  }
+});
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderJourney(data) {
@@ -3383,7 +3512,7 @@ function renderDetail(pairing, sessions, assessments) {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 (async function() {
   var user = await checkSession();
-  if (user) await init();
+  if (user) { CURRENT_USER = user; await init(); }
 })();
 </script>
 </body>

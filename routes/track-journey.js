@@ -231,7 +231,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
     // 5. Find Vital Support / Needs table — Trellis surfaces this as
     //    /vital-support with need_type, status, urgent, context_for_need.
     //    Probe likely table names and capture columns + sample row for this mom.
-    const candidateTables = ['Need','VitalSupport','VitalSupportNeed','MomNeed','SupportNeed','VitalNeed','Needs'];
+    const candidateTables = ['Need','VitalSupport','VitalSupportNeed','MomNeed','SupportNeed','VitalNeed','Needs','BenevolenceNeed'];
     out.vitalSupportProbe = {};
     for (const tbl of candidateTables) {
       try {

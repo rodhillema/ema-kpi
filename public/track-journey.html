@@ -76,9 +76,9 @@ body.logged-in .portal-view{display:flex}
 
 
 /* ── Track Journey: info rows + selectors ── */
-.tj-info{background:var(--white);padding:14px 26px 16px;margin:0 -26px 20px;display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--border)}
-.tj-row1{display:flex;align-items:center;gap:0;padding-bottom:12px;flex-wrap:wrap}
-.tj-row2{display:flex;align-items:center;gap:0;padding:12px 0 0;border-top:1px solid var(--border);flex-wrap:wrap}
+.tj-info{background:var(--white);margin:0 -26px 20px;border-bottom:1px solid var(--border)}
+.tj-row1{display:flex;align-items:center;gap:0;padding:14px 26px 12px;flex-wrap:wrap;max-width:1232px;margin:0 auto;box-sizing:border-box}
+.tj-row2{display:flex;align-items:center;gap:0;padding:12px 26px 16px;border-top:1px solid var(--border);flex-wrap:wrap;max-width:1232px;margin:0 auto;box-sizing:border-box}
 .tj-title-block{display:flex;flex-direction:column;gap:2px}
 .tj-name{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark);font-weight:400}
 .tj-sub{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid)}
@@ -2760,6 +2760,8 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
           <div class="pb-block"><span class="pb-lbl">Mom</span><span class="pb-val" id="pb-mom">—</span></div>
           <div class="pb-divider"></div>
           <div class="pb-block"><span class="pb-lbl">Track</span><span class="pb-val" id="pb-track">—</span></div>
+          <div class="pb-divider"></div>
+          <div class="pb-block"><span class="pb-lbl">Program Status</span><span class="pb-val" id="pb-status">—</span></div>
           <span class="pb-flag" id="pb-stall-flag" style="margin-left:auto;display:none;"></span>
         </div>
         <div class="tj-row2">
@@ -3213,7 +3215,25 @@ function renderJourney(data) {
   document.getElementById('pb-advocate').textContent = pairing.advocateName || '—';
   document.getElementById('pb-coord').textContent    = pairing.coordinatorName || '—';
 
-  var winStart  = new Date(pairing.startDate);
+  // Program Status — derived from pairing status
+  var statusMap = {
+    'paired': 'In Track',
+    'pairing_complete': 'Track Complete',
+    'waiting_to_be_paired': 'Waiting To Be Paired'
+  };
+  var pbStatus = document.getElementById('pb-status');
+  if (pbStatus) {
+    pbStatus.textContent = statusMap[pairing.status] || (pairing.status ? pairing.status.replace(/_/g,' ').replace(/\b\w/g, function(c){return c.toUpperCase();}) : '—');
+  }
+
+  // Timeline window — start at the earliest event date so off-window milestones
+  // (e.g. pre-assessment dated before the pairing) stay visible inside the chart.
+  var candidateStarts = [new Date(pairing.startDate)];
+  if (assessments && assessments.pre && assessments.pre.date) candidateStarts.push(new Date(assessments.pre.date));
+  if (sessions && sessions.length) {
+    sessions.forEach(function(s){ if (s.date) candidateStarts.push(new Date(s.date)); });
+  }
+  var winStart  = new Date(Math.min.apply(null, candidateStarts.map(function(d){return d.getTime();})));
   var winEnd    = pairing.endDate ? new Date(pairing.endDate) : new Date();
   var totalDays = daysBetween(winStart, winEnd);
   var weeks     = Math.round(totalDays / 7);

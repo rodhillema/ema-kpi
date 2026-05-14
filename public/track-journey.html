@@ -2961,7 +2961,7 @@ function applySession(u) {
   var scopeVal = document.getElementById('nav-scope-val');
   var scopeSep = document.getElementById('nav-scope-sep');
   if (scope && scopeVal) {
-    if (u.role === 'administrator' || u.role === 'champion') {
+    if (u.role === 'administrator' || u.role === 'champion' || u.isOrgWide) {
       scope.style.display = 'none';
       if (scopeSep) scopeSep.style.display = 'none';
     } else {

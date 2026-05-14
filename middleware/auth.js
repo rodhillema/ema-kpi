@@ -82,10 +82,20 @@ async function login(req, res) {
         const grant = grantResult.rows[0] || null;
         const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
 
+        // Qualifying Trellis roles take precedence over a ChampionAccess grant.
+        // The grant is only for advocate-level users who need elevated Hub access.
+        const QUALIFYING_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator'];
+        const hasQualifyingRole = QUALIFYING_ROLES.includes(roleKey);
+
         if (isWhitelisted || ALLOWED_ROLES.includes(roleKey) || grant) {
-          const role = grant ? 'champion' : roleKey;
-          const affiliateId = grant ? grant.affiliateId : user.affiliateId;
-          const affiliateName = grant ? grant.affiliateName : user.affiliateName;
+          const role = hasQualifyingRole ? roleKey : (grant ? 'champion' : roleKey);
+          // An org-wide ChampionAccess grant (affiliateId: null) overrides the
+          // user's Trellis affiliate scope even when the Trellis role takes precedence.
+          const grantIsOrgWide = grant && grant.affiliateId === null;
+          const affiliateId = grantIsOrgWide ? null
+            : (hasQualifyingRole ? user.affiliateId : (grant ? grant.affiliateId : user.affiliateId));
+          const affiliateName = grantIsOrgWide ? null
+            : (hasQualifyingRole ? user.affiliateName : (grant ? grant.affiliateName : user.affiliateName));
 
           req.session.user = {
             id: user.id,
@@ -95,7 +105,7 @@ async function login(req, res) {
             role,
             affiliateId,
             affiliateName,
-            isOrgWide: role === 'administrator' || ORG_WIDE_USERNAMES.includes(normalizedUsername) || (role === 'champion' && !affiliateId),
+            isOrgWide: role === 'administrator' || ORG_WIDE_USERNAMES.includes(normalizedUsername) || (grant && !grant.affiliateId),
           };
           return res.json({
             success: true,

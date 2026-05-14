@@ -70,9 +70,10 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
 // GET /api/track-journey/pairings — affiliate-scoped selector list
 router.get('/pairings', requireAuth, requireRole, async (req, res) => {
   try {
-    const { role, affiliateId, username } = req.session.user;
+    const { role, affiliateId, username, isOrgWide: sessionOrgWide } = req.session.user;
     const isOrgWide = ORG_WIDE_ROLES.includes(role)
-      || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
+      || ORG_WIDE_NAMES.includes((username || '').toLowerCase())
+      || !!sessionOrgWide;
 
     const params = [];
     let affWhere = '';
@@ -82,38 +83,61 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
       affWhere = `AND m."affiliate_id" = $1`;
     }
 
+    console.log('[track-journey] /pairings — isOrgWide:', isOrgWide, 'role:', role, 'affWhere:', affWhere || '(none)', 'params:', params);
+
+    // Step 1: base pairing list — no correlated subqueries in SELECT so the
+    // query stays fast and avoids any enum-cast issues in nested subqueries.
     const { rows } = await pool.query(`
       SELECT
-        p."id"                                             AS "pairingId",
-        m."first_name" || ' ' || m."last_name"            AS "momName",
-        t."title"                                          AS "trackTitle",
-        p."status"::text                                   AS "status",
-        p."created_at"                                     AS "startDate",
-        p."completed_on"                                   AS "endDate",
-        (SELECT MAX(s."date_start")
-           FROM "Session" s
-          WHERE s."pairing_id" = p."id"
-            AND s."deleted_at" = 0
-            AND s."status"::text = 'Held')                AS "lastHeldAt",
-        (SELECT MAX(s."date_start")
-           FROM "Session" s
-          WHERE s."pairing_id" = p."id"
-            AND s."deleted_at" = 0
-            AND s."status"::text = 'Held'
-            AND s."session_type"::text = 'Track_Session') AS "lastHeldTrackAt"
+        p."id"          AS "pairingId",
+        m."first_name" || ' ' || m."last_name" AS "momName",
+        t."title"       AS "trackTitle",
+        p."status"::text AS "status",
+        p."created_at"  AS "startDate",
+        p."completed_on" AS "endDate"
       FROM "Pairing" p
       JOIN "Mom" m  ON m."id" = p."momId" AND m."deleted_at" = 0
       LEFT JOIN "Track" t ON t."id" = p."trackId"
       WHERE p."deleted_at" = 0
-        AND p."status"::text IN ('paired', 'pairing_complete')
+        AND (p."status"::text = 'paired' OR p."status"::text = 'pairing_complete')
         ${affWhere}
-      ORDER BY (p."status"::text = 'paired') DESC,
-               p."created_at" DESC NULLS LAST
+      ORDER BY
+        CASE WHEN p."status"::text = 'paired' THEN 0 ELSE 1 END,
+        p."created_at" DESC NULLS LAST
     `, params);
 
+    console.log('[track-journey] /pairings — base query returned', rows.length, 'rows');
+
+    // Step 2: fetch last-held dates for stall detection in a single batch query.
+    // Only run if there are rows to avoid an empty-IN error.
+    let lastHeldMap = {};
+    if (rows.length > 0) {
+      const ids = rows.map(r => r.pairingId);
+      try {
+        const { rows: stallRows } = await pool.query(`
+          SELECT
+            s."pairing_id"                                     AS "pairingId",
+            MAX(s."date_start")                                AS "lastHeldAt",
+            MAX(CASE WHEN s."session_type"::text = 'Track_Session'
+                     THEN s."date_start" END)                  AS "lastHeldTrackAt"
+          FROM "Session" s
+          WHERE s."pairing_id" = ANY($1)
+            AND s."deleted_at" = 0
+            AND s."status"::text = 'Held'
+          GROUP BY s."pairing_id"
+        `, [ids]);
+        for (const r of stallRows) {
+          lastHeldMap[r.pairingId] = { lastHeldAt: r.lastHeldAt, lastHeldTrackAt: r.lastHeldTrackAt };
+        }
+      } catch (stallErr) {
+        console.error('[track-journey] stall sub-query failed (stall badges skipped):', stallErr.message);
+      }
+    }
+
     const pairings = rows.map(p => {
-      const dsh = daysSince(p.lastHeldAt);
-      const dst = daysSince(p.lastHeldTrackAt);
+      const held = lastHeldMap[p.pairingId] || {};
+      const dsh = daysSince(held.lastHeldAt);
+      const dst = daysSince(held.lastHeldTrackAt);
       let stall = null;
       if (dst !== null && dst >= 30)       stall = { type: 'curriculum', days: dst };
       else if (dsh !== null && dsh >= 14)  stall = { type: 'general',    days: dsh };
@@ -128,7 +152,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
 
     res.json(pairings);
   } catch (err) {
-    console.error('[track-journey] /pairings error:', err.message);
+    console.error('[track-journey] /pairings error:', err.message, err.stack);
     res.status(500).json({ error: 'Failed to load pairings' });
   }
 });

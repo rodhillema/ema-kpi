@@ -228,6 +228,45 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
       }
     }
 
+    // 5. Find Vital Support / Needs table — Trellis surfaces this as
+    //    /vital-support with need_type, status, urgent, context_for_need.
+    //    Probe likely table names and capture columns + sample row for this mom.
+    const candidateTables = ['Need','VitalSupport','VitalSupportNeed','MomNeed','SupportNeed','VitalNeed','Needs'];
+    out.vitalSupportProbe = {};
+    for (const tbl of candidateTables) {
+      try {
+        const { rows: tcols } = await pool.query(`
+          SELECT column_name, data_type
+            FROM information_schema.columns
+           WHERE table_name = $1
+           ORDER BY ordinal_position
+        `, [tbl]);
+        if (!tcols.length) continue;
+        out.vitalSupportProbe[tbl] = { columns: tcols };
+
+        // Try to fetch rows for this mom — guess at the mom-FK column name.
+        const momFkCol = tcols.find(c => /mom/i.test(c.column_name))?.column_name;
+        if (momFkCol) {
+          const { rows: tRows } = await pool.query(
+            `SELECT * FROM "${tbl}" WHERE "${momFkCol}" = $1 LIMIT 5`,
+            [momId]
+          );
+          out.vitalSupportProbe[tbl].sampleRows = tRows;
+          out.vitalSupportProbe[tbl].momFkColumn = momFkCol;
+        }
+      } catch (_) { /* table doesn't exist — skip */ }
+    }
+
+    // 6. Also scan for any table whose name contains vital/need
+    const { rows: matchTables } = await pool.query(`
+      SELECT table_name
+        FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND (table_name ILIKE '%vital%' OR table_name ILIKE '%need%' OR table_name ILIKE '%support%')
+       ORDER BY table_name
+    `);
+    out.vitalLikeTables = matchTables.map(r => r.table_name);
+
     res.json(out);
   } catch (err) {
     console.error('[track-journey] /debug/sessions error:', err.message);

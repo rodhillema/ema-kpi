@@ -4173,8 +4173,9 @@
      // (per Cristina's notes, the assumed mapping to incomplete_no_advocate
      // was wrong — that field IS the DNI count).
      var dniN = tce.incomplete_no_advocate || 0;
-     // Panel-specific total excludes DNI from denominator and bar math.
-     var panelIncomplete = Math.max(0, totalIncomplete - dniN);
+     // tce.total_incompletes already excludes no_advocate (DNI) on the backend.
+     // Use it directly — do NOT subtract dniN again.
+     var panelIncomplete = totalIncomplete;
      if (frVals.length >= 5) {
       if (tce.incomplete_priorities_shifted != null) {
        frVals[0].textContent = tce.incomplete_priorities_shifted; // Track Requirements Unmet
@@ -4699,12 +4700,12 @@
        // removed from the Track Completions tab entirely (RD 4/30/26).
        // DNI lives only on Referral Sources → Referral Outcomes.
        else if (lt.indexOf('total incompletes') !== -1) {
-        // Total excludes DNI to match the panel's denominator
-        frVal.textContent = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
+        // tce.total_incompletes already excludes no_advocate (DNI) on the backend
+        frVal.textContent = tce.total_incompletes || 0;
        }
        else if (lt.indexOf('incomplete') !== -1 && lt.indexOf('other') !== -1) {
-        // "Other" incomplete = total (DNI-excluded) − known categories (also DNI-excluded)
-        var totalEx = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
+        // "Other" = total incompletes (DNI already excluded) − known categories
+        var totalEx = tce.total_incompletes || 0;
         var knownIncompletes = (tce.incomplete_achieved_outcomes || 0) + (tce.incomplete_priorities_shifted || 0) + (tce.incomplete_extended_wait || 0);
         frVal.textContent = Math.max(0, totalEx - knownIncompletes);
        }
@@ -4717,9 +4718,8 @@
     for (var cp2 = 0; cp2 < completionPanels.length; cp2++) {
      var cpH3b = completionPanels[cp2].querySelector('h3');
      if (cpH3b && cpH3b.textContent.indexOf('Incomplete Reasons') !== -1) {
-      // DNI removed from Track Completions tab (RD 4/30/26) — denominator
-      // and reason rows both exclude `incomplete_no_advocate`.
-      var totalInc = Math.max(0, (tce.total_incompletes || 0) - (tce.incomplete_no_advocate || 0));
+      // tce.total_incompletes already excludes no_advocate (DNI) on the backend.
+      var totalInc = tce.total_incompletes || 0;
       var reasons = [
        { label: 'Track Requirements Unmet', val: tce.incomplete_achieved_outcomes || 0, color: 'var(--red)', opacity: '0.75' },
        { label: 'Client Choice', val: tce.incomplete_priorities_shifted || 0, color: 'var(--yellow)', opacity: '1' },

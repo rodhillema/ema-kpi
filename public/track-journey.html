@@ -3330,6 +3330,10 @@ function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd
     var lbl = s.type === 'curriculum' ? 'Curriculum Stall'
             : s.isActive              ? '⚠ Stalled'
             : 'General Stall';
+    if (s.isActive) {
+      el.style.cursor = 'pointer';
+      el.onclick = function(e) { e.stopPropagation(); openStallDrawer(); };
+    }
     el.innerHTML =
       '<span class="stall-band-label">' + lbl + ' · ' + s.days + 'd</span>'
       + '<div class="mark-tip">'

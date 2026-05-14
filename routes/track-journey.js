@@ -354,6 +354,32 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       }
     } catch (_) { /* assessment data unavailable */ }
 
+    // Coordinator notes — recent entries written about this pairing's advocate.
+    // Used by the stall drawer; graceful if advocate is unset or table query fails.
+    let coordinatorNotes = [];
+    try {
+      const { rows: noteRows } = await pool.query(`
+        SELECT
+          cn."created_at"  AS "date",
+          cn."description" AS "text",
+          u."firstName"    AS "coordFirst",
+          u."lastName"     AS "coordLast"
+        FROM "CoordinatorNote" cn
+        LEFT JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE cn."advocate_id" = (
+              SELECT "advocateUserId" FROM "Pairing"
+               WHERE "id" = $1 AND "deleted_at" = 0)
+          AND cn."deleted_at" = 0
+        ORDER BY cn."created_at" DESC
+        LIMIT 20
+      `, [pairingId]);
+      coordinatorNotes = noteRows.map(r => ({
+        date:            r.date,
+        text:            r.text,
+        coordinatorName: r.coordFirst ? `${r.coordFirst} ${r.coordLast}`.trim() : null,
+      }));
+    } catch (_) { /* coordinator notes unavailable */ }
+
     res.json({
       pairing: {
         id:              p.id,
@@ -369,6 +395,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       sessions,
       stalls,
       assessments,
+      coordinatorNotes,
     });
   } catch (err) {
     console.error('[track-journey] /:pairingId error:', err.message);

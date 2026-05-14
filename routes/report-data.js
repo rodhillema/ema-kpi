@@ -429,8 +429,9 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 5: Track Oversight ─────────────────────────────
 
-      // Stalled moms: active pairing, flagged by communication stall (14 days since any held session)
-      // OR curriculum stall (30 days since last held Track_Session).
+      // Stalled moms: pairing active AS OF PERIOD_END, flagged by communication stall
+      // (14 days since any held session) OR curriculum stall (30 days since last Track_Session).
+      // All date math anchored to PERIOD_END — not NOW() — so Q1 numbers are stable on replay.
       pool.query(`
         SELECT
           m."id" AS mom_id,
@@ -441,12 +442,12 @@ router.get('/', async (req, res) => {
           u."firstName" AS advocate_first,
           u."lastName" AS advocate_last,
           last_held."last_held_date",
-          EXTRACT(DAY FROM NOW() - last_held."last_held_date")::int AS days_since_held,
+          EXTRACT(DAY FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date")::int AS days_since_held,
           last_track."last_track_session_date",
-          EXTRACT(DAY FROM NOW() - last_track."last_track_session_date")::int AS days_since_track_session,
+          EXTRACT(DAY FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date")::int AS days_since_track_session,
           CASE
             WHEN last_track."last_track_session_date" IS NULL
-              OR EXTRACT(EPOCH FROM NOW() - last_track."last_track_session_date") / 86400 > 30
+              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date") / 86400 > 30
               THEN 'curriculum'
             ELSE 'communication'
           END AS stall_type
@@ -460,6 +461,7 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) last_held ON true
         LEFT JOIN LATERAL (
           SELECT MAX(s."date_start") AS last_track_session_date
@@ -468,15 +470,17 @@ router.get('/', async (req, res) => {
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
             AND s."session_type"::text = 'Track_Session'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) last_track ON true
         WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND m."deleted_at" = 0
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_END} 23:59:59')
           AND (
             last_held."last_held_date" IS NULL
-            OR last_held."last_held_date" < NOW() - INTERVAL '14 days'
+            OR last_held."last_held_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '14 days'
             OR last_track."last_track_session_date" IS NULL
-            OR last_track."last_track_session_date" < NOW() - INTERVAL '30 days'
+            OR last_track."last_track_session_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '30 days'
           )
           ${affWhere}
         ORDER BY last_held."last_held_date" ASC NULLS FIRST
@@ -487,18 +491,18 @@ router.get('/', async (req, res) => {
       pool.query(`
         SELECT
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 < 14
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 < 14
           THEN 1 ELSE 0 END)::int AS progressing,
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 >= 14
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 <= 20
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 >= 14
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 20
           THEN 1 ELSE 0 END)::int AS stalled_14_20,
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 > 20
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 <= 30
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 20
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 30
           THEN 1 ELSE 0 END)::int AS stalled_21_30,
           SUM(CASE WHEN last_held."last_held_date" IS NULL
-              OR EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 > 30
+              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
           THEN 1 ELSE 0 END)::int AS stalled_30_plus
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
@@ -508,10 +512,12 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) last_held ON true
         WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND m."deleted_at" = 0
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_END} 23:59:59')
           ${affWhere}
       `, affParams),
 
@@ -522,18 +528,18 @@ router.get('/', async (req, res) => {
           a."name" AS affiliate_name,
           COUNT(DISTINCT p."id")::int AS active_in_track,
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 < 14
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 < 14
           THEN 1 ELSE 0 END)::int AS progressing,
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 >= 14
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 <= 20
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 >= 14
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 20
           THEN 1 ELSE 0 END)::int AS stalled_14_20,
           SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 > 20
-              AND EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 <= 30
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 20
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 30
           THEN 1 ELSE 0 END)::int AS stalled_21_30,
           SUM(CASE WHEN last_held."last_held_date" IS NULL
-              OR EXTRACT(EPOCH FROM NOW() - last_held."last_held_date") / 86400 > 30
+              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
           THEN 1 ELSE 0 END)::int AS stalled_30_plus
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
@@ -544,11 +550,13 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) last_held ON true
         WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND m."deleted_at" = 0
           AND a."deleted_at" = 0
+          AND p."created_at" <= '${PERIOD_END} 23:59:59'
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_END} 23:59:59')
         GROUP BY a."name"
         ORDER BY a."name"
       `) : Promise.resolve({ rows: [] }),
@@ -558,14 +566,14 @@ router.get('/', async (req, res) => {
       pool.query(`
         SELECT
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 <= 90
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 <= 90
           THEN 1 ELSE 0 END)::int AS current_0_90,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 > 90
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 <= 180
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 > 90
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 <= 180
           THEN 1 ELSE 0 END)::int AS overdue_91_180,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 > 180
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 > 180
           THEN 1 ELSE 0 END)::int AS critical_180_plus,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NULL
           THEN 1 ELSE 0 END)::int AS no_fwa
@@ -575,6 +583,7 @@ router.get('/', async (req, res) => {
           FROM "AssessmentResult" ar
           WHERE ar."momId" = m."id"
             AND ar."deleted_at" = 0
+            AND ar."completedAt" <= '${PERIOD_END} 23:59:59'
         ) latest_fwa ON true
         WHERE m."deleted_at" = 0
           AND m."status"::text = 'active'
@@ -586,14 +595,14 @@ router.get('/', async (req, res) => {
         SELECT
           a."name" AS affiliate_name,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 <= 90
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 <= 90
           THEN 1 ELSE 0 END)::int AS current_0_90,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 > 90
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 <= 180
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 > 90
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 <= 180
           THEN 1 ELSE 0 END)::int AS overdue_91_180,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NOT NULL
-              AND EXTRACT(EPOCH FROM NOW() - latest_fwa."last_fwa") / 86400 > 180
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - latest_fwa."last_fwa") / 86400 > 180
           THEN 1 ELSE 0 END)::int AS critical_180_plus,
           SUM(CASE WHEN latest_fwa."last_fwa" IS NULL
           THEN 1 ELSE 0 END)::int AS no_fwa
@@ -604,6 +613,7 @@ router.get('/', async (req, res) => {
           FROM "AssessmentResult" ar
           WHERE ar."momId" = m."id"
             AND ar."deleted_at" = 0
+            AND ar."completedAt" <= '${PERIOD_END} 23:59:59'
         ) latest_fwa ON true
         WHERE m."deleted_at" = 0
           AND m."status"::text = 'active'
@@ -762,7 +772,13 @@ router.get('/', async (req, res) => {
         SELECT t."title" AS track_title, t."language_type"::text AS language,
           COUNT(*)::int AS total_closed,
           SUM(CASE WHEN p."complete_reason_sub_status" IS NOT NULL THEN 1 ELSE 0 END)::int AS completed,
-          SUM(CASE WHEN p."incomplete_reason_sub_status" IS NOT NULL THEN 1 ELSE 0 END)::int AS incomplete
+          -- DNI (no_advocate) excluded from incomplete count per Fix 1 spec:
+          -- completion rate = complete / (complete + incomplete excl DNI)
+          SUM(CASE WHEN p."incomplete_reason_sub_status" IS NOT NULL
+                    AND p."incomplete_reason_sub_status"::text != 'no_advocate'
+               THEN 1 ELSE 0 END)::int AS incomplete,
+          SUM(CASE WHEN p."incomplete_reason_sub_status"::text = 'no_advocate'
+               THEN 1 ELSE 0 END)::int AS did_not_initiate
         FROM "Pairing" p
         JOIN "Track" t ON t."id" = p."trackId"
         JOIN "Mom" m ON m."id" = p."momId"

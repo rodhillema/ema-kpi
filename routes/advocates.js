@@ -36,18 +36,8 @@ router.get('/', async (req, res) => {
     const ORG_WIDE_USERNAMES = ['cristina.galloway'];
     const isOrgWide = role === 'administrator' || (role === 'champion' && !user.affiliateId) || ORG_WIDE_USERNAMES.includes((user.username || '').toLowerCase());
 
-    if (!isOrgWide && role === 'coordinator') {
-      // Coordinator sees all advocates at their affiliate
-      conditions.push(`u."affiliateId" = $${paramIdx}`);
-      params.push(user.affiliateId);
-      paramIdx++;
-    } else if (role === 'supervisor' || role === 'staff_advocate') {
-      // Supervisor and staff_advocate are affiliate-scoped
-      conditions.push(`u."affiliateId" = $${paramIdx}`);
-      params.push(user.affiliateId);
-      paramIdx++;
-    } else if (isOrgWide) {
-      // Administrator and org-wide champions — optional filter or exclude
+    if (isOrgWide) {
+      // Org-wide users — optional filter or exclude via query param
       if (req.query.exclude_affiliate_id) {
         conditions.push(`u."affiliateId" != $${paramIdx}`);
         params.push(req.query.exclude_affiliate_id);
@@ -57,6 +47,11 @@ router.get('/', async (req, res) => {
         params.push(req.query.affiliate_id);
         paramIdx++;
       }
+    } else if (role === 'coordinator' || role === 'supervisor' || role === 'staff_advocate') {
+      // Affiliate-scoped staff roles
+      conditions.push(`u."affiliateId" = $${paramIdx}`);
+      params.push(user.affiliateId);
+      paramIdx++;
     } else {
       // Affiliate-scoped champion
       conditions.push(`u."affiliateId" = $${paramIdx}`);

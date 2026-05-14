@@ -108,7 +108,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
         AND p."status"::text IN ('paired', 'pairing_complete')
         ${affWhere}
       ORDER BY (p."status"::text = 'paired') DESC,
-               COALESCE("lastHeldAt", p."created_at") DESC NULLS LAST
+               p."created_at" DESC NULLS LAST
     `, params);
 
     const pairings = rows.map(p => {

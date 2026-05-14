@@ -213,46 +213,54 @@ router.get('/', async (req, res) => {
     }
 
     // Track history — all non-deleted pairings per mom (current + past).
-    // Outcome derived: 'active' = still paired, 'completed' = complete_reason set,
-    // 'incomplete' = incomplete_reason set, 'unknown' otherwise.
-    const trackHistoryQuery = `
-      SELECT
-        p."momId"                                  AS mom_id,
-        p."id"                                     AS pairing_id,
-        t."title"                                  AS track_title,
-        p."status"::text                           AS status,
-        p."advocacy_type"::text                    AS advocacy_type,
-        p."created_at"                             AS started_at,
-        p."completed_on"                           AS ended_at,
-        p."complete_reason_sub_status"::text       AS complete_reason,
-        p."incomplete_reason_sub_status"::text     AS incomplete_reason,
-        (adv."firstName" || ' ' || adv."lastName") AS advocate_name
-      FROM "Pairing" p
-      LEFT JOIN "Track" t ON t."id" = p."trackId"
-      LEFT JOIN "User"  adv ON adv."id" = p."advocateUserId"
-      WHERE p."momId" = ANY($1)
-        AND p."deleted_at" = 0
-      ORDER BY p."momId", p."created_at" DESC
-    `;
-    const trackHistoryResult = await pool.query(trackHistoryQuery, [momIds]);
+    // Wrapped in try/catch so any schema issue here doesn't blank the whole
+    // response. Outcome derived: 'active' = still paired, 'completed' =
+    // complete_reason set, 'incomplete' = incomplete_reason set.
     const trackHistoryByMom = {};
-    for (const r of trackHistoryResult.rows) {
-      if (!trackHistoryByMom[r.mom_id]) trackHistoryByMom[r.mom_id] = [];
-      let outcome = 'unknown';
-      if (r.status === 'paired') outcome = 'active';
-      else if (r.complete_reason)   outcome = 'completed';
-      else if (r.incomplete_reason) outcome = 'incomplete';
-      trackHistoryByMom[r.mom_id].push({
-        pairingId:    r.pairing_id,
-        name:         r.track_title || '—',
-        start:        r.started_at,
-        end:          r.ended_at,
-        outcome,
-        completeReason:   r.complete_reason || null,
-        incompleteReason: r.incomplete_reason || null,
-        pairingType:  r.advocacy_type === 'group' ? 'group' : '1:1',
-        advocateName: r.advocate_name || null,
-      });
+    try {
+      const trackHistoryQuery = `
+        SELECT
+          p."momId"                                  AS mom_id,
+          p."id"                                     AS pairing_id,
+          t."title"                                  AS track_title,
+          p."status"::text                           AS status,
+          p."advocacy_type"::text                    AS advocacy_type,
+          p."created_at"                             AS started_at,
+          p."completed_on"                           AS ended_at,
+          p."complete_reason_sub_status"::text       AS complete_reason,
+          p."incomplete_reason_sub_status"::text     AS incomplete_reason,
+          adv."firstName"                            AS adv_first,
+          adv."lastName"                             AS adv_last
+        FROM "Pairing" p
+        LEFT JOIN "Track" t ON t."id" = p."trackId"
+        LEFT JOIN "User"  adv ON adv."id" = p."advocateUserId"
+        WHERE p."momId" = ANY($1)
+          AND p."deleted_at" = 0
+        ORDER BY p."momId", p."created_at" DESC
+      `;
+      const trackHistoryResult = await pool.query(trackHistoryQuery, [momIds]);
+      for (const r of trackHistoryResult.rows) {
+        if (!trackHistoryByMom[r.mom_id]) trackHistoryByMom[r.mom_id] = [];
+        let outcome = 'unknown';
+        if (r.status === 'paired') outcome = 'active';
+        else if (r.complete_reason)   outcome = 'completed';
+        else if (r.incomplete_reason) outcome = 'incomplete';
+        const advName = [r.adv_first, r.adv_last].filter(Boolean).join(' ').trim();
+        trackHistoryByMom[r.mom_id].push({
+          pairingId:    r.pairing_id,
+          name:         r.track_title || '—',
+          start:        r.started_at,
+          end:          r.ended_at,
+          outcome,
+          completeReason:   r.complete_reason || null,
+          incompleteReason: r.incomplete_reason || null,
+          pairingType:  r.advocacy_type === 'group' ? 'group' : '1:1',
+          advocateName: advName || null,
+        });
+      }
+    } catch (err) {
+      console.error('[mom-status] trackHistory query failed:', err.message);
+      // Continue without track history rather than failing the whole endpoint.
     }
 
     // Required-sessions lookup by track title — mirrors report-data.js REQUIRED_SESSIONS.

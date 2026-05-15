@@ -1954,12 +1954,16 @@
      <div>
       <span class="child-prev-count" data-hydrate="child-prev-count" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">28</span>
       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:4px;">Child Welfare Prevention</div>
-      <div style="font-size:11px;color:#aaa;font-style:italic;">Year to date children prevented from Child welfare involvement</div>
+      <div style="font-size:11px;color:#aaa;font-style:italic;margin-bottom:4px;">Year to date children prevented from Child welfare involvement</div>
+      <div style="font-size:11px;color:var(--mid);font-family:'Lato',sans-serif;">
+        <span data-hydrate="child-prev-cps">0</span> CPS prevented &middot;
+        <span data-hydrate="child-prev-foster">0</span> Foster Care prevented
+      </div>
      </div>
      <div>
       <span class="child-prev-value" data-hydrate="child-prev-value" style="font-size:24px;font-family:'Shrikhand',serif;color:var(--dark);line-height:1;display:block;margin-bottom:6px;">~$1.09M</span>
       <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--mid);margin-bottom:4px;">Year to Date Impact</div>
-      <div style="font-size:11px;color:#aaa;font-style:italic;"><span class="child-prev-count-ctx" data-hydrate="child-prev-count-ctx">28</span> &middot; $38,850 per child &middot; estimated year to date impact</div>
+      <div style="font-size:11px;color:#aaa;font-style:italic;"><span class="child-prev-count-ctx" data-hydrate="child-prev-count-ctx">28</span> Foster Care prevented &middot; $38,850 per child &middot; estimated year to date impact</div>
      </div>
     </div>
    </div>
@@ -3604,15 +3608,21 @@
    //   SAME NUMBER — one source, two display sites. No second payload
    //   key needed. Dollar value = count × $38,850, computed client-side.
    if (k1.numerator != null) {
-    var pcCount = k1.numerator;
-    var pcDollars = pcCount * 38850;
+    var pcCount       = k1.numerator;
+    var pcCps         = k1.cps_prevented    != null ? k1.cps_prevented    : 0;
+    var pcFoster      = k1.foster_prevented != null ? k1.foster_prevented : 0;
+    // Dollar value uses ONLY foster_prevented (placement cost-avoidance).
+    // Backend already computes k1.dollar_impact = foster_prevented × $38,850.
+    var pcDollars = k1.dollar_impact != null ? k1.dollar_impact : pcFoster * 38850;
     var pcDisp;
     if      (pcDollars >= 1e6)  pcDisp = '~$' + (pcDollars / 1e6).toFixed(2) + 'M';
     else if (pcDollars >= 1e3)  pcDisp = '~$' + Math.round(pcDollars / 1e3) + 'K';
     else                        pcDisp = '~$' + pcDollars;
     setH1('child-prev-count',     pcCount);
+    setH1('child-prev-cps',       pcCps);
+    setH1('child-prev-foster',    pcFoster);
     setH1('child-prev-value',     pcDisp);
-    setH1('child-prev-count-ctx', pcCount);
+    setH1('child-prev-count-ctx', pcFoster);
    }
 
    // ── Mothers funnel-row buckets (In a Track / Membership Community)
@@ -4351,7 +4361,9 @@
    if (childrenCard) {
     // Children card has a 2-col grid: Child Welfare Prevention + Est. Impact Value
     var childGridCols = childrenCard.querySelectorAll('div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] > div');
-    var welfareCount = snap.children_welfare_involvement || 0;
+    // Fix 3: source from kpi1.foster_prevented so the description line
+    // reflects the Foster-Care-only count (which drives dollar_impact).
+    var welfareCount = (kpis && kpis.kpi1 && kpis.kpi1.foster_prevented) || 0;
     if (childGridCols.length >= 1) {
      var cwNum = childGridCols[0].querySelector('div[style*="font-size:24px"]');
      if (cwNum) cwNum.textContent = fmt(welfareCount);
@@ -4363,7 +4375,7 @@
      if (impactNum) impactNum.textContent = impactStr;
      // Update the description line
      var impactDesc = childGridCols[1].querySelector('div[style*="font-size:11px"][style*="font-style:italic"]');
-     if (impactDesc) impactDesc.textContent = welfareCount + ' \u00D7 $38,850 \u00B7 estimated prevention value';
+     if (impactDesc) impactDesc.textContent = welfareCount + ' Foster Care prevented \u00B7 $38,850 per child \u00B7 estimated year to date impact';
     }
     // Update the description line for welfare prevention count
     if (childGridCols.length >= 1) {

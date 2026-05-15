@@ -1467,9 +1467,9 @@ router.get('/', async (req, res) => {
           (SELECT COUNT(*)::int FROM active_pairings)                                  AS base_cohort_n,
           COUNT(*)::int                                                                 AS cohort_n,
           GREATEST((SELECT COUNT(*)::int FROM active_pairings) - COUNT(*)::int, 0)     AS excluded_n,
-          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END                     AS denominator,
-          CASE WHEN COUNT(*) < 5 THEN NULL
-               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END     AS numerator
+          CASE WHEN COUNT(*) < 10 THEN NULL ELSE COUNT(*)::int END                    AS denominator,
+          CASE WHEN COUNT(*) < 10 THEN NULL
+               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END    AS numerator
         FROM eligible
       `, affParams),
 

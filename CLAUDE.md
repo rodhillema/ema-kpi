@@ -28,7 +28,11 @@ Do not skip or summarize — these rules are load-bearing.
 │   └── email.js            # SendGrid wrapper + branded invite/reset email templates
 ├── routes/
 │   ├── report-data.js      # Main KPI endpoint — large Promise.all; mind array order (see note)
+│   ├── track-journey.js    # Track Journey API — /api/track-journey/pairings + /:pairingId
+│   ├── mom-status.js       # /api/mom-status — mom list with status, coordinator, FWA, contact log
 │   ├── advocates.js        # /api/advocates for Advocate Care Report
+│   ├── users.js            # /api/users — RBAC-scoped Trellis user list (User Report)
+│   ├── admin-export.js     # /api/admin/export — whitelist-only data export (rd.hill only)
 │   ├── champions.js        # /api/admin/champions — CRUD + bulk import (whitelisted admin only)
 │   ├── champion-auth.js    # /api/champion/* — public token-based set/reset password
 │   ├── tickets.js          # Ticket CRUD (legacy)
@@ -41,6 +45,9 @@ Do not skip or summarize — these rules are load-bearing.
 ├── public/
 │   ├── hub.html            # Impact Hub landing page with login
 │   ├── report.html         # Q1 Quarterly Impact Report — Cristina's layer
+│   ├── track-journey.html  # Track Journey — per-mom pairing timeline + stall drawers
+│   ├── mom-status-report.html # Mom Status Report — full mom list with coordinator, FWA, contact
+│   ├── user-report.html    # User Report — Trellis users, roles, advocate status
 │   ├── advocate-care.html  # Advocate Care Report (coordinator-facing)
 │   ├── admin-champions.html # Champion management UI (whitelisted admin only)
 │   ├── set-password.html   # Champion invite token landing
@@ -52,6 +59,7 @@ Do not skip or summarize — these rules are load-bearing.
 │   ├── favicon.png         # Yellow ē favicon
 │   ├── style.css           # Global styles
 │   └── js/                 # Frontend scripts
+├── TRACK-JOURNEY.md        # Product knowledge doc for Track Journey page (non-technical)
 ├── package.json
 ├── CLAUDE.md               # This file
 └── .env                    # Never commit — DB credentials, session secret
@@ -182,7 +190,14 @@ function requireRole(req, res, next) {
 | POST | /api/logout | Session | Destroy session |
 | GET | /api/me | requireAuth | Check session / return role info |
 | GET | /api/report-data | requireAuth + requireRole | KPI data JSON, affiliate-scoped |
+| GET | /api/track-journey/pairings | requireAuth + requireRole | Affiliate-scoped pairing selector list |
+| GET | /api/track-journey/:pairingId | requireAuth + requireRole | Full journey data for one pairing |
+| GET | /api/mom-status | requireAuth + requireRole | Mom list with status, coordinator, FWA, contact log |
+| GET | /api/users | requireAuth + requireRole | RBAC-scoped Trellis user list |
+| GET | /api/admin/export/staff | requireAuth + whitelist | Staff export (rd.hill only) |
 | GET | /report | requireAuth + requireRole | Serve report.html |
+| GET | /track-journey | requireAuth + requireRole | Serve track-journey.html |
+| GET | /mom-status | requireAuth + requireRole | Serve mom-status-report.html |
 | GET | / | None | Ticket submission portal |
 | GET | /admin | None (client-side auth) | Ticket admin dashboard |
 
@@ -300,11 +315,11 @@ AdvocacyGroup.state:      'active', 'completed', 'deleted', 'planned'
 
 **KPI 2 — 70% Improved FSS (Family Stability Score)**
 - Composite across life-area question responses in `AssessmentResultQuestionResponse`
-- Anchored on `Pairing.completed_on` falling in Q1 (same cohort as KPI 3). Assessment dates themselves not constrained — only track completion date.
-- Denominator: moms who completed a pairing in Q1 AND have both a pre AND post assessment from current Trellis templates
+- **Anchor: `Pairing.created_at` (intake/start date) — NOT `completed_on`.** The cohort window is moms whose pairing STARTED in the period, not those who completed. This was corrected in Fix 5b (commit `722db10`) after `completed_on`-anchored windows produced inflated/wrong results.
+- Denominator: moms whose pairing started in Q1 AND have both a pre AND post assessment from current Trellis templates
 - Numerator: subset where mom's overall post composite > overall pre composite
 - Does NOT require mom.status='active' currently
-- Exclude: PromiseServes Legacy template
+- Exclude: PromiseServes Legacy template (batch PS exclusion also applied — legacy IDs held in a CTE)
 
 **KPI 3 — 70% Learning Progress**
 - Anchored on `Pairing.completed_on` in Q1 + `p.status='pairing_complete'` + `complete_reason_sub_status IS NOT NULL`
@@ -396,6 +411,7 @@ A mom may appear to have a "current" FWA when only one field was touched.
 - No mom counted twice across sections of the same report
 - DCF reporting (Jean Roger) is Broward-specific only — never conflate with org-wide KPI reporting
 - Foster care cost estimates (~$35,000-$55,000/year) are framed as "estimated prevention value," not hard claims
+- **Children card split (Fix 3):** CPS prevention and Foster care prevention are displayed as separate counts. Dollar value ("estimated prevention value") uses the **foster care** count only — CPS-prevented children do NOT generate a dollar figure because there is no cost-avoidance estimate for CPS investigations (only for foster placements). Never conflate the two buckets in the dollar calc.
 
 ---
 
@@ -506,6 +522,156 @@ When adding or moving queries in the `Promise.all`:
 1. Count the position in the array (index from 0)
 2. Match that exact position in the destructuring at the top
 3. Test every downstream field on the page after the change
+
+---
+
+## Track Journey — Architecture & Rules
+
+The Track Journey page (`/track-journey`) is a coordinator-facing tool for viewing a single mom's full program history: timeline of sessions, stall detection, vital support needs, connection log, and assessment data.
+
+### Org-wide access pattern
+`routes/track-journey.js` uses its own `ORG_WIDE_ROLES` / `ORG_WIDE_NAMES` constants (not just `middleware/auth.js`):
+```javascript
+const ORG_WIDE_ROLES = ['administrator'];
+const ORG_WIDE_NAMES = ['rd.hill', 'cristina.galloway'];
+```
+This same pattern is repeated in `routes/mom-status.js` and `routes/users.js`. Keep these in sync if the org-wide user list changes.
+
+### `/api/track-journey/pairings`
+Returns a list of all `paired` or `pairing_complete` pairings scoped to the user's affiliate. Each entry includes a stall indicator (type + days) computed from the most recent held session dates. This powers the mom search dropdown.
+
+### `/api/track-journey/:pairingId`
+Returns the full journey payload for one pairing:
+```
+{
+  pairing:         { id, momName, trackTitle, status, advocacyType, startDate, endDate,
+                     advocateName, coordinatorName, currentStall }
+  sessions:        [{ id, date, status, type, notes, lessonNumber, lessonTemplateId, sessionName }]
+  stalls:          [{ type, startDate, endDate, days, isActive }]
+  assessments:     { pre: {..., questions?, constructs?}, post: {...} }
+  coordinatorNotes:[{ date, text, coordinatorName }]
+  connectionLogs:  [{ id, date, summary, contactMethod, createdByName, visibleToAdvocate }]
+  vitalNeeds:      [{ id, date, requestedDate, needType, context, urgent, status, serviceReferral }]
+}
+```
+
+### Stall computation (`computeStalls`)
+Runs server-side in `routes/track-journey.js`. Two types:
+
+**Curriculum Stall** (amber, dashed border on timeline):
+- Gap between consecutive `Track_Session` held dates ≥ 30 days
+- AND at least one non-Track_Session held in the gap
+- Rationale: mom is still engaged but curriculum has stopped
+
+**Communication / General Stall** (red, solid border):
+- Gap between any consecutive held-session dates ≥ 14 days
+- NOT subsumed within a curriculum stall band
+
+Active stalls (`isActive: true`) = band whose right edge is the pairing end (or today).
+
+### Group sessions
+NPP pairings delivered in a group store sessions with `pairing_id = NULL` and `advocacy_group_id` set instead. The `/api/track-journey/:pairingId` query pulls sessions by EITHER `pairing_id = $1` OR `advocacy_group_id = $2`. This means group session events are shared across all moms in the group and each sees the full group timeline.
+
+### Session lesson numbering
+Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same lesson share the same number (the `×N` badge on the timeline). Sessions without a template ID get a sequential fallback number.
+
+### Pairing.advocacy_type
+Indicates delivery mode: the advocate field in the pairing strip shows `· 1:1` or `· Group` suffix based on this field.
+
+### ConnectionLog table
+```
+mom_id            — FK to Mom
+date_created_c    — actual contact date (not created_at)
+summary_c         — note text
+contact_method_c  — enum: 'Call', 'Video', 'SMS_Text'
+created_by_name   — free text (name of who logged it)
+is_visible_to_advocates_c — boolean
+deleted_at        — standard soft delete
+```
+Always query: `WHERE cl."mom_id" = $1 AND cl."deleted_at" = 0 ORDER BY cl."date_created_c" DESC`
+
+### ServiceReferral table
+```
+mom_id             — FK to Mom
+benevolence_need_id — nullable FK to BenevolenceNeed (links referral to a specific need)
+service            — enum: 'benevolence', 'childcare', 'crisis_resources'
+outcome            — enum: 'successful', 'unknown'
+provider           — free text
+start_date         — when referral was opened
+created_by_name    — free text
+deleted_at         — standard soft delete
+```
+Join to vitalNeeds: `serviceReferrals.find(s => s.benevolenceNeedId === need.id)`
+
+### BenevolenceNeed table (Vital Supports)
+```
+momId              — FK to Mom
+advocacyGroupId    — FK to AdvocacyGroup (for group-level needs)
+type_c             — enum (need type)
+name               — fallback display name
+description        — context note
+is_urgent_c        — boolean
+did_address_need_c — boolean → status 'Fulfilled'
+provided_date_c    — date addressed
+resolved_date_c    — date resolved → status 'Resolved'
+notes_c            — coordinator notes
+group_need_category_c — category for group needs
+deleted_at         — standard soft delete
+```
+Status derivation: `addressed=true` → Fulfilled; `resolvedDate` → Resolved; else → Requested.
+
+### Assessment data for Track Journey
+- EP/RR: `AssessmentResult` JOIN `AssessmentResultQuestionResponse` JOIN `AssessmentQuestion`
+  - Per-question bars use `AssessmentQuestion.label` and `AssessmentQuestion.order`
+  - Scale computed from global min/max of `intResponse` across all non-Legacy assessments
+- NPP: `AAPIScore` — 5 constructs (A–E), pre + post on same row
+  - Only falls back to AAPI if no EP/RR AssessmentResult found for the mom
+  - `AAPIScore` is currently empty org-wide — the AAPI template was never built in Trellis
+- Always exclude Legacy: `a."name" NOT ILIKE '%Legacy%'`
+
+### Stall drawer — section order
+4 sections, always rendered in this order:
+1. **At a Glance** — prose box with days stalled, outreach count, last contact, active needs
+2. **Flagged Needs Active** — BenevolenceNeed records not resolved/fulfilled (always shown; empty state if none)
+3. **Outreach Attempted (N)** — ConnectionLog entries + NotHeld sessions in the stall window, newest first
+4. **Full Activity Feed** — all sessions + coordinator notes + connection logs in window, newest first
+
+### Flag/Need drawer — 3 states
+- **Resolved** (green header): `ServiceReferral.outcome = 'successful'`
+- **Referred** (amber header): `ServiceReferral` exists, outcome ≠ successful
+- **Open** (amber header): no `ServiceReferral` linked to this `BenevolenceNeed`
+
+Only one drawer (stall or flag) is open at a time. When opening stall drawer: explicitly `flagDrawer.style.display = 'none'`. When opening flag drawer: explicitly `stallDrawer.style.display = 'none'`. `closeAllDrawers()` resets both to `display: ''` and removes `body.drawer-open`.
+
+---
+
+## Mom Status Report — Architecture & Rules
+
+`/mom-status` serves `mom-status-report.html`. The API at `/api/mom-status` returns one row per mom with:
+- Core profile (name, status, affiliate)
+- Coordinator (sourced from Pairing → CoordinatorNote link, **never** from AdvocacyGroup.coordinator)
+- Latest FWA timestamp
+- Current pairing (track, status, start date)
+- Most recent ConnectionLog entry (last contact date + method)
+
+**Coordinator sourcing rule (Fix 7):** Always derive coordinator from Pairing records via the advocate link. Priority: (1) active pairing over completed, (2) 1:1 over group, (3) most recent coordinator note. Never use `AdvocacyGroup.coordinator` — it is unreliable.
+
+Org-wide access: `administrator` role OR username `cristina.galloway`. Affiliate-scoped for all other coordinator-and-above roles.
+
+---
+
+## User Report — Architecture & Rules
+
+`/api/users` returns Trellis users scoped by the viewer's role. RBAC visibility rules:
+```
+coordinator    → sees: Advocate only
+staff_advocate → sees: Advocate, Coordinator
+supervisor     → sees: Advocate, Coordinator, Staff Advocate
+administrator  → sees: all
+champion (aff) → sees: Advocate in their affiliate
+champion (none)→ sees: all (org-wide champion = same as admin)
+```
+Org-wide override: `cristina.galloway` gets administrator-level access regardless of role.
 
 ---
 

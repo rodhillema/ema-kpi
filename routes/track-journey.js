@@ -14,8 +14,8 @@ function daysSince(dt) {
 
 // Compute historical stall bands from a session list.
 // Returns [{type, startDate, endDate, days, isActive}]
-// Curriculum stall: track-session gap ≥30d with at least one support session in gap.
-// General stall:    any-session gap ≥14d, not subsumed by a curriculum stall.
+// Curriculum stall: track-session gap ≥30d with at least one support session in gap (historical).
+// Communication stall: any held-session gap ≥14d, not subsumed by a curriculum stall band.
 function computeStalls(sessions, pairingStart, pairingEnd) {
   // Group sessions may have status='Held' but date_start=NULL.
   // Drop null-dated sessions from the stall computation — they can't anchor
@@ -50,7 +50,7 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
     currRanges.push([d0, d1]);
   }
 
-  // ── General stalls (held-session gap ≥14d, not inside a curriculum stall) ──
+  // ── Communication stalls (held-session gap ≥14d, not inside a curriculum stall) ──
   const gp = [winStart, ...allHeld.map(s => new Date(s.date)), winEnd];
   for (let i = 0; i < gp.length - 1; i++) {
     const d0 = gp[i], d1 = gp[i + 1];
@@ -59,7 +59,7 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
     const inCurr = currRanges.some(([cs, ce]) => d0 >= cs && d1 <= ce);
     if (inCurr) continue;
     result.push({
-      type:      'general',
+      type:      'communication',
       startDate: d0.toISOString(),
       endDate:   d1.toISOString(),
       days:      Math.round(days),
@@ -141,9 +141,15 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
       const held = lastHeldMap[p.pairingId] || {};
       const dsh = daysSince(held.lastHeldAt);
       const dst = daysSince(held.lastHeldTrackAt);
+      const commStall = dsh !== null && dsh >= 14;
+      const currStall = dst !== null && dst >= 30;
       let stall = null;
-      if (dst !== null && dst >= 30)       stall = { type: 'curriculum', days: dst };
-      else if (dsh !== null && dsh >= 14)  stall = { type: 'general',    days: dsh };
+      if (commStall || currStall) {
+        stall = {
+          type: (commStall && currStall) ? 'both' : currStall ? 'curriculum' : 'communication',
+          days: currStall ? dst : dsh,
+        };
+      }
       return {
         pairingId:  p.pairingId,
         momName:    p.momName,

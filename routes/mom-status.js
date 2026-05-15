@@ -93,8 +93,8 @@ router.get('/', async (req, res) => {
         ORDER BY p."momId", p."created_at" DESC
       ),
       latest_session AS (
-        -- Latest session of any type (Held / Planned / NotHeld) per mom.
-        -- "Last contact" heuristic per Cristina's spec.
+        -- Latest HELD session per mom — source for communication stall (Fix 8).
+        -- Held-only: Planned/NotHeld sessions are not actual contact.
         SELECT DISTINCT ON (p."momId")
           p."momId" AS mom_id,
           s."date_start" AS session_date,
@@ -102,6 +102,20 @@ router.get('/', async (req, res) => {
         FROM "Session" s
         JOIN "Pairing" p ON p."id" = s."pairing_id"
         WHERE s."deleted_at" = 0
+          AND s."status"::text = 'Held'
+        ORDER BY p."momId", s."date_start" DESC
+      ),
+      last_curriculum_session AS (
+        -- Latest held session with lesson content (lesson_template_id IS NOT NULL).
+        -- Source for curriculum stall threshold (30 days, Fix 8).
+        SELECT DISTINCT ON (p."momId")
+          p."momId" AS mom_id,
+          s."date_start" AS curriculum_date
+        FROM "Session" s
+        JOIN "Pairing" p ON p."id" = s."pairing_id"
+        WHERE s."deleted_at" = 0
+          AND s."status"::text = 'Held'
+          AND s."lesson_template_id" IS NOT NULL
         ORDER BY p."momId", s."date_start" DESC
       ),
       intake_first_engaged AS (
@@ -134,6 +148,7 @@ router.get('/', async (req, res) => {
         ap.pairing_started_at AS "pairingStartedAt",
         ls.session_date AS "lastSessionDate",
         ls.session_status AS "lastSessionStatus",
+        lcs.curriculum_date AS "lastCurriculumDate",
         COALESCE(lfwa.fwa_date, ife.engaged_date) AS "intakeDate",
         m."updated_at" AS "momUpdatedAt"
       FROM "Mom" m
@@ -142,6 +157,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN latest_fwa lfwa ON lfwa.mom_id = m."id"
       LEFT JOIN active_pairing ap ON ap.mom_id = m."id"
       LEFT JOIN latest_session ls ON ls.mom_id = m."id"
+      LEFT JOIN last_curriculum_session lcs ON lcs.mom_id = m."id"
       LEFT JOIN intake_first_engaged ife ON ife.mom_id = m."id"
       WHERE ${whereClause}
       ORDER BY m."last_name" ASC NULLS LAST, m."first_name" ASC NULLS LAST
@@ -300,7 +316,14 @@ router.get('/', async (req, res) => {
         const sessionsTotal = REQUIRED_SESSIONS[r.activeTrackTitle] || null;
         const sessionsDone = heldByMom[r.id] || 0;
         const stalledDays = daysSince(r.lastSessionDate);
-        const stalled = stalledDays != null && stalledDays > 14;
+        const curriculumDays = daysSince(r.lastCurriculumDate);
+        const commStall = stalledDays == null || stalledDays > 14;
+        const currStall = curriculumDays == null || curriculumDays > 30;
+        const stall_type = (commStall && currStall) ? 'both'
+                         : commStall ? 'communication'
+                         : currStall ? 'curriculum'
+                         : null;
+        const stalled = stall_type !== null;
         // Normalize track title to NPP/EP/RR group code for filter bucketing.
         // Spanish track names share their English counterpart's group:
         //   "Crianza con cariño"    / "Nurturing Parenting"    → NPP
@@ -318,6 +341,7 @@ router.get('/', async (req, res) => {
           sessionsDone,
           sessionsTotal,
           stalled,
+          stall_type,
           stalledDays,
         };
       }

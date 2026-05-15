@@ -17,7 +17,10 @@ function daysSince(dt) {
 // Curriculum stall: track-session gap ≥30d with at least one support session in gap.
 // General stall:    any-session gap ≥14d, not subsumed by a curriculum stall.
 function computeStalls(sessions, pairingStart, pairingEnd) {
-  const allHeld   = sessions.filter(s => s.status === 'Held')
+  // Group sessions may have status='Held' but date_start=NULL.
+  // Drop null-dated sessions from the stall computation — they can't anchor
+  // a gap calculation and would otherwise be treated as epoch (1970).
+  const allHeld   = sessions.filter(s => s.status === 'Held' && s.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const trackHeld = allHeld.filter(s => s.type === 'Track_Session');
 
@@ -306,6 +309,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       )
       SELECT
         p."id",
+        p."momId"        AS "momId",
+        p."advocacyGroupId" AS "advocacyGroupId",
         m."first_name"   AS "momFirst",
         m."last_name"    AS "momLast",
         t."title"        AS "trackTitle",
@@ -331,7 +336,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     }
     const p = pRows[0];
 
-    // Sessions — try with description column, fall back without it
+    // Sessions for this pairing.
+    // Group-delivered tracks (NPP-in-a-group) store Sessions with
+    // pairing_id=NULL but with advocacy_group_id set. Pull by either:
+    //   - direct pairing_id match (individual track), OR
+    //   - this pairing's advocacy_group_id (group track)
+    // Group sessions are group-level events shared by all members of the
+    // group; we surface them on each member's Track Journey.
     let sessRows;
     try {
       ({ rows: sessRows } = await pool.query(`
@@ -339,19 +350,29 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                s."date_start"         AS "date",
                s."status"::text       AS "status",
                s."session_type"::text AS "type",
-               s."description"        AS "notes"
+               s."description"        AS "notes",
+               s."lesson_template_id" AS "lessonTemplateId",
+               s."name"               AS "sessionName"
           FROM "Session" s
-         WHERE s."pairing_id" = $1
-           AND s."deleted_at" = 0
-         ORDER BY s."date_start"
-      `, [pairingId]));
+         WHERE s."deleted_at" = 0
+           AND (
+             s."pairing_id" = $1
+             OR (
+               $2::text IS NOT NULL
+               AND s."advocacy_group_id" = $2
+             )
+           )
+         ORDER BY s."date_start" NULLS LAST
+      `, [pairingId, p.advocacyGroupId]));
     } catch (_) {
       ({ rows: sessRows } = await pool.query(`
         SELECT s."id",
                s."date_start"         AS "date",
                s."status"::text       AS "status",
                s."session_type"::text AS "type",
-               NULL::text             AS "notes"
+               NULL::text             AS "notes",
+               NULL::text             AS "lessonTemplateId",
+               NULL::text             AS "sessionName"
           FROM "Session" s
          WHERE s."pairing_id" = $1
            AND s."deleted_at" = 0
@@ -373,10 +394,12 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Stall computation
     const stalls = computeStalls(sessions, p.startDate, p.endDate);
 
-    // Current stall for header
-    const heldSessions  = sessions.filter(s => s.status === 'Held');
+    // Current stall for header — only count Held sessions that have a real
+    // date_start. Some group sessions are recorded as Held but without a
+    // date and can't anchor a stall calc.
+    const heldSessions  = sessions.filter(s => s.status === 'Held' && s.date);
     const lastHeld      = heldSessions.at(-1)?.date ?? null;
-    const lastHeldTrack = sessions.filter(s => s.status === 'Held' && s.type === 'Track_Session').at(-1)?.date ?? null;
+    const lastHeldTrack = sessions.filter(s => s.status === 'Held' && s.type === 'Track_Session' && s.date).at(-1)?.date ?? null;
     const dsh = daysSince(lastHeld);
     const dst = daysSince(lastHeldTrack);
     let currentStall = null;
@@ -497,6 +520,49 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       }));
     } catch (_) { /* coordinator notes unavailable */ }
 
+    // Vital Supports / Flagged Needs — BenevolenceNeed rows for this mom,
+    // plus any group-level needs tied to this pairing's advocacy group.
+    // Surfaces the same data as Trellis's "Vital Support" tab.
+    let vitalNeeds = [];
+    try {
+      const { rows: needRows } = await pool.query(`
+        SELECT
+          bn."id",
+          bn."created_at"           AS "requestedDate",
+          bn."type_c"::text         AS "needType",
+          bn."name"                 AS "name",
+          bn."description"          AS "context",
+          bn."is_urgent_c"          AS "urgent",
+          bn."did_address_need_c"   AS "addressed",
+          bn."provided_date_c"      AS "providedDate",
+          bn."resolved_date_c"      AS "resolvedDate",
+          bn."notes_c"              AS "notes",
+          bn."advocacyGroupId"      AS "advocacyGroupId",
+          bn."group_need_category_c"::text AS "groupNeedCategory"
+        FROM "BenevolenceNeed" bn
+        WHERE bn."deleted_at" = 0
+          AND (
+            bn."momId" = $1
+            OR ($2::text IS NOT NULL AND bn."advocacyGroupId" = $2)
+          )
+        ORDER BY COALESCE(bn."resolved_date_c", bn."provided_date_c", bn."created_at") DESC
+      `, [p.momId, p.advocacyGroupId]);
+      vitalNeeds = needRows.map(r => ({
+        id:            r.id,
+        date:          r.providedDate || r.requestedDate,
+        requestedDate: r.requestedDate,
+        providedDate:  r.providedDate,
+        resolvedDate:  r.resolvedDate,
+        needType:      r.needType || r.groupNeedCategory || r.name,
+        context:       r.context,
+        urgent:        r.urgent === true,
+        status:        r.addressed === true ? 'Fulfilled'
+                     : r.resolvedDate          ? 'Resolved'
+                     : 'Requested',
+        notes:         r.notes,
+      }));
+    } catch (_) { /* vital needs unavailable */ }
+
     res.json({
       pairing: {
         id:              p.id,
@@ -513,6 +579,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       stalls,
       assessments,
       coordinatorNotes,
+      vitalNeeds,
     });
   } catch (err) {
     console.error('[track-journey] /:pairingId error:', err.message);

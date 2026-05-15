@@ -52,9 +52,10 @@ router.get('/', async (req, res) => {
     // DISTINCT ON prevents duplicate rows when a mom has multiple pairings / coordinator assignments.
     const mainQuery = `
       WITH coord_for_mom AS (
-        -- Coordinator = most recent CoordinatorNote author that references the mom's advocate.
-        -- Same pattern we use in /api/advocates to derive coordinator when the _AdvocateToCoordinator
-        -- join table is sparse.
+        -- Coordinator always comes from the mom's Pairing record (via advocate link).
+        -- Rule (Fix 7): never use AdvocacyGroup.coordinator — always source from Pairing.
+        -- Priority: (1) active pairing over completed, (2) 1:1 over group, (3) most recent note.
+        -- Tiebreaker: if a mom has both a 1:1 and a group pairing, the 1:1 coordinator wins.
         SELECT DISTINCT ON (p."momId")
           p."momId" AS mom_id,
           cn."coordinator_id" AS coordinator_id,
@@ -64,7 +65,10 @@ router.get('/', async (req, res) => {
         JOIN "CoordinatorNote" cn ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
         LEFT JOIN "User" coord ON coord."id" = cn."coordinator_id"
         WHERE p."deleted_at" = 0
-        ORDER BY p."momId", cn."created_at" DESC
+        ORDER BY p."momId",
+          (p."status"::text <> 'paired') ASC,       -- active pairings first
+          (p."advocacy_type"::text = 'group') ASC,   -- 1:1 before group within same tier
+          cn."created_at" DESC                        -- most recent note as last-resort tiebreak
       ),
       latest_fwa AS (
         SELECT DISTINCT ON (wa."mom_id")

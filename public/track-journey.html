@@ -1198,10 +1198,27 @@ body.drawer-open .drawer {
 .update-type {
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.5px;
+  font-size: 9px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--dark);
+  color: var(--teal, #5a9a93);
+  background: rgba(90,154,147,0.12);
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  white-space: nowrap;
+}
+.update-type.missed {
+  color: var(--red);
+  background: rgba(236,72,47,0.1);
+}
+.update-type.held {
+  color: var(--amber-border, #c8841a);
+  background: rgba(242,161,54,0.15);
+}
+.update-type.note {
+  color: var(--green);
+  background: rgba(18,57,57,0.08);
 }
 
 .update-date {
@@ -2705,36 +2722,6 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   border-bottom: 1px solid var(--border);
 }
 
-/* At-a-glance stat grid */
-.glance-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.glance-stat {
-  background: var(--page-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-.glance-stat-val {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--dark);
-  line-height: 1.1;
-  margin-bottom: 3px;
-}
-.glance-stat-lbl {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 300;
-  font-size: 9px;
-  letter-spacing: .6px;
-  text-transform: uppercase;
-  color: var(--mid);
-}
-.drawer.is-curr-stall .glance-stat-val { color: var(--amber-border); }
-
 /* At-a-glance summary block – narrative paragraph telling the
    "what happened and why you should care" story. Color-coded
    tint to match the drawer header type. */
@@ -4214,12 +4201,19 @@ function openStallDrawer(clickedStall) {
   var html = '';
 
   // ── 1. At a glance ──────────────────────────────────────────────────────
-  html += '<div class=”dsec”><div class=”dsec-label”>At a glance</div>';
-  html += '<div class=”glance-grid”>';
-  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + currentStall.days + '</div><div class=”glance-stat-lbl”>' + (isCurriculum ? 'days without curriculum' : 'days since last held') + '</div></div>';
-  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + (lastHeld ? fmtDateShort(lastHeld.date) : '—') + '</div><div class=”glance-stat-lbl”>last held session</div></div>';
-  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + outreachCount + '</div><div class=”glance-stat-lbl”>outreach attempts</div></div>';
-  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + activeNeeds.length + '</div><div class=”glance-stat-lbl”>active flagged needs</div></div>';
+  html += '<div class=”dsec”><div class=”dsec-label”>At a glance</div><div class=”dsec-glance”>';
+  html += '<strong>' + currentStall.days + ' days</strong> ';
+  html += isCurriculum ? 'without a curriculum session. ' : 'since the last held session. ';
+  if (outreachCount) {
+    html += '<strong>' + outreachCount + ' outreach attempt' + (outreachCount > 1 ? 's' : '') + '</strong> during this period. ';
+  }
+  if (lastHeld) {
+    html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
+  }
+  if (activeNeeds.length) {
+    var needNames = activeNeeds.map(function(n){ return (n.needType || 'need').replace(/_/g,' '); }).slice(0,3).join(', ');
+    html += '<strong>' + activeNeeds.length + ' flagged need' + (activeNeeds.length > 1 ? 's' : '') + ' active</strong>: ' + escHtml(needNames) + '.';
+  }
   html += '</div></div>';
 
   // ── 2. Flagged needs active ──────────────────────────────────────────────
@@ -4265,22 +4259,24 @@ function openStallDrawer(clickedStall) {
     connLogsInWindow.forEach(function(c) {
       var method = c.contactMethod || '';
       outreachItems.push({
-        date:   new Date(c.date),
-        iconCls: /sms|text/i.test(method) ? 'text' : 'call',
-        glyph:   /sms|text/i.test(method) ? '✉' : '☎',
-        type:    (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound',
-        author:  c.createdByName || '',
-        text:    c.summary || null,
+        date:     new Date(c.date),
+        iconCls:  /sms|text/i.test(method) ? 'text' : 'call',
+        glyph:    /sms|text/i.test(method) ? '✉' : '☎',
+        type:     (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound',
+        typeCls:  '',
+        author:   c.createdByName || '',
+        text:     c.summary || null,
       });
     });
     missedInWindow.forEach(function(s) {
       outreachItems.push({
-        date:   new Date(s.date),
-        iconCls: 'no-contact',
-        glyph:   '↺',
-        type:    'Missed Session',
-        author:  'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
-        text:    s.notes || null,
+        date:     new Date(s.date),
+        iconCls:  'no-contact',
+        glyph:    '↺',
+        type:     'Missed Session',
+        typeCls:  'missed',
+        author:   'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
+        text:     s.notes || null,
       });
     });
     outreachItems.sort(function(a, b){ return b.date - a.date; });
@@ -4290,7 +4286,7 @@ function openStallDrawer(clickedStall) {
       html += '<div class=”update-entry”>';
       html += '<div class=”update-icon ' + item.iconCls + '”>' + item.glyph + '</div>';
       html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(item.type) + '</span><span class=”update-date”>' + fmtDateShort(item.date.toISOString()) + '</span></div>';
+      html += '<div class=”update-meta”><span class=”update-type' + (item.typeCls ? ' ' + item.typeCls : '') + '”>' + escHtml(item.type) + '</span><span class=”update-date”>' + fmtDateShort(item.date.toISOString()) + '</span></div>';
       if (item.author) html += '<div class=”update-author”>' + escHtml(item.author) + '</div>';
       if (item.text) html += '<div class=”update-text”>' + escHtml(item.text.slice(0, 200)) + (item.text.length > 200 ? '…' : '') + '</div>';
       html += '</div></div>';
@@ -4306,38 +4302,38 @@ function openStallDrawer(clickedStall) {
     var isHeld   = s.status === 'Held';
     var isMissed = s.status === 'NotHeld';
     feedItems.push({
-      date:   new Date(s.date),
-      icon:   isHeld ? 'session' : isMissed ? 'no-contact' : 'text',
-      glyph:  isHeld ? '●' : isMissed ? '↺' : '→',
-      type:   isHeld ? 'Session Held' : isMissed ? 'Missed Session' : 'Planned Session',
-      author: isHeld
-        ? (pairing.advocateName ? escHtml(pairing.advocateName) + ' · Advocate' : 'Advocate')
-        : 'System · ' + escHtml(sessionTypeLabel(s.type)) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
-      text:   s.notes || null,
+      date:    new Date(s.date),
+      icon:    isHeld ? 'session' : isMissed ? 'no-contact' : 'text',
+      glyph:   isHeld ? '●' : isMissed ? '↺' : '→',
+      type:    isHeld ? 'Session Held' : isMissed ? 'Missed Session' : 'Planned Session',
+      typeCls: isHeld ? 'held' : isMissed ? 'missed' : '',
+      author:  isHeld
+        ? (pairing.advocateName ? pairing.advocateName + ' · Advocate' : 'Advocate')
+        : 'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
+      text:    s.notes || null,
     });
   });
   filteredNotes.forEach(function(n) {
     feedItems.push({
-      date:   new Date(n.date),
-      icon:   'note',
-      glyph:  '✎',
-      type:   'Coordinator Note',
-      author: n.coordinatorName ? escHtml(n.coordinatorName) + ' · Coordinator' : 'Coordinator',
-      text:   n.text,
+      date:    new Date(n.date),
+      icon:    'note',
+      glyph:   '✎',
+      type:    'Coordinator Note',
+      typeCls: 'note',
+      author:  n.coordinatorName ? n.coordinatorName + ' · Coordinator' : 'Coordinator',
+      text:    n.text,
     });
   });
   connLogsInWindow.forEach(function(c) {
     var method = c.contactMethod || '';
-    var iconCls = /sms|text/i.test(method) ? 'text' : 'call';
-    var glyph   = /sms|text/i.test(method) ? '✉' : '☎';
-    var typeLabel = (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound';
     feedItems.push({
-      date:   new Date(c.date),
-      icon:   iconCls,
-      glyph:  glyph,
-      type:   typeLabel,
-      author: c.createdByName || '',
-      text:   c.summary || null,
+      date:    new Date(c.date),
+      icon:    /sms|text/i.test(method) ? 'text' : 'call',
+      glyph:   /sms|text/i.test(method) ? '✉' : '☎',
+      type:    (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound',
+      typeCls: '',
+      author:  c.createdByName || '',
+      text:    c.summary || null,
     });
   });
   feedItems.sort(function(a, b){ return b.date - a.date; });
@@ -4349,8 +4345,8 @@ function openStallDrawer(clickedStall) {
       html += '<div class=”update-entry”>';
       html += '<div class=”update-icon ' + f.icon + '”>' + f.glyph + '</div>';
       html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + f.type + '</span><span class=”update-date”>' + fmtDateShort(f.date.toISOString()) + '</span></div>';
-      html += '<div class=”update-author”>' + f.author + '</div>';
+      html += '<div class=”update-meta”><span class=”update-type' + (f.typeCls ? ' ' + f.typeCls : '') + '”>' + escHtml(f.type) + '</span><span class=”update-date”>' + fmtDateShort(f.date.toISOString()) + '</span></div>';
+      if (f.author) html += '<div class=”update-author”>' + escHtml(f.author) + '</div>';
       if (f.text) html += '<div class=”update-text”>' + escHtml(f.text) + '</div>';
       html += '</div></div>';
     });

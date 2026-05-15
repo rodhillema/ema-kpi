@@ -155,7 +155,7 @@ body.logged-in .portal-view{display:flex}
 .fpill button:hover{opacity:1}
 
 /* ── METRICS ── */
-.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:6px}
 .metric{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;position:relative;min-width:0;border-top:3px solid var(--border);overflow:visible}
 .metric:hover{border-color:var(--green)}
 .metric.active{background:var(--green);border-color:var(--green)}
@@ -920,6 +920,7 @@ function getFiltered(){
     const inOutreachScope = a.status==="Active" || a.sub==="Taking A Break" || a.sub==="Taking a Break";
     if(activeCards.has("active")&&a.status!=="Active")return false;
     if(activeCards.has("paired")&&(!inOutreachScope||deriveSub(a).sub!=="Paired"))return false;
+    if(activeCards.has("waiting")&&deriveSub(a).sub!=="Waiting to be Paired")return false;
     if(activeCards.has("break")&&a.sub!=="Taking A Break"&&a.sub!=="Taking a Break")return false;
     if(activeCards.has("bdays30")&&(!inOutreachScope||!a.birthday||dbu(a.birthday)>30))return false;
     if(activeCards.has("overdue")&&(!inOutreachScope||!a.latestNoteDate||dsa(a.latestNoteDate)<=14))return false;
@@ -977,7 +978,7 @@ function render(){
   if(f.phone) pillDefs.push({label:"Phone: "+f.phone,     clear:()=>{document.getElementById("pf-phone").value="";render()}});
   if(f.note)  pillDefs.push({label:"Note: "+document.getElementById("pf-note").selectedOptions[0].text,clear:()=>{document.getElementById("pf-note").value="";render()}});
   f.coord.forEach(v=>pillDefs.push({label:"Coordinator: "+v,clear:()=>{document.querySelector(`#coord-chips input[value="${v}"]`).checked=false;render()}}));
-  let cardLabels={active:"Active advocates",paired:"Currently paired",break:"Taking a Break",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
+  let cardLabels={active:"Active advocates",paired:"Currently paired",waiting:"Waiting to be Paired",break:"Taking a Break",bdays30:"Birthdays in 30 days",overdue:"Note overdue"};
   if(MY_ADVOCATES_ON)pillDefs.push({label:'My Advocates',clear:function(){MY_ADVOCATES_ON=false;var btn=document.getElementById('myAdvsBtn');if(btn)btn.classList.add('off');render();}});
   activeCards.forEach(k=>pillDefs.push({label:cardLabels[k],clear:()=>{activeCards.delete(k);render()}}));
   pills.innerHTML=pillDefs.map((p,i)=>`<div class="fpill">${p.label}<button onclick="pillClear(${i})">\u2715</button></div>`).join("");
@@ -992,23 +993,22 @@ function render(){
   const isTAB=a=>a.sub==="Taking A Break"||a.sub==="Taking a Break";
   let active     =list.filter(a=>a.status==="Active").length;
   let paired     =list.filter(a=>inOutreach(a)&&deriveSub(a).sub==="Paired").length;
+  let waiting    =list.filter(a=>deriveSub(a).sub==="Waiting to be Paired").length;
   let takingBreak=list.filter(isTAB).length;
   let bdays30    =list.filter(a=>inOutreach(a)&&a.birthday&&dbu(a.birthday)<=30).length;
   let overdue    =list.filter(a=>inOutreach(a)&&a.latestNoteDate&&dsa(a.latestNoteDate)>14).length;
-  const filtersActive=list.length!==ADVOCATES.length;
-  const activeSub=filtersActive?`of ${list.length} in view`:`of ${ADVOCATES.length} total`;
   let mCards=[
-    {key:"active",  lbl:"Active advocates",     val:active,      sub:activeSub},
-    {key:"paired",  lbl:"Currently paired",     val:paired,      sub:"active \u00b7 mom's pairing record"},
-    {key:"break",   lbl:"Taking a Break",       val:takingBreak, sub:"re-engage \u00b7 any status"},
-    {key:"bdays30", lbl:"Birthdays in 30 days", val:bdays30,     sub:"upcoming milestones"},
-    {key:"overdue", lbl:"Note overdue",          val:overdue,     sub:"no note in >14 days"},
+    {key:"active",  lbl:"Active advocates",      val:active},
+    {key:"paired",  lbl:"Currently paired",      val:paired},
+    {key:"waiting", lbl:"Waiting to be Paired",  val:waiting},
+    {key:"break",   lbl:"Taking a Break",        val:takingBreak},
+    {key:"bdays30", lbl:"Birthdays in 30 days",  val:bdays30},
+    {key:"overdue", lbl:"Note overdue",           val:overdue},
   ];
   document.getElementById("metricsBar").innerHTML=mCards.map(c=>`
     <div class="metric${activeCards.has(c.key)?" active":""}" onclick="toggleCard('${c.key}')" title="Click to filter table">
       <div class="metric-lbl">${c.lbl}</div>
       <div class="metric-val">${c.val}</div>
-      <div class="metric-sub">${c.sub}</div>
     </div>`).join("");
 
   const tbody=document.getElementById("tableBody");
@@ -1027,8 +1027,10 @@ function render(){
         const stallStatuses=["Taking A Break","Taking a Break","Waiting to be Paired","In Training","Pending Final Steps"];
         const showDur=stallStatuses.includes(d.sub)&&a.subStatusSince;
         const durTxt=showDur?`<div class="sub-dur">since ${fmtS(a.subStatusSince)}</div>`:"";
-        if(d.mismatch)return`<span class="sub-mismatch sub-flag" tabindex="0">${subDisplay} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>${durTxt}`;
-        return`<span style="color:var(--mid)">${subDisplay}</span>${durTxt}`;
+        const hasStall=d.sub==="Paired"&&a.pairings&&a.pairings.some(p=>p.outcome==="active"&&p.stalled);
+        const stallTxt=hasStall?`<div class="sub-dur">&#9888; stalled pairing</div>`:"";
+        if(d.mismatch)return`<span class="sub-mismatch sub-flag" tabindex="0">${subDisplay} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>${durTxt}${stallTxt}`;
+        return`<span style="color:var(--mid)">${subDisplay}</span>${durTxt}${stallTxt}`;
       })()}</td>
       <td style="font-size:12px;">${fmtS(a.birthday)}${bdaySoon?` <span class="badge b-bday">${days}d</span>`:""}</td>
       <td><div class="copy-cell">

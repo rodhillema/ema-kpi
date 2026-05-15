@@ -36,7 +36,7 @@ body.logged-in .login-view{display:none !important}
 
 /* LOGIN */
 .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
-.login-logo{display:block;height:56px;width:auto;margin:0 auto 24px;filter:hue-rotate(-27deg) saturate(1.1) brightness(0.95)}
+.login-logo{display:block;height:56px;width:auto;margin:0 auto 24px;filter:brightness(0) saturate(100%) invert(34%) sepia(76%) saturate(2800%) hue-rotate(340deg) brightness(102%)}
 .login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
 .login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
 .login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
@@ -302,6 +302,12 @@ body.logged-in .login-view{display:none !important}
 .wn-arrow svg{width:9px;height:9px;fill:none;stroke:var(--light);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .14s}
 .wn-entry:hover .wn-arrow{background:var(--red)}
 .wn-entry:hover .wn-arrow svg{stroke:#fff}
+.wc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:0}
+.wc-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+.wc-icon{width:28px;height:28px;border-radius:6px;background:#f7f2ee;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wc-icon svg{width:14px;height:14px;stroke:var(--lighter);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.wc-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--lighter);margin-bottom:2px}
+.wc-desc{font-size:11px;color:var(--lighter);line-height:1.4}
 
 /* Champion Management — only visible to whitelisted users */
 .champ-mgmt-section{display:none}
@@ -377,11 +383,7 @@ body.champ-admin .champ-mgmt-section{display:flex}
         <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
         <span class="nav-text">Impact Reports</span>
       </div>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,4 4,6 7,3"/><line x1="9" y1="4.5" x2="14" y2="4.5"/><polyline points="2,8.5 4,10.5 7,7.5"/><line x1="9" y1="9" x2="14" y2="9"/><polyline points="2,13 4,15 7,12"/><line x1="9" y1="13.5" x2="14" y2="13.5"/></svg></div>
-        <span class="nav-text">Action Reports</span>
-        <span class="npill soon">Soon</span>
-      </div>
+
     </div>
 
     <div class="nav-div"></div>
@@ -400,48 +402,15 @@ body.champ-admin .champ-mgmt-section{display:flex}
         <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg></div>
         <span class="nav-text">Trellis Users</span>
       </div>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><path d="M1,13.5 C1,11 9,11 9,13.5"/><line x1="15" y1="8" x2="9" y2="8"/><polyline points="11.5,5.5 15,8 11.5,10.5"/></svg></div>
-        <span class="nav-text">Referral Reports</span>
-        <span class="npill soon">Soon</span>
-      </div>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,13 C8,13 2,9.5 2,6 C2,4 3.5,3 5,3 C6.2,3 7.2,3.8 8,5 C8.8,3.8 9.8,3 11,3 C12.5,3 14,4 14,6 C14,9.5 8,13 8,13 Z" stroke-width="1.5"/><path d="M5,8 C5.5,9 6.5,10 8,10.5" stroke-width="1.2" opacity=".5"/></svg></div>
-        <span class="nav-text">Case Management</span>
-        <span class="npill soon">Soon</span>
-      </div>
+
     </div>
 
-    <div class="nav-div"></div>
-
-    <div class="nav-group">
-      <span class="nav-group-label">Grant &amp; Outward-Facing</span>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2,6 L2,10 L5,10 L11,13 L11,3 L5,6 Z"/><line x1="13" y1="5" x2="14.5" y2="4"/><line x1="13" y1="8" x2="15" y2="8"/><line x1="13" y1="11" x2="14.5" y2="12"/><line x1="5" y1="10" x2="5" y2="14"/></svg></div>
-        <span class="nav-text">Impact for Funders</span>
-        <span class="npill soon">Soon</span>
-      </div>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><circle cx="8" cy="11.5" r="2"/><line x1="6.8" y1="5" x2="9.2" y2="5"/><line x1="5.7" y1="6.7" x2="7.2" y2="9.8"/><line x1="10.3" y1="6.7" x2="8.8" y2="9.8"/></svg></div>
-        <span class="nav-text">Community Partners</span>
-        <span class="npill soon">Soon</span>
-      </div>
-    </div>
 
     <div class="nav-div"></div>
 
     <div class="nav-group">
       <span class="nav-group-label">Affiliates &amp; Admin</span>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="9" width="4" height="5" rx="1"/><rect x="6" y="6" width="4" height="8" rx="1"/><rect x="11" y="3" width="4" height="11" rx="1"/></svg></div>
-        <span class="nav-text">Affiliate Comparisons</span>
-        <span class="npill soon">Soon</span>
-      </div>
-      <div class="nav-item coming">
-        <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,9 6,5 9,8 14,3"/><line x1="11" y1="3" x2="14" y2="3"/><line x1="14" y1="3" x2="14" y2="6"/><line x1="2" y1="13" x2="14" y2="13"/></svg></div>
-        <span class="nav-text">Data Integrity</span>
-        <span class="npill soon">Soon</span>
-      </div>
+
       <a href="/admin/champions" class="nav-item champ-mgmt-section" id="championMgmtLink" style="text-decoration:none;">
         <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L10,6 L14,6.5 L11,9.5 L12,14 L8,11.5 L4,14 L5,9.5 L2,6.5 L6,6 Z"/></svg></div>
         <span class="nav-text">Champion Management</span>
@@ -468,6 +437,38 @@ body.champ-admin .champ-mgmt-section{display:flex}
       <div class="wn-label">What's New</div>
       <div class="wn-list" id="wn-list">
         <!-- rendered by JS against session role -->
+      </div>
+
+      <div class="wn-label" style="margin-top:28px">What's Coming</div>
+      <div class="wc-grid">
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16"><polyline points="2,4 4,6 7,3"/><line x1="9" y1="4.5" x2="14" y2="4.5"/><polyline points="2,8.5 4,10.5 7,7.5"/><line x1="9" y1="9" x2="14" y2="9"/><polyline points="2,13 4,15 7,12"/><line x1="9" y1="13.5" x2="14" y2="13.5"/></svg></div>
+          <div><div class="wc-name">Action Reports</div><div class="wc-desc">Targeted action items surfaced from your program data</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><path d="M1,13.5 C1,11 9,11 9,13.5"/><line x1="15" y1="8" x2="9" y2="8"/><polyline points="11.5,5.5 15,8 11.5,10.5"/></svg></div>
+          <div><div class="wc-name">Referral Reports</div><div class="wc-desc">Referral source tracking and partner intake patterns</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,13 C8,13 2,9.5 2,6 C2,4 3.5,3 5,3 C6.2,3 7.2,3.8 8,5 C8.8,3.8 9.8,3 11,3 C12.5,3 14,4 14,6 C14,9.5 8,13 8,13 Z" stroke-width="1.5"/></svg></div>
+          <div><div class="wc-name">Case Management</div><div class="wc-desc">Case notes, milestones, and family progress tracking</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2,6 L2,10 L5,10 L11,13 L11,3 L5,6 Z"/><line x1="13" y1="5" x2="14.5" y2="4"/><line x1="13" y1="8" x2="15" y2="8"/><line x1="13" y1="11" x2="14.5" y2="12"/></svg></div>
+          <div><div class="wc-name">Impact for Funders</div><div class="wc-desc">Grant-ready summaries for external partners and donors</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><circle cx="8" cy="11.5" r="2"/><line x1="6.8" y1="5" x2="9.2" y2="5"/><line x1="5.7" y1="6.7" x2="7.2" y2="9.8"/><line x1="10.3" y1="6.7" x2="8.8" y2="9.8"/></svg></div>
+          <div><div class="wc-name">Community Partners</div><div class="wc-desc">Referral network and partner relationship visualizations</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="9" width="4" height="5" rx="1"/><rect x="6" y="6" width="4" height="8" rx="1"/><rect x="11" y="3" width="4" height="11" rx="1"/></svg></div>
+          <div><div class="wc-name">Affiliate Comparisons</div><div class="wc-desc">Side-by-side performance data across all ĒMA affiliates</div></div>
+        </div>
+        <div class="wc-item">
+          <div class="wc-icon"><svg viewBox="0 0 16 16"><polyline points="2,9 6,5 9,8 14,3"/><line x1="11" y1="3" x2="14" y2="3"/><line x1="14" y1="3" x2="14" y2="6"/><line x1="2" y1="13" x2="14" y2="13"/></svg></div>
+          <div><div class="wc-name">Data Integrity</div><div class="wc-desc">Automated checks to surface missing or inconsistent Trellis data</div></div>
+        </div>
       </div>
     </div>
 

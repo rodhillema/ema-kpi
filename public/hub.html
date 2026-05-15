@@ -1,41 +1,40 @@
 <!DOCTYPE html>
 <!--
-  ĒMA Impact Hub - April 14, 2026
-  RD: body=login | body.logged-in=reports
-  Roles: body.role-coordinator | body.role-supervisor | body.role-champion | body.role-admin
-  DEMO (RD: remove): demo/coord/super/champ pw:demo
+  ĒMA Impact Hub — Cristina's redesign (May 2026)
+  Login view = body.show-login | Portal view = body.logged-in
+  Role values from session: 'coordinator' | 'supervisor' | 'administrator' | 'champion'
 -->
 <html lang="en">
 <head>
 <link rel="icon" type="image/png" href="/favicon.png">
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ĒMA - Impact Hub</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ĒMA · Impact Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;--green:#123939;--green-lt:#ecefe1;--yellow:#f2a136;--dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--border:#E0E0E0;--bg:#fdf7f3;--white:#fff;--purple:#534AB7;--coral:#D85A30}
-body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
-.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fdf4e6;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--lighter:#c0c0c0;
+  --border:#E0E0E0;--border-lt:#f0ece8;--bg:#fdf7f3;--white:#fff;
+  --nav-w:220px;
+}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark)}
+
+/* View toggling — login vs portal */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--bg)}
+.portal-view{display:none;flex-direction:column;height:100vh;overflow:hidden}
 body.show-login .login-view{display:flex}
-.portal-view{display:none;flex-direction:column;min-height:100vh}
-body.logged-in .login-view{display:none !important}
+body.show-login{overflow:auto}
 body.logged-in .portal-view{display:flex}
-.vis-c,.vis-s,.vis-ch,.vis-a{display:none !important}
-body.role-coordinator .vis-c{display:flex !important}
-body.role-supervisor .vis-s,body.role-supervisor .vis-c{display:flex !important}
-body.role-champion .vis-ch{display:flex !important}
-body.role-admin .vis-c,body.role-admin .vis-s,body.role-admin .vis-ch,body.role-admin .vis-a{display:flex !important}
-.sec-admin{display:none !important}body.role-admin .sec-admin{display:block !important}
-.sec-grant{display:none !important}body.role-champion .sec-grant,body.role-supervisor .sec-grant,body.role-admin .sec-grant{display:block !important}
-.sec-hdr-trellis{display:none !important}
-body.role-coordinator .sec-hdr-trellis,body.role-supervisor .sec-hdr-trellis,body.role-admin .sec-hdr-trellis{display:flex !important}
-.nav-trellis{display:flex}
-body.role-champion .nav-trellis{display:none !important}
-.sec-hdr-tb{display:none !important}
-body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-champion .sec-hdr-tb,body.role-admin .sec-hdr-tb{display:flex !important}
+body.logged-in{height:100vh;overflow:hidden}
+body.logged-in .login-view{display:none !important}
+
+/* LOGIN */
 .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
 .login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
 .login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
@@ -53,6 +52,8 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 .login-btn:focus-visible{box-shadow:0 0 0 3px rgba(236,72,47,.3)}
 .login-trellis{display:flex;align-items:center;justify-content:center;margin-top:16px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);text-decoration:none;transition:color .15s}
 .login-trellis:hover{color:var(--green)}
+
+/* TOP BAR */
 .nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
 .nav-left{display:flex;align-items:center;gap:14px}
 .nav-logo{height:30px;width:auto;display:block}
@@ -70,273 +71,878 @@ body.role-coordinator .sec-hdr-tb,body.role-supervisor .sec-hdr-tb,body.role-cha
 .nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
 .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
 .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
-.portal-main{flex:1;padding:0 40px 64px;max-width:1000px;width:100%;margin:0 auto}
-.welcome{padding:40px 0 4px}
-.welcome-hello{font-family:'Shrikhand',cursive;font-size:28px;color:var(--red)}
-.welcome-sub{font-size:14px;color:var(--mid);margin-top:6px;max-width:480px;line-height:1.5}
-.welcome-sub:empty{display:none}
-.sec{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;text-transform:uppercase;letter-spacing:2.5px;color:var(--mid);margin:36px 0 14px;display:flex;align-items:center;gap:12px}
-.sec::after{content:'';height:1px;flex:1;max-width:200px;background:var(--border)}
-.sec-muted{color:#ccc}.sec-muted::after{background:#eee}
 
-/* LIVE ROWS */
-.rrow{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--white);border:0.5px solid var(--border);border-left:3px solid var(--red);border-radius:0;cursor:pointer;transition:all .15s;margin-bottom:6px;text-decoration:none;color:inherit}
-.rrow:hover,.rrow:focus{border-color:#ccc;border-left-color:var(--red);box-shadow:0 2px 12px rgba(0,0,0,.05);outline:none}
-.rrow:focus-visible{box-shadow:0 0 0 2px var(--red)}
-.rrow-body{flex:1;min-width:0}
-.rrow-t{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;color:var(--dark);display:flex;align-items:center;gap:6px}
-.rrow-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.rb{font-family:'Oswald',sans-serif;font-size:9px;padding:3px 8px;border-radius:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.rb-ready{background:#ecefe1;color:#0F6E56}
-.rb-live{background:var(--red-lt);color:var(--red)}
-.rb-soon{background:#f1f1f1;color:#b8b8b8}
-.rarr{font-size:13px;color:#ccc}
-.rdot{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.5)}}
+/* SHELL */
+.shell{display:flex;flex:1;overflow:hidden}
 
-/* EXPANDABLE TYPE ROWS - live only */
-.type-row{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--white);border:0.5px solid var(--border);border-left:3px solid var(--red);border-radius:0;cursor:pointer;transition:all .15s;margin-bottom:6px;user-select:none}
-.type-row:hover{border-color:#ccc;border-left-color:var(--red);box-shadow:0 2px 12px rgba(0,0,0,.05)}
-.type-row.open{border-bottom-color:transparent;margin-bottom:0}
-.type-row-body{flex:1;min-width:0}
-.type-row-t{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;color:var(--dark)}
-.type-row-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.type-chev{font-size:11px;color:#ccc;transition:transform .2s;display:inline-block}
-.type-row.open .type-chev{transform:rotate(90deg)}
-.type-sub{display:none;background:var(--white);border:0.5px solid var(--border);border-top:none;border-left:3px solid var(--red);padding:2px 0;margin-bottom:6px}
-.type-sub.open{display:block}
-.type-sub-row{display:flex;align-items:center;gap:10px;padding:9px 18px 9px 30px;text-decoration:none;color:inherit;transition:background .1s;font-size:13px}
-.type-sub-row:hover{background:#f8f5f0}
-.type-sub-row .sub-t{flex:1;font-family:'Oswald',sans-serif;font-weight:400;color:var(--dark)}
-.type-sub-row .sub-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.type-sub-soon{opacity:.38}
+/* LEFT NAV */
+.leftnav{width:var(--nav-w);min-width:var(--nav-w);background:var(--white);border-right:1px solid var(--border-lt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;transition:width .2s ease,min-width .2s ease}
+.leftnav::-webkit-scrollbar{width:3px}
+.leftnav::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-/* COMING SOON ROWS - no toggle */
-.rrow-soon{display:flex;align-items:center;padding:10px 18px;background:var(--white);border:0.5px solid var(--border);border-left:3px solid;border-radius:0;margin-bottom:5px;opacity:.38}
-.rrow-soon-t{font-family:'Oswald',sans-serif;font-size:14px;font-weight:400;color:var(--dark);flex:1}
-.rrow-soon-r{flex-shrink:0}
+/* Collapsed state */
+.leftnav.collapsed{width:48px;min-width:48px;overflow-x:hidden}
+.leftnav.collapsed .nav-text,
+.leftnav.collapsed .npill,
+.leftnav.collapsed .nav-group-label,
+.leftnav.collapsed .nav-div{display:none}
+.leftnav.collapsed .nav-collapse-wrap{justify-content:center;padding:10px 0 8px}
+.leftnav.collapsed .nav-collapse-btn{border:none;background:none}
+.leftnav.collapsed .nav-item{padding:10px 0;justify-content:center;border-left:3px solid transparent}
+.leftnav.collapsed .nav-group{padding:4px 0}
+.leftnav.collapsed .nav-icon{width:20px;height:20px}
+.leftnav.collapsed .nav-icon svg{width:16px;height:16px}
 
-/* FOOTER */
-.footer{background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
-.footer-brand{opacity:.8}
-.footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
-.footer-integrity:hover{color:var(--white)}
+.nav-collapse-wrap{padding:10px 12px 8px;display:flex;justify-content:flex-end;border-bottom:1px solid var(--border-lt)}
+.nav-collapse-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .12s,border-color .12s}
+.nav-collapse-btn:hover{background:#f7f2ee;border-color:#ccc}
+.nav-collapse-btn svg{width:11px;height:11px;color:var(--lighter);transition:color .12s}
+.nav-collapse-btn:hover svg{color:var(--mid)}
 
-@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.portal-main{animation:up .4s ease both}
-@media(max-width:860px){.portal-main{padding:0 20px 48px}.nav{padding:0 16px}}
+.nav-group{padding:14px 0 6px}
+.nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--lighter);padding:0 16px 7px;display:block}
+
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s;text-decoration:none}
+.nav-item:hover:not(.coming){background:#f7f2ee}
+.nav-item.active{background:#fef0ed;border-left-color:var(--red)}
+.nav-item.coming{cursor:default;opacity:.4}
+
+.nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:14px;height:14px;fill:none;stroke:var(--light);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s}
+.nav-item:hover:not(.coming) .nav-icon svg{stroke:var(--mid)}
+.nav-item.active .nav-icon svg{stroke:var(--red)}
+
+.nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--mid);line-height:1.2;transition:color .12s;flex:1}
+.nav-item:hover:not(.coming) .nav-text{color:var(--dark)}
+.nav-item.active .nav-text{color:var(--red);font-weight:600}
+
+.npill{font-family:'Oswald',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;padding:2px 5px;border-radius:3px;flex-shrink:0}
+.npill.soon{background:#f0ece8;color:var(--lighter)}
+.npill.live{background:#e8f7ef;color:#2d7a4f}
+
+.nav-div{height:1px;background:var(--border-lt);margin:4px 0}
+
+/* ── INTEGRITY EMBEDDED CONTENT ── */
+.ig-body{max-width:760px}
+.ig-section{margin-bottom:36px}
+.ig-section:last-child{margin-bottom:0}
+.ig-section-num{font-family:'Shrikhand',cursive;font-weight:400;font-size:26px;color:rgba(18,57,57,.18);line-height:1;display:block;margin-bottom:6px}
+.ig-section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.ig-section-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;color:var(--dark);margin-bottom:14px;line-height:1.25}
+.ig-lead{font-size:14px;color:var(--mid);line-height:1.7}
+.ig-lead strong{color:var(--dark)}
+.ig-body-text{font-size:13.5px;color:var(--mid);line-height:1.7;margin-bottom:16px}
+.ig-divider{border:none;border-top:1px solid var(--border);margin:32px 0}
+.ig-demo-i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;vertical-align:middle;margin:0 2px}
+
+/* Commitments paired layout */
+.ig-commit-intro{font-size:13.5px;color:var(--mid);line-height:1.7;margin-bottom:18px}
+.ig-commit-intro strong{color:var(--dark)}
+.ig-commit-intro em{font-style:italic;color:var(--dark)}
+.ig-commit-pairs{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:stretch;margin-bottom:12px}
+.ig-popover-frame{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 14px;box-shadow:0 3px 12px rgba(0,0,0,.05);display:grid;grid-template-rows:1fr 1fr 1fr;position:relative}
+.ig-ip-block{padding:14px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;position:relative}
+.ig-ip-block:last-child{border-bottom:none}
+.ig-ip-label{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--yellow);margin-bottom:5px}
+.ig-ip-warn .ig-ip-label{color:var(--red)}
+.ig-ip-body{font-size:12px;color:var(--mid);line-height:1.5}
+.ig-connect::after{content:"→";position:absolute;right:-34px;top:50%;transform:translateY(-55%);font-size:20px;font-weight:700;line-height:1}
+.ig-connect-green::after{color:var(--green)}
+.ig-connect-yellow::after{color:var(--yellow)}
+.ig-connect-red::after{color:var(--red)}
+.ig-commit-stack{display:grid;grid-template-rows:1fr 1fr 1fr;align-self:stretch}
+.ig-commit-row{display:flex;align-items:center;padding:14px 0 14px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--dark);line-height:1.55;border-left:3px solid transparent}
+.ig-commit-row:last-child{border-bottom:none}
+.ig-link-green{border-left-color:var(--green)}
+.ig-link-yellow{border-left-color:var(--yellow)}
+.ig-link-red{border-left-color:var(--red)}
+.ig-method-footnote{font-size:12px;color:var(--lighter);line-height:1.6;font-style:italic}
+
+/* AOR */
+.ig-aor-card{background:var(--white);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:10px;padding:22px}
+.ig-aor-lead{font-size:13px;color:var(--mid);line-height:1.7;margin-bottom:18px}
+.ig-aor-lead strong{color:var(--dark)}
+.ig-aor-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.ig-aor-col{padding:16px;border-radius:8px}
+.ig-do{background:var(--green-lt);border:1px solid #c5ccb8}
+.ig-dont{background:var(--red-lt);border:1px solid #f5c8be}
+.ig-aor-col-head{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.ig-do .ig-aor-col-head{color:var(--green)}
+.ig-dont .ig-aor-col-head{color:var(--red-dk)}
+.ig-aor-mark{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;flex-shrink:0}
+.ig-aor-mark svg{width:10px;height:10px}
+.ig-aor-mark-do{background:var(--green);color:#fff}
+.ig-aor-mark-dont{background:var(--red);color:#fff}
+.ig-aor-col ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.ig-aor-col li{font-size:12px;color:var(--dark);line-height:1.5;padding-left:13px;position:relative}
+.ig-aor-col li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%}
+.ig-do li::before{background:var(--green)}
+.ig-dont li::before{background:var(--red)}
+.ig-aor-roi{background:var(--yellow-lt);border:1px solid #f2c882;border-left:4px solid var(--yellow);border-radius:7px;padding:13px 16px;margin-bottom:16px}
+.ig-aor-roi-title{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;color:#7a5010;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:5px}
+.ig-aor-roi-body{font-size:12.5px;color:var(--dark);line-height:1.6}
+.ig-aor-roi-body strong{color:#5a3a08;font-weight:700}
+.ig-aor-footer{font-size:12px;color:var(--mid);line-height:1.6;padding-top:14px;border-top:1px solid var(--border)}
+.ig-aor-footer strong{color:var(--dark)}
+
+/* Maturation */
+.ig-mat-band{background:linear-gradient(135deg,var(--red-lt) 0%,var(--green-lt) 100%);border-radius:12px;padding:4px;margin-top:18px}
+.ig-mat-inner{background:var(--white);border-radius:9px;padding:22px}
+.ig-mat-headline{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--dark);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;text-align:center}
+.ig-mat-headline strong{color:var(--red)}
+.ig-mat-sub{font-size:13px;color:var(--mid);line-height:1.65;text-align:center;max-width:520px;margin:0 auto 20px}
+.ig-mat-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch}
+.ig-mat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;flex-direction:column}
+.ig-mat-now{border-top:4px solid var(--red)}
+.ig-mat-next{border-top:4px solid var(--green)}
+.ig-mat-tag{display:inline-flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:7px}
+.ig-mat-tag-now{color:var(--red)}
+.ig-mat-tag-next{color:var(--green)}
+.ig-mat-dot{width:7px;height:7px;border-radius:50%}
+.ig-mat-dot-now{background:var(--red)}
+.ig-mat-dot-next{background:var(--green)}
+.ig-mat-name{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;color:var(--dark);margin-bottom:8px;line-height:1.2}
+.ig-mat-desc{font-size:12.5px;color:var(--mid);line-height:1.6;margin-bottom:12px}
+.ig-mat-list{list-style:none;padding:0;margin:0;font-size:12px;color:var(--dark);line-height:1.6}
+.ig-mat-list li{position:relative;padding:5px 0 5px 16px}
+.ig-mat-list li::before{content:"";position:absolute;left:2px;top:13px;width:5px;height:5px;border-radius:50%}
+.ig-mat-now .ig-mat-list li::before{background:var(--red);opacity:.5}
+.ig-mat-next .ig-mat-list li::before{background:var(--green);opacity:.6}
+.ig-mat-arrow{display:flex;align-items:center;justify-content:center;padding:0 12px;color:var(--lighter)}
+.ig-mat-arrow svg{width:22px;height:22px}
+.ig-mat-footer{font-size:12px;color:var(--mid);line-height:1.6;text-align:center;margin-top:18px;font-style:italic;padding-top:16px;border-top:1px solid var(--border)}
+
+/* RIGHT PANEL */
+.rightpanel{flex:1;overflow-y:auto;padding:36px 48px 60px;background:var(--bg)}
+.rightpanel::-webkit-scrollbar{width:5px}
+.rightpanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Responsive */
+@media(max-width:700px){
+  .leftnav{width:48px;min-width:48px}
+  .leftnav .nav-text,.leftnav .npill,.leftnav .nav-group-label,.leftnav .nav-div{display:none}
+  .leftnav .nav-item{padding:10px 0;justify-content:center;border-left:3px solid transparent}
+  .leftnav .nav-group{padding:4px 0}
+  .leftnav .nav-icon{width:20px;height:20px}
+  .leftnav .nav-icon svg{width:16px;height:16px}
+  .leftnav .nav-collapse-wrap{justify-content:center;padding:10px 0 8px}
+  .leftnav .nav-collapse-btn{border:none;background:none}
+  .rightpanel{padding:24px 20px 40px}
+}
+@media(max-width:500px){
+  .rightpanel{padding:20px 16px 32px}
+  .section-view{max-width:100%}
+}
+
+.section-view{display:none;max-width:780px}
+.section-view.active{display:block}
+
+.sec-eyebrow{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--lighter);margin-bottom:6px}
+.sec-title{font-family:'Shrikhand',cursive;font-weight:400;font-size:30px;color:var(--green);line-height:1.1;margin-bottom:8px}
+.sec-intro{font-family:'Lato',sans-serif;font-size:13px;color:var(--mid);line-height:1.6;max-width:580px;margin-bottom:28px}
+
+/* Report cards */
+.rlist{display:flex;flex-direction:column;gap:9px}
+
+.rcard{background:var(--white);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:14px;padding:11px 16px;text-decoration:none;cursor:pointer;position:relative;overflow:hidden;transition:border-color .14s,box-shadow .14s}
+.rcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:8px 0 0 8px}
+.rcard.cr::before{background:var(--red)}
+.rcard.cg::before{background:var(--green)}
+.rcard.cy::before{background:var(--yellow)}
+.rcard.cn::before{background:var(--border)}
+.rcard:not(.dim):hover{border-color:#ccc;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.rcard.dim{cursor:default;opacity:.48}
+
+.ricon{width:30px;height:30px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ricon.r{background:var(--red-lt)} .ricon.g{background:var(--green-lt)} .ricon.y{background:var(--yellow-lt)} .ricon.n{background:#f2ede9}
+.ricon svg{width:14px;height:14px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ricon.r svg{stroke:var(--red)} .ricon.g svg{stroke:var(--green)} .ricon.y svg{stroke:var(--yellow)} .ricon.n svg{stroke:var(--lighter)}
+
+.rbody{flex:1;min-width:0}
+.rname{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--dark);margin-bottom:2px;line-height:1.2}
+.rcard.dim .rname{color:var(--mid)}
+.rdesc{font-size:12px;color:var(--lighter);line-height:1.5}
+
+.rright{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+.badge-latest{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:var(--green-lt);color:var(--green)}
+.badge-live{display:flex;align-items:center;gap:4px;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:#e8f7ef;color:#2d7a4f}
+.ldot{width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.badge-soon{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:#f0ece8;color:var(--lighter)}
+.badge-manage{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:var(--green-lt);color:var(--green)}
+
+.rarrow{width:22px;height:22px;border-radius:50%;background:#f2ede9;display:flex;align-items:center;justify-content:center;transition:background .14s}
+.rarrow svg{width:10px;height:10px;fill:none;stroke:var(--light);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .14s}
+.rcard:not(.dim):hover .rarrow{background:var(--red)}
+.rcard:not(.dim):hover .rarrow svg{stroke:#fff}
+
+/* Welcome view */
+.w-title{font-family:'Shrikhand',cursive;font-weight:400;font-size:32px;color:var(--red);line-height:1.1;margin-bottom:6px}
+.w-sub{font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:32px}
+
+.wn-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--lighter);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.wn-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.wn-list{display:flex;flex-direction:column;gap:8px}
+.wn-entry{display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;transition:border-color .14s,box-shadow .14s;position:relative;overflow:hidden}
+.wn-entry::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:8px 0 0 8px}
+.wn-entry.cr::before{background:var(--red)}
+.wn-entry.cg::before{background:var(--green)}
+.wn-entry.cy::before{background:var(--yellow)}
+.wn-entry:hover{border-color:#ccc;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.wn-date{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;color:var(--lighter);white-space:nowrap;flex-shrink:0;width:64px}
+.wn-badge{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:2px 6px;border-radius:3px;flex-shrink:0;white-space:nowrap}
+.wn-badge.new-report{background:var(--red-lt);color:var(--red)}
+.wn-badge.new-range{background:var(--green-lt);color:var(--green)}
+.wn-body{flex:1;min-width:0}
+.wn-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--dark);margin-bottom:2px;line-height:1.2}
+.wn-desc{font-size:12px;color:var(--lighter);line-height:1.5}
+.wn-arrow{width:20px;height:20px;border-radius:50%;background:#f2ede9;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .14s}
+.wn-arrow svg{width:9px;height:9px;fill:none;stroke:var(--light);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .14s}
+.wn-entry:hover .wn-arrow{background:var(--red)}
+.wn-entry:hover .wn-arrow svg{stroke:#fff}
+
+/* Champion Management — only visible to whitelisted users */
+.champ-mgmt-section{display:none}
+body.champ-admin .champ-mgmt-section{display:block}
 </style>
 </head>
-<body>
+<body class="show-login">
 
-<div class="login-view"><div class="login-box">
-<img src="data:image/png;base64,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" alt="ĒMA" class="login-logo">
-<div class="login-title">Impact Hub</div>
-<div class="login-sub">Sign in with your Trellis credentials</div>
-<div class="login-err" id="login-err"></div>
-<div class="field"><label>Username</label><input id="login-user" type="text" placeholder="first.last" autocomplete="username"></div>
-<div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
-<button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
-<a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
-</div></div>
+<!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
+<div class="login-view">
+  <div class="login-box">
+    <img src="data:image/png;base64,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" alt="ĒMA" class="login-logo">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Sign in with your Trellis credentials</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="field"><label>Username</label><input id="login-user" type="text" placeholder="first.last" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input id="login-pass" type="password" autocomplete="current-password"></div>
+    <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
+    <a href="https://trellis.ema.org/login" class="login-trellis" target="_blank">Go to Trellis &#8594;</a>
+  </div>
+</div>
 
+<!-- ── PORTAL ────────────────────────────────────────────────────────────── -->
 <div class="portal-view">
-<nav class="nav">
-<div class="nav-left">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo">
-<div class="nav-hub">Impact Hub</div>
-</div>
-<div class="nav-right">
-<div class="nav-user">
-<div class="nav-avatar" id="nav-avatar">C</div>
-<div><div class="nav-name" id="nav-name">Cristina</div><div class="nav-role" id="nav-role">HQ Admin</div></div>
-</div>
-<div class="nav-sep" id="nav-scope-sep" style="display:none;"></div>
-<div class="nav-scope" id="nav-scope" style="display:none;">
-<div class="nav-scope-lbl">Viewing</div>
-<div class="nav-scope-val" id="nav-scope-val"></div>
-</div>
-<div class="nav-sep"></div>
-<a href="#" class="nav-signout" id="btn-signout">Sign out</a>
-<div class="nav-sep nav-trellis"></div>
-<a href="https://trellis.ema.org/login" class="nav-link nav-trellis" target="_blank">Go to Trellis &#8594;</a>
-</div></nav>
 
-<div class="portal-main">
-<div class="welcome"><div class="welcome-hello" id="welcome-hello">Welcome back</div><div class="welcome-sub" id="welcome-sub"></div></div>
+<nav class="nav" onclick="svById('view-welcome')" style="cursor:pointer">
+  <div class="nav-left">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAcCAYAAAB75n/uAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAEKklEQVR4nJ1WT2gcZRT/ffNnk2waQxpvaYl/yMEKgp5FiheheOlFkB4U8SKC9uQ1Bg/qpRKxiikePAQULNSD6amNh5DTUmNzCJIUYdPsdjfJzs7Mzs73Z755Hvab7WQzuwR/sMzs8H7vvd+b7703DAUgIpsxplut1rWpqanPAKRSSjY2NhYJIaC1BgC4rgvG2Dhj7BxjbALAbBiG12dnZ28RkcMYS5yiAAAYAIyPj7/jOM4rAOA4PdNyuTyE0kOpVHou/39YAAKANE1rSqmabdtdrbVDRGQUQmsNxlifYNt2QkStIAhum0dpP9Nh2NzcnAjD0Jqbm1PVapXt7OxYCwsLrF6vo1ar9e2CIKAoipKVlRU1Ul4RGGMgopGJZCAim4jcvP2wEoGILADEGCPGGFUqlen5+fkF13WftyzrWdd1baWUStPUE0I87nQ6jxhjDQA64zPG0qGZZPe+71/hnP+ilKrRCCilPCHEvSAIPlxeXh7LJVnsvNlsviqEuD/gJyUiRUTSXBURJeZ5H5zzv46Ojl7K180y9w4AtNvta0qp2NgnOScnHBUET0xwklLu7+/vX8hnXjKZv5sxtNbJgAOdJIlsNptvd7vdm7kEBiGJiKIo+hlBENw4ODh4DQDq9frLSZLERKTNL4/EkD4HgDiOPzLP1RA1qZSyBSIipdSh53kfcM7v553llKRG9pNKpTJNRE4URV+MCJDxCFLKxwXRB6GIiLrd7jdZSYUQd4uSyUNK2bWklN8ZjkJvRBQ1lQUAUso1ANjb21uwbfuysT99FHu9QFrrh1hfX3fiOL6TqSqQmZoy1gBgZ2dninP+54jsdabY87yrAIBGo/H6sABZyaSUT8Iw/FFK+WjANjX3CeXeRxRFX2dyWBRFn+ZrfQacaq4MSqlau93+OOtkp3elFwrqeLKoWneICLZtn2OM9UeJOdZ1rfVDIcTdWq12+9KlS8dkZpEDABMTE5MjfCcAHCHEzUaj8cPMzMz5drs9bnidIAi81dXV5tLSkswIZDZi34OU8taIEiVEREKIO8MyoBHj3AIApVQTZosVkG0AqW3bV46Pj98qsmGM0dra2jNBEFxttVqfLC4u9o+uYxQ8KJfLDAU9YNYis23bnZ6e/r3b7a5wzu95nndcLpedycnJF0ul0huWZb3puu4FKWULwPcA0r6yarV6XinlE5HOzv3/hOKc/5pT/nREh2H4lTESIxxk+yChpwMx2wuCiOjw8PDyYABGRNbW1tYk5/zvXJCzKtFkxnOn0/n2hPPci7QAYHt7+yLn/EGOnGWapmkvnrlm3dvv/CiKfgJgUW+BnT5VWZBKpVIOw/BLpdThWdJXSv3j+/77uWoM/wKh3JLe3d296Pv+9TiO/5BS/quU6nDOtVIqlFLuxXH8m+/7721sbEzluKec/wcO5vCdfyNAYgAAAABJRU5ErkJggg==" alt="ĒMA" class="nav-logo">
+    <div class="nav-hub">Impact Hub</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">·</div>
+      <div>
+        <div class="nav-name" id="nav-name"></div>
+        <div class="nav-role" id="nav-role"></div>
+      </div>
+    </div>
+    <div class="nav-sep" id="nav-scope-sep"></div>
+    <div class="nav-scope" id="nav-scope">
+      <div class="nav-scope-lbl">Viewing</div>
+      <div class="nav-scope-val" id="nav-scope-val"></div>
+    </div>
+    <div class="nav-sep"></div>
+    <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
+    <div class="nav-sep"></div>
+    <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
+  </div>
+</nav>
 
-<!-- TIME-BASED REPORTS -->
-<div class="sec sec-hdr-tb">Time-Based Reports</div>
+<div class="shell">
 
-<!-- IMPACT REPORTS - expandable, has live content -->
-<div class="type-row vis-c vis-s vis-ch vis-a" data-toggle="sub-impact">
-<div class="type-row-body"><div class="type-row-t">Impact Reports</div></div>
-<div class="type-row-r"><div class="rb rb-ready">Q1 2026</div><div class="type-chev">&#9656;</div></div>
-</div>
-<div class="type-sub" id="sub-impact">
-<a href="/report/quarterly/q1-2026" class="type-sub-row">
-<div class="sub-t">Quarterly Impact Report</div>
-<div class="sub-r"><div class="rb rb-ready">Q1 2026</div><div class="rarr">&#8594;</div></div>
-</a>
-<div class="type-sub-row type-sub-soon">
-<div class="sub-t">Monthly Impact Report</div>
-<div class="sub-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
-</div>
+  <aside class="leftnav">
 
-<!-- ACTION REPORTS - coming soon, no toggle -->
-<div class="rrow-soon vis-c vis-s vis-a" style="border-left-color:var(--coral)">
-<div class="rrow-soon-t">Action Reports</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
+    <div class="nav-collapse-wrap">
+      <button class="nav-collapse-btn" onclick="toggleNav()" title="Collapse menu">
+        <svg id="toggle-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="10,3 4,8 10,13"/></svg>
+      </button>
+    </div>
 
-<!-- TRELLIS LIVE -->
-<div class="sec sec-hdr-trellis">Trellis Live</div>
+    <div class="nav-group" style="padding-bottom:2px">
+      <div class="nav-item active" data-view="view-welcome" onclick="sv(this)">
+        <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M2,8 L8,2 L14,8"/><polyline points="4,8 4,14 12,14 12,8"/></svg></div>
+        <span class="nav-text">Home</span>
+      </div>
+    </div>
 
-<!-- ADVOCATE REPORTS - expandable, has live content -->
-<div class="type-row vis-c vis-s vis-a" data-toggle="sub-adv">
-<div class="type-row-body"><div class="type-row-t"><span class="rdot"></span> Advocate Reports</div></div>
-<div class="type-row-r"><div class="rb rb-live">Live</div><div class="type-chev">&#9656;</div></div>
-</div>
-<div class="type-sub" id="sub-adv">
-<a href="/report/advocate-care" class="type-sub-row">
-<div class="sub-t">Advocate Care Report</div>
-<div class="sub-r"><div class="rb rb-live">Live</div><div class="rarr">&#8594;</div></div>
-</a>
-</div>
+    <div class="nav-div"></div>
 
-<!-- MOM REPORTS - expandable, live -->
-<div class="type-row vis-c vis-s vis-a" data-toggle="sub-mom">
-<div class="type-row-body"><div class="type-row-t"><span class="rdot"></span> Mom Reports</div></div>
-<div class="type-row-r"><div class="rb rb-live">Live</div><div class="type-chev">&#9656;</div></div>
-</div>
-<div class="type-sub" id="sub-mom">
-<a href="/report/mom-status" class="type-sub-row">
-<div class="sub-t">Mom Status Report</div>
-<div class="sub-r"><div class="rb rb-live">Live</div><div class="rarr">&#8594;</div></div>
-</a>
-<a href="/track-journey" class="type-sub-row">
-<div class="sub-t">Track Journey</div>
-<div class="sub-r"><div class="rb rb-live">Live</div><div class="rarr">&#8594;</div></div>
-</a>
-</div>
-<!-- USER REPORTS - expandable, live -->
-<div class="type-row vis-c vis-s vis-a vis-ch" data-toggle="sub-users">
-<div class="type-row-body"><div class="type-row-t"><span class="rdot"></span> User Reports</div></div>
-<div class="type-row-r"><div class="rb rb-live">Live</div><div class="type-chev">&#9656;</div></div>
-</div>
-<div class="type-sub" id="sub-users">
-<a href="/report/users" class="type-sub-row">
-<div class="sub-t">User Report</div>
-<div class="sub-r"><div class="rb rb-live">Live</div><div class="rarr">&#8594;</div></div>
-</a>
-</div>
+    <div class="nav-group">
+      <span class="nav-group-label">How We're Doing</span>
+      <div class="nav-item" data-view="view-impact" onclick="sv(this)">
+        <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
+        <span class="nav-text">Impact Reports</span>
+      </div>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,4 4,6 7,3"/><line x1="9" y1="4.5" x2="14" y2="4.5"/><polyline points="2,8.5 4,10.5 7,7.5"/><line x1="9" y1="9" x2="14" y2="9"/><polyline points="2,13 4,15 7,12"/><line x1="9" y1="13.5" x2="14" y2="13.5"/></svg></div>
+        <span class="nav-text">Action Reports</span>
+        <span class="npill soon">Soon</span>
+      </div>
+    </div>
 
-<div class="rrow-soon vis-c vis-s vis-a" style="border-left-color:var(--red)">
-<div class="rrow-soon-t">Referral Reports</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
-<div class="rrow-soon vis-c vis-s vis-a" style="border-left-color:var(--red)">
-<div class="rrow-soon-t">Service and Support Reports</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
+    <div class="nav-div"></div>
 
-<!-- GRANT -->
-<div class="sec-grant">
-<div class="sec sec-muted">Grant and Outward-Facing</div>
-<div class="rrow-soon vis-s vis-ch vis-a" style="border-left-color:var(--purple)">
-<div class="rrow-soon-t">Grant Snapshot</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
-<div class="rrow-soon vis-s vis-ch vis-a" style="border-left-color:var(--purple)">
-<div class="rrow-soon-t">Community Partner Summary</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">Coming Soon</div></div>
-</div>
-</div>
+    <div class="nav-group">
+      <span class="nav-group-label">Trellis Live</span>
+      <div class="nav-item" data-view="view-mom" onclick="sv(this)">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg></div>
+        <span class="nav-text">Our Moms</span>
+      </div>
+      <div class="nav-item" data-view="view-advocate" onclick="sv(this)">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg></div>
+        <span class="nav-text">Our Advocates</span>
+      </div>
+      <div class="nav-item" data-view="view-user" onclick="sv(this)">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg></div>
+        <span class="nav-text">Trellis Users</span>
+      </div>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><path d="M1,13.5 C1,11 9,11 9,13.5"/><line x1="15" y1="8" x2="9" y2="8"/><polyline points="11.5,5.5 15,8 11.5,10.5"/></svg></div>
+        <span class="nav-text">Referral Reports</span>
+        <span class="npill soon">Soon</span>
+      </div>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,13 C8,13 2,9.5 2,6 C2,4 3.5,3 5,3 C6.2,3 7.2,3.8 8,5 C8.8,3.8 9.8,3 11,3 C12.5,3 14,4 14,6 C14,9.5 8,13 8,13 Z" stroke-width="1.5"/><path d="M5,8 C5.5,9 6.5,10 8,10.5" stroke-width="1.2" opacity=".5"/></svg></div>
+        <span class="nav-text">Case Management</span>
+        <span class="npill soon">Soon</span>
+      </div>
+    </div>
 
-<!-- STANDARDS -->
-<div class="sec-admin">
-<div class="sec sec-muted">Standards and Admin</div>
-<div class="rrow-soon vis-a" style="border-left-color:var(--dark);margin-bottom:5px">
-<div class="rrow-soon-t">Affiliate Overview</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">HQ Admin</div></div>
-</div>
-<div class="rrow-soon vis-a" style="border-left-color:var(--coral)">
-<div class="rrow-soon-t">Data Integrity Reports</div>
-<div class="rrow-soon-r"><div class="rb rb-soon">HQ Admin</div></div>
-</div>
-<a href="/admin/champions" id="championMgmtLink" class="type-row vis-a" style="border-left-color:var(--dark);text-decoration:none;cursor:pointer;margin-top:5px">
-<div class="type-row-body"><div class="type-row-t">Champion Management</div></div>
-<div class="type-row-r"><div class="rb rb-ready">Manage</div><div class="rarr">&#8594;</div></div>
-</a>
-</div>
+    <div class="nav-div"></div>
 
-</div>
+    <div class="nav-group">
+      <span class="nav-group-label">Grant &amp; Outward-Facing</span>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2,6 L2,10 L5,10 L11,13 L11,3 L5,6 Z"/><line x1="13" y1="5" x2="14.5" y2="4"/><line x1="13" y1="8" x2="15" y2="8"/><line x1="13" y1="11" x2="14.5" y2="12"/><line x1="5" y1="10" x2="5" y2="14"/></svg></div>
+        <span class="nav-text">Impact for Funders</span>
+        <span class="npill soon">Soon</span>
+      </div>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><circle cx="11" cy="5" r="2"/><circle cx="8" cy="11.5" r="2"/><line x1="6.8" y1="5" x2="9.2" y2="5"/><line x1="5.7" y1="6.7" x2="7.2" y2="9.8"/><line x1="10.3" y1="6.7" x2="8.8" y2="9.8"/></svg></div>
+        <span class="nav-text">Community Partners</span>
+        <span class="npill soon">Soon</span>
+      </div>
+    </div>
 
-<!-- FOOTER with integrity pill -->
-<div class="footer">
-<div class="footer-brand">ĒMA - Every Mother's Advocate</div>
-<a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+    <div class="nav-div"></div>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Affiliates &amp; Admin</span>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="9" width="4" height="5" rx="1"/><rect x="6" y="6" width="4" height="8" rx="1"/><rect x="11" y="3" width="4" height="11" rx="1"/></svg></div>
+        <span class="nav-text">Affiliate Comparisons</span>
+        <span class="npill soon">Soon</span>
+      </div>
+      <div class="nav-item coming">
+        <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,9 6,5 9,8 14,3"/><line x1="11" y1="3" x2="14" y2="3"/><line x1="14" y1="3" x2="14" y2="6"/><line x1="2" y1="13" x2="14" y2="13"/></svg></div>
+        <span class="nav-text">Data Integrity</span>
+        <span class="npill soon">Soon</span>
+      </div>
+      <a href="/admin/champions" class="nav-item champ-mgmt-section" id="championMgmtLink" style="text-decoration:none;">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L10,6 L14,6.5 L11,9.5 L12,14 L8,11.5 L4,14 L5,9.5 L2,6.5 L6,6 Z"/></svg></div>
+        <span class="nav-text">Champion Management</span>
+      </a>
+    </div>
+
+    <div class="nav-div"></div>
+
+    <div class="nav-item" data-view="view-integrity-page" onclick="sv(this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L14,5 L14,10 C14,13 8,15 8,15 C8,15 2,13 2,10 L2,5 Z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="5.5" r=".5" fill="currentColor" stroke="none"/></svg></div>
+      <span class="nav-text">Our Approach to Data</span>
+    </div>
+
+  </aside>
+
+  <main class="rightpanel">
+
+
+    <!-- WELCOME -->
+    <div class="section-view active" id="view-welcome">
+      <div class="w-title" id="welcome-hello">Welcome back</div>
+      <div class="w-sub">Your reporting hub for ĒMA program data.</div>
+
+      <div class="wn-label">What's New</div>
+      <div class="wn-list" id="wn-list">
+        <!-- rendered by JS against session role -->
+      </div>
+    </div>
+
+    <!-- IMPACT REPORTS -->
+    <div class="section-view" id="view-impact">
+      <div class="sec-eyebrow">How We're Doing</div>
+      <div class="sec-title">Impact Reports</div>
+      <div class="sec-intro">A look at what happened over a period of time — how families were served, how the program performed, and where things stand. Available by quarter, month, and year.</div>
+      <div class="rlist">
+        <a class="rcard cr" href="/report/quarterly/q1-2026">
+          <div class="ricon r"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Quarterly Impact Report</div>
+            <div class="rdesc">How ĒMA performed this quarter — family preservation, stability, learning progress, and how families found us.</div>
+          </div>
+          <div class="rright">
+            <span class="badge-latest">Latest: Q1 2026</span>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
+        <div class="rcard cn dim">
+          <div class="ricon n"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="5" y1="1.5" x2="5" y2="4.5"/><line x1="11" y1="1.5" x2="11" y2="4.5"/><line x1="2" y1="7" x2="14" y2="7"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Monthly Impact Report</div>
+            <div class="rdesc">The same picture as the quarterly report, scoped to a single month — useful for staying close to what's happening in real time.</div>
+          </div>
+          <div class="rright"><span class="badge-soon">Coming Soon</span></div>
+        </div>
+        <div class="rcard cn dim">
+          <div class="ricon n"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="8" y1="2" x2="8" y2="14"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Annual Impact Report</div>
+            <div class="rdesc">A full-year summary for leadership, board members, and grant partners — showing the program's reach and outcomes across the year.</div>
+          </div>
+          <div class="rright"><span class="badge-soon">Coming Soon</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADVOCATE REPORTS -->
+    <div class="section-view" id="view-advocate">
+      <div class="sec-eyebrow">Trellis Live</div>
+      <div class="sec-title">Our Advocates</div>
+      <div class="sec-intro">A live look at where every advocate stands in the program — who is actively paired, who is waiting, and who may need a check-in from their coordinator.</div>
+      <div class="rlist">
+        <a class="rcard cg" href="/report/advocate-care">
+          <div class="ricon g"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Advocate Care Report</div>
+            <div class="rdesc">See where every advocate stands — who they're paired with, how long they've been in their current status, and whether anything needs attention.</div>
+          </div>
+          <div class="rright">
+            <div class="badge-live"><div class="ldot"></div>Live</div>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- MOM REPORTS -->
+    <div class="section-view" id="view-mom">
+      <div class="sec-eyebrow">Trellis Live</div>
+      <div class="sec-title">Our Moms</div>
+      <div class="sec-intro">A live view of every mom in the program — where she is in her journey, whether she's on track, and what might need attention from her coordinator.</div>
+      <div class="rlist">
+        <a class="rcard cr" href="/report/mom-status">
+          <div class="ricon r"><svg viewBox="0 0 16 16"><circle cx="8" cy="5" r="2.5"/><path d="M2,14 C2,10.5 14,10.5 14,14"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Mom Status Report</div>
+            <div class="rdesc">A full picture of where every mom stands right now — her status, whether she's in a track, and any flags that may need a follow-up.</div>
+          </div>
+          <div class="rright">
+            <div class="badge-live"><div class="ldot"></div>Live</div>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
+        <a class="rcard cr" href="/track-journey">
+          <div class="ricon r"><svg viewBox="0 0 16 16"><circle cx="3" cy="13" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="13" cy="4" r="1.2"/><polyline points="3,13 8,8 13,4" stroke-dasharray="2,2"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Track Journey</div>
+            <div class="rdesc">Follow a mom through her track session by session — useful for preparing for conversations about progress and next steps.</div>
+          </div>
+          <div class="rright">
+            <div class="badge-live"><div class="ldot"></div>Live</div>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- USER REPORTS -->
+    <div class="section-view" id="view-user">
+      <div class="sec-eyebrow">Trellis Live</div>
+      <div class="sec-title">Trellis Users</div>
+      <div class="sec-intro">Reports about the people using Trellis — coordinators, supervisors, and staff — and how they're engaging with the system.</div>
+      <div class="rlist">
+        <a class="rcard cg" href="/report/users">
+          <div class="ricon g"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg></div>
+          <div class="rbody">
+            <div class="rname">User Activity Report</div>
+            <div class="rdesc">A view of how coordinators and staff are using Trellis — useful for spotting gaps in data entry or flagging accounts that may need support.</div>
+          </div>
+          <div class="rright">
+            <div class="badge-live"><div class="ldot"></div>Live</div>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- OUR APPROACH TO DATA — embedded integrity content -->
+    <div class="section-view" id="view-integrity-page">
+      <div class="sec-eyebrow">ĒMA Impact Hub</div>
+      <div class="sec-title">Our Approach to Data</div>
+      <div class="sec-intro">What ĒMA counts, what we leave out, and why — plus the known gaps in our data that we're actively working to close. Every number in every report points back here.</div>
+
+      <div class="ig-body">
+
+        <!-- INTRO -->
+        <div class="ig-section">
+          <p class="ig-lead">ĒMA migrated to Trellis in December 2025. The system is new and our data is maturing alongside it. <strong>This page sets out the standards we follow when limitations exist, where to find the methodology behind every metric, and how reporting will evolve as those limitations resolve.</strong></p>
+        </div>
+
+        <hr class="ig-divider">
+
+        <!-- 01 COMMITMENTS -->
+        <div class="ig-section">
+          <span class="ig-section-num">01</span>
+          <div class="ig-section-label">Our commitments</div>
+          <div class="ig-section-title">What we commit to, and where to find it</div>
+          <p class="ig-commit-intro">Every number in every ĒMA report carries a small <span class="ig-demo-i">i</span> icon labeled <em>How we counted this</em>. Hover or click, and a methodology card opens with three slots that each answer a commitment in our reporting standards:</p>
+
+          <div class="ig-commit-pairs">
+            <div class="ig-popover-frame">
+              <div class="ig-ip-block ig-connect ig-connect-green">
+                <div class="ig-ip-label">What counts</div>
+                <div class="ig-ip-body">Each child of an active mom counts as one data point, not the mom herself.</div>
+              </div>
+              <div class="ig-ip-block ig-connect ig-connect-yellow">
+                <div class="ig-ip-label">Excluded</div>
+                <div class="ig-ip-body">Children whose moms don't have a completed Family Wellbeing Assessment on file within the reporting window.</div>
+              </div>
+              <div class="ig-ip-block ig-ip-warn ig-connect ig-connect-red">
+                <div class="ig-ip-label">Known limitation</div>
+                <div class="ig-ip-body">A small edit to any part of an assessment updates the assessment date, so "recent" doesn't always mean a full re-assessment.</div>
+              </div>
+            </div>
+            <div class="ig-commit-stack">
+              <div class="ig-commit-row ig-link-green">Every rate shows both the numerator and the denominator, never a standalone percentage.</div>
+              <div class="ig-commit-row ig-link-yellow">When data is incomplete or missing, we surface it explicitly rather than silently including or excluding records.</div>
+              <div class="ig-commit-row ig-link-red">We never inflate denominators or credit outcomes without valid, verified data.</div>
+            </div>
+          </div>
+          <div class="ig-method-footnote">If a load-bearing metric needs methodology and doesn't carry an <span class="ig-demo-i">i</span> icon, please flag it.</div>
+        </div>
+
+        <hr class="ig-divider">
+
+        <!-- 02 AOR -->
+        <div class="ig-section">
+          <span class="ig-section-num">02</span>
+          <div class="ig-section-label">Exporting from Trellis</div>
+          <div class="ig-section-title">Acknowledgment of Responsibility</div>
+          <div class="ig-aor-card">
+            <div class="ig-aor-lead">Every download from Trellis is preceded by an <strong>Acknowledgment of Responsibility</strong> prompt. ĒMA reports contain protected health information about real families and advocates, covered under HIPAA. Before any data leaves Trellis, the acknowledgment makes explicit what is and isn't appropriate use of that data.</div>
+            <div class="ig-aor-grid">
+              <div class="ig-aor-col ig-do">
+                <div class="ig-aor-col-head">
+                  <span class="ig-aor-mark ig-aor-mark-do"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg></span>
+                  Appropriate use
+                </div>
+                <ul>
+                  <li>Program improvement and refinement of services</li>
+                  <li>Grant reporting and impact measurement</li>
+                  <li>Coordination among advocates and coordinators within your affiliate</li>
+                  <li>Continuity of care for identified families within your affiliate</li>
+                </ul>
+              </div>
+              <div class="ig-aor-col ig-dont">
+                <div class="ig-aor-col-head">
+                  <span class="ig-aor-mark ig-aor-mark-dont"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="3" x2="9" y2="9"/><line x1="9" y1="3" x2="3" y2="9"/></svg></span>
+                  Inappropriate use
+                </div>
+                <ul>
+                  <li>Sharing with anyone outside ĒMA without a signed Release of Information</li>
+                  <li>Identifying or contacting families outside your affiliate's scope</li>
+                  <li>Personal use unrelated to the program</li>
+                  <li>Retention beyond what's needed for the program</li>
+                  <li>Cross-affiliate access without HQ Admin authorization</li>
+                </ul>
+              </div>
+            </div>
+            <div class="ig-aor-roi">
+              <div class="ig-aor-roi-title">Release of Information</div>
+              <div class="ig-aor-roi-body">A signed <strong>Release of Information</strong> from the mom is required before sharing her information with partners or anyone outside ĒMA. The release specifies what is being shared, with whom, and for what purpose.</div>
+            </div>
+            <div class="ig-aor-footer"><strong>If something goes wrong:</strong> any breach or suspected unauthorized access to family data must be reported to HQ immediately.</div>
+          </div>
+        </div>
+
+        <hr class="ig-divider">
+
+        <!-- 03 MATURATION -->
+        <div class="ig-section">
+          <span class="ig-section-num">03</span>
+          <div class="ig-section-label">Where we are and where we're going</div>
+          <div class="ig-section-title">These limitations are temporary</div>
+          <p class="ig-body-text">The constraints surfaced in our reports today reflect a system in its first year. As fixes ship, this page evolves with them — resolved limitations come off, new ones surface as we discover them.</p>
+
+          <div class="ig-mat-band">
+            <div class="ig-mat-inner">
+              <div class="ig-mat-headline"><strong>Now</strong> &nbsp;→&nbsp; Trellis V2</div>
+              <div class="ig-mat-sub">Where reporting sits today and what's being worked on for the next system version.</div>
+              <div class="ig-mat-grid">
+                <div class="ig-mat-card ig-mat-now">
+                  <div class="ig-mat-tag ig-mat-tag-now"><span class="ig-mat-dot ig-mat-dot-now"></span>Now &nbsp;·&nbsp; In production</div>
+                  <div class="ig-mat-name">Trellis V1</div>
+                  <div class="ig-mat-desc">Live since December 2025. The data model is new, and some structural constraints affect how certain metrics can be calculated. Where these constraints exist, reports flag them in the methodology popover and in the sample-size warnings.</div>
+                  <ul class="ig-mat-list">
+                    <li>Some assessment-currency signals can't yet distinguish a full re-assessment from a single field edit</li>
+                    <li>Pre-Trellis records carry data gaps that exclude them from period-based logic</li>
+                    <li>Free-text fields produce variant spellings that require post-hoc grouping</li>
+                  </ul>
+                </div>
+                <div class="ig-mat-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+                </div>
+                <div class="ig-mat-card ig-mat-next">
+                  <div class="ig-mat-tag ig-mat-tag-next"><span class="ig-mat-dot ig-mat-dot-next"></span>Coming &nbsp;·&nbsp; In progress</div>
+                  <div class="ig-mat-name">Trellis V2</div>
+                  <div class="ig-mat-desc">The next system version is being built to address the V1 constraints we can control. As each fix ships, the corresponding limitation drops out of reports and off this page.</div>
+                  <ul class="ig-mat-list">
+                    <li>Cleaner assessment tracking that distinguishes substantive updates from edits</li>
+                    <li>Mom and advocate profiles staying in sync without manual reconciliation</li>
+                    <li>Controlled vocabularies on fields that are free-text today</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="ig-mat-footer">This page is a living document. If you notice a limitation that isn't explained anywhere in a report, please flag it so we can address it in the next reporting cycle.</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /ig-body -->
+    </div>
+
+  </main>
 </div>
-</div>
+</div><!-- /portal-view -->
 
 <script>
-var D={"demo":{role:"administrator",firstName:"Cristina",lastName:"R."},"coord":{role:"coordinator",firstName:"Sarah",lastName:"M."},"super":{role:"supervisor",firstName:"Laura",lastName:"K."},"champ":{role:"champion",firstName:"Board",lastName:"Member"}};
-var L={"coordinator":"Coordinator","supervisor":"Supervisor","champion":"Champion","administrator":"HQ Admin"};
-function applySession(u){
-document.body.classList.remove("role-coordinator","role-supervisor","role-champion","role-admin");
-document.body.classList.add("logged-in");
-var m={"coordinator":"role-coordinator","supervisor":"role-supervisor","champion":"role-champion","administrator":"role-admin"};
-document.body.classList.add(m[u.role]||"role-coordinator");
-var a=document.getElementById("nav-avatar"),n=document.getElementById("nav-name"),r=document.getElementById("nav-role"),w=document.getElementById("welcome-hello");
-if(n)n.textContent=(u.firstName||"")+" "+(u.lastName||"");
-if(r)r.textContent=L[u.role]||u.role;
-if(a)a.textContent=((u.firstName||"").charAt(0)+(u.lastName||"").charAt(0)).toUpperCase();
-if(w)w.textContent="Welcome back, "+(u.firstName||"");
-// Champion Management visibility: gated to specific usernames (not all admins).
-// Whitelisted users see the link AND the wrapping Standards & Admin section even
-// when their role is not administrator (e.g. cristina.galloway = supervisor).
-var CHAMPION_MGMT_ALLOWED=["rd.hill","cristina.galloway"];
-var champLink=document.getElementById("championMgmtLink");
-if(champLink){
-  if(CHAMPION_MGMT_ALLOWED.includes((u.username||"").toLowerCase())){
-    champLink.style.display="flex";
-    var secAdmin=champLink.closest(".sec-admin");
-    if(secAdmin)secAdmin.style.display="block";
-  } else {
-    champLink.style.display="none";
+// ── DEMO USERS (preserve for offline/dev access — same shape as old hub) ──
+var D = {
+  "demo":  { role: "administrator", firstName: "Cristina", lastName: "R.",    username: "cristina.galloway" },
+  "coord": { role: "coordinator",   firstName: "Sarah",    lastName: "M.",    username: "coord" },
+  "super": { role: "supervisor",    firstName: "Laura",    lastName: "K.",    username: "super" },
+  "champ": { role: "champion",      firstName: "Board",    lastName: "Member",username: "champ" }
+};
+var ROLE_LABELS = { coordinator: "Coordinator", supervisor: "Supervisor", champion: "Champion", administrator: "HQ Admin" };
+
+// Champion Management is gated to a specific whitelist — see routes/champions.js
+var CHAMPION_MGMT_ALLOWED = ["rd.hill", "cristina.galloway"];
+
+// Track session role for renderWhatsNew
+var SESSION_ROLE = null;
+
+function applySession(u) {
+  document.body.classList.remove("show-login");
+  document.body.classList.add("logged-in");
+
+  // Top-nav identity
+  var avatar = document.getElementById("nav-avatar");
+  var name   = document.getElementById("nav-name");
+  var role   = document.getElementById("nav-role");
+  var welc   = document.getElementById("welcome-hello");
+  var first  = u.firstName || "";
+  var last   = u.lastName  || "";
+  if (name)   name.textContent   = (first + " " + last).trim();
+  if (role)   role.textContent   = ROLE_LABELS[u.role] || u.role || "";
+  if (avatar) avatar.textContent = ((first.charAt(0) || "") + (last.charAt(0) || "")).toUpperCase() || "·";
+  if (welc)   welc.textContent   = "Welcome back" + (first ? ", " + first : "");
+
+  // Affiliate scope
+  var scope    = document.getElementById("nav-scope");
+  var scopeVal = document.getElementById("nav-scope-val");
+  var scopeSep = document.getElementById("nav-scope-sep");
+  var isOrgWide = u.role === "administrator" || (u.role === "champion" && !u.affiliateId) || !!u.isOrgWide;
+  if (scopeVal) scopeVal.textContent = isOrgWide ? "All Affiliates" : (u.affiliateName || "");
+  if (scope)    scope.style.display    = "";
+  if (scopeSep) scopeSep.style.display = "";
+
+  // Champion Management visibility (whitelist-gated, not role-gated)
+  if (CHAMPION_MGMT_ALLOWED.indexOf((u.username || "").toLowerCase()) >= 0) {
+    document.body.classList.add("champ-admin");
+  }
+
+  // What's New: filter by the session role
+  SESSION_ROLE = u.role || "coordinator";
+  renderWhatsNew(SESSION_ROLE);
+}
+
+// ── WHAT'S NEW ──────────────────────────────────────────
+// roles: which roles can see this entry
+// accent: cr=red, cg=green, cy=yellow
+// badge: 'new-report' | 'new-range'
+// href: link to the report
+// view: optional — switch to this nav view instead of navigating
+var WN_ENTRIES = [
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cg",
+    name: "User Activity Report",
+    desc: "See how coordinators and staff are engaging with Trellis — useful for spotting gaps and flagging accounts that may need support.",
+    roles: ["supervisor", "administrator"],
+    href: "/report/users"
+  },
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cr",
+    name: "Quarterly Impact Report — Q1 2026",
+    desc: "See how ĒMA performed in Q1 — family preservation, stability, and learning progress across the program.",
+    roles: ["supervisor", "administrator", "champion"],
+    href: "/report/quarterly/q1-2026"
+  },
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cg",
+    name: "Advocate Care Report",
+    desc: "See where every advocate stands — who is paired, who is waiting, and who may need a check-in.",
+    roles: ["supervisor", "coordinator", "administrator"],
+    href: "/report/advocate-care"
+  },
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cr",
+    name: "Mom Status Report",
+    desc: "A live view of every mom in the program — their current status, track progress, and whether anything needs attention.",
+    roles: ["supervisor", "coordinator", "administrator"],
+    href: "/report/mom-status"
+  },
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cr",
+    name: "Track Journey",
+    desc: "Follow a mom's path through her track session by session — useful for conversations about progress and next steps.",
+    roles: ["supervisor", "coordinator", "administrator"],
+    href: "/track-journey"
+  },
+  {
+    date: "May 2026",
+    badge: "new-report",
+    accent: "cg",
+    name: "Our Approach to Data",
+    desc: "How ĒMA thinks about data integrity, what the numbers include and exclude, and what we're still working to improve.",
+    roles: ["supervisor", "coordinator", "administrator", "champion"],
+    view: "view-integrity-page"
+  }
+];
+
+var BADGE_LABELS = { "new-report": "New Report", "new-range": "New Time Range" };
+
+function renderWhatsNew(role) {
+  var list = document.getElementById("wn-list");
+  if (!list) return;
+  var visible = WN_ENTRIES.filter(function(e){ return e.roles.indexOf(role) >= 0; });
+  if (!visible.length) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--lighter)">Nothing new to show.</p>';
+    return;
+  }
+  list.innerHTML = visible.map(function(e) {
+    var hrefAttr = e.href ? ('href="' + e.href + '"') : 'href="#"';
+    var onclickAttr = (e.view && !e.href) ? ('onclick="svById(\'' + e.view + '\');return false;"') : '';
+    return '<a class="wn-entry ' + e.accent + '" ' + hrefAttr + ' ' + onclickAttr + '>'
+         + '<span class="wn-date">' + e.date + '</span>'
+         + '<span class="wn-badge ' + e.badge + '">' + (BADGE_LABELS[e.badge] || e.badge) + '</span>'
+         + '<div class="wn-body">'
+         +   '<div class="wn-name">' + e.name + '</div>'
+         +   '<div class="wn-desc">' + e.desc + '</div>'
+         + '</div>'
+         + '<div class="wn-arrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>'
+         + '</a>';
+  }).join("");
+}
+
+// ── NAV TOGGLES ─────────────────────────────────────────
+function toggleNav() {
+  var nav = document.querySelector(".leftnav");
+  var icon = document.getElementById("toggle-icon");
+  var collapsed = nav.classList.toggle("collapsed");
+  icon.innerHTML = collapsed
+    ? '<polyline points="6,3 12,8 6,13"/>'
+    : '<polyline points="10,3 4,8 10,13"/>';
+}
+
+function sv(el) {
+  if (el.classList.contains("coming")) return;
+  var id = el.dataset.view;
+  if (!id) return;
+  document.querySelectorAll(".nav-item").forEach(function(i){ i.classList.remove("active"); });
+  el.classList.add("active");
+  document.querySelectorAll(".section-view").forEach(function(v){ v.classList.remove("active"); });
+  var t = document.getElementById(id);
+  if (t) { t.classList.add("active"); document.querySelector(".rightpanel").scrollTop = 0; }
+}
+
+function svById(id) {
+  document.querySelectorAll(".section-view").forEach(function(v){ v.classList.remove("active"); });
+  var t = document.getElementById(id);
+  if (t) { t.classList.add("active"); document.querySelector(".rightpanel").scrollTop = 0; }
+  document.querySelectorAll(".nav-item").forEach(function(i){
+    i.classList.remove("active");
+    if (i.dataset && i.dataset.view === id) i.classList.add("active");
+  });
+}
+
+// ── LOGIN ───────────────────────────────────────────────
+async function doLogin() {
+  var errEl = document.getElementById("login-err");
+  errEl.className = "login-err";
+  var u = document.getElementById("login-user").value.trim().toLowerCase();
+  var p = document.getElementById("login-pass").value;
+  if (D[u] && p === "demo") { applySession(D[u]); return; }
+  try {
+    var r = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      errEl.textContent = d.error || "Login failed";
+      errEl.className = "login-err show";
+      return;
+    }
+    var mr = await fetch("/api/me");
+    if (mr.ok) {
+      var md = await mr.json();
+      if (md.user) applySession(md.user);
+    }
+  } catch (x) {
+    errEl.textContent = "API unavailable. Demo: demo/coord/super/champ (pw: demo)";
+    errEl.className = "login-err show";
   }
 }
-// Affiliate scope display
-var scope=document.getElementById("nav-scope"),scopeVal=document.getElementById("nav-scope-val"),scopeSep=document.getElementById("nav-scope-sep");
-if(scope&&scopeVal){
-var isOrgWide=u.role==="administrator"||(u.role==="champion"&&!u.affiliateId)||!!u.isOrgWide;
-scopeVal.textContent=isOrgWide?"All Affiliates":(u.affiliateName||"");
-scope.style.display="";
-if(scopeSep)scopeSep.style.display="";
-}
-}
-async function doLogin(){
-var e=document.getElementById("login-err");e.className="login-err";
-var u=document.getElementById("login-user").value.trim().toLowerCase(),p=document.getElementById("login-pass").value;
-if(D[u]&&p==="demo"){applySession(D[u]);return;}
-try{var r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
-var d=await r.json();if(!r.ok){e.textContent=d.error||"Login failed";e.className="login-err show";return;}
-var mr=await fetch("/api/me");if(mr.ok){var md=await mr.json();if(md.user)applySession(md.user);}
-}catch(x){e.textContent="API unavailable. Demo: demo/coord/super/champ (pw: demo)";e.className="login-err show";}}
-(async function(){try{var r=await fetch("/api/me");if(r.ok){var d=await r.json();if(d.user){applySession(d.user);return;}}document.body.classList.add("show-login");}catch(x){document.body.classList.add("show-login");}})();
+
+// Boot
+(async function() {
+  try {
+    var r = await fetch("/api/me");
+    if (r.ok) {
+      var d = await r.json();
+      if (d.user) { applySession(d.user); return; }
+    }
+  } catch (x) {}
+  // Fall back to login
+  document.body.classList.remove("logged-in");
+  document.body.classList.add("show-login");
+})();
+
 document.getElementById("btn-signout").addEventListener("click", async function(ev) {
   ev.preventDefault();
   try { await fetch("/api/logout", { method: "POST" }); } catch(e) {}
   window.location.href = "/";
 });
-document.getElementById("login-user").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();document.getElementById("login-pass").focus();}});
-document.getElementById("login-pass").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();doLogin();}});
-document.querySelectorAll("[data-toggle]").forEach(function(row){
-row.addEventListener("click",function(){
-var sub=document.getElementById(this.getAttribute("data-toggle"));
-if(sub){sub.classList.toggle("open");this.classList.toggle("open");}
+document.getElementById("login-user").addEventListener("keydown", function(ev) {
+  if (ev.key === "Enter") { ev.preventDefault(); document.getElementById("login-pass").focus(); }
 });
+document.getElementById("login-pass").addEventListener("keydown", function(ev) {
+  if (ev.key === "Enter") { ev.preventDefault(); doLogin(); }
 });
 </script>
-</body></html>
+</body>
+</html>

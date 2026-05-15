@@ -100,7 +100,7 @@ body.logged-in .login-view{display:none !important}
 .nav-collapse-btn:hover svg{color:var(--mid)}
 
 .nav-group{padding:14px 0 6px}
-.nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--lighter);padding:0 16px 7px;display:block}
+.nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mid);padding:0 16px 7px;display:block}
 
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s;text-decoration:none}
 .nav-item:hover:not(.coming){background:#f7f2ee}
@@ -112,7 +112,7 @@ body.logged-in .login-view{display:none !important}
 .nav-item:hover:not(.coming) .nav-icon svg{stroke:var(--mid)}
 .nav-item.active .nav-icon svg{stroke:var(--red)}
 
-.nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--mid);line-height:1.2;transition:color .12s;flex:1}
+.nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--dark);line-height:1.2;transition:color .12s;flex:1}
 .nav-item:hover:not(.coming) .nav-text{color:var(--dark)}
 .nav-item.active .nav-text{color:var(--red);font-weight:600}
 
@@ -439,6 +439,7 @@ body.champ-admin .champ-mgmt-section{display:flex}
         <!-- rendered by JS against session role -->
       </div>
 
+      <div id="wc-section">
       <div class="wn-label" style="margin-top:28px">What's Coming</div>
       <div class="wc-grid">
         <div class="wc-item">
@@ -470,6 +471,7 @@ body.champ-admin .champ-mgmt-section{display:flex}
           <div><div class="wc-name">Data Integrity</div><div class="wc-desc">Automated checks to surface missing or inconsistent Trellis data</div></div>
         </div>
       </div>
+      </div><!-- /#wc-section -->
     </div>
 
     <!-- IMPACT REPORTS -->
@@ -768,6 +770,10 @@ function applySession(u) {
   // What's New: filter by the session role
   SESSION_ROLE = u.role || "coordinator";
   renderWhatsNew(SESSION_ROLE);
+
+  // What's Coming: hide for champion (external viewers don't need the internal roadmap)
+  var wcs = document.getElementById("wc-section");
+  if (wcs) wcs.style.display = (u.role === "champion") ? "none" : "";
 }
 
 // ── WHAT'S NEW ──────────────────────────────────────────

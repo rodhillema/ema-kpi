@@ -3525,7 +3525,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     el.innerHTML =
       (s.lessonNumber || '?')
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName) : '') + '</div>'
+      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\|\s*/i,'').trim()) : '') + '</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + statusLabel + '</div>'
       + '</div>';
     currLane.appendChild(el);
@@ -3722,7 +3722,7 @@ function renderDetail(pairing, sessions, assessments) {
         var g = {
           key:          key || null,
           lessonNumber: groups.length + 1,
-          title:        s.sessionName || trackTitles[groups.length] || null,
+          title:        (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\|\s*/i, '').trim() : null) || trackTitles[groups.length] || null,
           sessions:     [s]
         };
         groups.push(g);
@@ -4012,53 +4012,91 @@ function openStallDrawer(clickedStall) {
     return t ? t.replace(/_/g,' ') : 'Session';
   }
 
+  // Active vital needs relevant to this stall window
+  var allNeeds = data.vitalNeeds || [];
+  var activeNeeds = allNeeds.filter(function(n){
+    return n.status !== 'Fulfilled' && n.status !== 'Resolved';
+  });
+
+  var FLAG_SVG =
+    '<svg viewBox=”0 0 24 24” width=”11” height=”11” fill=”none” stroke=”currentColor” stroke-width=”2.4” stroke-linecap=”round” stroke-linejoin=”round”>'
+    + '<path d=”M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z”/>'
+    + '<line x1=”4” y1=”22” x2=”4” y2=”15”/>'
+    + '</svg>';
+
   var html = '';
 
-  // At a glance
-  html += '<div class=”dsec”>';
-  html += '<div class=”dsec-label”>At a glance</div>';
-  html += '<div class=”dsec-glance”>';
+  // ── 1. At a glance ──────────────────────────────────────────────────────
+  html += '<div class=”dsec”><div class=”dsec-label”>At a glance</div><div class=”dsec-glance”>';
   html += '<strong>' + currentStall.days + ' days</strong> ';
   if (isCurriculum) {
     html += 'without a curriculum session. ';
-    if (lastHeld) html += 'Last held session was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
-    html += 'Support contact may be ongoing but no track progress has been logged.';
   } else {
     html += 'since the last held session. ';
-    if (lastHeld) html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
-    if (scheduledInWindow.length) {
-      html += '<strong>' + scheduledInWindow.length + ' session' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> scheduled during this period.';
-    }
+  }
+  if (lastHeld) {
+    html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
+  }
+  if (scheduledInWindow.length) {
+    html += '<strong>' + scheduledInWindow.length + ' outreach attempt' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> during this period. ';
+  }
+  if (activeNeeds.length) {
+    var needNames = activeNeeds.map(function(n){ return (n.needType || 'need').replace(/_/g,' '); }).slice(0,3).join(', ');
+    html += '<strong>' + activeNeeds.length + ' flagged need' + (activeNeeds.length > 1 ? 's' : '') + '</strong> active: ' + escHtml(needNames) + '.';
   }
   html += '</div></div>';
 
-  // Sessions during stall
-  if (scheduledInWindow.length) {
-    html += '<div class=”dsec”>';
-    html += '<div class=”dsec-label”>Sessions During Stall (' + scheduledInWindow.length + ')</div>';
-    scheduledInWindow.forEach(function(s) {
-      var sl    = s.status === 'Planned' ? 'Planned' : 'Missed Session';
-      var icon  = s.status === 'Planned' ? 'text' : 'no-contact';
-      var glyph = s.status === 'Planned' ? '→' : '↺';
-      html += '<div class=”update-entry”>';
-      html += '<div class=”update-icon ' + icon + '”>' + glyph + '</div>';
-      html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDateShort(s.date) + '</span></div>';
-      html += '</div></div>';
+  // ── 2. Flagged needs active ──────────────────────────────────────────────
+  if (activeNeeds.length) {
+    html += '<div class=”dsec”><div class=”dsec-label”>Flagged needs active</div>';
+    activeNeeds.forEach(function(n) {
+      var typeLbl   = (n.needType || 'Need').replace(/_/g,' ');
+      var statusLbl = n.urgent ? 'Urgent' : 'Open';
+      var meta = n.context ? n.context.slice(0, 80) + (n.context.length > 80 ? '…' : '') : '';
+      html += '<div class=”flag-link”>';
+      html += '<div class=”flag-link-icon”>' + FLAG_SVG + '</div>';
+      html += '<div class=”flag-link-body”>';
+      html += '<div class=”flag-link-name”>' + escHtml(typeLbl) + '</div>';
+      html += '<div class=”flag-link-meta”><span class=”flag-type-pill”>' + escHtml(statusLbl) + '</span>';
+      if (meta) html += '<span>' + escHtml(meta) + '</span>';
+      html += '</div></div></div>';
     });
     html += '</div>';
   }
 
-  // Full activity feed — coordinator notes
-  html += '<div class=”dsec”>';
-  html += '<div class=”dsec-label”>Full Activity Feed</div>';
-  if (filteredNotes.length) {
-    filteredNotes.forEach(function(n) {
-      html += '<div class=”coord-note” style=”margin-bottom:10px;”>';
-      html += '<div class=”coord-note-meta”>' + fmtDateShort(n.date) + (n.coordinatorName ? ' · ' + escHtml(n.coordinatorName) : '') + '</div>';
-      if (n.text) html += '<div class=”coord-note-body”>' + escHtml(n.text) + '</div>';
-      html += '</div>';
+  // ── 3. Outreach attempted ────────────────────────────────────────────────
+  if (scheduledInWindow.length) {
+    html += '<div class=”dsec”><div class=”dsec-label”>Outreach attempted (' + scheduledInWindow.length + ')</div>';
+    html += '<div class=”updates-feed” style=”margin-top:-4px;”>';
+    scheduledInWindow.forEach(function(s) {
+      var isMissed = s.status === 'NotHeld';
+      var icon     = isMissed ? 'no-contact' : 'text';
+      var glyph    = isMissed ? '↺' : '→';
+      var typeLabel = isMissed ? 'Missed Session' : 'Planned';
+      html += '<div class=”update-entry”>';
+      html += '<div class=”update-icon ' + icon + '”>' + glyph + '</div>';
+      html += '<div class=”update-body”>';
+      html += '<div class=”update-meta”><span class=”update-type”>' + typeLabel + ' \xB7 ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDateShort(s.date) + '</span></div>';
+      if (s.notes) html += '<div class=”update-text”>' + escHtml(s.notes.slice(0, 140)) + (s.notes.length > 140 ? '…' : '') + '</div>';
+      html += '</div></div>';
     });
+    html += '</div></div>';
+  }
+
+  // ── 4. Full activity feed ────────────────────────────────────────────────
+  html += '<div class=”dsec”><div class=”dsec-label”>Full activity feed</div>';
+  if (filteredNotes.length) {
+    html += '<div class=”updates-feed”>';
+    filteredNotes.forEach(function(n) {
+      html += '<div class=”update-entry”>';
+      html += '<div class=”update-icon note”>✎</div>';
+      html += '<div class=”update-body”>';
+      html += '<div class=”update-meta”><span class=”update-type”>Coordinator Note</span><span class=”update-date”>' + fmtDateShort(n.date) + '</span></div>';
+      if (n.coordinatorName) html += '<div class=”update-author”>' + escHtml(n.coordinatorName) + ' \xB7 Coordinator</div>';
+      if (n.text) html += '<div class=”update-text”>' + escHtml(n.text) + '</div>';
+      html += '</div></div>';
+    });
+    html += '</div>';
   } else {
     html += '<div style=”font-size:12px;color:var(--mid);font-style:italic;”>No coordinator notes in this window</div>';
   }

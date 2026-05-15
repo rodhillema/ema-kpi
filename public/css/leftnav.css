@@ -35,13 +35,41 @@
 .shared-leftnav.collapsed { width: var(--ln-nav-w-collapsed); }
 .shared-leftnav.collapsed .sln-text,
 .shared-leftnav.collapsed .sln-group-label,
-.shared-leftnav.collapsed .sln-div { display: none; }
+.shared-leftnav.collapsed .sln-div,
+.shared-leftnav.collapsed .sln-brand-text { display: none; }
+.shared-leftnav.collapsed .sln-brand { justify-content: center; padding: 12px 0; }
 .shared-leftnav.collapsed .sln-collapse-wrap { justify-content: center; padding: 10px 0 8px; }
 .shared-leftnav.collapsed .sln-collapse-btn { border: none; background: none; }
 .shared-leftnav.collapsed .sln-item { padding: 10px 0; justify-content: center; border-left: 3px solid transparent; }
 .shared-leftnav.collapsed .sln-group { padding: 4px 0; }
 .shared-leftnav.collapsed .sln-icon { width: 20px; height: 20px; }
 .shared-leftnav.collapsed .sln-icon svg { width: 16px; height: 16px; }
+
+.sln-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ln-red);
+  color: var(--ln-white);
+  flex-shrink: 0;
+}
+.sln-brand-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+.sln-brand-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.95);
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,0.3);
+  white-space: nowrap;
+}
 
 .sln-collapse-wrap {
   padding: 10px 12px 8px;
@@ -122,7 +150,9 @@ body.shared-leftnav-loaded.nav-collapsed { padding-left: var(--ln-nav-w-collapse
   .shared-leftnav { width: var(--ln-nav-w-collapsed); }
   .shared-leftnav .sln-text,
   .shared-leftnav .sln-group-label,
-  .shared-leftnav .sln-div { display: none; }
+  .shared-leftnav .sln-div,
+  .shared-leftnav .sln-brand-text { display: none; }
+  .shared-leftnav .sln-brand { justify-content: center; padding: 12px 0; }
   .shared-leftnav .sln-item { padding: 10px 0; justify-content: center; }
   .shared-leftnav .sln-group { padding: 4px 0; }
   .shared-leftnav .sln-icon { width: 20px; height: 20px; }

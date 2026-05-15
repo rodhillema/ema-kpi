@@ -3876,6 +3876,8 @@ function renderDetail(pairing, sessions, assessments) {
 
   var hasConstructs = (assessments.pre  && assessments.pre.constructs)
                    || (assessments.post && assessments.post.constructs);
+  var hasQuestions  = (assessments.pre  && assessments.pre.questions  && assessments.pre.questions.length)
+                   || (assessments.post && assessments.post.questions && assessments.post.questions.length);
 
   if (!assessments.pre && !assessments.post) {
     if (heldTrack.length > 0) {
@@ -3956,93 +3958,104 @@ function renderDetail(pairing, sessions, assessments) {
     });
 
     ac.innerHTML = html;
-  } else {
-    // EP / RR — render per-question bars if question responses are available,
-    // otherwise fall back to summary display.
-    var preQRs  = (assessments.pre  && assessments.pre.questionResponses)  || null;
-    var postQRs = (assessments.post && assessments.post.questionResponses) || null;
+  } else if (hasQuestions) {
+    // EP / RR — per-question bar rendering (same visual as AAPI)
+    var pre  = assessments.pre  || null;
+    var post = assessments.post || null;
+    var scale = (pre && pre.scale) || (post && post.scale) || { min: 1, max: 5 };
+    var scaleRange = scale.max - scale.min || 1;
+    var hasBoth = pre && post && pre.questions && post.questions;
 
-    if (preQRs && preQRs.length > 0) {
-      // Detect question text column from first row
-      var sampleRow = preQRs[0];
-      var qtCol = ['question_c','question_text','text','label','question','name']
-        .find(function(k){ return sampleRow[k] != null && typeof sampleRow[k] === 'string'; }) || null;
-
-      // Compute actual min/max from all responses to set scale correctly
-      var allVals = preQRs.concat(postQRs || []).map(function(r){ return r.intResponse; }).filter(function(v){ return v != null; });
-      var scaleMin = allVals.length ? Math.min.apply(null, allVals) : 1;
-      var scaleMax = allVals.length ? Math.max.apply(null, allVals) : 5;
-      var scaleRange = scaleMax - scaleMin || 1;
-
-      // Build a map of post responses by question column value (or index)
-      var postMap = {};
-      if (postQRs) {
-        postQRs.forEach(function(r, i){
-          var key = qtCol ? r[qtCol] : i;
-          postMap[key] = r.intResponse;
-        });
-      }
-
-      var hasBoth = preQRs && postQRs && postQRs.length > 0;
-      var out = '';
-
-      if (hasBoth) {
-        var improved = preQRs.filter(function(r, i){
-          var key = qtCol ? r[qtCol] : i;
-          return postMap[key] != null && postMap[key] > r.intResponse;
-        }).length;
-        out += '<div class="knowledge-summary">'
-          + '<div class="ks-stat"><span class="ks-label">Questions Improved</span><span class="ks-value">' + improved + ' of ' + preQRs.length + '</span></div>'
-          + '<div class="ks-stat"><span class="ks-label">Scale</span><span class="ks-value">' + scaleMin + '–' + scaleMax + '</span></div>'
-          + '</div>';
-      }
-
-      out += '<div style="margin-top:8px;">';
-      preQRs.forEach(function(r, i){
-        var qLabel = qtCol ? (r[qtCol] || ('Q' + (i+1))) : ('Q' + (i+1));
-        var preVal = r.intResponse;
-        var key    = qtCol ? r[qtCol] : i;
-        var postVal = postMap[key] != null ? postMap[key] : null;
-        var preW  = ((preVal  - scaleMin) / scaleRange * 100).toFixed(1) + '%';
-        var postW = postVal != null ? ((postVal - scaleMin) / scaleRange * 100).toFixed(1) + '%' : null;
-        out += '<div class="qr-bar-row">';
-        out += '<div class="qr-bar-label">' + escHtml(String(qLabel).slice(0, 80)) + '</div>';
-        out += '<div class="qr-bar-track' + (postW ? ' qr-bar-both' : '') + '">';
-        out += '<div class="qr-bar-pre" style="width:' + preW + ';"></div>';
-        if (postW) out += '<div class="qr-bar-post" style="width:' + postW + ';"></div>';
-        out += '</div>';
-        var scoreHtml = '<span class="pre">Pre · ' + preVal + '</span>';
-        if (postVal != null) scoreHtml += ' → <span class="post">Post · ' + postVal + '</span>';
-        out += '<div class="qr-scores-side">' + scoreHtml + '</div>';
-        out += '</div>';
+    // Build a merged question list keyed by label (pre questions are authoritative for order)
+    var qMap = {};
+    var qOrder = [];
+    var srcQ = (pre && pre.questions) ? pre.questions : (post && post.questions ? post.questions : []);
+    srcQ.forEach(function(q) {
+      if (!qMap[q.label]) { qMap[q.label] = { label: q.label, order: q.order, pre: null, post: null }; qOrder.push(q.label); }
+      qMap[q.label].pre = q.score;
+    });
+    if (post && post.questions) {
+      post.questions.forEach(function(q) {
+        if (!qMap[q.label]) { qMap[q.label] = { label: q.label, order: q.order, pre: null, post: null }; qOrder.push(q.label); }
+        qMap[q.label].post = q.score;
       });
-      out += '</div>';
-
-      if (!hasBoth) {
-        out += '<div style="font-size:11px;color:var(--mid);font-style:italic;margin-top:8px;">Post-assessment pending</div>';
-      }
-      ac.innerHTML = out;
-    } else {
-      // No question responses — show assessment summary
-      var subSty = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
-      var lblSty = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
-      var valSty = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:4px;line-height:1.6;';
-      var out = '';
-      [assessments.pre, assessments.post].forEach(function(a) {
-        if (!a) return;
-        var kind = a.type === 'pre' ? 'Pre' : 'Post';
-        out += '<div style="margin-bottom:12px;">';
-        out += '<div style="' + lblSty + '">' + kind + '-Assessment</div>';
-        out += '<div style="' + valSty + '">' + escHtml(a.name || 'Assessment') + '</div>';
-        out += '<div style="' + subSty + '">Completed ' + fmtDate(a.date) + '</div>';
-        if (a.totalScore != null) {
-          var q = (a.questionsAnswered > 0 ? ' \xB7 ' + a.questionsAnswered + ' questions' : '');
-          out += '<div style="' + subSty + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
-        }
-        out += '</div>';
-      });
-      ac.innerHTML = out;
     }
+
+    var html = '';
+
+    if (hasBoth) {
+      var improvedCount = 0, totalQ = 0;
+      qOrder.forEach(function(lbl) {
+        var q = qMap[lbl];
+        if (q.pre != null && q.post != null) { totalQ++; if (q.post > q.pre) improvedCount++; }
+      });
+      var preTotal = pre.totalScore != null ? pre.totalScore : null;
+      var postTotal = post.totalScore != null ? post.totalScore : null;
+      var overallChange = (preTotal != null && postTotal != null && preTotal > 0)
+        ? Math.round((postTotal - preTotal) / preTotal * 100) : null;
+      var changeLabel = overallChange != null ? (overallChange >= 0 ? '+' : '') + overallChange + '%' : '—';
+      html +=
+        '<div class="knowledge-summary">'
+        + '<div class="ks-stat"><span class="ks-label">Questions Improved</span><span class="ks-value">' + improvedCount + ' of ' + totalQ + '</span></div>'
+        + '<div class="ks-stat"><span class="ks-label">Overall Change</span><span class="ks-value">' + changeLabel + '</span></div>'
+        + '</div>';
+    }
+
+    // Scale tick labels: min, mid, max
+    var midScale = scale.min + Math.round(scaleRange / 2);
+    var scaleTicks =
+      '<div class="scale-row"><span>' + scale.min + '</span><span>' + midScale + '</span><span>' + scale.max + '</span></div>';
+
+    qOrder.forEach(function(lbl) {
+      var q = qMap[lbl];
+      var pv = q.pre, ov = q.post;
+      var preWidth  = pv != null ? ((pv - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
+      var postWidth = ov != null ? ((ov - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
+
+      var scoresHtml = '';
+      if (pv != null && ov != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span> → <span class="post">Post \xB7 ' + ov + '</span>';
+      } else if (pv != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span>';
+      } else if (ov != null) {
+        scoresHtml = '<span class="post">Post \xB7 ' + ov + '</span>';
+      }
+
+      var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
+      var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
+      if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
+
+      html +=
+        '<div class="construct">'
+        + '<div class="c-name"><span>' + escHtml(q.label) + '</span>'
+        + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
+        + '</div>'
+        + '<div class="' + trackClass + '">' + fillHtml + '</div>'
+        + scaleTicks
+        + '</div>';
+    });
+
+    ac.innerHTML = html;
+  } else {
+    // EP / RR — fallback: no per-question data yet; show clean assessment summary
+    var subSty = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
+    var lblSty = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
+    var valSty = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:4px;line-height:1.6;';
+    var out = '';
+    [assessments.pre, assessments.post].forEach(function(a) {
+      if (!a) return;
+      var kind = a.type === 'pre' ? 'Pre' : 'Post';
+      out += '<div style="margin-bottom:12px;">';
+      out += '<div style="' + lblSty + '">' + kind + '-Assessment</div>';
+      out += '<div style="' + valSty + '">' + escHtml(a.name || 'Assessment') + '</div>';
+      out += '<div style="' + subSty + '">Completed ' + fmtDate(a.date) + '</div>';
+      if (a.totalScore != null) {
+        var q = (a.questionsAnswered > 0 ? ' \xB7 ' + a.questionsAnswered + ' questions' : '');
+        out += '<div style="' + subSty + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+      }
+      out += '</div>';
+    });
+    ac.innerHTML = out;
   }
 }
 

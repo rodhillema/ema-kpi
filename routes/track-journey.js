@@ -518,6 +518,62 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         if (!isPre && !assessments.post) assessments.post = payload;
       }
 
+      // Per-question breakdown for EP/RR — one bar per question in the UI
+      const resultIds = [
+        assessments.pre  && assessments.pre.arId,
+        assessments.post && assessments.post.arId,
+      ].filter(Boolean);
+      if (resultIds.length > 0) {
+        try {
+          const ph = resultIds.map((_, i) => `$${i + 1}`).join(', ');
+          const { rows: qRows } = await pool.query(`
+            SELECT
+              arqr."assessmentResultId" AS result_id,
+              aq."label",
+              aq."order",
+              arqr."intResponse"        AS score
+            FROM "AssessmentResultQuestionResponse" arqr
+            JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
+            WHERE arqr."assessmentResultId" IN (${ph})
+              AND arqr."deleted_at" = 0
+              AND arqr."intResponse" IS NOT NULL
+            ORDER BY aq."order"
+          `, resultIds);
+          const { rows: scaleRows } = await pool.query(`
+            SELECT MIN(arqr."intResponse") AS scale_min,
+                   MAX(arqr."intResponse") AS scale_max
+            FROM "AssessmentResultQuestionResponse" arqr
+            JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+            JOIN "Assessment" a        ON a."id"  = ar."assessmentId"
+            WHERE a."name" NOT ILIKE '%Legacy%'
+              AND ar."deleted_at"   = 0
+              AND arqr."deleted_at" = 0
+              AND arqr."intResponse" IS NOT NULL
+          `);
+          if (qRows.length > 0) {
+            const scale = (scaleRows.length && scaleRows[0].scale_min != null)
+              ? { min: Number(scaleRows[0].scale_min), max: Number(scaleRows[0].scale_max) }
+              : null;
+            const byId = {};
+            for (const q of qRows) {
+              const rid = q.result_id;
+              if (!byId[rid]) byId[rid] = [];
+              byId[rid].push({ label: q.label, order: q.order, score: q.score });
+            }
+            if (assessments.pre  && byId[assessments.pre.arId]) {
+              assessments.pre.questions = byId[assessments.pre.arId];
+              if (scale) assessments.pre.scale = scale;
+            }
+            if (assessments.post && byId[assessments.post.arId]) {
+              assessments.post.questions = byId[assessments.post.arId];
+              if (scale) assessments.post.scale = scale;
+            }
+          }
+        } catch (qErr) {
+          console.warn('[track-journey] per-question enrichment failed:', qErr.message);
+        }
+      }
+
       // NPP — AAPIScore (5 constructs A–E, pre+post on same row). Only fill
       // in if the EP/RR query didn't find anything (NPP tracks won't have
       // AssessmentResult rows for their curriculum).
@@ -562,27 +618,6 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         }
       }
     } catch (_) { /* assessment data unavailable */ }
-
-    // For EP/RR: fetch per-question responses so the frontend can render individual bars.
-    // SELECT * to probe columns — question text column name varies (question_c, text, label, etc.)
-    // Wrapped in try/catch so a missing column never blocks the page load.
-    try {
-      const arIds = [assessments.pre?.arId, assessments.post?.arId].filter(Boolean);
-      if (arIds.length && !assessments.pre?.constructs) {
-        const { rows: qrRows } = await pool.query(`
-          SELECT * FROM "AssessmentResultQuestionResponse"
-           WHERE "assessmentResultId" = ANY($1)
-             AND "deleted_at" = 0
-             AND "intResponse" IS NOT NULL
-           ORDER BY "assessmentResultId", "id"
-        `, [arIds]);
-        for (const side of ['pre', 'post']) {
-          if (!assessments[side]) continue;
-          const rows = qrRows.filter(r => r.assessmentResultId === assessments[side].arId);
-          if (rows.length) assessments[side].questionResponses = rows;
-        }
-      }
-    } catch (_) { /* ARQR unavailable */ }
 
     // ConnectionLog — coordinator contact entries keyed by mom_id.
     // Used by the stall drawer outreach count and activity feed.

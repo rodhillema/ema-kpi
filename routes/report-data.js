@@ -503,8 +503,13 @@ router.get('/', async (req, res) => {
           last_track."last_track_session_date",
           EXTRACT(DAY FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date")::int AS days_since_track_session,
           CASE
-            WHEN last_track."last_track_session_date" IS NULL
-              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date") / 86400 > 30
+            WHEN last_track."last_track_session_date" IS NOT NULL
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date") / 86400 > 30
+              AND last_held."last_held_date" IS NOT NULL
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 14
+              THEN 'both'
+            WHEN last_track."last_track_session_date" IS NOT NULL
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_track."last_track_session_date") / 86400 > 30
               THEN 'curriculum'
             ELSE 'communication'
           END AS stall_type
@@ -534,10 +539,11 @@ router.get('/', async (req, res) => {
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
           AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_END} 23:59:59')
           AND (
-            last_held."last_held_date" IS NULL
-            OR last_held."last_held_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '14 days'
-            OR last_track."last_track_session_date" IS NULL
-            OR last_track."last_track_session_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '30 days'
+            (last_held."last_held_date" IS NOT NULL
+             AND last_held."last_held_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '14 days')
+            OR
+            (last_track."last_track_session_date" IS NOT NULL
+             AND last_track."last_track_session_date" < '${PERIOD_END} 23:59:59'::timestamp - INTERVAL '30 days')
           )
           ${affWhere}
         ORDER BY last_held."last_held_date" ASC NULLS FIRST
@@ -558,8 +564,8 @@ router.get('/', async (req, res) => {
               AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 20
               AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 30
           THEN 1 ELSE 0 END)::int AS stalled_21_30,
-          SUM(CASE WHEN last_held."last_held_date" IS NULL
-              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
+          SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
           THEN 1 ELSE 0 END)::int AS stalled_30_plus
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
@@ -595,8 +601,8 @@ router.get('/', async (req, res) => {
               AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 20
               AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 <= 30
           THEN 1 ELSE 0 END)::int AS stalled_21_30,
-          SUM(CASE WHEN last_held."last_held_date" IS NULL
-              OR EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
+          SUM(CASE WHEN last_held."last_held_date" IS NOT NULL
+              AND EXTRACT(EPOCH FROM '${PERIOD_END} 23:59:59'::timestamp - last_held."last_held_date") / 86400 > 30
           THEN 1 ELSE 0 END)::int AS stalled_30_plus
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"

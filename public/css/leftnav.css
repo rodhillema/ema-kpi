@@ -1,0 +1,132 @@
+/* Shared collapsible left nav for report pages.
+   Used on /report, /report/advocate-care, /report/mom-status,
+   /report/users, /track-journey, /integrity. */
+
+:root {
+  --ln-nav-w: 220px;
+  --ln-nav-w-collapsed: 48px;
+  --ln-red: #ec482f;
+  --ln-red-lt: #fef0ed;
+  --ln-border: #E0E0E0;
+  --ln-border-lt: #EEE;
+  --ln-mid: #5A5A5A;
+  --ln-dark: #2C2C2C;
+  --ln-lighter: #999;
+  --ln-light: #BBB;
+  --ln-white: #FFF;
+}
+
+.shared-leftnav {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--ln-nav-w);
+  background: var(--ln-white);
+  border-right: 1px solid var(--ln-border-lt);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 50;
+  transition: width .2s ease;
+  font-family: 'Lato', sans-serif;
+}
+.shared-leftnav::-webkit-scrollbar { width: 3px; }
+.shared-leftnav::-webkit-scrollbar-thumb { background: var(--ln-border); border-radius: 2px; }
+
+.shared-leftnav.collapsed { width: var(--ln-nav-w-collapsed); }
+.shared-leftnav.collapsed .sln-text,
+.shared-leftnav.collapsed .sln-group-label,
+.shared-leftnav.collapsed .sln-div { display: none; }
+.shared-leftnav.collapsed .sln-collapse-wrap { justify-content: center; padding: 10px 0 8px; }
+.shared-leftnav.collapsed .sln-collapse-btn { border: none; background: none; }
+.shared-leftnav.collapsed .sln-item { padding: 10px 0; justify-content: center; border-left: 3px solid transparent; }
+.shared-leftnav.collapsed .sln-group { padding: 4px 0; }
+.shared-leftnav.collapsed .sln-icon { width: 20px; height: 20px; }
+.shared-leftnav.collapsed .sln-icon svg { width: 16px; height: 16px; }
+
+.sln-collapse-wrap {
+  padding: 10px 12px 8px;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--ln-border-lt);
+}
+.sln-collapse-btn {
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  border: 1px solid var(--ln-border);
+  background: var(--ln-white);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .12s, border-color .12s;
+}
+.sln-collapse-btn:hover { background: #f7f2ee; border-color: #ccc; }
+.sln-collapse-btn svg { width: 11px; height: 11px; color: var(--ln-lighter); transition: color .12s; }
+.sln-collapse-btn:hover svg { color: var(--ln-mid); }
+
+.sln-div { height: 1px; background: var(--ln-border-lt); margin: 0; }
+
+.sln-group { padding: 14px 0 6px; }
+.sln-group-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 8px; font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ln-lighter);
+  padding: 0 16px 7px;
+  display: block;
+}
+
+.sln-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background .12s, border-color .12s;
+  text-decoration: none;
+}
+.sln-item:hover { background: #f7f2ee; }
+.sln-item.active { background: var(--ln-red-lt); border-left-color: var(--ln-red); }
+
+.sln-icon {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.sln-icon svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: var(--ln-light);
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  transition: stroke .12s;
+}
+.sln-item:hover .sln-icon svg { stroke: var(--ln-mid); }
+.sln-item.active .sln-icon svg { stroke: var(--ln-red); }
+
+.sln-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px; font-weight: 400;
+  color: var(--ln-mid);
+  line-height: 1.2;
+  transition: color .12s;
+  flex: 1;
+}
+.sln-item:hover .sln-text { color: var(--ln-dark); }
+.sln-item.active .sln-text { color: var(--ln-red); font-weight: 600; }
+
+/* Body offset — JS adds .shared-leftnav-loaded once injected,
+   and the collapse class toggles .nav-collapsed on <body>. */
+body.shared-leftnav-loaded { padding-left: var(--ln-nav-w); transition: padding-left .2s ease; }
+body.shared-leftnav-loaded.nav-collapsed { padding-left: var(--ln-nav-w-collapsed); }
+
+@media (max-width: 720px) {
+  body.shared-leftnav-loaded { padding-left: var(--ln-nav-w-collapsed); }
+  .shared-leftnav { width: var(--ln-nav-w-collapsed); }
+  .shared-leftnav .sln-text,
+  .shared-leftnav .sln-group-label,
+  .shared-leftnav .sln-div { display: none; }
+  .shared-leftnav .sln-item { padding: 10px 0; justify-content: center; }
+  .shared-leftnav .sln-group { padding: 4px 0; }
+  .shared-leftnav .sln-icon { width: 20px; height: 20px; }
+  .shared-leftnav .sln-icon svg { width: 16px; height: 16px; }
+  .shared-leftnav .sln-collapse-wrap { justify-content: center; padding: 10px 0 8px; }
+  .shared-leftnav .sln-collapse-btn { border: none; background: none; }
+}

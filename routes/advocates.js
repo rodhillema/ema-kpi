@@ -403,7 +403,7 @@ router.get('/', async (req, res) => {
         subStatusSince: r.updated_at || null,
         latestNoteDate: r.latestNoteDate || null,
         latestNote: r.latestNote || null,
-        availability: r.availability || null,
+        availability: (() => { try { return r.availability ? JSON.parse(r.availability) : null; } catch { return null; } })(),
         pairings: pairingsByAdvocate[r.id] || [],
         contactLog: contactLogByAdvocate[r.id] || [],
       };
@@ -416,17 +416,31 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/advocates/:id/availability — save availability text for an advocate
+// POST /api/advocates/:id/availability — save availability slot array for an advocate.
+// Body: { slots: string[] | null }  where each slot is "{Day}-{Band}",
+//   Day ∈ {Mon,Tue,Wed,Thu,Fri,Sat,Sun}, Band ∈ {Morning,Afternoon,Evening}.
+// Stored as JSON in User.availability (text column).
+const AVAIL_DAYS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const AVAIL_BANDS = ['Morning','Afternoon','Evening'];
 router.post('/:id/availability', async (req, res) => {
   try {
     const { id } = req.params;
-    const { availability } = req.body;
-    if (typeof availability !== 'string' && availability !== null) {
-      return res.status(400).json({ error: 'availability must be a string or null' });
+    const { slots } = req.body;
+    if (!Array.isArray(slots) && slots !== null) {
+      return res.status(400).json({ error: 'slots must be an array or null' });
+    }
+    if (Array.isArray(slots)) {
+      const invalid = slots.filter(s => {
+        const [d, b] = (s || '').split('-');
+        return !AVAIL_DAYS.includes(d) || !AVAIL_BANDS.includes(b);
+      });
+      if (invalid.length) {
+        return res.status(400).json({ error: `Invalid slots: ${invalid.join(', ')}` });
+      }
     }
     await pool.query(
       `UPDATE "User" SET "availability" = $1 WHERE "id" = $2 AND "deleted_at" = 0`,
-      [availability ?? null, id]
+      [slots ? JSON.stringify(slots) : null, id]
     );
     res.json({ success: true });
   } catch (err) {

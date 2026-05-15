@@ -284,24 +284,26 @@ body.logged-in .login-view{display:none !important}
 .wn-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--lighter);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .wn-label::after{content:'';flex:1;height:1px;background:var(--border)}
 
-.wn-list{display:flex;flex-direction:column;gap:8px}
-.wn-entry{display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;transition:border-color .14s,box-shadow .14s;position:relative;overflow:hidden}
-.wn-entry::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:8px 0 0 8px}
-.wn-entry.cr::before{background:var(--red)}
-.wn-entry.cg::before{background:var(--green)}
-.wn-entry.cy::before{background:var(--yellow)}
-.wn-entry:hover{border-color:#ccc;box-shadow:0 2px 8px rgba(0,0,0,.07)}
-.wn-date{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;color:var(--lighter);white-space:nowrap;flex-shrink:0;width:64px}
-.wn-badge{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:2px 6px;border-radius:3px;flex-shrink:0;white-space:nowrap}
+.wn-list{display:block}
+.wn-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.wn-card{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:box-shadow .15s,border-color .15s}
+.wn-card::before{content:'';height:4px;display:block;flex-shrink:0}
+.wn-card.cr::before{background:var(--red)}
+.wn-card.cg::before{background:var(--green)}
+.wn-card.cy::before{background:var(--yellow)}
+.wn-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.09);border-color:#ccc}
+.wn-card-body{padding:16px 18px 14px;flex:1;display:flex;flex-direction:column}
+.wn-badge{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:3px 7px;border-radius:3px;white-space:nowrap;align-self:flex-start}
 .wn-badge.new-report{background:var(--red-lt);color:var(--red)}
 .wn-badge.new-range{background:var(--green-lt);color:var(--green)}
-.wn-body{flex:1;min-width:0}
-.wn-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--dark);margin-bottom:2px;line-height:1.2}
-.wn-desc{font-size:12px;color:var(--lighter);line-height:1.5}
-.wn-arrow{width:20px;height:20px;border-radius:50%;background:#f2ede9;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .14s}
+.wn-card-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;color:var(--dark);margin:10px 0 6px;line-height:1.2}
+.wn-card-desc{font-size:12px;color:var(--mid);line-height:1.5;flex:1}
+.wn-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.wn-card-date{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;color:var(--lighter)}
+.wn-arrow{width:22px;height:22px;border-radius:50%;background:#f2ede9;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .14s}
 .wn-arrow svg{width:9px;height:9px;fill:none;stroke:var(--light);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .14s}
-.wn-entry:hover .wn-arrow{background:var(--red)}
-.wn-entry:hover .wn-arrow svg{stroke:#fff}
+.wn-card:hover .wn-arrow{background:var(--red)}
+.wn-card:hover .wn-arrow svg{stroke:#fff}
 .wc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:0}
 .wc-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
 .wc-icon{width:28px;height:28px;border-radius:6px;background:#f7f2ee;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -849,19 +851,22 @@ function renderWhatsNew(role) {
     list.innerHTML = '<p style="font-size:13px;color:var(--lighter)">Nothing new to show.</p>';
     return;
   }
-  list.innerHTML = visible.map(function(e) {
+  list.innerHTML = '<div class="wn-card-grid">'
+    + visible.map(function(e) {
     var hrefAttr = e.href ? ('href="' + e.href + '"') : 'href="#"';
     var onclickAttr = (e.view && !e.href) ? ('onclick="svById(\'' + e.view + '\');return false;"') : '';
-    return '<a class="wn-entry ' + e.accent + '" ' + hrefAttr + ' ' + onclickAttr + '>'
-         + '<span class="wn-date">' + e.date + '</span>'
-         + '<span class="wn-badge ' + e.badge + '">' + (BADGE_LABELS[e.badge] || e.badge) + '</span>'
-         + '<div class="wn-body">'
-         +   '<div class="wn-name">' + e.name + '</div>'
-         +   '<div class="wn-desc">' + e.desc + '</div>'
+    return '<a class="wn-card ' + e.accent + '" ' + hrefAttr + ' ' + onclickAttr + '>'
+         + '<div class="wn-card-body">'
+         +   '<span class="wn-badge ' + e.badge + '">' + (BADGE_LABELS[e.badge] || e.badge) + '</span>'
+         +   '<div class="wn-card-title">' + e.name + '</div>'
+         +   '<div class="wn-card-desc">' + e.desc + '</div>'
+         +   '<div class="wn-card-footer">'
+         +     '<span class="wn-card-date">' + e.date + '</span>'
+         +     '<div class="wn-arrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>'
+         +   '</div>'
          + '</div>'
-         + '<div class="wn-arrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>'
          + '</a>';
-  }).join("");
+  }).join("") + '</div>';
 }
 
 // ── NAV TOGGLES ─────────────────────────────────────────

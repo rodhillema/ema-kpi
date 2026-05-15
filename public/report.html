@@ -3524,9 +3524,18 @@
      var k2RateEl = tab1.querySelector('[data-hydrate="kpi2-rate"]');
      if (k2RateEl) k2RateEl.textContent = '—';
    }
-   if (k2.numerator != null)   setH1('kpi2-num', k2.numerator);
-   if (k2.denominator != null) setH1('kpi2-den', k2.denominator);
-   if (k2.excluded != null)    setH1('kpi2-excl', k2.excluded);
+   if (k2.rate != null) {
+     if (k2.numerator != null)   setH1('kpi2-num', k2.numerator);
+     if (k2.denominator != null) setH1('kpi2-den', k2.denominator);
+     if (k2.excluded != null)    setH1('kpi2-excl', k2.excluded);
+   } else {
+     // Pending state — replace context line with cohort_n explanation
+     var k2NumEl = tab1.querySelector('[data-hydrate="kpi2-num"]');
+     var k2CtxEl = k2NumEl ? k2NumEl.closest('.hc-context') : null;
+     if (k2CtxEl) {
+       k2CtxEl.textContent = (k2.cohort_n || 0) + ' moms assessed — fewer than 5 eligible pairs';
+     }
+   }
    if (k3.rate != null) {
      setH1('kpi3-rate', Math.round(k3.rate) + '%');
    } else {

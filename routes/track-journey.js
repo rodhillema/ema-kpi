@@ -166,6 +166,51 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
   }
 });
 
+// GET /api/track-journey/debug-schema — admin-only schema probe for ConnectionLog + ServiceReferral
+router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
+  try {
+    const { role, username } = req.session.user;
+    const isAllowed = ORG_WIDE_ROLES.includes(role)
+      || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
+    if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
+
+    const tables = ['ConnectionLog', 'ServiceReferral'];
+    const out = {};
+    for (const tbl of tables) {
+      try {
+        const { rows: cols } = await pool.query(`
+          SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+           WHERE table_name = $1
+           ORDER BY ordinal_position
+        `, [tbl]);
+        out[tbl] = { columns: cols, exists: cols.length > 0 };
+        if (cols.length > 0) {
+          try {
+            const { rows: sample } = await pool.query(`SELECT * FROM "${tbl}" LIMIT 3`);
+            out[tbl].sample = sample;
+          } catch (_) { out[tbl].sample = null; }
+        }
+      } catch (e) {
+        out[tbl] = { exists: false, error: e.message };
+      }
+    }
+
+    // Also scan for any table names containing 'connection' or 'referral'
+    const { rows: related } = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND (table_name ILIKE '%connection%' OR table_name ILIKE '%referral%' OR table_name ILIKE '%contact%')
+       ORDER BY table_name
+    `);
+    out._relatedTables = related.map(r => r.table_name);
+
+    res.json(out);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/track-journey/debug/sessions?mom=<momId>
 // Admin-only diagnostic — dumps Session schema + every Session row reachable
 // from a mom via her pairings, plus her pairings' AdvocacyGroup links.

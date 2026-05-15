@@ -4105,22 +4105,25 @@ function openStallDrawer(clickedStall) {
   // Title: mom's name
   var title = pairing.momName || '—';
 
-  // Sub: track · stall date range
-  var subParts = [];
-  if (pairing.trackTitle) subParts.push(pairing.trackTitle);
-  if (stallBand) {
-    var rangeEnd = (stallBand.isActive || !stallBand.endDate) ? 'present' : fmtDate(stallBand.endDate);
-    subParts.push(fmtDate(stallBand.startDate) + ' — ' + rangeEnd);
+  // Sub: track abbrev · lesson · last held date
+  function abbrevTrack(t) {
+    if (!t) return '';
+    if (/nurturing/i.test(t)) return 'NPP';
+    if (/empowered/i.test(t)) return 'EP';
+    if (/roadmap|resilience/i.test(t)) return 'RR';
+    return t;
   }
+  var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
+  var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
+  var subParts = [];
+  if (pairing.trackTitle) subParts.push(abbrevTrack(pairing.trackTitle));
+  if (lastHeld && lastHeld.lessonNumber) subParts.push('Lesson ' + lastHeld.lessonNumber);
+  if (lastHeld) subParts.push('Last held ' + fmtDate(lastHeld.date));
   var sub = subParts.join(' · ');
 
   document.getElementById('drawer-eyebrow').textContent = eyebrow;
   document.getElementById('drawer-title').textContent   = title;
   document.getElementById('drawer-sub').textContent     = sub;
-
-  // Outreach summary line — ConnectionLog entries in the stall window
-  var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
-  var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
 
   var scheduledInWindow = stallStart
     ? sessions.filter(function(s){
@@ -4129,14 +4132,21 @@ function openStallDrawer(clickedStall) {
       })
     : [];
 
+  var missedInWindow = scheduledInWindow.filter(function(s){ return s.status === 'NotHeld'; });
+
   var connLogsInWindow = stallStart
     ? connLogs.filter(function(c){ return new Date(c.date) >= stallStart && (!stallEnd || new Date(c.date) <= stallEnd); })
     : connLogs.slice(0, 10);
 
+  // Outreach attempts = connection logs + missed sessions
+  var outreachCount = connLogsInWindow.length + missedInWindow.length;
+
   var outreachEl = document.getElementById('drawer-outreach');
   if (outreachEl) {
-    if (connLogsInWindow.length) {
-      outreachEl.innerHTML = '<span class=”do-em”>' + connLogsInWindow.length + ' outreach attempt' + (connLogsInWindow.length > 1 ? 's' : '') + '</span> during this period';
+    if (outreachCount) {
+      var noResponseText = (!lastHeld || (stallStart && new Date(lastHeld.date) < stallStart))
+        ? ' · <span style=”opacity:.7;”>no response</span>' : '';
+      outreachEl.innerHTML = '<span class=”do-em”>' + outreachCount + ' outreach attempt' + (outreachCount > 1 ? 's' : '') + '</span> during this period' + noResponseText;
       outreachEl.removeAttribute('hidden');
     } else {
       outreachEl.setAttribute('hidden', '');
@@ -4170,26 +4180,6 @@ function openStallDrawer(clickedStall) {
     + '</svg>';
 
   var html = '';
-
-  // ── 1. At a glance ──────────────────────────────────────────────────────
-  html += '<div class=”dsec”><div class=”dsec-label”>At a glance</div><div class=”dsec-glance”>';
-  html += '<strong>' + currentStall.days + ' days</strong> ';
-  if (isCurriculum) {
-    html += 'without a curriculum session. ';
-  } else {
-    html += 'since the last held session. ';
-  }
-  if (lastHeld) {
-    html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
-  }
-  if (connLogsInWindow.length) {
-    html += '<strong>' + connLogsInWindow.length + ' outreach attempt' + (connLogsInWindow.length > 1 ? 's' : '') + '</strong> during this period. ';
-  }
-  if (activeNeeds.length) {
-    var needNames = activeNeeds.map(function(n){ return (n.needType || 'need').replace(/_/g,' '); }).slice(0,3).join(', ');
-    html += '<strong>' + activeNeeds.length + ' flagged need' + (activeNeeds.length > 1 ? 's' : '') + '</strong> active: ' + escHtml(needNames) + '.';
-  }
-  html += '</div></div>';
 
   // ── 2. Flagged needs active ──────────────────────────────────────────────
   if (activeNeeds.length) {
@@ -4226,21 +4216,40 @@ function openStallDrawer(clickedStall) {
       html += '<div style=”font-size:12.5px;color:var(--dark);”>' + fmtDate(resolutionSess.date) + ' · ' + escHtml(sessionTypeLabel(resolutionSess.type)) + (resolutionSess.lessonNumber ? ' Lesson ' + resolutionSess.lessonNumber : '') + '</div>';
       html += '</div></div>';
     }
-  } else if (connLogsInWindow.length) {
-    // Current stall — show ConnectionLog entries as outreach attempts
-    html += '<div class=”dsec”><div class=”dsec-label”>Outreach (' + connLogsInWindow.length + ')</div>';
-    html += '<div class=”updates-feed” style=”margin-top:-4px;”>';
+  } else if (outreachCount) {
+    // Current stall — show ConnectionLog entries + missed sessions as outreach attempts
+    var outreachItems = [];
     connLogsInWindow.forEach(function(c) {
       var method = c.contactMethod || '';
-      var iconCls = /sms|text/i.test(method) ? 'text' : /video/i.test(method) ? 'call' : 'call';
-      var glyph   = /sms|text/i.test(method) ? '✉' : /video/i.test(method) ? '▶' : '☎';
-      var methodLbl = method.replace(/_/g,' ') || 'Contact';
+      outreachItems.push({
+        date:   new Date(c.date),
+        iconCls: /sms|text/i.test(method) ? 'text' : 'call',
+        glyph:   /sms|text/i.test(method) ? '✉' : '☎',
+        type:    (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound',
+        author:  c.createdByName || '',
+        text:    c.summary || null,
+      });
+    });
+    missedInWindow.forEach(function(s) {
+      outreachItems.push({
+        date:   new Date(s.date),
+        iconCls: 'no-contact',
+        glyph:   '↺',
+        type:    'Missed Session',
+        author:  'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
+        text:    s.notes || null,
+      });
+    });
+    outreachItems.sort(function(a, b){ return b.date - a.date; });
+    html += '<div class=”dsec”><div class=”dsec-label”>Outreach Attempted (' + outreachItems.length + ')</div>';
+    html += '<div class=”updates-feed” style=”margin-top:-4px;”>';
+    outreachItems.forEach(function(item) {
       html += '<div class=”update-entry”>';
-      html += '<div class=”update-icon ' + iconCls + '”>' + glyph + '</div>';
+      html += '<div class=”update-icon ' + item.iconCls + '”>' + item.glyph + '</div>';
       html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(methodLbl) + '</span><span class=”update-date”>' + fmtDateShort(c.date) + '</span></div>';
-      if (c.createdByName) html += '<div class=”update-author”>' + escHtml(c.createdByName) + '</div>';
-      if (c.summary) html += '<div class=”update-text”>' + escHtml(c.summary.slice(0, 200)) + (c.summary.length > 200 ? '…' : '') + '</div>';
+      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(item.type) + '</span><span class=”update-date”>' + fmtDateShort(item.date.toISOString()) + '</span></div>';
+      if (item.author) html += '<div class=”update-author”>' + escHtml(item.author) + '</div>';
+      if (item.text) html += '<div class=”update-text”>' + escHtml(item.text.slice(0, 200)) + (item.text.length > 200 ? '…' : '') + '</div>';
       html += '</div></div>';
     });
     html += '</div></div>';
@@ -4278,11 +4287,12 @@ function openStallDrawer(clickedStall) {
     var method = c.contactMethod || '';
     var iconCls = /sms|text/i.test(method) ? 'text' : 'call';
     var glyph   = /sms|text/i.test(method) ? '✉' : '☎';
+    var typeLabel = (/sms|text/i.test(method) ? 'Text' : /video/i.test(method) ? 'Video' : 'Call') + ' · Outbound';
     feedItems.push({
       date:   new Date(c.date),
       icon:   iconCls,
       glyph:  glyph,
-      type:   'Connection Log · ' + (method.replace(/_/g,' ') || 'Contact'),
+      type:   typeLabel,
       author: c.createdByName || '',
       text:   c.summary || null,
     });

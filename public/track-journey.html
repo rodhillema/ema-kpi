@@ -2705,6 +2705,36 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   border-bottom: 1px solid var(--border);
 }
 
+/* At-a-glance stat grid */
+.glance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.glance-stat {
+  background: var(--page-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.glance-stat-val {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--dark);
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+.glance-stat-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.drawer.is-curr-stall .glance-stat-val { color: var(--amber-border); }
+
 /* At-a-glance summary block – narrative paragraph telling the
    "what happened and why you should care" story. Color-coded
    tint to match the drawer header type. */
@@ -4181,9 +4211,18 @@ function openStallDrawer(clickedStall) {
 
   var html = '';
 
+  // ── 1. At a glance ──────────────────────────────────────────────────────
+  html += '<div class=”dsec”><div class=”dsec-label”>At a glance</div>';
+  html += '<div class=”glance-grid”>';
+  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + currentStall.days + '</div><div class=”glance-stat-lbl”>' + (isCurriculum ? 'days without curriculum' : 'days since last held') + '</div></div>';
+  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + (lastHeld ? fmtDateShort(lastHeld.date) : '—') + '</div><div class=”glance-stat-lbl”>last held session</div></div>';
+  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + outreachCount + '</div><div class=”glance-stat-lbl”>outreach attempts</div></div>';
+  html += '<div class=”glance-stat”><div class=”glance-stat-val”>' + activeNeeds.length + '</div><div class=”glance-stat-lbl”>active flagged needs</div></div>';
+  html += '</div></div>';
+
   // ── 2. Flagged needs active ──────────────────────────────────────────────
+  html += '<div class=”dsec”><div class=”dsec-label”>Flagged needs active</div>';
   if (activeNeeds.length) {
-    html += '<div class=”dsec”><div class=”dsec-label”>Flagged needs active</div>';
     activeNeeds.forEach(function(n) {
       var typeLbl   = (n.needType || 'Need').replace(/_/g,' ');
       var statusLbl = n.urgent ? 'Urgent' : 'Open';
@@ -4196,8 +4235,10 @@ function openStallDrawer(clickedStall) {
       if (meta) html += '<span>' + escHtml(meta) + '</span>';
       html += '</div></div></div>';
     });
-    html += '</div>';
+  } else {
+    html += '<div style=”font-size:12px;color:var(--mid);font-style:italic;”>No active flagged needs</div>';
   }
+  html += '</div>';
 
   // ── 3. Outreach / Resolution ─────────────────────────────────────────────
   if (isPast) {

@@ -421,6 +421,12 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
   border-color: var(--amber);
 }
 
+.hdr-stall.hdr-completed {
+  background: rgba(255,255,255,0.18);
+  color: #d4f0e1;
+  border-color: rgba(212,240,225,0.45);
+}
+
 .pairing-strip {
   display: flex;
   align-items: center;
@@ -1562,6 +1568,53 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   gap: 10px;
 }
 
+.score-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 18px;
+  background: var(--amber-bg);
+  border: 1px dashed rgba(242, 161, 54, 0.45);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+.score-empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px dashed var(--amber);
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.score-empty-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+.score-empty-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dark);
+  max-width: 320px;
+  margin-bottom: 12px;
+}
+.score-empty-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mid);
+  font-style: italic;
+  max-width: 320px;
+}
+
 .panel-lbl-count {
   color: var(--green);
   font-weight: 600;
@@ -1718,6 +1771,20 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 .seq-step.done .seq-meta { color: var(--green); }
 .seq-step.preassess .seq-meta,
 .seq-step.postassess .seq-meta { color: var(--green-mid); font-weight: 400; }
+
+/* Missed session — mom absent, not rescheduled */
+.seq-step.missed .seq-dot {
+  background: white;
+  border: 2px solid var(--red);
+  color: var(--red);
+}
+.seq-step.missed .seq-name {
+  color: var(--mid);
+}
+.repeat-tag.missed-tag {
+  background: rgba(236,72,47,0.12);
+  color: var(--red);
+}
 
 /* Pre-Assessment MISSING state — amber action-prompt styling */
 .seq-step.preassess.pre-missing .seq-dot {
@@ -2728,29 +2795,6 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   flex: 1;
 }
 
-/* ── Stall Drawer ───────────────────────────────────────────── */
-.stall-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:399}
-.stall-overlay.show{display:block}
-.stall-drawer{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--white);border-left:1px solid var(--border);box-shadow:-6px 0 28px rgba(0,0,0,.12);z-index:400;transition:right .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
-.stall-drawer.open{right:0}
-.sd-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--red);flex-shrink:0}
-.sd-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.8px;color:var(--white)}
-.sd-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);font-size:22px;line-height:1;padding:2px 4px}
-.sd-close:hover{color:var(--white)}
-.sd-body{flex:1;overflow-y:auto}
-.sd-sec{padding:14px 18px;border-bottom:1px solid var(--border)}
-.sd-sec:last-child{border-bottom:none}
-.sd-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid);margin-bottom:8px}
-.sd-stall-type{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--red);margin-bottom:3px}
-.sd-stall-since{font-family:'Lato',sans-serif;font-size:12px;color:var(--mid)}
-.sd-row{font-family:'Lato',sans-serif;font-size:12px;color:var(--dark);padding:3px 0;display:flex;gap:6px}
-.sd-row-date{color:var(--mid);flex-shrink:0}
-.sd-empty{font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);font-style:italic}
-.sd-note{padding:8px 0;border-bottom:1px dashed var(--border)}
-.sd-note:last-child{border-bottom:none}
-.sd-note-date{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:4px}
-.sd-note-text{font-family:'Lato',sans-serif;font-size:12px;color:var(--dark);font-style:italic;line-height:1.5;margin-bottom:3px}
-.sd-note-author{font-family:'Lato',sans-serif;font-size:11px;color:var(--mid)}
 .pb-flag-stall{cursor:pointer}
 .pb-flag-stall:hover{background:rgba(236,72,47,.18)}
 </style>
@@ -3653,9 +3697,9 @@ function renderDetail(pairing, sessions, assessments) {
   trackSessions.forEach(function(s) {
     var isInProg = (s === lastHeldTrackSess && pairing.status === 'paired');
     var step = document.createElement('div');
-    if (s.status !== 'Held') {
-      step.className = 'seq-step inprog';
-    } else if (isInProg) {
+    if (s.status === 'NotHeld') {
+      step.className = 'seq-step missed';
+    } else if (s.status !== 'Held' || isInProg) {
       step.className = 'seq-step inprog';
     } else {
       step.className = 'seq-step done';
@@ -3736,7 +3780,23 @@ function renderDetail(pairing, sessions, assessments) {
   }
 
   if (!assessments.pre && !assessments.post) {
-    ac.innerHTML = '<div style="' + subStyles + 'padding-top:8px;">No assessment data on file for this pairing.</div>';
+    if (heldTrack.length > 0) {
+      ac.innerHTML =
+        '<div class="score-empty">'
+        + '<div class="score-empty-icon">'
+        +   '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        +     '<circle cx="12" cy="12" r="10"/>'
+        +     '<line x1="12" y1="8" x2="12" y2="12"/>'
+        +     '<line x1="12" y1="16" x2="12.01" y2="16"/>'
+        +   '</svg>'
+        + '</div>'
+        + '<div class="score-empty-title">Pre-Assessment needed</div>'
+        + '<div class="score-empty-body">We can\'t show learning progress yet. Sessions have been held without a Pre-Assessment on file.</div>'
+        + '<div class="score-empty-hint">The advocate or coordinator can enter the Pre-Assessment in Trellis. Once recorded, this panel will show baseline scores.</div>'
+        + '</div>';
+    } else {
+      ac.innerHTML = '<div style="' + subStyles + 'padding-top:8px;">No assessment data on file for this pairing.</div>';
+    }
   } else {
     ac.innerHTML = renderAsmt(assessments.pre, 'Pre') + renderAsmt(assessments.post, 'Post');
   }
@@ -3748,13 +3808,12 @@ function openStallDrawer(clickedStall) {
   var data = CURRENT_JOURNEY_DATA;
   if (!data || !data.pairing) return;
 
-  var pairing          = data.pairing;
-  var sessions         = data.sessions || [];
-  var stalls           = data.stalls   || [];
-  var notes            = data.coordinatorNotes || [];
+  var pairing = data.pairing;
+  var sessions = data.sessions || [];
+  var stalls   = data.stalls   || [];
+  var notes    = data.coordinatorNotes || [];
 
-  // Prefer the clicked stall band; else fall back to most-recent active band;
-  // else fall back to pairing.currentStall (header badge); else nothing to show.
+  // Prefer clicked stall band; else most-recent active; else most-recent any; else header stall
   var stallBand = clickedStall || null;
   if (!stallBand) {
     for (var i = stalls.length - 1; i >= 0; i--) {
@@ -3765,94 +3824,117 @@ function openStallDrawer(clickedStall) {
   if (!stallBand && !pairing.currentStall) return;
 
   var currentStall = stallBand
-    ? { type: stallBand.type, days: stallBand.days }
+    ? { type: stallBand.type, days: stallBand.days, isActive: stallBand.isActive }
     : pairing.currentStall;
   var stallStart = stallBand ? new Date(stallBand.startDate) : null;
+  var stallEnd   = (stallBand && !stallBand.isActive && stallBand.endDate) ? new Date(stallBand.endDate) : null;
 
-  // Last held session of any type
+  var isCurriculum = currentStall.type === 'curriculum';
+  var isPast       = stallBand ? !stallBand.isActive : false;
+
+  // ── Header
+  var drawer = document.getElementById('stall-drawer');
+  drawer.className = 'drawer' + (isCurriculum ? ' is-curr-stall' : '');
+
+  var eyebrow = isPast ? 'Past Stall' : 'Active Stall';
+  var title   = isCurriculum ? 'Curriculum Stall' : 'Communication Stall';
+  var sub     = currentStall.days + ' days'
+    + (stallStart ? ' · started ' + fmtDate(stallStart.toISOString()) : '')
+    + (stallEnd   ? ' → ' + fmtDate(stallEnd.toISOString()) : '');
+
+  document.getElementById('drawer-eyebrow').textContent = eyebrow;
+  document.getElementById('drawer-title').textContent   = title;
+  document.getElementById('drawer-sub').textContent     = sub;
+
+  // ── Build body
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
-  var lastHeld = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
+  var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
 
-  // Sessions during the stall window (Planned or NotHeld, date >= stallStart)
-  var missedSessions = stallStart
+  var scheduledInWindow = stallStart
     ? sessions.filter(function(s){
         return (s.status === 'Planned' || s.status === 'NotHeld')
             && new Date(s.date) >= stallStart;
       })
     : [];
 
-  // Coordinator notes during (or just before) the stall window — limit 5
   var filteredNotes = stallStart
     ? notes.filter(function(n){ return new Date(n.date) >= stallStart; })
     : notes.slice(0, 5);
 
   function sessionTypeLabel(t) {
-    if (t === 'Track_Session') return 'Track Session';
+    if (t === 'Track_Session')   return 'Track Session';
     if (t === 'Support_Session') return 'Support Session';
     return t ? t.replace(/_/g,' ') : 'Session';
   }
 
   var html = '';
 
-  // ── Stall summary
-  html += '<div class="sd-sec">';
-  html += '<div class="sd-lbl">Current Stall</div>';
-  var stallTypeLabel = currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'General Stall';
-  html += '<div class="sd-stall-type">⚠ ' + stallTypeLabel + ' — ' + currentStall.days + ' days</div>';
-  if (stallStart) {
-    html += '<div class="sd-stall-since">Stall started ' + fmtDate(stallStart.toISOString()) + '</div>';
+  // At a glance
+  html += '<div class=”dsec”>';
+  html += '<div class=”dsec-label”>At a glance</div>';
+  html += '<div class=”dsec-glance”>';
+  html += '<strong>' + currentStall.days + ' days</strong> ';
+  if (isCurriculum) {
+    html += 'without a curriculum session. ';
+    if (lastHeld) html += 'Last held session was ' + fmtDate(lastHeld.date) + '. ';
+    html += 'Support contact may be ongoing, but no track progress has been logged.';
+  } else {
+    html += 'since the last held session. ';
+    if (lastHeld) html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
+    if (scheduledInWindow.length) html += '<strong>' + scheduledInWindow.length + ' session' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> scheduled during this period.';
   }
-  html += '</div>';
+  html += '</div></div>';
 
-  // ── Last held session
-  html += '<div class="sd-sec">';
-  html += '<div class="sd-lbl">Last Held Session</div>';
+  // Last held session
+  html += '<div class=”dsec”>';
+  html += '<div class=”dsec-label”>Last Held Session</div>';
   if (lastHeld) {
-    html += '<div class="sd-row"><span class="sd-row-date">' + fmtDate(lastHeld.date) + '</span>' + escHtml(sessionTypeLabel(lastHeld.type)) + '</div>';
+    html += '<div class=”update-entry”>';
+    html += '<div class=”update-icon note”>✓</div>';
+    html += '<div class=”update-body”>';
+    html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sessionTypeLabel(lastHeld.type)) + '</span><span class=”update-date”>' + fmtDate(lastHeld.date) + '</span></div>';
+    html += '</div></div>';
   } else {
-    html += '<div class="sd-empty">No held sessions on record</div>';
+    html += '<div style=”font-size:12px;color:var(--mid);font-style:italic;”>No held sessions on record</div>';
   }
   html += '</div>';
 
-  // ── Sessions during stall (Planned / NotHeld)
-  html += '<div class="sd-sec">';
-  html += '<div class="sd-lbl">Scheduled During Stall</div>';
-  if (missedSessions.length) {
-    missedSessions.forEach(function(s) {
+  // Sessions during stall window
+  if (scheduledInWindow.length) {
+    html += '<div class=”dsec”>';
+    html += '<div class=”dsec-label”>Sessions During Stall (' + scheduledInWindow.length + ')</div>';
+    scheduledInWindow.forEach(function(s) {
       var sl = s.status === 'Planned' ? 'Planned' : 'Not Held';
-      html += '<div class="sd-row"><span class="sd-row-date">' + fmtDate(s.date) + '</span>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</div>';
+      html += '<div class=”update-entry”>';
+      html += '<div class=”update-icon no-contact”>↺</div>';
+      html += '<div class=”update-body”>';
+      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDate(s.date) + '</span></div>';
+      html += '</div></div>';
     });
-  } else {
-    html += '<div class="sd-empty">No scheduled sessions in this window</div>';
+    html += '</div>';
   }
-  html += '</div>';
 
-  // ── Coordinator notes
-  html += '<div class="sd-sec">';
-  html += '<div class="sd-lbl">Coordinator Notes' + (stallStart ? ' Since Stall Started' : '') + '</div>';
+  // Coordinator notes
+  html += '<div class=”dsec”>';
+  html += '<div class=”dsec-label”>Coordinator Notes' + (stallStart ? ' Since Stall' : '') + '</div>';
   if (filteredNotes.length) {
     filteredNotes.forEach(function(n) {
-      html += '<div class="sd-note">';
-      html += '<div class="sd-note-date">' + fmtDate(n.date) + '</div>';
-      if (n.text) html += '<div class="sd-note-text">“' + escHtml(n.text) + '”</div>';
-      if (n.coordinatorName) html += '<div class="sd-note-author">— ' + escHtml(n.coordinatorName) + '</div>';
+      html += '<div class=”coord-note” style=”margin-bottom:10px;”>';
+      html += '<div class=”coord-note-meta”>' + fmtDate(n.date) + (n.coordinatorName ? ' · ' + escHtml(n.coordinatorName) : '') + '</div>';
+      if (n.text) html += '<div class=”coord-note-body”>”' + escHtml(n.text) + '”</div>';
       html += '</div>';
     });
   } else {
-    html += '<div class="sd-empty">No coordinator notes in this window</div>';
+    html += '<div style=”font-size:12px;color:var(--mid);font-style:italic;”>No coordinator notes in this window</div>';
   }
   html += '</div>';
 
-  document.getElementById('sd-body').innerHTML = html;
-  document.getElementById('stall-drawer').classList.add('open');
-  document.getElementById('stall-overlay').classList.add('show');
+  document.getElementById('drawer-body').innerHTML = html;
+  document.body.classList.add('drawer-open');
 }
 
 function closeStallDrawer() {
-  var d = document.getElementById('stall-drawer');
-  var o = document.getElementById('stall-overlay');
-  if (d) d.classList.remove('open');
-  if (o) o.classList.remove('show');
+  document.body.classList.remove('drawer-open');
 }
 
 document.addEventListener('keydown', function(e) {
@@ -3867,13 +3949,17 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <!-- ── Stall Drawer ──────────────────────────────────────────────── -->
-<div class="stall-overlay" id="stall-overlay" onclick="closeStallDrawer()"></div>
-<div class="stall-drawer" id="stall-drawer">
-  <div class="sd-head">
-    <span class="sd-title">Stall Detail</span>
-    <button class="sd-close" onclick="closeStallDrawer()">×</button>
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeStallDrawer()"></div>
+<aside class="drawer" id="stall-drawer" role="dialog" aria-label="Stall Detail">
+  <div class="drawer-header">
+    <div class="drawer-header-text">
+      <div class="drawer-eyebrow" id="drawer-eyebrow"></div>
+      <div class="drawer-title" id="drawer-title"></div>
+      <div class="drawer-sub" id="drawer-sub"></div>
+    </div>
+    <button type="button" class="drawer-close" id="close-drawer-btn" aria-label="Close" onclick="closeStallDrawer()">×</button>
   </div>
-  <div class="sd-body" id="sd-body"></div>
-</div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
 </body>
 </html>

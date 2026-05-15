@@ -1468,10 +1468,12 @@ router.get('/', async (req, res) => {
           JOIN post_fwa po ON po."momId" = pf."momId"
         )
         SELECT
-          COUNT(*)::int AS cohort_n,
-          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END AS denominator,
+          (SELECT COUNT(*)::int FROM cohort)                                        AS base_cohort_n,
+          COUNT(*)::int                                                              AS cohort_n,
+          GREATEST((SELECT COUNT(*)::int FROM cohort) - COUNT(*)::int, 0)           AS excluded_n,
+          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END                  AS denominator,
           CASE WHEN COUNT(*) < 5 THEN NULL
-               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END AS numerator
+               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END  AS numerator
         FROM eligible
       `, affParams),
 
@@ -1896,9 +1898,10 @@ router.get('/', async (req, res) => {
     const kpi1Rate = kpi1Den > 0 ? Math.round(1000 * kpi1Num / kpi1Den) / 10 : null;
 
     // KPI 2 rates
-    const kpi2Num = kpi2.rows[0]?.numerator ?? 0;
-    const kpi2Den = kpi2.rows[0]?.denominator ?? 0;
+    const kpi2Num = kpi2.rows[0]?.numerator ?? null;
+    const kpi2Den = kpi2.rows[0]?.denominator ?? null;
     const kpi2CohortN = kpi2.rows[0]?.cohort_n || 0;
+    const kpi2ExcludedN = kpi2.rows[0]?.excluded_n ?? 0;
     const kpi2Rate = kpi2Den > 0 ? Math.round(1000 * kpi2Num / kpi2Den) / 10 : null;
 
     // KPI 3 rates
@@ -2154,7 +2157,7 @@ router.get('/', async (req, res) => {
         membership_community: membershipCommunity.rows[0].count,
         sessions_in_period: sessionsInPeriod.rows,
         kpi1: { rate: kpi1Rate, numerator: kpi1Num, denominator: kpi1Den, cps_prevented: kpi1CpsPrevented, foster_prevented: kpi1FosterPrevented, dollar_impact: kpi1FosterPrevented * 38850, excluded: kpi1Excluded.rows[0]?.count || 0, target: 85 },
-        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, status: kpi2Rate !== null ? 'ok' : 'pending', target: 70 },
+        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, excluded: kpi2ExcludedN, status: kpi2Rate !== null ? 'ok' : 'pending', target: 70 },
         kpi3: { rate: kpi3Rate, numerator: kpi3Improved, denominator: kpi3WithData, total_completions: kpi3Total, target: 70 },
       },
 

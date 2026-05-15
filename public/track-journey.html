@@ -415,6 +415,12 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
   line-height: normal;
 }
 
+.hdr-stall.hdr-prewarn {
+  background: var(--amber);
+  color: white;
+  border-color: var(--amber);
+}
+
 .pairing-strip {
   display: flex;
   align-items: center;
@@ -1332,6 +1338,18 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   font-weight: 600;
 }
 
+.mark.milestone.pre-missing {
+  background: white;
+  color: var(--amber);
+  border: 2.5px dashed var(--amber);
+  box-shadow: 0 1px 3px rgba(242,161,54,0.25);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: default;
+}
+
 .milestone-label {
   display: inline-block;
   line-height: 1;
@@ -1700,6 +1718,50 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 .seq-step.done .seq-meta { color: var(--green); }
 .seq-step.preassess .seq-meta,
 .seq-step.postassess .seq-meta { color: var(--green-mid); font-weight: 400; }
+
+/* Pre-Assessment MISSING state — amber action-prompt styling */
+.seq-step.preassess.pre-missing .seq-dot {
+  background: white;
+  border-color: var(--amber);
+  border-style: dashed;
+  color: var(--amber);
+}
+.seq-step.preassess.pre-missing .seq-content {
+  background: var(--amber-bg);
+  border: 1px solid rgba(242, 161, 54, 0.35);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.seq-step.preassess.pre-missing .seq-name {
+  color: var(--amber);
+  font-style: normal;
+}
+.seq-step.preassess.pre-missing .seq-meta {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--mid);
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
+}
+.pre-missing-tag {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--amber);
+  color: white;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 
 /* Inline date for pre-assessment row only - no pill */
 .seq-date-inline {
@@ -2789,6 +2851,7 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
           <div class="pb-divider"></div>
           <div class="pb-block"><span class="pb-lbl">Program Status</span><span class="pb-val" id="pb-status">—</span></div>
           <span class="pb-flag" id="pb-stall-flag" style="margin-left:auto;display:none;"></span>
+          <span class="pb-flag" id="pb-prewarn-flag" style="display:none;"></span>
         </div>
         <div class="tj-row2">
           <div class="pb-block"><span class="pb-lbl">Advocate</span><span class="pb-val" id="pb-advocate">—</span></div>
@@ -3309,6 +3372,19 @@ function renderJourney(data) {
     stallFlag.onclick       = null;
   }
 
+  // Pre-assessment missing warning flag
+  var prewarnFlag = document.getElementById('pb-prewarn-flag');
+  if (prewarnFlag) {
+    var hasHeldSessions = sessions && sessions.some(function(s){ return s.status === 'Held'; });
+    if (!assessments.pre && hasHeldSessions) {
+      prewarnFlag.style.display = '';
+      prewarnFlag.className     = 'pb-flag pb-flag-warn';
+      prewarnFlag.textContent   = 'Pre-Assessment needed';
+    } else {
+      prewarnFlag.style.display = 'none';
+    }
+  }
+
   // Track selector (display-only)
   var opt = document.getElementById('sel-track-opt');
   if (opt) opt.textContent = pairing.trackTitle || '—';
@@ -3361,6 +3437,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
   });
 
   // ── PRE assessment mark ──────────────────────────────────────────────────
+  var heldAny = sessions && sessions.some(function(s){ return s.status === 'Held'; });
   if (assessments && assessments.pre) {
     var preEl = document.createElement('div');
     preEl.className = 'mark milestone pre-mark tj-injected';
@@ -3370,6 +3447,19 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
       + '<div class="mark-tip">'
       +   '<div class="mark-tip-title">Pre-Assessment</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(assessments.pre.date) + '</div>'
+      + '</div>';
+    currLane.appendChild(preEl);
+  } else if (heldAny) {
+    var preEl = document.createElement('button');
+    preEl.type = 'button';
+    preEl.className = 'mark milestone pre-mark pre-missing tj-injected';
+    preEl.setAttribute('aria-label', 'Pre-Assessment missing');
+    preEl.style.left = p(pairing.startDate);
+    preEl.innerHTML =
+      '<span class="milestone-label">PRE</span>'
+      + '<div class="mark-tip">'
+      +   '<div class="mark-tip-title">Pre-Assessment needed</div>'
+      +   '<div class="mark-tip-meta">Should have been completed before pairing · not on file</div>'
       + '</div>';
     currLane.appendChild(preEl);
   }
@@ -3534,13 +3624,28 @@ function renderDetail(pairing, sessions, assessments) {
 
   // PRE
   var preEl = document.createElement('div');
-  preEl.className = 'seq-step preassess' + (assessments.pre ? '' : ' pending');
-  preEl.dataset.tip = assessments.pre
-    ? 'Scored ' + fmtDate(assessments.pre.date)
-    : 'Pending — not yet on file';
-  preEl.innerHTML =
-    '<div class="seq-dot">PRE</div>'
-    + '<div class="seq-content"><div class="seq-name">Pre-Assessment</div></div>';
+  if (assessments.pre) {
+    preEl.className   = 'seq-step preassess';
+    preEl.dataset.tip = 'Scored ' + fmtDate(assessments.pre.date);
+    preEl.innerHTML   =
+      '<div class="seq-dot">PRE</div>'
+      + '<div class="seq-content"><div class="seq-name">Pre-Assessment</div></div>';
+  } else if (heldTrack.length > 0) {
+    preEl.className   = 'seq-step preassess pre-missing';
+    preEl.dataset.tip = 'No Pre-Assessment on file. Should be completed before sessions begin.';
+    preEl.innerHTML   =
+      '<div class="seq-dot">PRE</div>'
+      + '<div class="seq-content">'
+      +   '<div class="seq-name">Pre-Assessment <span class="pre-missing-tag">Needed</span></div>'
+      +   '<div class="seq-meta">A session was held without one on file. This blocks learning progress measurement.</div>'
+      + '</div>';
+  } else {
+    preEl.className   = 'seq-step preassess pending';
+    preEl.dataset.tip = 'Pending — not yet on file';
+    preEl.innerHTML   =
+      '<div class="seq-dot">PRE</div>'
+      + '<div class="seq-content"><div class="seq-name">Pre-Assessment</div></div>';
+  }
   seq.appendChild(preEl);
 
   // Track session steps

@@ -317,8 +317,8 @@ router.get('/', async (req, res) => {
         const sessionsDone = heldByMom[r.id] || 0;
         const stalledDays = daysSince(r.lastSessionDate);
         const curriculumDays = daysSince(r.lastCurriculumDate);
-        const commStall = stalledDays == null || stalledDays > 14;
-        const currStall = curriculumDays == null || curriculumDays > 30;
+        const commStall = stalledDays !== null && stalledDays > 14;
+        const currStall = curriculumDays !== null && curriculumDays > 30;
         const stall_type = (commStall && currStall) ? 'both'
                          : commStall ? 'communication'
                          : currStall ? 'curriculum'

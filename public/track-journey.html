@@ -3836,17 +3836,26 @@ function openStallDrawer(clickedStall) {
   var drawer = document.getElementById('stall-drawer');
   drawer.className = 'drawer' + (isCurriculum ? ' is-curr-stall' : '');
 
-  var eyebrow = isPast ? 'Past Stall' : 'Active Stall';
-  var title   = isCurriculum ? 'Curriculum Stall' : 'Communication Stall';
-  var sub     = currentStall.days + ' days'
-    + (stallStart ? ' · started ' + fmtDate(stallStart.toISOString()) : '')
-    + (stallEnd   ? ' → ' + fmtDate(stallEnd.toISOString()) : '');
+  // Eyebrow: stall status + type + days
+  var stallTypeLabel = isCurriculum ? 'Curriculum Stall' : 'Communication Stall';
+  var eyebrow = (isPast ? 'Past Stall' : 'Current Stall') + ' · ' + currentStall.days + ' days · ' + stallTypeLabel;
+
+  // Title: mom's name
+  var title = pairing.momName || '—';
+
+  // Sub: track · last lesson context
+  var heldTrack = sessions.filter(function(s){ return s.type === 'Track_Session' && s.status === 'Held'; });
+  var lastHeldTrack = heldTrack.length ? heldTrack[heldTrack.length - 1] : null;
+  var subParts = [];
+  if (pairing.trackTitle) subParts.push(pairing.trackTitle);
+  if (lastHeldTrack) subParts.push('Lesson ' + (lastHeldTrack.lessonNumber || '?') + ' · Last held ' + fmtDateShort(lastHeldTrack.date));
+  var sub = subParts.join(' · ');
 
   document.getElementById('drawer-eyebrow').textContent = eyebrow;
   document.getElementById('drawer-title').textContent   = title;
   document.getElementById('drawer-sub').textContent     = sub;
 
-  // ── Build body
+  // Outreach summary line (sessions during stall window)
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
   var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
 
@@ -3857,6 +3866,22 @@ function openStallDrawer(clickedStall) {
       })
     : [];
 
+  var outreachEl = document.getElementById('drawer-outreach');
+  if (outreachEl) {
+    if (scheduledInWindow.length) {
+      var notHeldCount = scheduledInWindow.filter(function(s){ return s.status === 'NotHeld'; }).length;
+      var plannedCount = scheduledInWindow.filter(function(s){ return s.status === 'Planned'; }).length;
+      var parts = [];
+      if (notHeldCount) parts.push('<span class=”do-em”>' + notHeldCount + ' missed session' + (notHeldCount > 1 ? 's' : '') + '</span>');
+      if (plannedCount) parts.push('<span class=”do-em”>' + plannedCount + ' planned</span>');
+      outreachEl.innerHTML = parts.join(' · ') + ' during this period';
+      outreachEl.removeAttribute('hidden');
+    } else {
+      outreachEl.setAttribute('hidden', '');
+    }
+  }
+
+  // ── Build body
   var filteredNotes = stallStart
     ? notes.filter(function(n){ return new Date(n.date) >= stallStart; })
     : notes.slice(0, 5);
@@ -3876,52 +3901,42 @@ function openStallDrawer(clickedStall) {
   html += '<strong>' + currentStall.days + ' days</strong> ';
   if (isCurriculum) {
     html += 'without a curriculum session. ';
-    if (lastHeld) html += 'Last held session was ' + fmtDate(lastHeld.date) + '. ';
-    html += 'Support contact may be ongoing, but no track progress has been logged.';
+    if (lastHeld) html += 'Last held session was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
+    html += 'Support contact may be ongoing but no track progress has been logged.';
   } else {
     html += 'since the last held session. ';
     if (lastHeld) html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
-    if (scheduledInWindow.length) html += '<strong>' + scheduledInWindow.length + ' session' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> scheduled during this period.';
+    if (scheduledInWindow.length) {
+      html += '<strong>' + scheduledInWindow.length + ' session' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> scheduled during this period.';
+    }
   }
   html += '</div></div>';
 
-  // Last held session
-  html += '<div class=”dsec”>';
-  html += '<div class=”dsec-label”>Last Held Session</div>';
-  if (lastHeld) {
-    html += '<div class=”update-entry”>';
-    html += '<div class=”update-icon note”>✓</div>';
-    html += '<div class=”update-body”>';
-    html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sessionTypeLabel(lastHeld.type)) + '</span><span class=”update-date”>' + fmtDate(lastHeld.date) + '</span></div>';
-    html += '</div></div>';
-  } else {
-    html += '<div style=”font-size:12px;color:var(--mid);font-style:italic;”>No held sessions on record</div>';
-  }
-  html += '</div>';
-
-  // Sessions during stall window
+  // Sessions during stall
   if (scheduledInWindow.length) {
     html += '<div class=”dsec”>';
     html += '<div class=”dsec-label”>Sessions During Stall (' + scheduledInWindow.length + ')</div>';
     scheduledInWindow.forEach(function(s) {
-      var sl = s.status === 'Planned' ? 'Planned' : 'Not Held';
+      var sl    = s.status === 'Planned' ? 'Planned' : 'Missed Session';
+      var icon  = s.status === 'Planned' ? 'text' : 'no-contact';
+      var glyph = s.status === 'Planned' ? '→' : '↺';
       html += '<div class=”update-entry”>';
-      html += '<div class=”update-icon no-contact”>↺</div>';
+      html += '<div class=”update-icon ' + icon + '”>' + glyph + '</div>';
       html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDate(s.date) + '</span></div>';
+      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(sl) + ' · ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDateShort(s.date) + '</span></div>';
       html += '</div></div>';
     });
     html += '</div>';
   }
 
-  // Coordinator notes
+  // Full activity feed — coordinator notes
   html += '<div class=”dsec”>';
-  html += '<div class=”dsec-label”>Coordinator Notes' + (stallStart ? ' Since Stall' : '') + '</div>';
+  html += '<div class=”dsec-label”>Full Activity Feed</div>';
   if (filteredNotes.length) {
     filteredNotes.forEach(function(n) {
       html += '<div class=”coord-note” style=”margin-bottom:10px;”>';
-      html += '<div class=”coord-note-meta”>' + fmtDate(n.date) + (n.coordinatorName ? ' · ' + escHtml(n.coordinatorName) : '') + '</div>';
-      if (n.text) html += '<div class=”coord-note-body”>”' + escHtml(n.text) + '”</div>';
+      html += '<div class=”coord-note-meta”>' + fmtDateShort(n.date) + (n.coordinatorName ? ' · ' + escHtml(n.coordinatorName) : '') + '</div>';
+      if (n.text) html += '<div class=”coord-note-body”>' + escHtml(n.text) + '</div>';
       html += '</div>';
     });
   } else {

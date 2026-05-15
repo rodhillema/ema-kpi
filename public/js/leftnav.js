@@ -37,10 +37,6 @@
     var path = window.location.pathname.replace(/\/+$/, '') || '/';
 
     var html = ''
-      + '<a href="/" class="sln-brand" aria-label="ĒMA Impact Hub home">'
-      +   '<img src="/email-logo.png" alt="ĒMA" class="sln-brand-logo">'
-      +   '<span class="sln-brand-text">Impact Hub</span>'
-      + '</a>'
       + '<div class="sln-collapse-wrap">'
       +   '<button class="sln-collapse-btn" id="sln-toggle-btn" title="Collapse menu" aria-label="Toggle navigation">'
       +     '<svg id="sln-toggle-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="10,3 4,8 10,13"/></svg>'
@@ -58,11 +54,9 @@
       html += '<div class="sln-group">';
       if (section.group) html += '<span class="sln-group-label">' + section.group + '</span>';
       visibleItems.forEach(function(it) {
-        var isActive = it.match.some(function(m) {
-          return m === path || (m !== '/' && path.indexOf(m) === 0);
-        });
-        // Home exact-match only — don't activate Home for sub-pages.
-        if (it.href === '/' && path !== '/') isActive = false;
+        // Exact match only — prefix matching would highlight Quarterly Impact
+        // for /report/advocate-care, /report/mom-status, etc.
+        var isActive = it.match.indexOf(path) !== -1;
         html += '<a class="sln-item' + (isActive ? ' active' : '') + '" href="' + it.href + '">'
           +   '<div class="sln-icon">' + it.icon + '</div>'
           +   '<span class="sln-text">' + it.label + '</span>'

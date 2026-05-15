@@ -1402,32 +1402,39 @@ router.get('/', async (req, res) => {
 
       // KPI 2 — FSS Improvement Rate (target 70%)
       //
-      // V5 (Fix 5 — RD 5/15/26): Intake-anchored cohort via INTAKE_CTE.
-      //   Open items resolved:
-      //     ei_score: confirmed valid column (in use since Tab 3 / April 24 lock)
-      //     ats_pfs_score: not a DB column; ats_score is the correct aggregate
+      // V6 (Fix 5b — RD 5/15/26): Restore V4 pairing-start anchor; add PS-batch exclusion.
+      //   V5 switched to intake-anchored windows which produced unexpected data where
+      //   the previous version showed "not available." V6 reverts to V4's approach and
+      //   adds only the PS-migration guard from Fix 5.
       //
-      //   Cohort: moms with a period-active pairing AND a Trellis-native intake
-      //     (INTAKE_CTE.organic_only excludes PS-migrated Nov 30 / Dec 17 2025 batches)
-      //   Anchor: INTAKE_CTE.best_intake_date (link-based or coordinator-led)
-      //   Pre FWA: most recent scored WA within 30 days of intake date
-      //   Post FWA: most recent scored WA ≥ 60 days after the intake FWA date (no upper cap)
+      //   Cohort: period-active pairings, excluding moms whose engagement record
+      //     was bulk-imported on the Nov 30 / Dec 17 2025 PS-migration batch dates
+      //   Anchor: p."created_at" (pairing creation date)
+      //   Pre FWA: highest scored WA within 30 days of pairing start
+      //   Post FWA: highest scored WA ≥ 60 days after pairing start
       //   FSS formula: ats + cc + edu + ei + fin_cpi_sum + home + naa + res + soc + trnprt + well
       //   "Scored" = cpi_total IS NOT NULL
       //   Returns NULL for numerator/denominator when cohort < 5 (Data Pending state)
       //   cohort_n always returns actual count so frontend can explain the null
       pool.query(`
-        WITH ${INTAKE_CTE},
-        cohort AS (
+        WITH
+        ps_batch AS (
+          SELECT DISTINCT data->>'id' AS mom_id
+          FROM "AuditLog"
+          WHERE "table" = 'Mom' AND action = 'Update'
+            AND data->>'prospect_status' = 'engaged_in_program'
+            AND DATE_TRUNC('day', created_at) IN ('2025-11-30'::date, '2025-12-17'::date)
+        ),
+        active_pairings AS (
           SELECT DISTINCT ON (p."momId")
             p."momId",
-            id.best_intake_date AS intake_date
+            p."created_at" AS pairing_start
           FROM "Pairing" p
           JOIN "Mom" m ON m."id" = p."momId" AND m."deleted_at" = 0
-          JOIN intake_dates id ON id.mom_id = m."id"::text
+          LEFT JOIN ps_batch pb ON pb.mom_id = m."id"::text
           WHERE ${PERIOD_PAIRING_FRAGMENT}
             ${affWhere}
-            AND id.best_intake_date IS NOT NULL
+            AND pb.mom_id IS NULL
           ORDER BY p."momId", p."created_at" DESC
         ),
         scored_was AS (
@@ -1441,39 +1448,28 @@ router.get('/', async (req, res) => {
           FROM "WellnessAssessment" wa
           WHERE wa."deleted_at" = 0 AND wa."cpi_total" IS NOT NULL
         ),
-        pre_fwa AS (
-          -- Most recent scored WA within 30 days of intake date
-          SELECT DISTINCT ON (c."momId")
-            c."momId",
-            sw."created_at" AS pre_date,
-            sw.fss_total   AS pre_fss
-          FROM cohort c
-          JOIN scored_was sw ON sw."mom_id" = c."momId"
-            AND sw."created_at" <= c.intake_date + INTERVAL '30 days'
-          ORDER BY c."momId", sw."created_at" DESC
-        ),
-        post_fwa AS (
-          -- Most recent scored WA ≥ 60 days after the intake FWA date (no upper cap)
-          SELECT DISTINCT ON (pf."momId")
-            pf."momId",
-            sw.fss_total AS post_fss
-          FROM pre_fwa pf
-          JOIN scored_was sw ON sw."mom_id" = pf."momId"
-            AND sw."created_at" >= pf.pre_date + INTERVAL '60 days'
-          ORDER BY pf."momId", sw."created_at" DESC
+        mom_fss AS (
+          SELECT
+            ap."momId",
+            MAX(CASE WHEN sw."created_at" <= ap.pairing_start + INTERVAL '30 days'
+                THEN sw.fss_total END) AS pre_fss,
+            MAX(CASE WHEN sw."created_at" >= ap.pairing_start + INTERVAL '60 days'
+                THEN sw.fss_total END) AS post_fss
+          FROM active_pairings ap
+          JOIN scored_was sw ON sw."mom_id" = ap."momId"
+          GROUP BY ap."momId", ap.pairing_start
         ),
         eligible AS (
-          SELECT pf.pre_fss, po.post_fss
-          FROM pre_fwa pf
-          JOIN post_fwa po ON po."momId" = pf."momId"
+          SELECT pre_fss, post_fss FROM mom_fss
+          WHERE pre_fss IS NOT NULL AND post_fss IS NOT NULL
         )
         SELECT
-          (SELECT COUNT(*)::int FROM cohort)                                        AS base_cohort_n,
-          COUNT(*)::int                                                              AS cohort_n,
-          GREATEST((SELECT COUNT(*)::int FROM cohort) - COUNT(*)::int, 0)           AS excluded_n,
-          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END                  AS denominator,
+          (SELECT COUNT(*)::int FROM active_pairings)                                  AS base_cohort_n,
+          COUNT(*)::int                                                                 AS cohort_n,
+          GREATEST((SELECT COUNT(*)::int FROM active_pairings) - COUNT(*)::int, 0)     AS excluded_n,
+          CASE WHEN COUNT(*) < 5 THEN NULL ELSE COUNT(*)::int END                     AS denominator,
           CASE WHEN COUNT(*) < 5 THEN NULL
-               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END  AS numerator
+               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END     AS numerator
         FROM eligible
       `, affParams),
 

@@ -61,7 +61,55 @@ app.post('/api/export-audit', requireAuth, express.json(), (req, res) => {
   }
 });
 
-// Lightweight affiliate list — used by slicers (fast, no KPI queries)
+// AuditLog shape diagnostic — administrator only, read-only, temporary
+app.get('/api/admin/audit-log-probe', requireAuth, async (req, res) => {
+  if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
+  try {
+    const [keys, advocateSample, q1Count, rawSample] = await Promise.all([
+      // Which keys appear in data for User Update rows, and how often?
+      pool.query(`
+        SELECT jsonb_object_keys(data) AS key, COUNT(*)::int AS n
+        FROM "AuditLog"
+        WHERE "table" = 'User' AND action = 'Update'
+        GROUP BY key ORDER BY n DESC LIMIT 40
+      `),
+      // Any rows where data contains an advocate_status-like key?
+      pool.query(`
+        SELECT created_at, data
+        FROM "AuditLog"
+        WHERE "table" = 'User' AND action = 'Update'
+          AND (data ? 'advocate_status' OR data ? 'advocateStatus'
+            OR data ? 'advocate_sub_status' OR data ? 'advocateSubStatus')
+        ORDER BY created_at DESC LIMIT 10
+      `),
+      // How many User Update rows fall in Q1?
+      pool.query(`
+        SELECT COUNT(*)::int AS count
+        FROM "AuditLog"
+        WHERE "table" = 'User' AND action = 'Update'
+          AND created_at >= '2026-01-01' AND created_at <= '2026-03-31 23:59:59'
+      `),
+      // 5 raw rows — check the actual data shape
+      pool.query(`
+        SELECT created_at, action, data
+        FROM "AuditLog"
+        WHERE "table" = 'User' AND action = 'Update'
+        ORDER BY created_at DESC LIMIT 5
+      `),
+    ]);
+    res.json({
+      keys: keys.rows,
+      advocate_sample: advocateSample.rows,
+      q1_user_update_count: q1Count.rows[0]?.count,
+      raw_sample: rawSample.rows,
+    });
+  } catch (err) {
+    console.error('audit-log-probe error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.get('/api/affiliates', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(

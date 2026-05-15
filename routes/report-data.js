@@ -20,6 +20,48 @@ const PERIOD_END = '2026-03-31';
 const PERIOD_GRACE_END = '2026-04-30';
 const PERIOD_LABEL = 'Q1 2026';
 
+// Period-bounding SQL fragments — anchor "currently active" filters to the
+// reporting window so the same Q1 report is stable across refreshes.
+//
+// PERIOD_PAIRING_PERIOD_FRAGMENT: "this pairing was open at any point during
+// the period." Replaces `p.status='paired'` for period-anchored cohorts.
+const PERIOD_PAIRING_FRAGMENT = `
+  p."deleted_at" = 0
+  AND p."created_at" <= '${PERIOD_END} 23:59:59'
+  AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
+`;
+
+// PERIOD_MOM_FRAGMENT: "this mom showed up for the program at any point during
+// the period." Activity proxy — stable, observable, no AuditLog dependency.
+// Used for entity counts and downstream filters where the original code used
+// `m.status='active'` (current state, drifts on refresh).
+// 'm' must be the alias for "Mom" in the calling query.
+const PERIOD_MOM_FRAGMENT = `
+  m."deleted_at" = 0
+  AND m."created_at" <= '${PERIOD_END} 23:59:59'
+  AND (
+    EXISTS (
+      SELECT 1 FROM "Pairing" pp
+      WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
+        AND pp."created_at" <= '${PERIOD_END} 23:59:59'
+        AND (pp."completed_on" IS NULL OR pp."completed_on" > '${PERIOD_START}')
+    )
+    OR EXISTS (
+      SELECT 1 FROM "Pairing" pp
+      JOIN "Session" ss ON ss."pairing_id" = pp."id"
+      WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
+        AND ss."deleted_at" = 0
+        AND ss."status"::text = 'Held'
+        AND ss."date_start" >= '${PERIOD_START}'
+        AND ss."date_start" <= '${PERIOD_END} 23:59:59'
+    )
+    OR (
+      m."created_at" >= '${PERIOD_START}'
+      AND m."created_at" <= '${PERIOD_END} 23:59:59'
+    )
+  )
+`;
+
 // Roles that see all affiliates
 // Only administrator is org-wide by default. Supervisor is affiliate-scoped.
 // Champions are org-wide only if they have no affiliateId (checked at line 36).
@@ -247,28 +289,29 @@ router.get('/', async (req, res) => {
         ORDER BY 1
       `, affParams),
 
-      // Active in track (paired pairings)
+      // Active in track during the period (Fix 4: period-anchored, not
+      // current state — was paired at any point during Q1).
       pool.query(`
         SELECT COUNT(DISTINCT p."momId")::int AS count
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND m."deleted_at" = 0
+        WHERE m."deleted_at" = 0
+          AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
       `, affParams),
 
-      // Membership community: active mom + no active pairing
+      // Membership community: mom active during the period AND not in a
+      // period-active pairing. Fix 4: period-anchored.
       pool.query(`
         SELECT COUNT(*)::int AS count
         FROM "Mom" m
-        WHERE m."deleted_at" = 0
-          AND m."status"::text = 'active'
+        WHERE ${PERIOD_MOM_FRAGMENT}
           AND NOT EXISTS (
             SELECT 1 FROM "Pairing" p
             WHERE p."momId" = m."id"
               AND p."deleted_at" = 0
-              AND p."status"::text = 'paired'
+              AND p."created_at" <= '${PERIOD_END} 23:59:59'
+              AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           )
           ${affWhere}
       `, affParams),
@@ -289,61 +332,62 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 2: End of Q1 Snapshot ──────────────────────────
 
-      // Families served (active-during-period logic)
+      // Families served (active-during-period logic). Fix 4: dropped
+      // p.status='paired' — that filtered out pairings that were open during
+      // Q1 but completed before Today, causing drift on refresh.
       pool.query(`
         SELECT COUNT(DISTINCT m."id")::int AS count
         FROM "Mom" m
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           ${affWhere}
       `, affParams),
 
-      // Active advocates (distinct advocate users with active pairings)
+      // Active advocates during the period (Fix 4: period-anchored — counts
+      // advocates with a pairing open at any point during Q1).
       pool.query(`
         SELECT COUNT(DISTINCT p."advocateUserId")::int AS count
         FROM "Pairing" p
         JOIN "Mom" m ON m."id" = p."momId"
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND m."deleted_at" = 0
+        WHERE m."deleted_at" = 0
+          AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
       `, affParams),
 
-      // Children count (children of active moms)
+      // Children count (children of moms active during the period). Fix 4:
+      // period-anchored via PERIOD_MOM_FRAGMENT, not current m.status='active'.
       pool.query(`
         SELECT COUNT(c."id")::int AS total,
                COUNT(DISTINCT c."mom_id")::int AS moms_with_children
         FROM "Child" c
         JOIN "Mom" m ON m."id" = c."mom_id"
         WHERE c."deleted_at" = 0
-          AND m."deleted_at" = 0
-          AND m."status"::text = 'active'
+          AND ${PERIOD_MOM_FRAGMENT}
           ${affWhere}
       `, affParams),
 
-      // Average children per mom (for proxy calculation)
+      // Average children per period-active mom (for proxy calculation)
       pool.query(`
         SELECT ROUND(AVG(child_count)::numeric, 2)::float AS avg_children
         FROM (
           SELECT c."mom_id", COUNT(*)::int AS child_count
           FROM "Child" c
           JOIN "Mom" m ON m."id" = c."mom_id"
-          WHERE c."deleted_at" = 0 AND m."deleted_at" = 0 AND m."status"::text = 'active'
+          WHERE c."deleted_at" = 0
+            AND ${PERIOD_MOM_FRAGMENT}
             ${affWhere}
           GROUP BY c."mom_id"
         ) sub
       `, affParams),
 
-      // Moms with no child records
+      // Period-active moms with no child records
       pool.query(`
         SELECT COUNT(*)::int AS count
         FROM "Mom" m
-        WHERE m."deleted_at" = 0
-          AND m."status"::text = 'active'
+        WHERE ${PERIOD_MOM_FRAGMENT}
           AND NOT EXISTS (
             SELECT 1 FROM "Child" c WHERE c."mom_id" = m."id" AND c."deleted_at" = 0
           )
@@ -412,18 +456,28 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 4: Affiliate Comparison ────────────────────────
 
+      // Affiliate breakdown — Fix 4: period-anchored counts (was current
+       // state via m.status='active' / p.status='paired').
       isOrgWide ? pool.query(`
+        WITH period_pairings AS (
+          SELECT p."id", p."momId", p."advocateUserId", m."affiliate_id"
+          FROM "Pairing" p
+          JOIN "Mom" m ON m."id" = p."momId" AND m."deleted_at" = 0
+          WHERE ${PERIOD_PAIRING_FRAGMENT}
+        ),
+        period_moms AS (
+          SELECT m."id", m."affiliate_id"
+          FROM "Mom" m
+          WHERE ${PERIOD_MOM_FRAGMENT}
+        )
         SELECT
           a."id" AS affiliate_id,
           a."name" AS affiliate_name,
-          COUNT(DISTINCT CASE WHEN m."status"::text = 'active' THEN m."id" END)::int AS active_moms,
-          COUNT(DISTINCT CASE WHEN p."status"::text = 'paired' THEN p."advocateUserId" END)::int AS active_advocates,
-          COUNT(DISTINCT CASE WHEN p."status"::text = 'paired' THEN p."id" END)::int AS active_pairings
+          (SELECT COUNT(DISTINCT pm."id") FROM period_moms pm WHERE pm."affiliate_id" = a."id")::int AS active_moms,
+          (SELECT COUNT(DISTINCT pp."advocateUserId") FROM period_pairings pp WHERE pp."affiliate_id" = a."id")::int AS active_advocates,
+          (SELECT COUNT(DISTINCT pp."id") FROM period_pairings pp WHERE pp."affiliate_id" = a."id")::int AS active_pairings
         FROM "Affiliate" a
-        LEFT JOIN "Mom" m ON m."affiliate_id" = a."id" AND m."deleted_at" = 0
-        LEFT JOIN "Pairing" p ON p."momId" = m."id" AND p."deleted_at" = 0
         WHERE a."deleted_at" = 0
-        GROUP BY a."id", a."name"
         ORDER BY a."name"
       `) : Promise.resolve({ rows: [] }),
 
@@ -585,8 +639,7 @@ router.get('/', async (req, res) => {
             AND ar."deleted_at" = 0
             AND ar."completedAt" <= '${PERIOD_END} 23:59:59'
         ) latest_fwa ON true
-        WHERE m."deleted_at" = 0
-          AND m."status"::text = 'active'
+        WHERE ${PERIOD_MOM_FRAGMENT}
           ${affWhere}
       `, affParams),
 
@@ -615,8 +668,7 @@ router.get('/', async (req, res) => {
             AND ar."deleted_at" = 0
             AND ar."completedAt" <= '${PERIOD_END} 23:59:59'
         ) latest_fwa ON true
-        WHERE m."deleted_at" = 0
-          AND m."status"::text = 'active'
+        WHERE ${PERIOD_MOM_FRAGMENT}
           AND a."deleted_at" = 0
         GROUP BY a."name"
         ORDER BY a."name"
@@ -953,7 +1005,8 @@ router.get('/', async (req, res) => {
         GROUP BY 1 ORDER BY 1
       `, affParams),
 
-      // Session depth per active pairing (for fidelity check)
+      // Session depth per pairing active during the period (Fix 4:
+      // period-anchored, was 'currently paired').
       pool.query(`
         SELECT
           p."id" AS pairing_id,
@@ -966,9 +1019,8 @@ router.get('/', async (req, res) => {
         JOIN "Mom" m ON m."id" = p."momId"
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         LEFT JOIN "Session" s ON s."pairing_id" = p."id" AND s."deleted_at" = 0
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND m."deleted_at" = 0
+        WHERE m."deleted_at" = 0
+          AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
         GROUP BY p."id", m."first_name", m."last_name", t."title"
         ORDER BY held_count ASC
@@ -999,9 +1051,8 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
         ) pairing_sessions ON true
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND m."deleted_at" = 0
+        WHERE m."deleted_at" = 0
+          AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
         GROUP BY t."title"
         ORDER BY t."title"
@@ -1080,9 +1131,8 @@ router.get('/', async (req, res) => {
           ON s."pairing_id" = p."id"
           AND s."deleted_at" = 0
           AND s."status"::text = 'Held'
-        WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND m."deleted_at" = 0
+        WHERE m."deleted_at" = 0
+          AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
         GROUP BY p."advocacy_type"::text
         ORDER BY p."advocacy_type"::text
@@ -1120,11 +1170,25 @@ router.get('/', async (req, res) => {
       // 3. Waiting to be Paired (sub-status + no pairing)
       // 4. Taking a Break (Active + Taking a Break + no pairing)
       pool.query(`
+        -- Fix 4: period-anchored. "Active during period" = advocate had a
+        -- period-active pairing OR active group OR was status='Active' with
+        -- account created on or before PERIOD_END (proxy for snapshot).
         WITH active_advocates AS (
           SELECT u."id"
           FROM "User" u
           WHERE u."deleted_at" = 0
-            AND u."advocate_status"::text = 'Active'
+            AND u."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (
+              u."advocate_status"::text = 'Active'
+              OR EXISTS (SELECT 1 FROM "Pairing" p WHERE p."advocateUserId" = u."id"
+                           AND p."deleted_at" = 0
+                           AND p."created_at" <= '${PERIOD_END} 23:59:59'
+                           AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}'))
+              OR EXISTS (SELECT 1 FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id"
+                           AND ag."deleted_at" = 0
+                           AND ag."start_date" <= '${PERIOD_END} 23:59:59'
+                           AND (ag."completed_date" IS NULL OR ag."completed_date" > '${PERIOD_START}'))
+            )
             AND NOT EXISTS (SELECT 1 FROM "UserRole" ur JOIN "Role" r ON r."id" = ur."role_id"
                             WHERE ur."user_id" = u."id" AND ur."deleted_at" = 0
                             AND r."key" IN ('coordinator','supervisor','staff_advocate','administrator'))
@@ -1133,8 +1197,12 @@ router.get('/', async (req, res) => {
         categorized AS (
           SELECT u."id",
             u."advocate_sub_status"::text AS sub_status,
-            EXISTS (SELECT 1 FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."state"::text = 'active' AND ag."deleted_at" = 0) AS has_group,
-            EXISTS (SELECT 1 FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."status"::text = 'paired' AND p."deleted_at" = 0) AS has_pairing
+            EXISTS (SELECT 1 FROM "AdvocacyGroup" ag WHERE ag."advocateId" = u."id" AND ag."deleted_at" = 0
+                      AND ag."start_date" <= '${PERIOD_END} 23:59:59'
+                      AND (ag."completed_date" IS NULL OR ag."completed_date" > '${PERIOD_START}')) AS has_group,
+            EXISTS (SELECT 1 FROM "Pairing" p WHERE p."advocateUserId" = u."id" AND p."deleted_at" = 0
+                      AND p."created_at" <= '${PERIOD_END} 23:59:59'
+                      AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')) AS has_pairing
           FROM "User" u
           JOIN active_advocates aa ON aa."id" = u."id"
         )
@@ -1221,29 +1289,31 @@ router.get('/', async (req, res) => {
         FROM "Child" c
         JOIN "Mom" m ON m."id" = c."mom_id"
         WHERE c."deleted_at" = 0
-          AND m."deleted_at" = 0
-          AND m."status"::text = 'active'
+          AND ${PERIOD_MOM_FRAGMENT}
           AND c."active_child_welfare_involvement" IS NOT NULL
           AND c."active_child_welfare_involvement"::text <> ''
           ${affWhere}
       `, affParams),
 
       // ─── NEW: Families Served Expanded ──────────────────────
-
+      // Fix 4: period-anchored. total_active_moms and active_at_end_of_period
+      // now use period-active definition (was current m.status='active').
       pool.query(`
-        WITH ${INTAKE_CTE}
+        WITH ${INTAKE_CTE},
+        period_active_set AS (
+          SELECT m."id" FROM "Mom" m WHERE ${PERIOD_MOM_FRAGMENT}
+        )
         SELECT
-          COUNT(DISTINCT CASE WHEN m."status"::text = 'active'
-          THEN m."id" END)::int AS total_active_moms,
+          (SELECT COUNT(*)::int FROM period_active_set) AS total_active_moms,
           COUNT(DISTINCT CASE WHEN id.best_intake_date >= '${PERIOD_START}'
               AND id.best_intake_date <= '${PERIOD_END} 23:59:59'
           THEN m."id" END)::int AS new_intakes_in_period,
-          COUNT(DISTINCT CASE WHEN m."status"::text = 'active'
-              AND EXISTS (
+          COUNT(DISTINCT CASE WHEN EXISTS (
                 SELECT 1 FROM "Pairing" p2
                 WHERE p2."momId" = m."id"
                   AND p2."deleted_at" = 0
-                  AND p2."status"::text = 'paired'
+                  AND p2."created_at" <= '${PERIOD_END} 23:59:59'
+                  AND (p2."completed_on" IS NULL OR p2."completed_on" > '${PERIOD_END} 23:59:59')
               )
           THEN m."id" END)::int AS active_at_end_of_period
         FROM "Mom" m
@@ -1342,13 +1412,15 @@ router.get('/', async (req, res) => {
       //   - cohort_n always returns the actual count (even when < 5) so frontend can explain the null
       pool.query(`
         WITH active_pairings AS (
+          -- Fix 4: period-anchored cohort (pairings open at any point during
+          -- the period). Previously p.status='paired' filtered to currently-
+          -- paired moms only, which drifted on every refresh.
           SELECT DISTINCT ON (p."momId")
             p."momId",
             p."created_at" AS pairing_start
           FROM "Pairing" p
-          JOIN "Mom" m ON m."id" = p."momId"
-          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
-            AND p."status"::text = 'paired'
+          JOIN "Mom" m ON m."id" = p."momId" AND m."deleted_at" = 0
+          WHERE ${PERIOD_PAIRING_FRAGMENT}
             ${affWhere}
           ORDER BY p."momId", p."created_at" DESC
         ),
@@ -1544,9 +1616,8 @@ router.get('/', async (req, res) => {
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           ${affWhere}
       `, affParams),
 
@@ -1563,9 +1634,8 @@ router.get('/', async (req, res) => {
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           AND m."primary_address_postalcode" IS NOT NULL
           AND TRIM(m."primary_address_postalcode") != ''
           ${affWhere}
@@ -1584,9 +1654,8 @@ router.get('/', async (req, res) => {
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           ${affWhere}
         GROUP BY 1
         ORDER BY 2 DESC
@@ -1615,9 +1684,8 @@ router.get('/', async (req, res) => {
           JOIN "Pairing" p ON p."momId" = m."id"
           WHERE m."deleted_at" = 0
             AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
             AND p."created_at" <= '${PERIOD_END} 23:59:59'
-            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
             AND m."birthdate" IS NOT NULL
             ${affWhere}
           GROUP BY m."id", m."birthdate"
@@ -1638,9 +1706,8 @@ router.get('/', async (req, res) => {
           JOIN "Pairing" p ON p."momId" = m."id"
           WHERE m."deleted_at" = 0
             AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
             AND p."created_at" <= '${PERIOD_END} 23:59:59'
-            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
             AND m."languages_c" IS NOT NULL
             AND array_length(m."languages_c", 1) > 0
             ${affWhere}
@@ -1660,9 +1727,8 @@ router.get('/', async (req, res) => {
         JOIN "Pairing" p ON p."momId" = m."id"
         WHERE m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           ${affWhere}
         GROUP BY 1
         ORDER BY 2 DESC
@@ -1687,9 +1753,8 @@ router.get('/', async (req, res) => {
           LEFT JOIN "Child" c ON c."mom_id" = m."id" AND c."deleted_at" = 0
           WHERE m."deleted_at" = 0
             AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
             AND p."created_at" <= '${PERIOD_END} 23:59:59'
-            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
             ${affWhere}
           GROUP BY m."id"
         ) per_mom
@@ -1719,9 +1784,8 @@ router.get('/', async (req, res) => {
         WHERE c."deleted_at" = 0
           AND m."deleted_at" = 0
           AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
           AND p."created_at" <= '${PERIOD_END} 23:59:59'
-          AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+          AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
           ${affWhere}
       `, affParams),
 
@@ -1745,9 +1809,8 @@ router.get('/', async (req, res) => {
           JOIN "Pairing" p ON p."momId" = m."id"
           WHERE m."deleted_at" = 0
             AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
             AND p."created_at" <= '${PERIOD_END} 23:59:59'
-            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
             ${affWhere}
         ) probed
         WHERE raw_value IS NOT NULL
@@ -1771,9 +1834,8 @@ router.get('/', async (req, res) => {
           JOIN "Pairing" p ON p."momId" = m."id"
           WHERE m."deleted_at" = 0
             AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
             AND p."created_at" <= '${PERIOD_END} 23:59:59'
-            AND (p."completed_on" IS NULL OR p."completed_on" >= '${PERIOD_START}')
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
             ${affWhere}
         ) probed
         WHERE raw_value IS NOT NULL

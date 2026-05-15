@@ -754,7 +754,7 @@ const SAMPLE_ADVOCATES = [
 
 // "Taking a Break" appears under both Active (known coordinator workaround) and Inactive
 const SUB_BY_STATUS = {
-  "Active":          ["Paired","Waiting To Be Paired","Taking A Break"],
+  "Active":          ["Paired","Waiting to be Paired","Taking A Break"],
   "Prospect":        ["Interested","In Training","Training Completed","Pending Final Steps"],
   "Inactive":        ["Taking A Break","Unresponsive","No Longer Interested","Relocated"],
   "Did Not Onboard": ["Advocate Denied","Unable To Contact","No Longer Interested Onboard"],
@@ -788,14 +788,18 @@ function pairingTypeLabel(oneOnOnes,groups){
 function deriveSub(a){
   const oneOnOnes=a.activePairings||0;
   const groups=a.activeGroupFacilitations||0;
-  if(a.status!=="Active")return{sub:a.sub,mismatch:false,pairingType:null};
+  const sub=a.sub||"";
+  const subN=sub.toLowerCase().replace(/\s+/g," ").trim();
+  if(a.status!=="Active")return{sub,mismatch:false,pairingType:null};
   // Mismatch: claims Paired but no actual pairings or group facilitations
-  if(a.sub==="Paired"&&oneOnOnes===0&&groups===0)return{sub:"Waiting to be Paired",mismatch:true,pairingType:null};
+  if(subN==="paired"&&oneOnOnes===0&&groups===0)return{sub:"Waiting to be Paired",mismatch:true,pairingType:null};
   // Mismatch: claims Waiting but actually has pairings or groups
-  if(a.sub==="Waiting to be Paired"&&(oneOnOnes>0||groups>0))return{sub:"Paired",mismatch:true,pairingType:pairingTypeLabel(oneOnOnes,groups)};
+  if(subN==="waiting to be paired"&&(oneOnOnes>0||groups>0))return{sub:"Paired",mismatch:true,pairingType:pairingTypeLabel(oneOnOnes,groups)};
   // Paired with type info
-  if(a.sub==="Paired")return{sub:"Paired",mismatch:false,pairingType:pairingTypeLabel(oneOnOnes,groups)};
-  return{sub:a.sub,mismatch:false,pairingType:null};
+  if(subN==="paired")return{sub:"Paired",mismatch:false,pairingType:pairingTypeLabel(oneOnOnes,groups)};
+  // Normalize server's title-case "Waiting To Be Paired" to the canonical form used throughout
+  if(subN==="waiting to be paired")return{sub:"Waiting to be Paired",mismatch:false,pairingType:null};
+  return{sub,mismatch:false,pairingType:null};
 }
 
 // Populate coordinator checkboxes from data

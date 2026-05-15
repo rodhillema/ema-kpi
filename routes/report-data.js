@@ -1846,7 +1846,8 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Demographics: Marital status ───────────────────────
-      // Same to_jsonb probe pattern. Trellis-style names tried first.
+      // to_jsonb probe — returns NULL for non-existent columns (no error).
+      // Run scripts/probe-mom-columns.js to find the actual column name if all show 0.
       pool.query(`
         SELECT raw_value AS marital, COUNT(DISTINCT mom_id)::int AS count
         FROM (
@@ -1855,7 +1856,15 @@ router.get('/', async (req, res) => {
               NULLIF(TRIM(to_jsonb(m.*) ->> 'marital_status_c'), ''),
               NULLIF(TRIM(to_jsonb(m.*) ->> 'marital_c'), ''),
               NULLIF(TRIM(to_jsonb(m.*) ->> 'relationship_status_c'), ''),
-              NULLIF(TRIM(to_jsonb(m.*) ->> 'partner_status_c'), '')
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'partner_status_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'civil_status_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'civil_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'family_status_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'living_situation_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'living_arrangement_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'relationship_type_c'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'marital_status'), ''),
+              NULLIF(TRIM(to_jsonb(m.*) ->> 'civil_status'), '')
             ) AS raw_value
           FROM "Mom" m
           JOIN "Pairing" p ON p."momId" = m."id"

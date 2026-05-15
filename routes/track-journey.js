@@ -608,4 +608,20 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
   }
 });
 
+// Temporary schema probe — remove after inspection
+router.get('/debug-schema', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT table_name, column_name, data_type, udt_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name IN ('ConnectionLog', 'ServiceReferral')
+      ORDER BY table_name, ordinal_position
+    `);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

@@ -3525,7 +3525,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     el.innerHTML =
       (s.lessonNumber || '?')
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">Session ' + (s.lessonNumber || '?') + '</div>'
+      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName) : '') + '</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + statusLabel + '</div>'
       + '</div>';
     currLane.appendChild(el);
@@ -3662,6 +3662,24 @@ function renderDetail(pairing, sessions, assessments) {
     threshPill.style.display = 'none';
   }
 
+  // Static lesson title lookup — used for not-started placeholders and fallback names
+  var LESSON_TITLES = {
+    'Nurturing Parenting Program': [
+      'Attachment & Connection','Meeting Basic Needs','Responding to Life Stressors',
+      'Discipline vs. Punishment','Disruption & Reconnection','Role of a Parent',
+      'Safety','Home & Family Values','Empathy & Awareness','Independence & Growth'
+    ],
+    'Empowered Parenting': [
+      'Attachment & Connection','Basic Needs','Responding to Stress',
+      'Discipline vs. Punishment','Disruption & Reconnection','Role of a Parent',
+      'Safety','Home & Family Values'
+    ],
+    'Roadmap to Resilience': [
+      'Resilience Foundations','Stress & Coping','Family Strengths','Moving Forward'
+    ]
+  };
+  var trackTitles = LESSON_TITLES[pairing.trackTitle] || [];
+
   // Seq steps
   var seq = document.getElementById('seq-container');
   seq.innerHTML = '';
@@ -3692,33 +3710,71 @@ function renderDetail(pairing, sessions, assessments) {
   }
   seq.appendChild(preEl);
 
-  // Track session steps
-  var lastHeldTrackSess = heldTrack.length > 0 ? heldTrack[heldTrack.length - 1] : null;
-  trackSessions.forEach(function(s) {
-    var isInProg = (s === lastHeldTrackSess && pairing.status === 'paired');
+  // Group track sessions by lessonTemplateId so repeats of the same lesson collapse
+  var lessonGroups = (function() {
+    var groups = [];
+    var keyMap = {};
+    trackSessions.forEach(function(s) {
+      var key = s.lessonTemplateId;
+      if (key && keyMap[key]) {
+        keyMap[key].sessions.push(s);
+      } else {
+        var g = {
+          key:          key || null,
+          lessonNumber: groups.length + 1,
+          title:        s.sessionName || trackTitles[groups.length] || null,
+          sessions:     [s]
+        };
+        groups.push(g);
+        if (key) keyMap[key] = g;
+      }
+    });
+    return groups;
+  })();
+
+  // Find the last group with a Held session (for inprog detection)
+  var lastHeldGroupIdx = -1;
+  lessonGroups.forEach(function(g, i) {
+    if (g.sessions.some(function(s){ return s.status === 'Held'; })) lastHeldGroupIdx = i;
+  });
+
+  lessonGroups.forEach(function(g, idx) {
+    var heldSess  = g.sessions.filter(function(s){ return s.status === 'Held'; });
+    var allMissed = g.sessions.every(function(s){ return s.status === 'NotHeld'; });
+    var isInProg  = (idx === lastHeldGroupIdx && pairing.status === 'paired');
+
     var step = document.createElement('div');
-    if (s.status === 'NotHeld') {
+    if (allMissed) {
       step.className = 'seq-step missed';
-    } else if (s.status !== 'Held' || isInProg) {
-      step.className = 'seq-step inprog';
-    } else {
+    } else if (heldSess.length && !isInProg) {
       step.className = 'seq-step done';
+    } else {
+      step.className = 'seq-step inprog';
     }
-    step.dataset.tip = fmtDate(s.date);
+
+    var lastHeldDate = heldSess.length ? heldSess[heldSess.length - 1].date : (g.sessions[0] ? g.sessions[0].date : null);
+    step.dataset.tip = lastHeldDate ? fmtDate(lastHeldDate) : '';
+
+    var repeatHtml = '';
+    if (heldSess.length > 1) {
+      repeatHtml = ' <span class="repeat-tag">\xD7' + heldSess.length + ' sessions</span>';
+    }
+    var titleText = escHtml(g.title || ('Session ' + g.lessonNumber));
     step.innerHTML =
-      '<div class="seq-dot">' + (s.lessonNumber || '?') + '</div>'
-      + '<div class="seq-content"><div class="seq-name">Session ' + (s.lessonNumber || '?') + '</div></div>';
+      '<div class="seq-dot">' + g.lessonNumber + '</div>'
+      + '<div class="seq-content"><div class="seq-name">' + titleText + repeatHtml + '</div></div>';
     seq.appendChild(step);
   });
 
-  // Not-started placeholders (up to required count)
+  // Not-started placeholders (from unique lesson count up to required total)
   if (req) {
-    for (var i = trackSessions.length + 1; i <= req; i++) {
+    for (var i = lessonGroups.length + 1; i <= req; i++) {
       var step = document.createElement('div');
       step.className = 'seq-step not-started';
+      var nsTitle = escHtml(trackTitles[i - 1] || ('Session ' + i));
       step.innerHTML =
         '<div class="seq-dot">' + i + '</div>'
-        + '<div class="seq-content"><div class="seq-name">Session ' + i + '</div></div>';
+        + '<div class="seq-content"><div class="seq-name">' + nsTitle + '</div></div>';
       seq.appendChild(step);
     }
   }
@@ -3749,35 +3805,20 @@ function renderDetail(pairing, sessions, assessments) {
     + '<div class="seq-content"><div class="seq-name">Post-Assessment</div></div>';
   seq.appendChild(postEl);
 
-  // Assessment detail panel
+  // ── Assessment detail panel ───────────────────────────────────────────────
   var ac = document.getElementById('assess-container');
-  var styles     = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:8px;line-height:1.6;';
-  var subStyles  = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
-  var lblStyles  = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
 
-  function renderAsmt(a, kind) {
-    if (!a) {
-      return '<div style="' + subStyles + 'font-style:italic;">' + kind + '-assessment pending.</div>';
-    }
-    var out = '<div style="margin-bottom:10px;">';
-    out += '<div style="' + lblStyles + '">' + kind + '-Assessment</div>';
-    out += '<div style="' + styles + '">' + (a.name || 'Assessment') + '</div>';
-    out += '<div style="' + subStyles + '">Completed ' + fmtDate(a.date) + '</div>';
-    if (a.totalScore != null) {
-      var q = (a.questionsAnswered != null && a.questionsAnswered > 0)
-        ? ' &nbsp;·&nbsp; ' + a.questionsAnswered + ' question' + (a.questionsAnswered === 1 ? '' : 's')
-        : '';
-      out += '<div style="' + subStyles + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
-    }
-    if (a.constructs) {
-      var ks = ['A','B','C','D','E'].map(function(k){
-        return a.constructs[k] != null ? k + ': ' + a.constructs[k] : null;
-      }).filter(Boolean).join(' &nbsp;·&nbsp; ');
-      if (ks) out += '<div style="' + subStyles + 'margin-top:2px;">' + ks + '</div>';
-    }
-    out += '</div>';
-    return out;
-  }
+  // AAPI construct metadata (NPP track, scale 1–10)
+  var AAPI_CONSTRUCTS = [
+    { key: 'A', label: 'A \xB7 Expectations', tip: 'What parents expect of children at different developmental stages' },
+    { key: 'B', label: 'B \xB7 Empathy',       tip: 'Recognizing and responding to a child\'s emotional needs' },
+    { key: 'C', label: 'C \xB7 Discipline',    tip: 'Beliefs about discipline and physical punishment' },
+    { key: 'D', label: 'D \xB7 Family Roles',  tip: 'Whether parents and children fill appropriate roles in the family' },
+    { key: 'E', label: 'E \xB7 Independence',  tip: 'Encouraging a child\'s age-appropriate independence and power' },
+  ];
+
+  var hasConstructs = (assessments.pre  && assessments.pre.constructs)
+                   || (assessments.post && assessments.post.constructs);
 
   if (!assessments.pre && !assessments.post) {
     if (heldTrack.length > 0) {
@@ -3795,10 +3836,89 @@ function renderDetail(pairing, sessions, assessments) {
         + '<div class="score-empty-hint">The advocate or coordinator can enter the Pre-Assessment in Trellis. Once recorded, this panel will show baseline scores.</div>'
         + '</div>';
     } else {
-      ac.innerHTML = '<div style="' + subStyles + 'padding-top:8px;">No assessment data on file for this pairing.</div>';
+      ac.innerHTML =
+        '<div style="font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;padding-top:8px;">'
+        + 'No assessment data on file for this pairing.</div>';
     }
+  } else if (hasConstructs) {
+    // AAPI / NPP — render 5 visual construct bars (scale 1–10)
+    var pre  = (assessments.pre  && assessments.pre.constructs)  ? assessments.pre  : null;
+    var post = (assessments.post && assessments.post.constructs) ? assessments.post : null;
+    var hasBoth = pre && post;
+
+    var html = '';
+
+    if (hasBoth) {
+      // Compute knowledge-summary stats
+      var improvedCount = 0, preSum = 0, postSum = 0, cCount = 0;
+      AAPI_CONSTRUCTS.forEach(function(c) {
+        var pv = pre.constructs[c.key], ov = post.constructs[c.key];
+        if (pv != null && ov != null) {
+          cCount++; preSum += pv; postSum += ov;
+          if (ov > pv) improvedCount++;
+        }
+      });
+      var overallChange = (cCount > 0 && preSum > 0)
+        ? Math.round((postSum - preSum) / preSum * 100) : null;
+      var changeLabel = overallChange != null
+        ? (overallChange >= 0 ? '+' : '') + overallChange + '%' : '—';
+      html +=
+        '<div class="knowledge-summary">'
+        + '<div class="ks-stat"><span class="ks-label">Domains Improved</span><span class="ks-value">' + improvedCount + ' of ' + AAPI_CONSTRUCTS.length + '</span></div>'
+        + '<div class="ks-stat"><span class="ks-label">Overall Change</span><span class="ks-value">' + changeLabel + '</span></div>'
+        + '</div>';
+    }
+
+    AAPI_CONSTRUCTS.forEach(function(c) {
+      var pv = pre  ? pre.constructs[c.key]  : null;
+      var ov = post ? post.constructs[c.key] : null;
+      var preWidth  = pv != null ? (pv / 10 * 100).toFixed(1) + '%' : '0%';
+      var postWidth = ov != null ? (ov / 10 * 100).toFixed(1) + '%' : '0%';
+
+      var scoresHtml = '';
+      if (pv != null && ov != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span> → <span class="post">Post \xB7 ' + ov + '</span>';
+      } else if (pv != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span>';
+      } else if (ov != null) {
+        scoresHtml = '<span class="post">Post \xB7 ' + ov + '</span>';
+      }
+
+      var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
+      var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
+      if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
+
+      html +=
+        '<div class="construct" data-tip="' + escHtml(c.tip) + '">'
+        + '<div class="c-name"><span>' + c.label + '</span>'
+        + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
+        + '</div>'
+        + '<div class="' + trackClass + '">' + fillHtml + '</div>'
+        + '<div class="scale-row"><span>1</span><span>3</span><span>5</span><span>7</span><span>10</span></div>'
+        + '</div>';
+    });
+
+    ac.innerHTML = html;
   } else {
-    ac.innerHTML = renderAsmt(assessments.pre, 'Pre') + renderAsmt(assessments.post, 'Post');
+    // EP / RR — no per-construct data; show clean assessment summary
+    var subSty = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
+    var lblSty = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
+    var valSty = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:4px;line-height:1.6;';
+    var out = '';
+    [assessments.pre, assessments.post].forEach(function(a) {
+      if (!a) return;
+      var kind = a.type === 'pre' ? 'Pre' : 'Post';
+      out += '<div style="margin-bottom:12px;">';
+      out += '<div style="' + lblSty + '">' + kind + '-Assessment</div>';
+      out += '<div style="' + valSty + '">' + escHtml(a.name || 'Assessment') + '</div>';
+      out += '<div style="' + subSty + '">Completed ' + fmtDate(a.date) + '</div>';
+      if (a.totalScore != null) {
+        var q = (a.questionsAnswered > 0 ? ' \xB7 ' + a.questionsAnswered + ' questions' : '');
+        out += '<div style="' + subSty + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+      }
+      out += '</div>';
+    });
+    ac.innerHTML = out;
   }
 }
 
@@ -3971,6 +4091,7 @@ document.addEventListener('keydown', function(e) {
       <div class="drawer-eyebrow" id="drawer-eyebrow"></div>
       <div class="drawer-title" id="drawer-title"></div>
       <div class="drawer-sub" id="drawer-sub"></div>
+      <div class="drawer-outreach" id="drawer-outreach" hidden></div>
     </div>
     <button type="button" class="drawer-close" id="close-drawer-btn" aria-label="Close" onclick="closeStallDrawer()">×</button>
   </div>

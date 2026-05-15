@@ -263,6 +263,9 @@ thead tr th.c-chev{background:var(--green)!important}
 .d-track-badges{display:flex;align-items:center;gap:8px;padding:11px 14px 10px}
 .d-track-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-top:1px solid var(--border)}
 
+.d-journey-link{display:inline-block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--green);text-decoration:none;padding:7px 0 10px;border-bottom:1px solid var(--border);width:100%;margin-bottom:8px;}
+.d-journey-link:hover{color:var(--red);}
+
 /* Contact row (phone/email/coordinator) */
 .d-cr{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;border-bottom:1px solid var(--border)}
 .d-cr:last-child{border-bottom:none}
@@ -1223,7 +1226,11 @@ function openDrawer(id){
     +'<div class="d-cr"><div class="d-cl">Coordinator</div><div class="d-cv">'+(m.coordinator||"Unassigned")+'</div></div>';
 
   // ── 5. TRACK HISTORY ──
-  document.getElementById("d-tracks").innerHTML=m.trackHistory.length
+  var activeTrack=m.trackHistory.filter(function(t){return t.outcome==="active";})[0];
+  var journeyLink=activeTrack
+    ?'<a href="/track-journey?mom_id='+m.id+'" class="d-journey-link">Open full Track Journey &#8594;</a>'
+    :'';
+  document.getElementById("d-tracks").innerHTML=journeyLink+(m.trackHistory.length
     ?m.trackHistory.slice().reverse().map(function(tr){
       var ol=tr.outcome==="active"?"In progress":tr.outcome==="completed"?"Completed":"Incomplete";
       return'<div class="th-entry">'
@@ -1232,7 +1239,7 @@ function openDrawer(id){
         +'<div class="th-out'+(tr.outcome==="active"?" curr":"")+'">'+ol+'</div>'
         +'</div>';
     }).join("")
-    :'<div class="upd-empty">No track history on file.</div>';
+    :'<div class="upd-empty">No track history on file.</div>');
 
   document.getElementById("drawer").classList.add("open");
   document.getElementById("mainPanel").classList.add("drawer-open");

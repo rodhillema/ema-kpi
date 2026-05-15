@@ -139,6 +139,16 @@ body.logged-in .portal-view{display:flex}
 .footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
 .footer-integrity:hover{color:var(--white)}
 
+/* ── ALERT BAR ── */
+.alert-bar{max-width:1180px;margin:0 auto 14px;display:flex;gap:8px;flex-wrap:wrap}
+.alert-band{display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:8px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;border:none;background:none;font:inherit;text-align:left;cursor:pointer;flex:1;min-width:180px}
+.alert-band.stall{background:rgba(236,72,47,.07);color:var(--red-dk,#c23018);border:1.5px solid rgba(236,72,47,.22)}
+.alert-band.stall:hover{background:rgba(236,72,47,.13)}
+.alert-band.pre-warn{background:var(--amber-bg);color:#8a5a00;border:1.5px solid rgba(242,161,54,.3);cursor:default}
+.alert-band-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.alert-band.stall .alert-band-dot{background:var(--red)}
+.alert-band.pre-warn .alert-band-dot{background:var(--amber)}
+
 /* ── TRACK JOURNEY HUB OVERRIDES ── */
 body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);padding:0}
 .main .card:first-child,.main .card:first-of-type{margin-top:24px}
@@ -860,6 +870,35 @@ body.drawer-open .drawer {
 .drawer.is-curr-stall .drawer-header { background: var(--amber); }
 .drawer.is-flag .drawer-header { background: var(--amber); }
 .drawer.is-flag-resolved .drawer-header { background: var(--green); }
+
+/* Service referral card inside flag drawer */
+.sr-card{background:var(--green-pale);border:1px solid var(--green-soft);border-radius:8px;padding:12px 14px}
+.sr-card.resolved{background:rgba(18,57,57,.06);border-color:rgba(18,57,57,.2)}
+.sr-card-label{font-family:'Oswald',sans-serif;font-weight:600;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--green-mid);margin-bottom:6px}
+.sr-card-service{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:2px}
+.sr-card-provider{font-size:12px;color:var(--mid);margin-bottom:6px}
+.sr-outcome-pill{display:inline-flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:3px 9px;border-radius:10px}
+.sr-outcome-pill.successful{background:rgba(18,57,57,.1);color:var(--green)}
+.sr-outcome-pill.unknown{background:rgba(242,161,54,.12);color:#8a5a00}
+.sr-outcome-pill.pending{background:rgba(242,161,54,.12);color:#8a5a00}
+
+/* Need status pill inside flag drawer */
+.need-status-pill{display:inline-flex;align-items:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:10px}
+.need-status-pill.open{background:rgba(242,161,54,.15);color:#8a5a00;border:1px solid rgba(242,161,54,.3)}
+.need-status-pill.urgent{background:rgba(236,72,47,.12);color:var(--red-dk,#c23018);border:1px solid rgba(236,72,47,.25)}
+.need-status-pill.resolved{background:rgba(18,57,57,.1);color:var(--green);border:1px solid rgba(18,57,57,.2)}
+
+/* Per-question assessment bars */
+.qr-bar-row{margin-bottom:10px}
+.qr-bar-label{font-size:11px;color:var(--dark);line-height:1.4;margin-bottom:4px}
+.qr-bar-track{height:14px;background:var(--light);border-radius:4px;position:relative;overflow:visible}
+.qr-bar-pre{height:100%;background:var(--pre-color);border-radius:4px;opacity:.85;position:absolute;top:0;left:0}
+.qr-bar-post{height:100%;background:var(--post-color);border-radius:4px;opacity:.85;position:absolute;top:0;left:0}
+.qr-bar-both .qr-bar-pre{height:8px;top:0}
+.qr-bar-both .qr-bar-post{height:8px;top:6px}
+.qr-scores-side{font-family:'Oswald',sans-serif;font-size:10px;font-weight:400;color:var(--mid);margin-top:2px}
+.qr-scores-side .pre{color:var(--pre-color);font-weight:600}
+.qr-scores-side .post{color:var(--post-color);font-weight:600}
 
 .drawer-header-text {
   flex: 1;
@@ -2894,8 +2933,6 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
           <div class="pb-block"><span class="pb-lbl">Track</span><span class="pb-val" id="pb-track">—</span></div>
           <div class="pb-divider"></div>
           <div class="pb-block"><span class="pb-lbl">Program Status</span><span class="pb-val" id="pb-status">—</span></div>
-          <span class="pb-flag" id="pb-stall-flag" style="margin-left:auto;display:none;"></span>
-          <span class="pb-flag" id="pb-prewarn-flag" style="display:none;"></span>
         </div>
         <div class="tj-row2">
           <div class="pb-block"><span class="pb-lbl">Advocate</span><span class="pb-val" id="pb-advocate">—</span></div>
@@ -2915,6 +2952,9 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 
       <!-- Journey content (shown after pairing is selected) -->
       <div id="tj-content" style="display:none;">
+
+        <!-- Alert bar — stall + pre-missing flags. Hidden when no flags present. -->
+        <div id="alert-bar" class="alert-bar" style="display:none;"></div>
 
         <!-- ═══════════════════════════════════
              CARD 1: TIMELINE
@@ -3372,8 +3412,15 @@ function renderJourney(data) {
   // Header fields
   document.getElementById('pb-mom').textContent      = pairing.momName;
   document.getElementById('pb-track').textContent    = pairing.trackTitle || '—';
-  document.getElementById('pb-advocate').textContent = pairing.advocateName || '—';
   document.getElementById('pb-coord').textContent    = pairing.coordinatorName || '—';
+
+  // Advocate field — append advocacy type suffix
+  var advType = pairing.advocacyType
+    ? (pairing.advocacyType.toLowerCase().includes('group') ? ' · Group' : ' · 1:1')
+    : (pairing.advocacyGroupId ? ' · Group' : ' · 1:1');
+  document.getElementById('pb-advocate').textContent = pairing.advocateName
+    ? pairing.advocateName + advType
+    : (pairing.advocacyGroupId ? '— · Group' : '—');
 
   // Program Status — derived from pairing status
   var statusMap = {
@@ -3395,38 +3442,43 @@ function renderJourney(data) {
   }
   var winStart  = new Date(Math.min.apply(null, candidateStarts.map(function(d){return d.getTime();})));
   var winEnd    = pairing.endDate ? new Date(pairing.endDate) : new Date();
-  var totalDays = daysBetween(winStart, winEnd);
-  var weeks     = Math.round(totalDays / 7);
 
   document.getElementById('pb-window').textContent =
     fmtDate(pairing.startDate) + ' – ' + (pairing.endDate ? fmtDate(pairing.endDate) : 'present');
-  document.getElementById('pb-length').textContent =
-    totalDays + ' days · ~' + weeks + ' weeks';
 
-  // Stall flag in header — clickable to open stall drawer
-  var stallFlag = document.getElementById('pb-stall-flag');
+  // Track length = from pre-assessment date (or pairing start if no pre) to today/post date
+  var trackLengthStart = (assessments && assessments.pre && assessments.pre.date)
+    ? new Date(assessments.pre.date)
+    : new Date(pairing.startDate);
+  var trackLengthEnd = (assessments && assessments.post && assessments.post.date)
+    ? new Date(assessments.post.date)
+    : pairing.endDate ? new Date(pairing.endDate) : new Date();
+  var trackDays  = daysBetween(trackLengthStart, trackLengthEnd);
+  var trackWeeks = Math.round(trackDays / 7);
+  document.getElementById('pb-length').textContent = trackDays + ' days · ~' + trackWeeks + ' weeks';
+
+  // Alert bar — slim bar between pairing strip and timeline card
+  var alertBar = document.getElementById('alert-bar');
+  var alertHtml = '';
+  var hasHeldSessions = sessions && sessions.some(function(s){ return s.status === 'Held'; });
   if (pairing.currentStall) {
-    stallFlag.style.display = '';
-    stallFlag.className     = 'pb-flag pb-flag-stall';
-    var label = pairing.currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'Stalled';
-    stallFlag.textContent   = label + ' · ' + pairing.currentStall.days + 'd — click for detail';
-    stallFlag.onclick       = function() { openStallDrawer(null); };
-  } else {
-    stallFlag.style.display = 'none';
-    stallFlag.onclick       = null;
+    var stallLabel = pairing.currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'Stalled';
+    alertHtml += '<button type="button" class="alert-band stall" onclick="openStallDrawer(null)">'
+      + '<span class="alert-band-dot"></span>'
+      + stallLabel + ' · ' + pairing.currentStall.days + ' days — click for detail'
+      + '</button>';
   }
-
-  // Pre-assessment missing warning flag
-  var prewarnFlag = document.getElementById('pb-prewarn-flag');
-  if (prewarnFlag) {
-    var hasHeldSessions = sessions && sessions.some(function(s){ return s.status === 'Held'; });
-    if (!assessments.pre && hasHeldSessions) {
-      prewarnFlag.style.display = '';
-      prewarnFlag.className     = 'pb-flag pb-flag-warn';
-      prewarnFlag.textContent   = 'Pre-Assessment needed';
-    } else {
-      prewarnFlag.style.display = 'none';
-    }
+  if (!assessments.pre && hasHeldSessions) {
+    alertHtml += '<div class="alert-band pre-warn">'
+      + '<span class="alert-band-dot"></span>'
+      + 'Pre-Assessment needed before tracking learning progress'
+      + '</div>';
+  }
+  if (alertHtml) {
+    alertBar.innerHTML = alertHtml;
+    alertBar.style.display = '';
+  } else {
+    alertBar.style.display = 'none';
   }
 
   // Track selector (display-only)
@@ -3591,19 +3643,24 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
   if (flaggedEmpty) flaggedEmpty.style.display = placedNeeds.length ? 'none' : '';
   if (flaggedLane) {
     placedNeeds.forEach(function(n) {
-      var el = document.createElement('div');
-      el.className = 'mark supp tj-injected'
+      var el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'mark flag tj-injected'
         + (n.urgent ? ' urgent' : '')
-        + (n.status === 'Fulfilled' ? ' fulfilled' : '');
+        + (n.status === 'Fulfilled' || n.status === 'Resolved' ? ' fulfilled' : '');
       el.style.left = p(n.date);
       var typeLbl = n.needType ? String(n.needType).replace(/_/g,' ') : 'Need';
       el.innerHTML =
-        '<span class="si si-s" style="background:var(--amber);color:white;">!</span>'
+        '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
+        + '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>'
+        + '<line x1="4" y1="22" x2="4" y2="15"/>'
+        + '</svg>'
         + '<div class="mark-tip">'
         +   '<div class="mark-tip-title">' + escHtml(typeLbl) + (n.urgent ? ' · Urgent' : '') + '</div>'
         +   '<div class="mark-tip-meta">' + fmtDate(n.date) + ' · ' + escHtml(n.status || 'Requested') + '</div>'
-        +   (n.context ? '<div class="mark-tip-meta" style="margin-top:4px;font-style:italic;">' + escHtml(n.context.slice(0, 140)) + (n.context.length > 140 ? '…' : '') + '</div>' : '')
+        +   (n.context ? '<div class="mark-tip-meta" style="margin-top:4px;font-style:italic;">' + escHtml(n.context.slice(0, 120)) + (n.context.length > 120 ? '…' : '') + '</div>' : '')
         + '</div>';
+      (function(need){ el.onclick = function(e){ e.stopPropagation(); openFlagDrawer(need); }; })(n);
       flaggedLane.appendChild(el);
     });
   }
@@ -3900,25 +3957,92 @@ function renderDetail(pairing, sessions, assessments) {
 
     ac.innerHTML = html;
   } else {
-    // EP / RR — no per-construct data; show clean assessment summary
-    var subSty = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
-    var lblSty = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
-    var valSty = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:4px;line-height:1.6;';
-    var out = '';
-    [assessments.pre, assessments.post].forEach(function(a) {
-      if (!a) return;
-      var kind = a.type === 'pre' ? 'Pre' : 'Post';
-      out += '<div style="margin-bottom:12px;">';
-      out += '<div style="' + lblSty + '">' + kind + '-Assessment</div>';
-      out += '<div style="' + valSty + '">' + escHtml(a.name || 'Assessment') + '</div>';
-      out += '<div style="' + subSty + '">Completed ' + fmtDate(a.date) + '</div>';
-      if (a.totalScore != null) {
-        var q = (a.questionsAnswered > 0 ? ' \xB7 ' + a.questionsAnswered + ' questions' : '');
-        out += '<div style="' + subSty + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+    // EP / RR — render per-question bars if question responses are available,
+    // otherwise fall back to summary display.
+    var preQRs  = (assessments.pre  && assessments.pre.questionResponses)  || null;
+    var postQRs = (assessments.post && assessments.post.questionResponses) || null;
+
+    if (preQRs && preQRs.length > 0) {
+      // Detect question text column from first row
+      var sampleRow = preQRs[0];
+      var qtCol = ['question_c','question_text','text','label','question','name']
+        .find(function(k){ return sampleRow[k] != null && typeof sampleRow[k] === 'string'; }) || null;
+
+      // Compute actual min/max from all responses to set scale correctly
+      var allVals = preQRs.concat(postQRs || []).map(function(r){ return r.intResponse; }).filter(function(v){ return v != null; });
+      var scaleMin = allVals.length ? Math.min.apply(null, allVals) : 1;
+      var scaleMax = allVals.length ? Math.max.apply(null, allVals) : 5;
+      var scaleRange = scaleMax - scaleMin || 1;
+
+      // Build a map of post responses by question column value (or index)
+      var postMap = {};
+      if (postQRs) {
+        postQRs.forEach(function(r, i){
+          var key = qtCol ? r[qtCol] : i;
+          postMap[key] = r.intResponse;
+        });
       }
+
+      var hasBoth = preQRs && postQRs && postQRs.length > 0;
+      var out = '';
+
+      if (hasBoth) {
+        var improved = preQRs.filter(function(r, i){
+          var key = qtCol ? r[qtCol] : i;
+          return postMap[key] != null && postMap[key] > r.intResponse;
+        }).length;
+        out += '<div class="knowledge-summary">'
+          + '<div class="ks-stat"><span class="ks-label">Questions Improved</span><span class="ks-value">' + improved + ' of ' + preQRs.length + '</span></div>'
+          + '<div class="ks-stat"><span class="ks-label">Scale</span><span class="ks-value">' + scaleMin + '–' + scaleMax + '</span></div>'
+          + '</div>';
+      }
+
+      out += '<div style="margin-top:8px;">';
+      preQRs.forEach(function(r, i){
+        var qLabel = qtCol ? (r[qtCol] || ('Q' + (i+1))) : ('Q' + (i+1));
+        var preVal = r.intResponse;
+        var key    = qtCol ? r[qtCol] : i;
+        var postVal = postMap[key] != null ? postMap[key] : null;
+        var preW  = ((preVal  - scaleMin) / scaleRange * 100).toFixed(1) + '%';
+        var postW = postVal != null ? ((postVal - scaleMin) / scaleRange * 100).toFixed(1) + '%' : null;
+        out += '<div class="qr-bar-row">';
+        out += '<div class="qr-bar-label">' + escHtml(String(qLabel).slice(0, 80)) + '</div>';
+        out += '<div class="qr-bar-track' + (postW ? ' qr-bar-both' : '') + '">';
+        out += '<div class="qr-bar-pre" style="width:' + preW + ';"></div>';
+        if (postW) out += '<div class="qr-bar-post" style="width:' + postW + ';"></div>';
+        out += '</div>';
+        var scoreHtml = '<span class="pre">Pre · ' + preVal + '</span>';
+        if (postVal != null) scoreHtml += ' → <span class="post">Post · ' + postVal + '</span>';
+        out += '<div class="qr-scores-side">' + scoreHtml + '</div>';
+        out += '</div>';
+      });
       out += '</div>';
-    });
-    ac.innerHTML = out;
+
+      if (!hasBoth) {
+        out += '<div style="font-size:11px;color:var(--mid);font-style:italic;margin-top:8px;">Post-assessment pending</div>';
+      }
+      ac.innerHTML = out;
+    } else {
+      // No question responses — show assessment summary
+      var subSty = 'font-family:\'Lato\',sans-serif;font-size:12px;color:var(--mid);line-height:1.5;';
+      var lblSty = 'font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);margin-bottom:2px;';
+      var valSty = 'font-family:\'Lato\',sans-serif;font-size:13px;color:var(--dark);padding-top:4px;line-height:1.6;';
+      var out = '';
+      [assessments.pre, assessments.post].forEach(function(a) {
+        if (!a) return;
+        var kind = a.type === 'pre' ? 'Pre' : 'Post';
+        out += '<div style="margin-bottom:12px;">';
+        out += '<div style="' + lblSty + '">' + kind + '-Assessment</div>';
+        out += '<div style="' + valSty + '">' + escHtml(a.name || 'Assessment') + '</div>';
+        out += '<div style="' + subSty + '">Completed ' + fmtDate(a.date) + '</div>';
+        if (a.totalScore != null) {
+          var q = (a.questionsAnswered > 0 ? ' \xB7 ' + a.questionsAnswered + ' questions' : '');
+          out += '<div style="' + subSty + 'margin-top:2px;">Total score: <strong style="color:var(--dark);">' + a.totalScore + '</strong>' + q + '</div>';
+        }
+        out += '</div>';
+      });
+      ac.innerHTML = out;
+    }
   }
 }
 
@@ -3928,10 +4052,11 @@ function openStallDrawer(clickedStall) {
   var data = CURRENT_JOURNEY_DATA;
   if (!data || !data.pairing) return;
 
-  var pairing = data.pairing;
-  var sessions = data.sessions || [];
-  var stalls   = data.stalls   || [];
-  var notes    = data.coordinatorNotes || [];
+  var pairing    = data.pairing;
+  var sessions   = data.sessions || [];
+  var stalls     = data.stalls   || [];
+  var notes      = data.coordinatorNotes || [];
+  var connLogs   = data.connectionLogs   || [];
 
   // Prefer clicked stall band; else most-recent active; else most-recent any; else header stall
   var stallBand = clickedStall || null;
@@ -3963,19 +4088,20 @@ function openStallDrawer(clickedStall) {
   // Title: mom's name
   var title = pairing.momName || '—';
 
-  // Sub: track · last lesson context
-  var heldTrack = sessions.filter(function(s){ return s.type === 'Track_Session' && s.status === 'Held'; });
-  var lastHeldTrack = heldTrack.length ? heldTrack[heldTrack.length - 1] : null;
+  // Sub: track · stall date range
   var subParts = [];
   if (pairing.trackTitle) subParts.push(pairing.trackTitle);
-  if (lastHeldTrack) subParts.push('Lesson ' + (lastHeldTrack.lessonNumber || '?') + ' · Last held ' + fmtDateShort(lastHeldTrack.date));
+  if (stallBand) {
+    var rangeEnd = (stallBand.isActive || !stallBand.endDate) ? 'present' : fmtDate(stallBand.endDate);
+    subParts.push(fmtDate(stallBand.startDate) + ' — ' + rangeEnd);
+  }
   var sub = subParts.join(' · ');
 
   document.getElementById('drawer-eyebrow').textContent = eyebrow;
   document.getElementById('drawer-title').textContent   = title;
   document.getElementById('drawer-sub').textContent     = sub;
 
-  // Outreach summary line (sessions during stall window)
+  // Outreach summary line — ConnectionLog entries in the stall window
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
   var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
 
@@ -3986,15 +4112,14 @@ function openStallDrawer(clickedStall) {
       })
     : [];
 
+  var connLogsInWindow = stallStart
+    ? connLogs.filter(function(c){ return new Date(c.date) >= stallStart && (!stallEnd || new Date(c.date) <= stallEnd); })
+    : connLogs.slice(0, 10);
+
   var outreachEl = document.getElementById('drawer-outreach');
   if (outreachEl) {
-    var notHeldCount = scheduledInWindow.filter(function(s){ return s.status === 'NotHeld'; }).length;
-    var plannedCount = scheduledInWindow.filter(function(s){ return s.status === 'Planned'; }).length;
-    if (scheduledInWindow.length) {
-      var parts = [];
-      if (notHeldCount) parts.push('<span class=”do-em”>' + notHeldCount + ' missed session' + (notHeldCount > 1 ? 's' : '') + '</span>');
-      if (plannedCount) parts.push('<span class=”do-em”>' + plannedCount + ' scheduled</span>');
-      outreachEl.innerHTML = parts.join(' · ') + ' during this period';
+    if (connLogsInWindow.length) {
+      outreachEl.innerHTML = '<span class=”do-em”>' + connLogsInWindow.length + ' outreach attempt' + (connLogsInWindow.length > 1 ? 's' : '') + '</span> during this period';
       outreachEl.removeAttribute('hidden');
     } else {
       outreachEl.setAttribute('hidden', '');
@@ -4040,8 +4165,8 @@ function openStallDrawer(clickedStall) {
   if (lastHeld) {
     html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
   }
-  if (scheduledInWindow.length) {
-    html += '<strong>' + scheduledInWindow.length + ' outreach attempt' + (scheduledInWindow.length > 1 ? 's' : '') + '</strong> during this period. ';
+  if (connLogsInWindow.length) {
+    html += '<strong>' + connLogsInWindow.length + ' outreach attempt' + (connLogsInWindow.length > 1 ? 's' : '') + '</strong> during this period. ';
   }
   if (activeNeeds.length) {
     var needNames = activeNeeds.map(function(n){ return (n.needType || 'need').replace(/_/g,' '); }).slice(0,3).join(', ');
@@ -4067,35 +4192,46 @@ function openStallDrawer(clickedStall) {
     html += '</div>';
   }
 
-  // ── 3. Outreach attempted ────────────────────────────────────────────────
-  // Shows NotHeld + Planned sessions in the stall window, newest first,
-  // with author labels. Text/call contact log entries would appear here
-  // once that data is available from the backend.
-  if (scheduledInWindow.length) {
-    html += '<div class=”dsec”><div class=”dsec-label”>Outreach attempted (' + scheduledInWindow.length + ')</div>';
+  // ── 3. Outreach / Resolution ─────────────────────────────────────────────
+  if (isPast) {
+    // Past stall — show the resolution event (held session that ended the stall)
+    var resolutionSess = null;
+    if (stallEnd) {
+      resolutionSess = sessions.find(function(s){
+        return s.status === 'Held' && s.date
+          && Math.abs(new Date(s.date) - stallEnd) < 86400000 * 2;
+      }) || null;
+    }
+    if (resolutionSess) {
+      html += '<div class=”dsec”><div class=”dsec-label”>Resolution</div>';
+      html += '<div style=”background:rgba(18,57,57,.06);border:1px solid rgba(18,57,57,.18);border-left:3px solid var(--green);border-radius:6px;padding:10px 12px;”>';
+      html += '<div style=”font-family:\'Oswald\',sans-serif;font-weight:600;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--green);margin-bottom:3px;”>Session Held · Stall ended</div>';
+      html += '<div style=”font-size:12.5px;color:var(--dark);”>' + fmtDate(resolutionSess.date) + ' · ' + escHtml(sessionTypeLabel(resolutionSess.type)) + (resolutionSess.lessonNumber ? ' Lesson ' + resolutionSess.lessonNumber : '') + '</div>';
+      html += '</div></div>';
+    }
+  } else if (connLogsInWindow.length) {
+    // Current stall — show ConnectionLog entries as outreach attempts
+    html += '<div class=”dsec”><div class=”dsec-label”>Outreach (' + connLogsInWindow.length + ')</div>';
     html += '<div class=”updates-feed” style=”margin-top:-4px;”>';
-    scheduledInWindow.slice().reverse().forEach(function(s) {
-      var isMissed = s.status === 'NotHeld';
-      var icon     = isMissed ? 'no-contact' : 'text';
-      var glyph    = isMissed ? '↺' : '→';
-      var typeLabel = isMissed ? 'Missed Session' : 'Planned Session';
-      var author   = isMissed
-        ? 'System · ' + escHtml(sessionTypeLabel(s.type)) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber : '') + ' was scheduled'
-        : (pairing.advocateName ? escHtml(pairing.advocateName) + ' · Advocate' : 'Advocate');
+    connLogsInWindow.forEach(function(c) {
+      var method = c.contactMethod || '';
+      var iconCls = /sms|text/i.test(method) ? 'text' : /video/i.test(method) ? 'call' : 'call';
+      var glyph   = /sms|text/i.test(method) ? '✉' : /video/i.test(method) ? '▶' : '☎';
+      var methodLbl = method.replace(/_/g,' ') || 'Contact';
       html += '<div class=”update-entry”>';
-      html += '<div class=”update-icon ' + icon + '”>' + glyph + '</div>';
+      html += '<div class=”update-icon ' + iconCls + '”>' + glyph + '</div>';
       html += '<div class=”update-body”>';
-      html += '<div class=”update-meta”><span class=”update-type”>' + typeLabel + ' \xB7 ' + escHtml(sessionTypeLabel(s.type)) + '</span><span class=”update-date”>' + fmtDateShort(s.date) + '</span></div>';
-      html += '<div class=”update-author”>' + author + '</div>';
-      if (s.notes) html += '<div class=”update-text”>' + escHtml(s.notes.slice(0, 140)) + (s.notes.length > 140 ? '…' : '') + '</div>';
+      html += '<div class=”update-meta”><span class=”update-type”>' + escHtml(methodLbl) + '</span><span class=”update-date”>' + fmtDateShort(c.date) + '</span></div>';
+      if (c.createdByName) html += '<div class=”update-author”>' + escHtml(c.createdByName) + '</div>';
+      if (c.summary) html += '<div class=”update-text”>' + escHtml(c.summary.slice(0, 200)) + (c.summary.length > 200 ? '…' : '') + '</div>';
       html += '</div></div>';
     });
     html += '</div></div>';
   }
 
   // ── 4. Full activity feed ────────────────────────────────────────────────
-  // Unified chronological feed: coordinator notes + all sessions in window,
-  // newest first, with typed icons.
+  // Unified chronological feed: connection logs + coordinator notes + sessions,
+  // newest first.
   var feedItems = [];
   sessionsInWindow.forEach(function(s) {
     var isHeld   = s.status === 'Held';
@@ -4119,6 +4255,19 @@ function openStallDrawer(clickedStall) {
       type:   'Coordinator Note',
       author: n.coordinatorName ? escHtml(n.coordinatorName) + ' · Coordinator' : 'Coordinator',
       text:   n.text,
+    });
+  });
+  connLogsInWindow.forEach(function(c) {
+    var method = c.contactMethod || '';
+    var iconCls = /sms|text/i.test(method) ? 'text' : 'call';
+    var glyph   = /sms|text/i.test(method) ? '✉' : '☎';
+    feedItems.push({
+      date:   new Date(c.date),
+      icon:   iconCls,
+      glyph:  glyph,
+      type:   'Connection Log · ' + (method.replace(/_/g,' ') || 'Contact'),
+      author: c.createdByName || '',
+      text:   c.summary || null,
     });
   });
   feedItems.sort(function(a, b){ return b.date - a.date; });
@@ -4145,12 +4294,103 @@ function openStallDrawer(clickedStall) {
   document.body.classList.add('drawer-open');
 }
 
-function closeStallDrawer() {
+function closeStallDrawer() { closeAllDrawers(); }
+
+function closeAllDrawers() {
   document.body.classList.remove('drawer-open');
+  var fd = document.getElementById('flag-drawer');
+  if (fd) fd.style.display = '';
+  var sd = document.getElementById('stall-drawer');
+  if (sd) sd.style.display = '';
+}
+
+// ── Flag / Need Drawer ────────────────────────────────────────────────────────
+
+function openFlagDrawer(need) {
+  var sr         = need.serviceReferral || null;
+  var isResolved = sr && sr.outcome === 'successful';
+  var hasRef     = !!sr;
+
+  var drawer = document.getElementById('flag-drawer');
+  drawer.className = 'drawer' + (isResolved ? ' is-flag-resolved' : ' is-flag');
+  drawer.style.display = '';
+
+  // Hide stall drawer if open
+  var sd = document.getElementById('stall-drawer');
+  if (sd) sd.style.display = 'none';
+
+  // Eyebrow
+  var typeLbl = (need.needType || 'Need').replace(/_/g, ' ');
+  document.getElementById('flag-drawer-eyebrow').textContent =
+    isResolved ? 'Connected · Service resolved' : hasRef ? 'In progress · Service connected' : 'Open · No service connected';
+
+  // Title — need type
+  document.getElementById('flag-drawer-title').textContent = typeLbl;
+
+  // Sub — date flagged
+  document.getElementById('flag-drawer-sub').textContent =
+    'Flagged ' + fmtDate(need.requestedDate) + (need.urgent ? ' · Urgent' : '');
+
+  // Body
+  var html = '';
+
+  // NEED section
+  html += '<div class="dsec"><div class="dsec-label">Need</div>';
+  html += '<div style="margin-bottom:8px;">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:4px;">' + escHtml(typeLbl) + '</div>';
+  if (need.context) html += '<div style="font-size:12.5px;color:var(--mid);line-height:1.5;">' + escHtml(need.context) + '</div>';
+  html += '<div style="margin-top:6px;">';
+  var pillCls = need.urgent ? 'urgent' : (isResolved ? 'resolved' : 'open');
+  var pillLbl = isResolved ? 'Resolved' : need.urgent ? 'Urgent' : 'Open';
+  html += '<span class="need-status-pill ' + pillCls + '">' + pillLbl + '</span>';
+  html += '</div></div></div>';
+
+  // STATUS section
+  html += '<div class="dsec"><div class="dsec-label">Status</div>';
+  html += '<div style="font-size:12.5px;color:var(--dark);">';
+  html += 'Flagged ' + fmtDate(need.requestedDate);
+  if (need.providedDate) html += ' · Provided ' + fmtDate(need.providedDate);
+  if (need.resolvedDate) html += ' · Resolved ' + fmtDate(need.resolvedDate);
+  var daysOpen = need.resolvedDate
+    ? daysBetween(need.requestedDate, need.resolvedDate)
+    : daysBetween(need.requestedDate, new Date().toISOString());
+  html += '<div style="font-size:11px;color:var(--mid);margin-top:4px;">' + daysOpen + ' days open</div>';
+  html += '</div></div>';
+
+  // CONNECTED SERVICES section
+  html += '<div class="dsec"><div class="dsec-label">Connected Services</div>';
+  if (!hasRef) {
+    html += '<div style="font-size:12px;color:var(--mid);font-style:italic;">No services connected yet.</div>';
+  } else {
+    var srSvc = (sr.service || '').replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    var outcomeLabel = sr.outcome === 'successful' ? 'Successful' : sr.outcome === 'unknown' ? 'Outcome unknown' : sr.outcome || '';
+    var outcomeCls   = sr.outcome === 'successful' ? 'successful' : 'pending';
+    html += '<div class="sr-card' + (isResolved ? ' resolved' : '') + '">';
+    html += '<div class="sr-card-label">Service Referral</div>';
+    html += '<div class="sr-card-service">' + escHtml(srSvc) + '</div>';
+    if (sr.provider) html += '<div class="sr-card-provider">Provider: ' + escHtml(sr.provider) + '</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    html += '<span class="sr-outcome-pill ' + outcomeCls + '">' + escHtml(outcomeLabel) + '</span>';
+    if (sr.startDate) html += '<span style="font-size:11px;color:var(--mid);">' + fmtDate(sr.startDate) + '</span>';
+    html += '</div>';
+    if (sr.createdByName) html += '<div style="font-size:11px;color:var(--mid);margin-top:4px;">Added by ' + escHtml(sr.createdByName) + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // HISTORY section — notes field
+  if (need.notes) {
+    html += '<div class="dsec"><div class="dsec-label">Notes</div>';
+    html += '<div style="font-size:12.5px;color:var(--dark);line-height:1.5;">' + escHtml(need.notes) + '</div>';
+    html += '</div>';
+  }
+
+  document.getElementById('flag-drawer-body').innerHTML = html;
+  document.body.classList.add('drawer-open');
 }
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeStallDrawer();
+  if (e.key === 'Escape') closeAllDrawers();
 });
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -4161,7 +4401,7 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <!-- ── Stall Drawer ──────────────────────────────────────────────── -->
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeStallDrawer()"></div>
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeAllDrawers()"></div>
 <aside class="drawer" id="stall-drawer" role="dialog" aria-label="Stall Detail">
   <div class="drawer-header">
     <div class="drawer-header-text">
@@ -4170,9 +4410,22 @@ document.addEventListener('keydown', function(e) {
       <div class="drawer-sub" id="drawer-sub"></div>
       <div class="drawer-outreach" id="drawer-outreach" hidden></div>
     </div>
-    <button type="button" class="drawer-close" id="close-drawer-btn" aria-label="Close" onclick="closeStallDrawer()">×</button>
+    <button type="button" class="drawer-close" id="close-drawer-btn" aria-label="Close" onclick="closeAllDrawers()">×</button>
   </div>
   <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<!-- ── Flag / Need Drawer ─────────────────────────────────────────── -->
+<aside class="drawer" id="flag-drawer" role="dialog" aria-label="Flagged Need Detail">
+  <div class="drawer-header">
+    <div class="drawer-header-text">
+      <div class="drawer-eyebrow" id="flag-drawer-eyebrow"></div>
+      <div class="drawer-title" id="flag-drawer-title"></div>
+      <div class="drawer-sub" id="flag-drawer-sub"></div>
+    </div>
+    <button type="button" class="drawer-close" aria-label="Close" onclick="closeAllDrawers()">×</button>
+  </div>
+  <div class="drawer-body" id="flag-drawer-body"></div>
 </aside>
 </body>
 </html>

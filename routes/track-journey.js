@@ -366,6 +366,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         m."last_name"    AS "momLast",
         t."title"        AS "trackTitle",
         p."status"::text AS "status",
+        p."advocacy_type"::text AS "advocacyType",
         p."created_at"   AS "startDate",
         p."completed_on" AS "endDate",
         adv."firstName"  AS "advFirst",
@@ -480,6 +481,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     try {
       const { rows: aRows } = await pool.query(`
         SELECT
+          ar."id"          AS "arId",
           ar."completedAt" AS "date",
           a."name"         AS "aname",
           ar."type"::text  AS "atype",
@@ -505,6 +507,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       for (const r of aRows) {
         const isPre = (r.atype === 'pre') || /pre/i.test(r.aname);
         const payload = {
+          arId: r.arId,
           date: r.date,
           name: r.aname,
           type: isPre ? 'pre' : 'post',
@@ -560,6 +563,48 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       }
     } catch (_) { /* assessment data unavailable */ }
 
+    // For EP/RR: fetch per-question responses so the frontend can render individual bars.
+    // SELECT * to probe columns — question text column name varies (question_c, text, label, etc.)
+    // Wrapped in try/catch so a missing column never blocks the page load.
+    try {
+      const arIds = [assessments.pre?.arId, assessments.post?.arId].filter(Boolean);
+      if (arIds.length && !assessments.pre?.constructs) {
+        const { rows: qrRows } = await pool.query(`
+          SELECT * FROM "AssessmentResultQuestionResponse"
+           WHERE "assessmentResultId" = ANY($1)
+             AND "deleted_at" = 0
+             AND "intResponse" IS NOT NULL
+           ORDER BY "assessmentResultId", "id"
+        `, [arIds]);
+        for (const side of ['pre', 'post']) {
+          if (!assessments[side]) continue;
+          const rows = qrRows.filter(r => r.assessmentResultId === assessments[side].arId);
+          if (rows.length) assessments[side].questionResponses = rows;
+        }
+      }
+    } catch (_) { /* ARQR unavailable */ }
+
+    // ConnectionLog — coordinator contact entries keyed by mom_id.
+    // Used by the stall drawer outreach count and activity feed.
+    let connectionLogs = [];
+    try {
+      const { rows: clRows } = await pool.query(`
+        SELECT
+          cl."id",
+          cl."date_created_c"            AS "date",
+          cl."summary_c"                 AS "summary",
+          cl."contact_method_c"::text    AS "contactMethod",
+          cl."created_by_name"           AS "createdByName",
+          cl."is_visible_to_advocates_c" AS "visibleToAdvocate"
+        FROM "ConnectionLog" cl
+        WHERE cl."mom_id" = $1
+          AND cl."deleted_at" = 0
+        ORDER BY cl."date_created_c" DESC
+        LIMIT 50
+      `, [p.momId]);
+      connectionLogs = clRows;
+    } catch (_) { /* connection log unavailable */ }
+
     // Coordinator notes — recent entries written about this pairing's advocate.
     // Used by the stall drawer; graceful if advocate is unset or table query fails.
     let coordinatorNotes = [];
@@ -585,6 +630,27 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         coordinatorName: r.coordFirst ? `${r.coordFirst} ${r.coordLast}`.trim() : null,
       }));
     } catch (_) { /* coordinator notes unavailable */ }
+
+    // ServiceReferrals — linked to mom, joinable to BenevolenceNeed via benevolence_need_id.
+    let serviceReferrals = [];
+    try {
+      const { rows: srRows } = await pool.query(`
+        SELECT
+          sr."id",
+          sr."service"::text        AS "service",
+          sr."outcome"::text        AS "outcome",
+          sr."provider"             AS "provider",
+          sr."start_date"           AS "startDate",
+          sr."created_at"           AS "createdAt",
+          sr."created_by_name"      AS "createdByName",
+          sr."benevolence_need_id"  AS "benevolenceNeedId"
+        FROM "ServiceReferral" sr
+        WHERE sr."mom_id" = $1
+          AND sr."deleted_at" = 0
+        ORDER BY sr."start_date" DESC
+      `, [p.momId]);
+      serviceReferrals = srRows;
+    } catch (_) { /* service referrals unavailable */ }
 
     // Vital Supports / Flagged Needs — BenevolenceNeed rows for this mom,
     // plus any group-level needs tied to this pairing's advocacy group.
@@ -613,20 +679,31 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           )
         ORDER BY COALESCE(bn."resolved_date_c", bn."provided_date_c", bn."created_at") DESC
       `, [p.momId, p.advocacyGroupId]);
-      vitalNeeds = needRows.map(r => ({
-        id:            r.id,
-        date:          r.providedDate || r.requestedDate,
-        requestedDate: r.requestedDate,
-        providedDate:  r.providedDate,
-        resolvedDate:  r.resolvedDate,
-        needType:      r.needType || r.groupNeedCategory || r.name,
-        context:       r.context,
-        urgent:        r.urgent === true,
-        status:        r.addressed === true ? 'Fulfilled'
-                     : r.resolvedDate          ? 'Resolved'
-                     : 'Requested',
-        notes:         r.notes,
-      }));
+      vitalNeeds = needRows.map(r => {
+        const sr = serviceReferrals.find(s => s.benevolenceNeedId === r.id) || null;
+        return {
+          id:            r.id,
+          date:          r.providedDate || r.requestedDate,
+          requestedDate: r.requestedDate,
+          providedDate:  r.providedDate,
+          resolvedDate:  r.resolvedDate,
+          needType:      r.needType || r.groupNeedCategory || r.name,
+          context:       r.context,
+          urgent:        r.urgent === true,
+          status:        r.addressed === true ? 'Fulfilled'
+                       : r.resolvedDate          ? 'Resolved'
+                       : 'Requested',
+          notes:         r.notes,
+          serviceReferral: sr ? {
+            id:            sr.id,
+            service:       sr.service,
+            outcome:       sr.outcome,
+            provider:      sr.provider,
+            startDate:     sr.startDate,
+            createdByName: sr.createdByName,
+          } : null,
+        };
+      });
     } catch (_) { /* vital needs unavailable */ }
 
     res.json({
@@ -635,6 +712,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         momName:         `${p.momFirst} ${p.momLast}`.trim(),
         trackTitle:      p.trackTitle,
         status:          p.status,
+        advocacyType:    p.advocacyType || null,
         startDate:       p.startDate,
         endDate:         p.endDate,
         advocateName:    p.advFirst ? `${p.advFirst} ${p.advLast}`.trim() : null,
@@ -645,6 +723,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       stalls,
       assessments,
       coordinatorNotes,
+      connectionLogs,
       vitalNeeds,
     });
   } catch (err) {

@@ -386,16 +386,31 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       `, [pairingId]));
     }
 
-    // Number Track_Sessions sequentially by date
+    // Number Track_Sessions by unique lesson template (repeats of same lesson share a number)
     let lessonNum = 0;
-    const sessions = sessRows.map(s => ({
-      id:           s.id,
-      date:         s.date,
-      status:       s.status,
-      type:         s.type,
-      notes:        s.notes,
-      lessonNumber: s.type === 'Track_Session' ? ++lessonNum : null,
-    }));
+    const seenTemplates = new Map();
+    const sessions = sessRows.map(s => {
+      let lnum = null;
+      if (s.type === 'Track_Session') {
+        const tid = s.lessonTemplateId;
+        if (tid) {
+          if (!seenTemplates.has(tid)) seenTemplates.set(tid, ++lessonNum);
+          lnum = seenTemplates.get(tid);
+        } else {
+          lnum = ++lessonNum;
+        }
+      }
+      return {
+        id:               s.id,
+        date:             s.date,
+        status:           s.status,
+        type:             s.type,
+        notes:            s.notes,
+        lessonNumber:     lnum,
+        lessonTemplateId: s.lessonTemplateId || null,
+        sessionName:      s.sessionName      || null,
+      };
+    });
 
     // Stall computation
     const stalls = computeStalls(sessions, p.startDate, p.endDate);

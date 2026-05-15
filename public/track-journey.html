@@ -2908,12 +2908,12 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
                   <!-- marks injected by JS -->
                 </div>
 
-                <!-- VITAL SUPPORTS LANE — data not yet captured in Trellis -->
-                <div class="lane flagged">
+                <!-- VITAL SUPPORTS LANE — needs from Trellis BenevolenceNeed -->
+                <div class="lane flagged" id="lane-flagged">
                   <div class="lane-label">Flagged Needs<span class="lane-sub">Vital Supports</span></div>
                   <div class="lane-bg"></div>
-                  <div style="font-family:'Lato',sans-serif;font-size:11px;color:var(--mid);padding:6px 0 0 8px;font-style:italic;position:relative;z-index:1;">
-                    Vital support data not yet captured in Trellis.
+                  <div id="lane-flagged-empty" style="font-family:'Lato',sans-serif;font-size:11px;color:var(--mid);padding:6px 0 0 8px;font-style:italic;position:relative;z-index:1;">
+                    No flagged needs on file for this pairing.
                   </div>
                 </div>
 
@@ -3313,20 +3313,22 @@ function renderJourney(data) {
   var opt = document.getElementById('sel-track-opt');
   if (opt) opt.textContent = pairing.trackTitle || '—';
 
-  renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd);
+  renderTimeline(pairing, sessions, stalls, assessments, data.vitalNeeds || [], winStart, winEnd);
   renderDetail(pairing, sessions, assessments);
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
-function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd) {
-  var tlRoot   = document.getElementById('tl-root');
-  var currLane = document.getElementById('lane-curr');
-  var suppLane = document.getElementById('lane-supp');
+function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winStart, winEnd) {
+  var tlRoot      = document.getElementById('tl-root');
+  var currLane    = document.getElementById('lane-curr');
+  var suppLane    = document.getElementById('lane-supp');
+  var flaggedLane = document.getElementById('lane-flagged');
 
   // Clear previously injected elements
   tlRoot.querySelectorAll('.tj-injected').forEach(function(el){ el.remove(); });
   currLane.querySelectorAll('.tj-injected').forEach(function(el){ el.remove(); });
   suppLane.querySelectorAll('.tj-injected').forEach(function(el){ el.remove(); });
+  if (flaggedLane) flaggedLane.querySelectorAll('.tj-injected').forEach(function(el){ el.remove(); });
 
   function p(date) { return pct(date, winStart, winEnd).toFixed(1) + '%'; }
 
@@ -3378,6 +3380,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd
   trackSessions.forEach(function(s){ if (s.status === 'Held') lastHeldTrack = s; });
 
   trackSessions.forEach(function(s) {
+    if (!s.date) return; // group sessions with no scheduled date — skip from timeline
     var isLastHeld  = s === lastHeldTrack && pairing.status === 'paired';
     var statusLabel = s.status !== 'Held' ? s.status
                     : isLastHeld          ? 'In Progress · Last held session'
@@ -3433,7 +3436,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
     + '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>'
     + '</svg>';
-  sessions.filter(function(s){ return s.type !== 'Track_Session' && s.status === 'Held'; })
+  sessions.filter(function(s){ return s.type !== 'Track_Session' && s.status === 'Held' && s.date; })
     .forEach(function(s) {
       var el = document.createElement('div');
       el.className = 'mark supp tj-injected';
@@ -3447,6 +3450,29 @@ function renderTimeline(pairing, sessions, stalls, assessments, winStart, winEnd
         + '</div>';
       suppLane.appendChild(el);
     });
+
+  // ── Vital Needs / Flagged Needs (BenevolenceNeed) ────────────────────────
+  var flaggedEmpty = document.getElementById('lane-flagged-empty');
+  var placedNeeds  = (vitalNeeds || []).filter(function(n){ return n.date; });
+  if (flaggedEmpty) flaggedEmpty.style.display = placedNeeds.length ? 'none' : '';
+  if (flaggedLane) {
+    placedNeeds.forEach(function(n) {
+      var el = document.createElement('div');
+      el.className = 'mark supp tj-injected'
+        + (n.urgent ? ' urgent' : '')
+        + (n.status === 'Fulfilled' ? ' fulfilled' : '');
+      el.style.left = p(n.date);
+      var typeLbl = n.needType ? String(n.needType).replace(/_/g,' ') : 'Need';
+      el.innerHTML =
+        '<span class="si si-s" style="background:var(--amber);color:white;">!</span>'
+        + '<div class="mark-tip">'
+        +   '<div class="mark-tip-title">' + escHtml(typeLbl) + (n.urgent ? ' · Urgent' : '') + '</div>'
+        +   '<div class="mark-tip-meta">' + fmtDate(n.date) + ' · ' + escHtml(n.status || 'Requested') + '</div>'
+        +   (n.context ? '<div class="mark-tip-meta" style="margin-top:4px;font-style:italic;">' + escHtml(n.context.slice(0, 140)) + (n.context.length > 140 ? '…' : '') + '</div>' : '')
+        + '</div>';
+      flaggedLane.appendChild(el);
+    });
+  }
 
   // ── Date scale ────────────────────────────────────────────────────────────
   renderDateScale(winStart, winEnd, pairing.endDate === null);

@@ -173,19 +173,22 @@ router.get('/', async (req, res) => {
     const isOrgWide = isOrgWideRole && !req.query.affiliate_id && !excludeAffiliateId;
 
     // Build WHERE clause for affiliate scoping
-    let affWhere, affWhereUser, affParams;
+    let affWhere, affWhereUser, affWhereAudit, affParams;
     if (excludeAffiliateId && isOrgWideRole) {
       // "All except X" mode
       affWhere = `AND m."affiliate_id" != $1`;
       affWhereUser = `AND u."affiliateId" != $1`;
+      affWhereAudit = `AND data->>'affiliateId' != $1::text`;
       affParams = [excludeAffiliateId];
     } else if (isOrgWide) {
       affWhere = '';
       affWhereUser = '';
+      affWhereAudit = '';
       affParams = [];
     } else {
       affWhere = `AND m."affiliate_id" = $1`;
       affWhereUser = `AND u."affiliateId" = $1`;
+      affWhereAudit = `AND data->>'affiliateId' = $1::text`;
       affParams = [affiliateFilter];
     }
 
@@ -1229,16 +1232,25 @@ router.get('/', async (req, res) => {
       // the affiliate slicer. Diagnostic confirmed: org-wide returned 38/69/24
       // while Broward-scoped returned 8/8/8 — the report was always showing
       // the org-wide numbers because the SQL ignored the affiliate filter.
-      //
-      // Filters:
-      // - advocate_status IS NOT NULL → user was onboarded as an advocate
-      // - deleted_at = 0 → active user record
-      // - Applications = new advocate users created during Q1
-      // - Trained = users at or past Training_Completed whose records were created in Q1
-      // - Approved = users at Training_Completed specifically, created in Q1
-      // - Became Active = users with advocate_status='Active' whose records were updated in Q1
-      // - Became Inactive = users with advocate_status='Inactive' whose records were updated in Q1
+      // Advocate Q1 Activity — event-based detection via AuditLog LAG().
+      // Applications/Trained/Approved: User record creation date (unchanged).
+      // Became Active/Inactive: detect state transitions using LAG() window
+      // function on consecutive AuditLog snapshots per user, counting DISTINCT
+      // user_ids who transitioned into that status at any point in Q1.
       pool.query(`
+        WITH advocate_events AS (
+          SELECT
+            data->>'id'              AS user_id,
+            data->>'advocate_status' AS status,
+            created_at,
+            LAG(data->>'advocate_status') OVER (
+              PARTITION BY data->>'id' ORDER BY created_at
+            ) AS prev_status
+          FROM "AuditLog"
+          WHERE "table" = 'User' AND action = 'Update'
+            AND data->>'advocate_status' IS NOT NULL
+            ${affWhereAudit}
+        )
         SELECT
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."advocate_status" IS NOT NULL
@@ -1266,20 +1278,19 @@ router.get('/', async (req, res) => {
               AND u."created_at" <= '${PERIOD_END} 23:59:59'
               ${affWhereUser}
           ) AS approved,
-          (SELECT COUNT(*)::int FROM "User" u
-            WHERE u."deleted_at" = 0
-              AND u."advocate_status"::text = 'Active'
-              AND u."updated_at" >= '${PERIOD_START}'
-              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
-              ${affWhereUser}
-          ) AS became_active,
-          (SELECT COUNT(*)::int FROM "User" u
-            WHERE u."deleted_at" = 0
-              AND u."advocate_status"::text = 'Inactive'
-              AND u."updated_at" >= '${PERIOD_START}'
-              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
-              ${affWhereUser}
-          ) AS became_inactive
+          COUNT(DISTINCT CASE
+            WHEN status = 'Active'
+             AND (prev_status IS NULL OR prev_status <> 'Active')
+             AND created_at >= '${PERIOD_START}'
+             AND created_at <= '${PERIOD_END} 23:59:59'
+            THEN user_id END)::int AS became_active,
+          COUNT(DISTINCT CASE
+            WHEN status = 'Inactive'
+             AND (prev_status IS NULL OR prev_status <> 'Inactive')
+             AND created_at >= '${PERIOD_START}'
+             AND created_at <= '${PERIOD_END} 23:59:59'
+            THEN user_id END)::int AS became_inactive
+        FROM advocate_events
       `, affParams),
 
       // ─── NEW: Children with Welfare Involvement ─────────────

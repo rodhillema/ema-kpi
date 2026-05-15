@@ -288,7 +288,10 @@ router.get('/', async (req, res) => {
       // Curriculum stall: no held Track_Session in 30 days
       const currStall = isActive && (daysSinceTrack == null || daysSinceTrack > 30);
       const stalled = commStall || currStall;
-      const stall_type = currStall ? 'curriculum' : (commStall ? 'communication' : null);
+      const stall_type = (commStall && currStall) ? 'both'
+                       : currStall ? 'curriculum'
+                       : commStall ? 'communication'
+                       : null;
       pairingsByAdvocate[p.advocateUserId].push({
         mom: `${p.momFirstName || ''} ${p.momLastName || ''}`.trim() || 'Unknown',
         type: p.trackTitle || '1:1',

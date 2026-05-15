@@ -405,6 +405,31 @@ body.logged-in .portal-view{display:flex}
     </div>
   </div>
 
+  <!-- ── 4. STALL DEFINITIONS ─────────────────────── -->
+  <div class="section">
+    <div class="section-num">04</div>
+    <div class="section-label">Stall Definitions</div>
+    <div class="section-title">Two independent stall signals — applied consistently across all reports</div>
+    <div class="section-body">
+      <p>A mom's pairing can trigger one or both stall flags at the same time. The flags are independent — a curriculum stall does not require a communication stall, and vice versa.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px;">
+        <div style="background:var(--red-light);border-left:4px solid var(--red);border-radius:8px;padding:16px 18px;">
+          <div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--red-dark);margin-bottom:8px;">Communication Stall</div>
+          <div style="font-size:13px;color:var(--dark);line-height:1.6;margin-bottom:8px;"><strong>Threshold:</strong> 14 days since last held session</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.6;"><strong>Source:</strong> Most recent session with status = <em>Held</em> (any type — curriculum or support). Planned and not-held sessions do not count.</div>
+        </div>
+        <div style="background:var(--green-light);border-left:4px solid var(--green);border-radius:8px;padding:16px 18px;">
+          <div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:8px;">Curriculum Stall</div>
+          <div style="font-size:13px;color:var(--dark);line-height:1.6;margin-bottom:8px;"><strong>Threshold:</strong> 30 days since last held curriculum session</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.6;"><strong>Source:</strong> Most recent session with status = <em>Held</em> <strong>and</strong> <code>lesson_template_id IS NOT NULL</code>. Support-only sessions do not reset the curriculum clock.</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:var(--mid);line-height:1.6;">
+        <strong>Payload returned per pairing:</strong> <code>stall_type: "communication" | "curriculum" | "both" | null</code> and <code>stalled: true | false</code>. <code>stalled</code> is <em>true</em> whenever <code>stall_type</code> is non-null. Both flags appear in the Mom Status report, Advocate Care report, and Track Journey.
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- SHARED FOOTER -->

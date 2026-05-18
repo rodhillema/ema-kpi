@@ -273,6 +273,7 @@ Pairing.incomplete_reason_sub_status: 'achieved_outcomes', 'extended_wait', 'no_
 - Group facilitators: `AdvocacyGroup.advocateId` — separate table, `state` enum: active/completed/deleted/planned
 - Union both for total active advocate count
 - `_AdvocateToCoordinator` join table: **`A` = coordinator user ID, `B` = advocate user ID** (reversed from the standard Prisma `_FooToBar` ordering — confirmed via DB probe April 2026). Trellis's "Coordinator (-N slots available)" assignment widget reads from this table; it is the source of truth for current advocate→coordinator assignment. CoordinatorNote rows are history (who wrote about whom) and are NOT authoritative assignment.
+- **`Mom.assigned_user_id`** — the direct Trellis "Assigned Coordinator" field on the Mom record. This is the **authoritative current coordinator** for both 1:1 and group pairings, and takes priority over `_AdvocateToCoordinator` lookups. Use it as priority 0 in any coordinator-resolution chain. Never derive the coordinator from `AdvocacyGroup.advocateId` — that is the group facilitator (an advocate), not the coordinator.
 
 ### Advocate Sub-Status Correction (deriveSub)
 - `Active + Paired` with no active pairing AND no active group → corrected to `Waiting_To_Be_Paired` (mismatch flagged)
@@ -590,8 +591,18 @@ The original cohort status is preserved as `groupStatus` in the response, and th
 
 **Rule:** Never read `Session.status` directly when computing what a specific mom did. Always go through the SessionAttendance-aware projection. This affects stall detection, curriculum counts, the "last held" anchor, and any per-mom completion logic.
 
-### Session lesson numbering
-Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same lesson share the same number (the `×N` badge on the timeline). Sessions without a template ID get a sequential fallback number.
+### Session lesson numbering and counting
+Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same lesson share the same number (the `×N` badge on the timeline).
+
+**Curriculum progress count** (anywhere we say "X / Y Curriculum Sessions Held"): count of **distinct `lesson_template_id`s** that have at least one Held session for this mom — matches what Trellis displays as completed lessons. Never `COUNT(*)` raw Held Track_Session rows; a lesson held twice is still one lesson done.
+
+**Untemplated Track_Sessions** (Trellis "Session" entries with no lesson template selected — `lesson_template_id IS NULL`): these are **not** part of the curriculum count and **must not** be renumbered with sequential lesson numbers or backfilled with track-lesson titles. On Track Journey they render as a greyed-out "Additional Track Sessions · N held" row below the curriculum (same style as the support sessions row). They exist as a data-quality signal — the coordinator/advocate logged a session but didn't tag the lesson.
+
+**Lesson step states** (Track Journey seq UI):
+- `done` — at least one Held session for this lesson_template_id (green). A held lesson is always DONE; do not mark the most-recent held lesson as "in progress."
+- `inprog` — lesson has scheduled/planned sessions but none Held yet, and the pairing is still active.
+- `missed` — all sessions for this lesson are NotHeld.
+- `not-started` — no session rows exist for this lesson slot yet.
 
 ### Pairing.advocacy_type
 Indicates delivery mode: the advocate field in the pairing strip shows `· 1:1` or `· Group` suffix based on this field.
@@ -667,14 +678,24 @@ Only one drawer (stall or flag) is open at a time. When opening stall drawer: ex
 
 `/mom-status` serves `mom-status-report.html`. The API at `/api/mom-status` returns one row per mom with:
 - Core profile (name, status, affiliate)
-- Coordinator (sourced from Pairing → CoordinatorNote link, **never** from AdvocacyGroup.coordinator)
+- Coordinator (sourced from `Mom.assigned_user_id` first, then `_AdvocateToCoordinator` via the active advocate, then CoordinatorNote as last resort — **never** from AdvocacyGroup.advocateId, which is the group facilitator)
 - Latest FWA timestamp
 - Current pairing (track, status, start date)
 - Most recent ConnectionLog entry (last contact date + method)
 
-**Coordinator sourcing rule (Fix 7):** Always derive coordinator from Pairing records via the advocate link. Priority: (1) active pairing over completed, (2) 1:1 over group, (3) most recent coordinator note. Never use `AdvocacyGroup.coordinator` — it is unreliable.
+**Coordinator sourcing rule:** Resolution chain (highest priority first):
+0. `Mom.assigned_user_id` — direct Trellis "Assigned Coordinator" field (authoritative for both 1:1 and group)
+1. `_AdvocateToCoordinator.B` looked up from active 1:1 pairing's `advocateUserId` via `atc.A = advocateUserId` (remember A=coord, B=advocate)
+2. Same as 1 but for group pairing via `AdvocacyGroup.advocateId` (the group facilitator's coordinator)
+3. Same as 1 but for completed pairings
+4. Same as 2 but for completed pairings
+5–9. CoordinatorNote rows (history of who wrote about whom — only used as fallback)
+
+Never use `AdvocacyGroup.advocateId` as the coordinator directly — it is the group facilitator (an advocate), not their coordinator. Never use `AdvocacyGroup.coordinator` — it is unreliable. This chain is implemented in both `routes/track-journey.js` and `routes/mom-status.js` as a `coord_candidates` CTE; keep the two in sync.
 
 Org-wide access: `administrator` role OR username `cristina.galloway`. Affiliate-scoped for all other coordinator-and-above roles.
+
+**Sessions-done count (`held_sessions` on the in-progress track):** Distinct held `lesson_template_id`s across the mom's active pairing — matches Trellis's completed-lesson count. The query unions sessions from both `Session.pairing_id` (1:1) and `Session.advocacy_group_id` (group pairings), applies `SessionAttendance` for per-mom effective held status on group sessions (Present→Held, Absent→NotHeld, null→fall back to `Session.status`), filters out `lesson_template_id IS NULL` (untemplated Track_Sessions don't count), then `COUNT(DISTINCT lesson_template_id)`. A 1:1-only query or `COUNT(*)` of Held rows undercounts group-pairing moms and overcounts moms who repeated a lesson.
 
 ---
 

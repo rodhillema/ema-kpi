@@ -1668,6 +1668,14 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   letter-spacing: 0.5px;
 }
 
+/* Groups the panel title + any inline pills on the left of the flex row,
+   so a trailing info-icon-wrap.section-anchor can float to the right edge. */
+.panel-lbl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Lesson list */
 .seq {
   position: relative;
@@ -3089,9 +3097,32 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
             <!-- LEFT: Curriculum detail -->
             <section class="split-left">
               <div class="panel-lbl">
-                <span>Curriculum Detail</span>
-                <span class="panel-lbl-count" id="curr-count-label"></span>
-                <span class="track-threshold-pill" id="curr-threshold" style="display:none;"></span>
+                <span class="panel-lbl-group">
+                  <span>Curriculum Detail</span>
+                  <span class="panel-lbl-count" id="curr-count-label"></span>
+                  <span class="track-threshold-pill" id="curr-threshold" style="display:none;"></span>
+                </span>
+                <span class="info-icon-wrap section-anchor">
+                  <span class="info-icon-btn" tabindex="0" role="button" aria-label="How curriculum progress is counted">i</span>
+                  <div class="info-popover" id="curr-info-popover">
+                    <div class="ip-block">
+                      <div class="ip-block-label">What counts</div>
+                      <div class="ip-block-body">Held <strong>Track Sessions</strong> only. Each unique <em>lesson_template_id</em> counts once; repeats of the same lesson appear as a <strong>&times;N</strong> badge on the timeline and increase the held count, not the lesson count.</div>
+                    </div>
+                    <div class="ip-block">
+                      <div class="ip-block-label">Thresholds</div>
+                      <div class="ip-block-body">
+                        Nurturing Parenting Program &middot; 10 sessions<br>
+                        Empowered Parenting &middot; 8 sessions<br>
+                        Roadmap to Resilience &middot; 4 sessions
+                      </div>
+                    </div>
+                    <div class="ip-block">
+                      <div class="ip-block-label">Excluded</div>
+                      <div class="ip-block-body">Support sessions, planned sessions, and not-held sessions. For group-delivered tracks, the mom&rsquo;s effective status comes from <em>SessionAttendance</em> &mdash; the cohort meeting alone does not count.</div>
+                    </div>
+                  </div>
+                </span>
               </div>
               <div class="seq" id="seq-container">
                 <!-- seq-steps injected by JS -->
@@ -3100,7 +3131,26 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 
             <!-- RIGHT: Assessment detail -->
             <aside class="split-right">
-              <div class="panel-lbl"><span>Assessment Detail</span></div>
+              <div class="panel-lbl">
+                <span class="panel-lbl-group"><span>Assessment Detail</span></span>
+                <span class="info-icon-wrap section-anchor">
+                  <span class="info-icon-btn" tabindex="0" role="button" aria-label="What assessment scores reflect">i</span>
+                  <div class="info-popover" id="assess-info-popover">
+                    <div class="ip-block">
+                      <div class="ip-block-label">EP &amp; RR</div>
+                      <div class="ip-block-body">Source: <em>AssessmentResult</em> + per-question responses from the matching template (Empowered Parenting Pre/Post or Resilience Pre/Post-Assessment). Bars show each question&rsquo;s score on a <strong>1&ndash;5</strong> scale; the overall composite averages per-question responses.</div>
+                    </div>
+                    <div class="ip-block">
+                      <div class="ip-block-label">NPP</div>
+                      <div class="ip-block-body">Source: <em>AAPIScore</em> &mdash; 5 constructs (A&ndash;E) with paired pre/post values on a <strong>1&ndash;10</strong> sten scale. Used only when no EP/RR AssessmentResult exists for the pairing.</div>
+                    </div>
+                    <div class="ip-block warn">
+                      <div class="ip-block-label">Excluded</div>
+                      <div class="ip-block-body">PromiseServes (Legacy) assessments are pre-Trellis migration data and never count.</div>
+                    </div>
+                  </div>
+                </span>
+              </div>
               <div id="assess-container" style="padding-top:8px;">
                 <!-- content injected by JS -->
               </div>

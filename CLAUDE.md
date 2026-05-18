@@ -572,6 +572,24 @@ Active stalls (`isActive: true`) = band whose right edge is the pairing end (or 
 ### Group sessions
 NPP pairings delivered in a group store sessions with `pairing_id = NULL` and `advocacy_group_id` set instead. The `/api/track-journey/:pairingId` query pulls sessions by EITHER `pairing_id = $1` OR `advocacy_group_id = $2`. This means group session events are shared across all moms in the group and each sees the full group timeline.
 
+### Per-mom attendance for group sessions (`SessionAttendance`)
+`Session.status` reflects the COHORT's status for group sessions (Held = the group met), NOT whether a specific mom attended. Per-mom attendance lives in the `SessionAttendance` table:
+```
+session_id        — FK to Session
+mom_id            — FK to Mom
+status            — enum 'AttendanceStatus': 'Present' | 'Absent'   (capitalized)
+notes             — text
+deleted_at        — standard soft delete
+```
+The `/api/track-journey/:pairingId` sessions query LEFT JOINs `SessionAttendance` on `(session_id, mom_id = pairing.momId, deleted_at=0)` and **derives the mom's effective `status`**:
+- `SessionAttendance.status = 'Present'` → `status = 'Held'`
+- `SessionAttendance.status = 'Absent'`  → `status = 'NotHeld'`
+- No attendance row (1:1 sessions, or unfilled group attendance) → fall back to `Session.status`
+
+The original cohort status is preserved as `groupStatus` in the response, and the raw attendance value as `momAttended`, for any future visual treatment that wants to distinguish "cohort met but mom absent" from "cohort didn't meet."
+
+**Rule:** Never read `Session.status` directly when computing what a specific mom did. Always go through the SessionAttendance-aware projection. This affects stall detection, curriculum counts, the "last held" anchor, and any per-mom completion logic.
+
 ### Session lesson numbering
 Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same lesson share the same number (the `×N` badge on the timeline). Sessions without a template ID get a sequential fallback number.
 

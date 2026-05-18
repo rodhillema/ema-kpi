@@ -332,6 +332,141 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
   }
 });
 
+// GET /api/track-journey/debug/coordinator?mom=<momId> — probe coordinator sources
+// to figure out where Trellis stores the authoritative current coordinator.
+// TEMPORARY DIAGNOSTIC — remove once we know the right source.
+router.get('/debug/coordinator', requireAuth, requireRole, async (req, res) => {
+  try {
+    const { role, username } = req.session.user;
+    const isAllowed = ORG_WIDE_ROLES.includes(role)
+      || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
+    if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
+
+    const momId = req.query.mom;
+    if (!momId) return res.status(400).json({ error: 'mom query param required' });
+
+    const out = {};
+
+    // 1. Mom table — full column list + the row for this mom
+    const { rows: momCols } = await pool.query(`
+      SELECT column_name, data_type
+        FROM information_schema.columns
+       WHERE table_name = 'Mom'
+       ORDER BY ordinal_position
+    `);
+    out.momColumns = momCols.map(c => c.column_name);
+    out.momCoordinatorLikeColumns = momCols
+      .filter(c => /coord/i.test(c.column_name))
+      .map(c => c.column_name);
+
+    const { rows: momRow } = await pool.query(`
+      SELECT * FROM "Mom" WHERE "id" = $1
+    `, [momId]);
+    out.momRow = momRow[0] || null;
+
+    // 2. Pairings for this mom (incl. advocateUserId + advocacyGroupId)
+    const { rows: pairings } = await pool.query(`
+      SELECT p."id", p."status"::text AS status,
+             p."advocacy_type"::text AS advocacy_type,
+             p."advocateUserId", p."advocacyGroupId",
+             p."created_at" AS "startDate",
+             p."completed_on" AS "endDate"
+        FROM "Pairing" p
+       WHERE p."momId" = $1 AND p."deleted_at" = 0
+       ORDER BY p."created_at" DESC
+    `, [momId]);
+    out.pairings = pairings;
+
+    // 3. Look for any table whose name contains "coord" or matches the Prisma
+    //    M:N convention (_FooToBar). This will surface _AdvocateToCoordinator
+    //    if it exists.
+    const { rows: coordTables } = await pool.query(`
+      SELECT table_name
+        FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND (table_name ILIKE '%coord%' OR table_name LIKE '\\_%To%' ESCAPE '\\')
+       ORDER BY table_name
+    `);
+    out.coordinatorLikeTables = coordTables.map(r => r.table_name);
+
+    // 4. For each candidate join table, dump its columns and any rows
+    //    matching the advocate IDs from this mom's pairings.
+    out.coordinatorJoinProbes = {};
+    const advIds = [...new Set(pairings.map(p => p.advocateUserId).filter(Boolean))];
+    for (const tbl of coordTables.map(r => r.table_name)) {
+      try {
+        const { rows: tcols } = await pool.query(`
+          SELECT column_name, data_type
+            FROM information_schema.columns
+           WHERE table_name = $1
+           ORDER BY ordinal_position
+        `, [tbl]);
+        const probe = { columns: tcols };
+        // Try probing by advocate ID on common column names
+        if (advIds.length) {
+          for (const col of ['A', 'B', 'advocate_id', 'advocateId', 'advocateUserId', 'user_id']) {
+            const hasCol = tcols.some(c => c.column_name === col);
+            if (!hasCol) continue;
+            try {
+              const { rows: hits } = await pool.query(
+                `SELECT * FROM "${tbl}" WHERE "${col}" = ANY($1::text[]) LIMIT 10`,
+                [advIds]
+              );
+              if (hits.length) probe[`hitsBy_${col}`] = hits;
+            } catch (_) {}
+          }
+          // Also try by mom_id / momId
+          for (const col of ['mom_id', 'momId']) {
+            const hasCol = tcols.some(c => c.column_name === col);
+            if (!hasCol) continue;
+            try {
+              const { rows: hits } = await pool.query(
+                `SELECT * FROM "${tbl}" WHERE "${col}" = $1 LIMIT 10`,
+                [momId]
+              );
+              if (hits.length) probe[`hitsBy_${col}`] = hits;
+            } catch (_) {}
+          }
+        }
+        out.coordinatorJoinProbes[tbl] = probe;
+      } catch (_) {}
+    }
+
+    // 5. Mom-linked CoordinatorNotes
+    const { rows: cnByMom } = await pool.query(`
+      SELECT cn."id", cn."mom_id", cn."advocate_id", cn."coordinator_id",
+             cn."created_at",
+             u."firstName" AS coord_first, u."lastName" AS coord_last
+        FROM "CoordinatorNote" cn
+        LEFT JOIN "User" u ON u."id" = cn."coordinator_id"
+       WHERE cn."mom_id" = $1 AND cn."deleted_at" = 0
+       ORDER BY cn."created_at" DESC
+       LIMIT 20
+    `, [momId]);
+    out.coordinatorNotesByMom = cnByMom;
+
+    // 6. Advocate-linked CoordinatorNotes for the mom's pairings' advocates
+    if (advIds.length) {
+      const { rows: cnByAdv } = await pool.query(`
+        SELECT cn."id", cn."mom_id", cn."advocate_id", cn."coordinator_id",
+               cn."created_at",
+               u."firstName" AS coord_first, u."lastName" AS coord_last
+          FROM "CoordinatorNote" cn
+          LEFT JOIN "User" u ON u."id" = cn."coordinator_id"
+         WHERE cn."advocate_id" = ANY($1::text[]) AND cn."deleted_at" = 0
+         ORDER BY cn."created_at" DESC
+         LIMIT 20
+      `, [advIds]);
+      out.coordinatorNotesByAdvocate = cnByAdv;
+    }
+
+    res.json(out);
+  } catch (err) {
+    console.error('[track-journey] /debug/coordinator error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/track-journey/:pairingId — full journey data for one pairing
 router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
   try {

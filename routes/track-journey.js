@@ -586,34 +586,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       affFilter = `AND m."affiliate_id" = $2`;
     }
 
-    // Pairing header + coordinator resolution for THIS pairing's mom.
-    // Source of truth: Trellis's _AdvocateToCoordinator join table — the
-    // same backing table that powers Trellis's "Coordinator (-N slots
-    // available)" assignment widget.
+    // Coordinator resolution for this pairing's mom.
+    // Priority 0: Mom.assigned_user_id — the direct Trellis "Assigned
+    // Coordinator" field. Works for both 1:1 and group pairings.
+    // Confirmed: Elbony Ingram's assigned_user_id = Babie-Marie Henriquez.
     //
-    // IMPORTANT: in this DB the column convention is A = coordinator
-    // user id, B = advocate user id -- the opposite of the standard
-    // Prisma _AdvocateToCoordinator ordering. Confirmed by diagnostic
-    // probe: for advocate Sheila Lamarre (paired with Elbony Ingram),
-    // her row has B=Sheila and A=Babie-Marie Henriquez (the actual
-    // coordinator shown in Trellis). Join on B=advocate and select A
-    // as the coordinator.
-    //
-    // Fall back to CoordinatorNote (history of who wrote about the
-    // mom/advocate) only if no current assignment exists.
-    //
-    // Priority chain:
-    //   1  active 1:1 pairing  → _AdvocateToCoordinator.B = p.advocateUserId
-    //   2  active group pairing → _AdvocateToCoordinator.B = AdvocacyGroup.advocateId
-    //   3  completed 1:1 pairing → _AdvocateToCoordinator.B = p.advocateUserId
-    //   4  completed group pairing → _AdvocateToCoordinator.B = AdvocacyGroup.advocateId
-    //   5  direct mom-linked CoordinatorNote (cn.mom_id = mom.id)
-    //   6  active 1:1 pairing  → CN via advocate
-    //   7  active group pairing → CN via facilitator
-    //   8  active group pairing → facilitator user directly
-    //   9  completed 1:1 pairing → CN via advocate
-    //  10  completed group pairing → CN via facilitator
-    //  11  completed group pairing → facilitator user directly
+    // Priority 1-4: _AdvocateToCoordinator (A=coord, B=advocate).
+    // Priority 5-9: CoordinatorNote fallback (history only).
     const { rows: pRows } = await pool.query(`
       WITH this_pairing AS (
         SELECT p."id", p."momId"
@@ -621,6 +600,14 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         WHERE p."id" = $1 AND p."deleted_at" = 0
       ),
       coord_candidates AS (
+        SELECT m."id" AS mom_id, m."assigned_user_id" AS coordinator_id,
+               u."firstName" AS coord_first, u."lastName" AS coord_last,
+               0 AS priority, m."updated_at" AS sort_date
+        FROM "Mom" m
+        JOIN "User" u ON u."id" = m."assigned_user_id"
+        WHERE m."id" IN (SELECT "momId" FROM this_pairing)
+          AND m."assigned_user_id" IS NOT NULL
+        UNION ALL
         SELECT p."momId" AS mom_id, atc."A" AS coordinator_id,
                u."firstName" AS coord_first, u."lastName" AS coord_last,
                1 AS priority, p."created_at" AS sort_date
@@ -700,20 +687,9 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           AND p."status"::text = 'paired'
           AND p."advocacy_type"::text = 'group'
         UNION ALL
-        SELECT p."momId", ag."advocateId",
-               fac."firstName", fac."lastName",
-               8, p."created_at"
-        FROM "Pairing" p
-        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
-        JOIN "User" fac ON fac."id" = ag."advocateId"
-        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
-          AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-          AND p."advocacy_type"::text = 'group'
-        UNION ALL
         SELECT p."momId", cn."coordinator_id",
                u."firstName", u."lastName",
-               9, cn."created_at"
+               8, cn."created_at"
         FROM "Pairing" p
         JOIN "CoordinatorNote" cn
           ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
@@ -725,23 +701,12 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         UNION ALL
         SELECT p."momId", cn."coordinator_id",
                u."firstName", u."lastName",
-               10, cn."created_at"
+               9, cn."created_at"
         FROM "Pairing" p
         JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
         JOIN "CoordinatorNote" cn
           ON cn."advocate_id" = ag."advocateId" AND cn."deleted_at" = 0
         JOIN "User" u ON u."id" = cn."coordinator_id"
-        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
-          AND p."deleted_at" = 0
-          AND p."status"::text <> 'paired'
-          AND p."advocacy_type"::text = 'group'
-        UNION ALL
-        SELECT p."momId", ag."advocateId",
-               fac."firstName", fac."lastName",
-               11, p."created_at"
-        FROM "Pairing" p
-        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
-        JOIN "User" fac ON fac."id" = ag."advocateId"
         WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
           AND p."deleted_at" = 0
           AND p."status"::text <> 'paired'

@@ -51,24 +51,90 @@ router.get('/', async (req, res) => {
     // Main query — one row per mom with core profile + coordinator + latest FWA + current pairing.
     // DISTINCT ON prevents duplicate rows when a mom has multiple pairings / coordinator assignments.
     const mainQuery = `
-      WITH coord_for_mom AS (
-        -- Coordinator always comes from the mom's Pairing record (via advocate link).
-        -- Rule (Fix 7): never use AdvocacyGroup.coordinator — always source from Pairing.
-        -- Priority: (1) active pairing over completed, (2) 1:1 over group, (3) most recent note.
-        -- Tiebreaker: if a mom has both a 1:1 and a group pairing, the 1:1 coordinator wins.
-        SELECT DISTINCT ON (p."momId")
-          p."momId" AS mom_id,
-          cn."coordinator_id" AS coordinator_id,
-          coord."firstName" AS coord_first,
-          coord."lastName"  AS coord_last
+      coord_candidates AS (
+        -- Per-mom coordinator resolution. The advocate link is the documented
+        -- source of truth, but it must follow the pairing's delivery mode:
+        --   · 1:1 pairing  → advocate is Pairing.advocateUserId
+        --   · group pairing → advocate is AdvocacyGroup.advocateId (the
+        --     facilitator). Pairing.advocateUserId is NULL for group rows.
+        -- Priority chain (lowest priority number wins):
+        --   1  direct mom-linked CoordinatorNote (cn.mom_id = mom.id)
+        --   2  active 1:1 pairing  → CN via advocateUserId
+        --   3  active group pairing → CN via facilitator (AG.advocateId)
+        --   4  active group pairing → facilitator user directly (no CN)
+        --   5  completed 1:1 pairing → CN via advocateUserId
+        --   6  completed group pairing → CN via facilitator
+        --   7  completed group pairing → facilitator user directly
+        -- AdvocacyGroup.coordinator is intentionally not consulted (column
+        -- doesn't exist; rule preserved for any future schema additions).
+        SELECT cn."mom_id" AS mom_id, cn."coordinator_id" AS coordinator_id,
+               c."firstName" AS coord_first, c."lastName" AS coord_last,
+               1 AS priority, cn."created_at" AS sort_date
+        FROM "CoordinatorNote" cn
+        JOIN "User" c ON c."id" = cn."coordinator_id"
+        WHERE cn."mom_id" IS NOT NULL AND cn."deleted_at" = 0
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               c."firstName", c."lastName",
+               2, cn."created_at"
         FROM "Pairing" p
         JOIN "CoordinatorNote" cn ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
-        LEFT JOIN "User" coord ON coord."id" = cn."coordinator_id"
-        WHERE p."deleted_at" = 0
-        ORDER BY p."momId",
-          (p."status"::text <> 'paired') ASC,       -- active pairings first
-          (p."advocacy_type"::text = 'group') ASC,   -- 1:1 before group within same tier
-          cn."created_at" DESC                        -- most recent note as last-resort tiebreak
+        JOIN "User" c ON c."id" = cn."coordinator_id"
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text <> 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               c."firstName", c."lastName",
+               3, cn."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "CoordinatorNote" cn ON cn."advocate_id" = ag."advocateId" AND cn."deleted_at" = 0
+        JOIN "User" c ON c."id" = cn."coordinator_id"
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", ag."advocateId",
+               fac."firstName", fac."lastName",
+               4, p."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "User" fac ON fac."id" = ag."advocateId"
+        WHERE p."deleted_at" = 0 AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               c."firstName", c."lastName",
+               5, cn."created_at"
+        FROM "Pairing" p
+        JOIN "CoordinatorNote" cn ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
+        JOIN "User" c ON c."id" = cn."coordinator_id"
+        WHERE p."deleted_at" = 0 AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text <> 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               c."firstName", c."lastName",
+               6, cn."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "CoordinatorNote" cn ON cn."advocate_id" = ag."advocateId" AND cn."deleted_at" = 0
+        JOIN "User" c ON c."id" = cn."coordinator_id"
+        WHERE p."deleted_at" = 0 AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", ag."advocateId",
+               fac."firstName", fac."lastName",
+               7, p."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "User" fac ON fac."id" = ag."advocateId"
+        WHERE p."deleted_at" = 0 AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text = 'group'
+      ),
+      coord_for_mom AS (
+        SELECT DISTINCT ON (mom_id)
+          mom_id, coordinator_id, coord_first, coord_last
+        FROM coord_candidates
+        ORDER BY mom_id, priority ASC, sort_date DESC NULLS LAST
       ),
       latest_fwa AS (
         SELECT DISTINCT ON (wa."mom_id")

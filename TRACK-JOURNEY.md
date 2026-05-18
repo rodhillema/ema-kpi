@@ -38,9 +38,6 @@ Org-wide users (`rd.hill`, `cristina.galloway`) see all affiliates regardless of
 │  MOM · TRACK · PROGRAM STATUS                                                │
 │  ADVOCATE · PAIRING WINDOW · TRACK LENGTH · COORDINATOR                     │
 └─────────────────────────────────────────────────────────────────────────────┘
-┌─ Alert Bar (shown only when flags exist) ────────────────────────────────────┐
-│  [● GENERAL STALL · 21 DAYS]   [◆ PRE-ASSESSMENT MISSING]                  │
-└─────────────────────────────────────────────────────────────────────────────┘
 ┌─ Track Timeline Card ───────────────────────────────────────────────────────┐
 │  CURRICULUM · Learning     ●─────●─────◎─────────────                       │
 │  SUPPORT · Belonging       ♥─────────────♥─────────────                     │
@@ -94,22 +91,6 @@ A neutral white bar that appears once a mom is selected. It shows seven fields a
 
 ---
 
-## Alert Bar
-
-The alert bar appears between the pairing strip and the timeline **only when flags are present**. It surfaces the most critical issues at a glance without requiring the user to scroll to the timeline.
-
-### Stall Alert (red · clickable)
-Appears when a current stall is detected. Format: `● GENERAL STALL · 21 DAYS` or `● CURRICULUM STALL · 45 DAYS`. Clicking it opens the **Stall Drawer**.
-
-Two stall types:
-- **General / Communication Stall** — solid red border. 14+ days since any held session.
-- **Curriculum Stall** — amber/dashed border. 30+ days since a curriculum (track) session, with at least one support session in the gap.
-
-### Pre-Assessment Missing (amber · not clickable)
-Appears when the pairing has no pre-assessment on file in Trellis. Reminder only — no action link.
-
----
-
 ## Track Timeline
 
 The timeline is a horizontal Gantt-style visualization spanning from the pairing start date to today (or the completion date for completed tracks). The x-axis is a proportional date scale; the y-axis has three lanes.
@@ -159,7 +140,7 @@ An `ⓘ` icon next to "Track Timeline" opens an inline legend explaining marks, 
 
 ## Stall Drawer
 
-Opens from the alert bar stall button or by clicking a stall band on the timeline. Slides in from the right. Contains four sections.
+Opens by clicking a stall band on the timeline. Slides in from the right. Contains four sections.
 
 ### Header
 - **Eyebrow**: Current Stall or Past Stall · days · stall type (e.g., `CURRENT STALL · 21 DAYS · COMMUNICATION STALL`)
@@ -317,7 +298,7 @@ Stalls are computed server-side from the session history. The algorithm:
 
 **Active vs. Past**:
 - The most recent band extending to "today" (or the pairing end date) is `isActive = true`
-- Historical bands are `isActive = false` — they appear on the timeline but are not surfaced in the alert bar
+- Historical bands are `isActive = false` — they appear on the timeline as past events
 
 ---
 

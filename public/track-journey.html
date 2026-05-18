@@ -139,16 +139,6 @@ body.logged-in .portal-view{display:flex}
 .footer-integrity{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;transition:all .2s;text-transform:none;font-weight:400}
 .footer-integrity:hover{color:var(--white)}
 
-/* ── ALERT BAR ── */
-.alert-bar{max-width:1180px;margin:0 auto 14px;display:flex;gap:8px;flex-wrap:wrap}
-.alert-band{display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:8px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;border:none;background:none;font:inherit;text-align:left;cursor:pointer;flex:1;min-width:180px}
-.alert-band.stall{background:rgba(236,72,47,.07);color:var(--red-dk,#c23018);border:1.5px solid rgba(236,72,47,.22)}
-.alert-band.stall:hover{background:rgba(236,72,47,.13)}
-.alert-band.pre-warn{background:var(--amber-bg);color:#8a5a00;border:1.5px solid rgba(242,161,54,.3);cursor:default}
-.alert-band-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.alert-band.stall .alert-band-dot{background:var(--red)}
-.alert-band.pre-warn .alert-band-dot{background:var(--amber)}
-
 /* ── TRACK JOURNEY HUB OVERRIDES ── */
 body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);padding:0}
 .main .card:first-child,.main .card:first-of-type{margin-top:24px}
@@ -2972,9 +2962,6 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
       <!-- Journey content (shown after pairing is selected) -->
       <div id="tj-content" style="display:none;">
 
-        <!-- Alert bar — stall + pre-missing flags. Hidden when no flags present. -->
-        <div id="alert-bar" class="alert-bar" style="display:none;"></div>
-
         <!-- ═══════════════════════════════════
              CARD 1: TIMELINE
         ═══════════════════════════════════ -->
@@ -3545,30 +3532,6 @@ function renderJourney(data) {
   var trackDays  = daysBetween(trackLengthStart, trackLengthEnd);
   var trackWeeks = Math.round(trackDays / 7);
   document.getElementById('pb-length').textContent = trackDays + ' days · ~' + trackWeeks + ' weeks';
-
-  // Alert bar — slim bar between pairing strip and timeline card
-  var alertBar = document.getElementById('alert-bar');
-  var alertHtml = '';
-  var hasHeldSessions = sessions && sessions.some(function(s){ return s.status === 'Held'; });
-  if (pairing.currentStall) {
-    var stallLabel = pairing.currentStall.type === 'curriculum' ? 'Curriculum Stall' : 'Stalled';
-    alertHtml += '<button type="button" class="alert-band stall" onclick="openStallDrawer(null)">'
-      + '<span class="alert-band-dot"></span>'
-      + stallLabel + ' · ' + pairing.currentStall.days + ' days — click for detail'
-      + '</button>';
-  }
-  if (!assessments.pre && hasHeldSessions) {
-    alertHtml += '<div class="alert-band pre-warn">'
-      + '<span class="alert-band-dot"></span>'
-      + 'Pre-Assessment needed before tracking learning progress'
-      + '</div>';
-  }
-  if (alertHtml) {
-    alertBar.innerHTML = alertHtml;
-    alertBar.style.display = '';
-  } else {
-    alertBar.style.display = 'none';
-  }
 
   // Track selector — populated by populateTrackDropdown when a mom is picked.
 

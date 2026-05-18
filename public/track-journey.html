@@ -2931,11 +2931,11 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
               <div class="tj-search-list" id="mom-search-list"></div>
             </div>
           </div>
-          <!-- Track (display-only) -->
+          <!-- Track — interactive when the selected mom has multiple pairings -->
           <div class="tj-sel-group">
             <span class="tj-sel-lbl">Track</span>
             <select class="tj-sel" id="sel-track" disabled>
-              <option id="sel-track-opt">—</option>
+              <option>—</option>
             </select>
           </div>
           <div class="rh-fresh" tabindex="0">Live
@@ -3307,30 +3307,58 @@ async function onAffiliateChange(sel) {
 }
 
 // ── Searchable mom picker ─────────────────────────────────────────────────────
-function buildMomList(pairings) {
-  // Rebuild the dropdown items (don't open it yet)
-  renderMomItems(pairings);
+// Group pairings by mom — each mom appears once in the list, with her
+// pairings ordered active-first then most-recent. The Track dropdown becomes
+// the per-pairing selector after a mom is picked.
+function groupPairingsByMom(pairings) {
+  var groups = new Map();
+  pairings.forEach(function(p) {
+    if (!groups.has(p.momId)) {
+      groups.set(p.momId, { momId: p.momId, momName: p.momName, pairings: [] });
+    }
+    groups.get(p.momId).pairings.push(p);
+  });
+  groups.forEach(function(g) {
+    g.pairings.sort(function(a, b) {
+      if (a.status === 'paired' && b.status !== 'paired') return -1;
+      if (b.status === 'paired' && a.status !== 'paired') return 1;
+      var ad = a.startDate ? new Date(a.startDate).getTime() : 0;
+      var bd = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return bd - ad;
+    });
+  });
+  return Array.from(groups.values()).sort(function(a, b) {
+    return a.momName.localeCompare(b.momName);
+  });
 }
 
-function renderMomItems(pairings) {
+function buildMomList(pairings) {
+  renderMomItems(groupPairingsByMom(pairings));
+}
+
+function renderMomItems(momGroups) {
   var list = document.getElementById('mom-search-list');
   list.innerHTML = '';
-  if (pairings.length === 0) {
+  if (momGroups.length === 0) {
     var empty = document.createElement('div');
     empty.className = 'tj-search-empty';
     empty.textContent = 'No moms found.';
     list.appendChild(empty);
     return;
   }
-  pairings.forEach(function(p) {
+  momGroups.forEach(function(g) {
     var item = document.createElement('div');
-    item.className = 'tj-search-item' + (SELECTED_PAIRING && SELECTED_PAIRING.pairingId === p.pairingId ? ' active' : '');
-    item.dataset.pairingId = p.pairingId;
-    var stall = p.stall ? '<span class="si-stall">· ⚠ ' + p.stall.days + 'd stall</span>' : '';
-    item.innerHTML = escHtml(p.momName) + stall;
+    var selMomId = SELECTED_PAIRING && SELECTED_PAIRING.momId;
+    item.className = 'tj-search-item' + (selMomId === g.momId ? ' active' : '');
+    item.dataset.momId = g.momId;
+    // Show stall badge from the default (active or most recent) pairing.
+    var defaultP = g.pairings[0];
+    var stall = defaultP && defaultP.stall ? '<span class="si-stall">· ⚠ ' + defaultP.stall.days + 'd stall</span>' : '';
+    var trackCount = g.pairings.length > 1 ? '<span class="si-stall">· ' + g.pairings.length + ' tracks</span>' : '';
+    item.innerHTML = escHtml(g.momName) + stall + trackCount;
     item.addEventListener('mousedown', function(e) {
       e.preventDefault(); // prevent input blur before click registers
-      selectMom(p);
+      selectMom(g);
     });
     list.appendChild(item);
   });
@@ -3347,9 +3375,10 @@ function openMomList() {
 
 function filterMomList(query) {
   var q = query.trim().toLowerCase();
+  var groups = groupPairingsByMom(ALL_PAIRINGS);
   var filtered = q
-    ? ALL_PAIRINGS.filter(function(p){ return p.momName.toLowerCase().includes(q); })
-    : ALL_PAIRINGS;
+    ? groups.filter(function(g){ return g.momName.toLowerCase().includes(q); })
+    : groups;
   renderMomItems(filtered);
   document.getElementById('mom-search-list').classList.add('open');
 }
@@ -3367,16 +3396,57 @@ function clearMomSelection() {
   document.getElementById('tj-info').style.display        = 'none';
   document.getElementById('tj-content').style.display     = 'none';
   document.getElementById('tj-empty-state').style.display = '';
-  var opt = document.getElementById('sel-track-opt');
-  if (opt) opt.textContent = '—';
+  var trackSel = document.getElementById('sel-track');
+  if (trackSel) {
+    trackSel.innerHTML = '<option>—</option>';
+    trackSel.disabled = true;
+  }
 }
 
-async function selectMom(p) {
-  SELECTED_PAIRING = p;
-  document.getElementById('mom-search-input').value = p.momName;
+function fmtTrackRange(p) {
+  var start = p.startDate ? new Date(p.startDate) : null;
+  var end   = p.endDate   ? new Date(p.endDate)   : null;
+  var sy = start ? start.getFullYear() : '?';
+  var ey = end ? end.getFullYear() : 'present';
+  return sy + '–' + ey;
+}
+
+function populateTrackDropdown(group, selectedPairingId) {
+  var sel = document.getElementById('sel-track');
+  if (!sel) return;
+  sel.innerHTML = '';
+  group.pairings.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.pairingId;
+    var statusLabel = p.status === 'paired' ? 'In Track' : 'Complete';
+    opt.textContent = (p.trackTitle || '—') + ' · ' + fmtTrackRange(p) + ' · ' + statusLabel;
+    if (p.pairingId === selectedPairingId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.disabled = group.pairings.length <= 1;
+  sel.onchange = function() { loadPairing(sel.value); };
+}
+
+async function selectMom(group) {
+  document.getElementById('mom-search-input').value = group.momName;
   closeMomList();
+  // Default to the first pairing (active-first then most-recent by the sort
+  // in groupPairingsByMom).
+  var defaultPairing = group.pairings[0];
+  if (!defaultPairing) return;
+  populateTrackDropdown(group, defaultPairing.pairingId);
+  await loadPairing(defaultPairing.pairingId);
+}
+
+async function loadPairing(pairingId) {
+  var p = ALL_PAIRINGS.find(function(x){ return x.pairingId === pairingId; });
+  if (!p) {
+    console.error('[track-journey] loadPairing: unknown pairingId', pairingId);
+    return;
+  }
+  SELECTED_PAIRING = p;
   try {
-    var res = await fetch('/api/track-journey/' + p.pairingId);
+    var res = await fetch('/api/track-journey/' + pairingId);
     if (!res.ok) {
       console.error('[track-journey] /:pairingId returned HTTP ' + res.status);
       var errBody = await res.text().catch(function(){ return ''; });
@@ -3500,9 +3570,7 @@ function renderJourney(data) {
     alertBar.style.display = 'none';
   }
 
-  // Track selector (display-only)
-  var opt = document.getElementById('sel-track-opt');
-  if (opt) opt.textContent = pairing.trackTitle || '—';
+  // Track selector — populated by populateTrackDropdown when a mom is picked.
 
   renderTimeline(pairing, sessions, stalls, assessments, data.vitalNeeds || [], winStart, winEnd);
   renderDetail(pairing, sessions, assessments);

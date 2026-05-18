@@ -347,20 +347,111 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       affFilter = `AND m."affiliate_id" = $2`;
     }
 
-    // Pairing header + coordinator via most-recent CoordinatorNote pattern
+    // Pairing header + coordinator resolution for THIS pairing's mom.
+    // Mirrors the mom-status.js coord_candidates priority chain so the
+    // coordinator shown matches the Trellis source of truth:
+    //   1  direct mom-linked CoordinatorNote          (cn.mom_id = mom.id)
+    //   2  active 1:1 pairing  → CN via advocate      (cn.advocate_id = p.advocateUserId)
+    //   3  active group pairing → CN via facilitator  (cn.advocate_id = AdvocacyGroup.advocateId)
+    //   4  active group pairing → facilitator user directly (no CN)
+    //   5  completed 1:1 pairing → CN via advocate
+    //   6  completed group pairing → CN via facilitator
+    //   7  completed group pairing → facilitator user directly
+    // The old query joined ONLY via p.advocateUserId, which surfaced
+    // whichever coordinator most recently wrote about the advocate (wrong
+    // person) and returned NULL for group pairings (advocateUserId is NULL).
     const { rows: pRows } = await pool.query(`
-      WITH coord AS (
-        SELECT DISTINCT ON (p2."id")
-          p2."id"       AS pairing_id,
-          u."firstName" AS coord_first,
-          u."lastName"  AS coord_last
-        FROM "Pairing" p2
+      WITH this_pairing AS (
+        SELECT p."id", p."momId"
+        FROM "Pairing" p
+        WHERE p."id" = $1 AND p."deleted_at" = 0
+      ),
+      coord_candidates AS (
+        SELECT cn."mom_id" AS mom_id, cn."coordinator_id",
+               u."firstName" AS coord_first, u."lastName" AS coord_last,
+               1 AS priority, cn."created_at" AS sort_date
+        FROM "CoordinatorNote" cn
+        JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE cn."mom_id" IN (SELECT "momId" FROM this_pairing)
+          AND cn."deleted_at" = 0
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               u."firstName", u."lastName",
+               2, cn."created_at"
+        FROM "Pairing" p
         JOIN "CoordinatorNote" cn
-          ON cn."advocate_id" = p2."advocateUserId"
-         AND cn."deleted_at" = 0
-        LEFT JOIN "User" u ON u."id" = cn."coordinator_id"
-        WHERE p2."deleted_at" = 0
-        ORDER BY p2."id", cn."created_at" DESC
+          ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
+        JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text <> 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               u."firstName", u."lastName",
+               3, cn."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "CoordinatorNote" cn
+          ON cn."advocate_id" = ag."advocateId" AND cn."deleted_at" = 0
+        JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", ag."advocateId",
+               fac."firstName", fac."lastName",
+               4, p."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "User" fac ON fac."id" = ag."advocateId"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text = 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               u."firstName", u."lastName",
+               5, cn."created_at"
+        FROM "Pairing" p
+        JOIN "CoordinatorNote" cn
+          ON cn."advocate_id" = p."advocateUserId" AND cn."deleted_at" = 0
+        JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text <> 'group'
+        UNION ALL
+        SELECT p."momId", cn."coordinator_id",
+               u."firstName", u."lastName",
+               6, cn."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "CoordinatorNote" cn
+          ON cn."advocate_id" = ag."advocateId" AND cn."deleted_at" = 0
+        JOIN "User" u ON u."id" = cn."coordinator_id"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text = 'group'
+        UNION ALL
+        SELECT p."momId", ag."advocateId",
+               fac."firstName", fac."lastName",
+               7, p."created_at"
+        FROM "Pairing" p
+        JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+        JOIN "User" fac ON fac."id" = ag."advocateId"
+        WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+          AND p."deleted_at" = 0
+          AND p."status"::text <> 'paired'
+          AND p."advocacy_type"::text = 'group'
+      ),
+      coord AS (
+        SELECT DISTINCT ON (mom_id)
+          mom_id, coordinator_id, coord_first, coord_last
+        FROM coord_candidates
+        ORDER BY mom_id, priority ASC, sort_date DESC NULLS LAST
       )
       SELECT
         p."id",
@@ -381,7 +472,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       JOIN "Mom" m      ON m."id" = p."momId"
       LEFT JOIN "Track" t    ON t."id" = p."trackId"
       LEFT JOIN "User" adv   ON adv."id" = p."advocateUserId"
-      LEFT JOIN coord c      ON c.pairing_id = p."id"
+      LEFT JOIN coord c      ON c.mom_id = p."momId"
       WHERE p."id" = $1
         AND p."deleted_at" = 0
         ${affFilter}
@@ -702,6 +793,10 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Used by the stall drawer; graceful if advocate is unset or table query fails.
     let coordinatorNotes = [];
     try {
+      // Pull coordinator notes directly linked to this pairing's mom.
+      // (Previously joined on cn.advocate_id = p.advocateUserId, which
+      //  surfaced notes about the advocate — wrong entity — and returned
+      //  nothing for group pairings where advocateUserId is NULL.)
       const { rows: noteRows } = await pool.query(`
         SELECT
           cn."created_at"  AS "date",
@@ -710,8 +805,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           u."lastName"     AS "coordLast"
         FROM "CoordinatorNote" cn
         LEFT JOIN "User" u ON u."id" = cn."coordinator_id"
-        WHERE cn."advocate_id" = (
-              SELECT "advocateUserId" FROM "Pairing"
+        WHERE cn."mom_id" = (
+              SELECT "momId" FROM "Pairing"
                WHERE "id" = $1 AND "deleted_at" = 0)
           AND cn."deleted_at" = 0
         ORDER BY cn."created_at" DESC

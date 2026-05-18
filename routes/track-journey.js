@@ -395,17 +395,37 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     //   - this pairing's advocacy_group_id (group track)
     // Group sessions are group-level events shared by all members of the
     // group; we surface them on each member's Track Journey.
+    //
+    // For group sessions, Session.status reflects whether the COHORT met
+    // (Held / NotHeld / Planned), not whether THIS mom attended. Per-mom
+    // attendance lives in SessionAttendance (enum: 'Present' | 'Absent').
+    // We LEFT JOIN it and derive the mom's effective status:
+    //   - SessionAttendance row exists → 'Held' if Present, 'NotHeld' if Absent
+    //   - No row (1:1 sessions, or unfilled group attendance) → fall back to Session.status
+    // The original cohort status is preserved as `groupStatus` for any
+    // future visual treatment that wants to distinguish "cohort met but
+    // mom absent" from "cohort didn't meet".
     let sessRows;
     try {
       ({ rows: sessRows } = await pool.query(`
         SELECT s."id",
                s."date_start"         AS "date",
-               s."status"::text       AS "status",
+               s."status"::text       AS "groupStatus",
+               sa."status"::text      AS "momAttended",
+               CASE
+                 WHEN sa."status"::text = 'Present' THEN 'Held'
+                 WHEN sa."status"::text = 'Absent'  THEN 'NotHeld'
+                 ELSE s."status"::text
+               END                    AS "status",
                s."session_type"::text AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"
           FROM "Session" s
+          LEFT JOIN "SessionAttendance" sa
+            ON sa."session_id" = s."id"
+           AND sa."mom_id"     = $3
+           AND sa."deleted_at" = 0
          WHERE s."deleted_at" = 0
            AND (
              s."pairing_id" = $1
@@ -415,11 +435,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
              )
            )
          ORDER BY s."date_start" NULLS LAST
-      `, [pairingId, p.advocacyGroupId]));
+      `, [pairingId, p.advocacyGroupId, p.momId]));
     } catch (_) {
       ({ rows: sessRows } = await pool.query(`
         SELECT s."id",
                s."date_start"         AS "date",
+               s."status"::text       AS "groupStatus",
+               NULL::text             AS "momAttended",
                s."status"::text       AS "status",
                s."session_type"::text AS "type",
                NULL::text             AS "notes",
@@ -450,6 +472,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         id:               s.id,
         date:             s.date,
         status:           s.status,
+        groupStatus:      s.groupStatus  || null,
+        momAttended:      s.momAttended  || null,
         type:             s.type,
         notes:            s.notes,
         lessonNumber:     lnum,

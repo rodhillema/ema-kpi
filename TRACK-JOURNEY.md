@@ -253,7 +253,7 @@ Scale is computed from actual min/max values across all non-Legacy assessment re
 
 ### NPP tracks (Nurturing Parenting Program)
 NPP uses the `AAPIScore` table (5 constructs A–E). When AAPI data is available:
-- Pre and post shown as labeled construct scores (A = Expectations, B = Empathy, C = Discipline, D = Family Roles, E = Empowerment)
+- Pre and post shown as labeled construct scores (A = Expectations, B = Empathy, C = Discipline, D = Family Roles, E = Independence)
 - Total score displayed
 
 ### Known limitation — assessment data gaps

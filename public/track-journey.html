@@ -2294,6 +2294,19 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
 .delta-tag.down { background: rgba(236,72,47,0.1); color: var(--red); }
 .delta-tag.flat { background: var(--light); color: var(--mid); }
 
+.construct-group-header {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin: 18px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.construct-group-header:first-child { margin-top: 6px; }
+
 .construct {
   margin-bottom: 14px;
   padding-top: 0;
@@ -4066,17 +4079,30 @@ function renderDetail(pairing, sessions, assessments) {
     var scaleRange = scale.max - scale.min || 1;
     var hasBoth = pre && post && pre.questions && post.questions;
 
-    // Build a merged question list keyed by label (pre questions are authoritative for order)
+    // Build a merged question list keyed by label (pre questions are authoritative for order).
+    // Carry the construct grouping (name + order) through from whichever side first sees the question.
     var qMap = {};
     var qOrder = [];
     var srcQ = (pre && pre.questions) ? pre.questions : (post && post.questions ? post.questions : []);
     srcQ.forEach(function(q) {
-      if (!qMap[q.label]) { qMap[q.label] = { label: q.label, order: q.order, pre: null, post: null }; qOrder.push(q.label); }
+      if (!qMap[q.label]) {
+        qMap[q.label] = {
+          label: q.label, order: q.order, pre: null, post: null,
+          constructName: q.constructName || null, constructOrder: q.constructOrder
+        };
+        qOrder.push(q.label);
+      }
       qMap[q.label].pre = q.score;
     });
     if (post && post.questions) {
       post.questions.forEach(function(q) {
-        if (!qMap[q.label]) { qMap[q.label] = { label: q.label, order: q.order, pre: null, post: null }; qOrder.push(q.label); }
+        if (!qMap[q.label]) {
+          qMap[q.label] = {
+            label: q.label, order: q.order, pre: null, post: null,
+            constructName: q.constructName || null, constructOrder: q.constructOrder
+          };
+          qOrder.push(q.label);
+        }
         qMap[q.label].post = q.score;
       });
     }
@@ -4106,33 +4132,64 @@ function renderDetail(pairing, sessions, assessments) {
     var scaleTicks =
       '<div class="scale-row"><span>' + scale.min + '</span><span>' + midScale + '</span><span>' + scale.max + '</span></div>';
 
+    // Group questions by AssessmentConstruct. Null-construct questions go in an
+    // ungrouped bucket at the end ("Other"). Constructs are ordered by ac.order
+    // ASC (preserved from the SQL); within a group, ordering follows pre's order.
+    var groups = {};
+    var groupOrder = [];
     qOrder.forEach(function(lbl) {
       var q = qMap[lbl];
-      var pv = q.pre, ov = q.post;
-      var preWidth  = pv != null ? ((pv - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
-      var postWidth = ov != null ? ((ov - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
-
-      var scoresHtml = '';
-      if (pv != null && ov != null) {
-        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span> → <span class="post">Post \xB7 ' + ov + '</span>';
-      } else if (pv != null) {
-        scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span>';
-      } else if (ov != null) {
-        scoresHtml = '<span class="post">Post \xB7 ' + ov + '</span>';
+      var key = q.constructName || '__other__';
+      if (!groups[key]) {
+        groups[key] = {
+          name: q.constructName || null,
+          order: q.constructName ? q.constructOrder : Number.MAX_SAFE_INTEGER,
+          items: []
+        };
+        groupOrder.push(key);
       }
+      groups[key].items.push(q);
+    });
+    groupOrder.sort(function(a, b) {
+      var oa = groups[a].order != null ? groups[a].order : Number.MAX_SAFE_INTEGER;
+      var ob = groups[b].order != null ? groups[b].order : Number.MAX_SAFE_INTEGER;
+      return oa - ob;
+    });
+    var hasConstructHeaders = groupOrder.some(function(k) { return groups[k].name != null; });
 
-      var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
-      var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
-      if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
+    groupOrder.forEach(function(key) {
+      var g = groups[key];
+      if (hasConstructHeaders) {
+        var headerText = g.name || 'Other';
+        html += '<div class="construct-group-header">' + escHtml(headerText) + '</div>';
+      }
+      g.items.forEach(function(q) {
+        var pv = q.pre, ov = q.post;
+        var preWidth  = pv != null ? ((pv - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
+        var postWidth = ov != null ? ((ov - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
 
-      html +=
-        '<div class="construct">'
-        + '<div class="c-name"><span>' + escHtml(q.label) + '</span>'
-        + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
-        + '</div>'
-        + '<div class="' + trackClass + '">' + fillHtml + '</div>'
-        + scaleTicks
-        + '</div>';
+        var scoresHtml = '';
+        if (pv != null && ov != null) {
+          scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span> → <span class="post">Post \xB7 ' + ov + '</span>';
+        } else if (pv != null) {
+          scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span>';
+        } else if (ov != null) {
+          scoresHtml = '<span class="post">Post \xB7 ' + ov + '</span>';
+        }
+
+        var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
+        var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
+        if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
+
+        html +=
+          '<div class="construct">'
+          + '<div class="c-name"><span>' + escHtml(q.label) + '</span>'
+          + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
+          + '</div>'
+          + '<div class="' + trackClass + '">' + fillHtml + '</div>'
+          + scaleTicks
+          + '</div>';
+      });
     });
 
     ac.innerHTML = html;

@@ -940,15 +940,19 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
             SELECT
               arqr."assessmentResultId"  AS result_id,
               aq."question"              AS label,
-              aq."order",
-              arqr."intResponse"         AS score
+              aq."order"                 AS q_order,
+              arqr."intResponse"         AS score,
+              ac."name"                  AS construct_name,
+              ac."order"                 AS construct_order
             FROM "AssessmentResultQuestionResponse" arqr
             JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId"
               AND aq."deleted_at" = 0
+            LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
+              AND ac."deleted_at" = 0
             WHERE arqr."assessmentResultId" IN (${ph})
               AND arqr."deleted_at" = 0
               AND arqr."intResponse" IS NOT NULL
-            ORDER BY aq."order"
+            ORDER BY ac."order" ASC NULLS LAST, aq."order" ASC
           `, resultIds);
           const { rows: scaleRows } = await pool.query(`
             SELECT MIN(arqr."intResponse") AS scale_min,
@@ -969,7 +973,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
             for (const q of qRows) {
               const rid = q.result_id;
               if (!byId[rid]) byId[rid] = [];
-              byId[rid].push({ label: q.label, order: q.order, score: q.score });
+              byId[rid].push({
+                label: q.label,
+                order: q.q_order,
+                score: q.score,
+                constructName: q.construct_name,
+                constructOrder: q.construct_order,
+              });
             }
             if (assessments.pre  && byId[assessments.pre.arId]) {
               assessments.pre.questions = byId[assessments.pre.arId];

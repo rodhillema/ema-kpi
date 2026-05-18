@@ -570,9 +570,12 @@ thead tr th.c-chev{background:var(--green)!important}
           <div id="d-track-detail"></div>
         </div>
 
-        <!-- 3. Updates section removed — was sourcing from advocate-side
-             coordinator notes instead of mom-side contact logs / flagged
-             needs. Full rewire is P1. -->
+        <!-- 3. Updates — ConnectionLog (contact activity) + BenevolenceNeed (flagged needs)
+             + mom-linked CoordinatorNotes. Rewired in P1 to pull mom-side data. -->
+        <div class="d-card">
+          <div class="d-card-lbl">Updates</div>
+          <div id="d-updates"></div>
+        </div>
 
         <!-- 4. Contact -->
         <div class="d-card">
@@ -818,6 +821,7 @@ var SAMPLE_MOMS=[
 function dsa(s){if(!s)return 9999;return Math.floor((TODAY-new Date(s))/86400000);}
 function fmtS(s){if(!s)return'';return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
 function fmtL(s){if(!s)return'';return new Date(s).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});}
+function escHtml(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function sBadge(s){
   return'<span class="badge '+(s==="Active"?"b-active":"b-inactive")+'">'+s+'</span>';
@@ -1102,6 +1106,8 @@ function openDrawer(id){
   if(!Array.isArray(m.trackHistory))m.trackHistory=[];
   if(!Array.isArray(m.children))m.children=[];
   if(!Array.isArray(m.contactLog))m.contactLog=[];
+  if(!Array.isArray(m.connectionLogs))m.connectionLogs=[];
+  if(!Array.isArray(m.flaggedNeeds))m.flaggedNeeds=[];
   if(!m.latestCoordNote)m.latestCoordNote=null;
   document.getElementById("d-name").textContent=m.name;
   var ca=dsa(m.lastContactDate);
@@ -1192,7 +1198,52 @@ function openDrawer(id){
     tSec.style.display="none";
   }
 
-  // ── 3. UPDATES section removed (P0 #5). Full rewire to mom-side data is P1.
+  // ── 3. UPDATES — connection logs + flagged needs + mom-linked coordinator notes ──
+  var updHtml='';
+  var METHOD_LABELS={'Call':'Call','Video':'Video','SMS_Text':'Text'};
+
+  // Activity feed: ConnectionLog entries + mom-linked coordinator notes, merged newest-first
+  var actItems=[];
+  (m.connectionLogs||[]).forEach(function(cl){
+    actItems.push({date:cl.date,kind:'contact',method:cl.method,text:cl.summary,by:cl.createdBy});
+  });
+  (m.contactLog||[]).filter(function(e){return e.type==='Coordinator note';}).forEach(function(n){
+    actItems.push({date:n.date,kind:'note',method:null,text:n.note,by:null});
+  });
+  actItems.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  actItems=actItems.slice(0,5);
+
+  if(actItems.length){
+    actItems.forEach(function(item){
+      var typeLabel=item.kind==='note'?'Note':(METHOD_LABELS[item.method]||'Contact');
+      updHtml+='<div class="upd-entry">'
+        +'<div class="upd-header"><span class="upd-type">'+typeLabel+'</span><span class="upd-date">'+fmtS(item.date)+'</span></div>'
+        +(item.text?'<div class="upd-text">'+escHtml(item.text)+'</div>':'')
+        +(item.by?'<div class="upd-date" style="margin-top:3px;">'+escHtml(item.by)+'</div>':'')
+        +'</div>';
+    });
+  }else{
+    updHtml+='<div class="upd-empty">No contact activity on file.</div>';
+  }
+
+  // Flagged needs — open + fulfilled but not resolved
+  var openNeeds=(m.flaggedNeeds||[]).filter(function(n){return n.status!=='Resolved';});
+  if(openNeeds.length){
+    updHtml+='<div class="d-card-lbl" style="padding:10px 14px 2px;border-top:1px solid var(--border);margin-top:4px;">Flagged Needs</div>';
+    openNeeds.forEach(function(n){
+      var statusColor=n.status==='Fulfilled'?'var(--green)':'#8a4a00';
+      updHtml+='<div class="upd-entry">'
+        +'<div class="upd-header">'
+        +'<span class="upd-type">'+escHtml(n.needType)+'</span>'
+        +(n.urgent?'<span class="badge b-stalled">Urgent</span>':'')
+        +'<span class="upd-date" style="color:'+statusColor+';">'+n.status+'</span>'
+        +'</div>'
+        +(n.description?'<div class="upd-text">'+escHtml(n.description)+'</div>':'')
+        +'</div>';
+    });
+  }
+
+  document.getElementById("d-updates").innerHTML=updHtml;
 
   // ── 4. CONTACT ──
   document.getElementById("d-contact").innerHTML=

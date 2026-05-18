@@ -254,37 +254,33 @@ router.get('/', async (req, res) => {
     const sessionsResult = await pool.query(sessionsQuery, [momIds]);
     const heldByMom = Object.fromEntries(sessionsResult.rows.map((r) => [r.mom_id, r.held_sessions]));
 
-    // Contact log — last 5 entries per mom, blending Sessions and CoordinatorNotes.
-    // Sessions come from any pairing the mom has had.
-    // CoordinatorNotes come via the mom's advocate → coordinator_id / advocate_id match.
+    // Contact log — last 5 entries per mom: held/not-held sessions + mom-linked coordinator notes.
+    // CoordinatorNotes are joined directly on cn.mom_id (not via advocate).
     const contactLogQuery = `
       WITH combined AS (
         SELECT p."momId" AS mom_id,
           s."date_start" AS log_date,
           s."status"::text AS log_type,
-          NULL::text AS note_text,
-          'session' AS source_kind
+          NULL::text AS note_text
         FROM "Session" s
         JOIN "Pairing" p ON p."id" = s."pairing_id"
         WHERE p."momId" = ANY($1)
           AND s."deleted_at" = 0
         UNION ALL
-        SELECT p."momId" AS mom_id,
+        SELECT cn."mom_id",
           cn."created_at" AS log_date,
           'Coordinator note' AS log_type,
-          cn."description" AS note_text,
-          'note' AS source_kind
+          cn."description" AS note_text
         FROM "CoordinatorNote" cn
-        JOIN "Pairing" p ON p."advocateUserId" = cn."advocate_id"
-        WHERE p."momId" = ANY($1)
+        WHERE cn."mom_id" = ANY($1)
           AND cn."deleted_at" = 0
       ),
       ranked AS (
-        SELECT mom_id, log_date, log_type, note_text, source_kind,
+        SELECT mom_id, log_date, log_type, note_text,
           ROW_NUMBER() OVER (PARTITION BY mom_id ORDER BY log_date DESC) AS rn
         FROM combined
       )
-      SELECT mom_id, log_date, log_type, note_text, source_kind
+      SELECT mom_id, log_date, log_type, note_text
       FROM ranked
       WHERE rn <= 5
       ORDER BY mom_id, log_date DESC
@@ -297,6 +293,73 @@ router.get('/', async (req, res) => {
         date: r.log_date,
         type: r.log_type,
         note: r.note_text || null,
+      });
+    }
+
+    // Connection logs — last 5 per mom from ConnectionLog (mom's direct contact record).
+    const connectionLogsQuery = `
+      WITH ranked AS (
+        SELECT
+          cl."mom_id",
+          cl."date_created_c"     AS log_date,
+          cl."summary_c"          AS summary,
+          cl."contact_method_c"::text AS method,
+          cl."created_by_name"    AS created_by,
+          ROW_NUMBER() OVER (PARTITION BY cl."mom_id" ORDER BY cl."date_created_c" DESC) AS rn
+        FROM "ConnectionLog" cl
+        WHERE cl."mom_id" = ANY($1)
+          AND cl."deleted_at" = 0
+      )
+      SELECT mom_id, log_date, summary, method, created_by
+      FROM ranked
+      WHERE rn <= 5
+      ORDER BY mom_id, log_date DESC
+    `;
+    const connectionLogsResult = await pool.query(connectionLogsQuery, [momIds]);
+    const connectionLogsByMom = {};
+    for (const r of connectionLogsResult.rows) {
+      if (!connectionLogsByMom[r.mom_id]) connectionLogsByMom[r.mom_id] = [];
+      connectionLogsByMom[r.mom_id].push({
+        date:      r.log_date,
+        summary:   r.summary || null,
+        method:    r.method  || null,
+        createdBy: r.created_by || null,
+      });
+    }
+
+    // Flagged needs — all non-deleted BenevolenceNeed records per mom.
+    const flaggedNeedsQuery = `
+      SELECT
+        bn."momId"               AS mom_id,
+        bn."id",
+        bn."type_c"::text        AS need_type,
+        bn."name",
+        bn."description",
+        bn."is_urgent_c"         AS urgent,
+        bn."did_address_need_c"  AS addressed,
+        bn."provided_date_c"     AS provided_date,
+        bn."resolved_date_c"     AS resolved_date,
+        bn."created_at"
+      FROM "BenevolenceNeed" bn
+      WHERE bn."momId" = ANY($1)
+        AND bn."deleted_at" = 0
+      ORDER BY bn."momId", bn."created_at" DESC
+    `;
+    const flaggedNeedsResult = await pool.query(flaggedNeedsQuery, [momIds]);
+    const flaggedNeedsByMom = {};
+    for (const r of flaggedNeedsResult.rows) {
+      if (!flaggedNeedsByMom[r.mom_id]) flaggedNeedsByMom[r.mom_id] = [];
+      let status = 'Open';
+      if (r.resolved_date) status = 'Resolved';
+      else if (r.addressed)  status = 'Fulfilled';
+      flaggedNeedsByMom[r.mom_id].push({
+        id:          r.id,
+        needType:    r.need_type || r.name || 'Need',
+        description: r.description || null,
+        urgent:      !!r.urgent,
+        status,
+        requestedDate: r.created_at || null,
+        resolvedDate:  r.resolved_date || null,
       });
     }
 
@@ -430,8 +493,10 @@ router.get('/', async (req, res) => {
         lastContactDate: r.lastSessionDate || null,
         lastFwaDate: r.lastFwaDate || null,
         inProgressTrack,
-        trackHistory: trackHistoryByMom[r.id] || [],
-        contactLog: contactLogByMom[r.id] || [],
+        trackHistory:    trackHistoryByMom[r.id]    || [],
+        contactLog:      contactLogByMom[r.id]      || [],
+        connectionLogs:  connectionLogsByMom[r.id]  || [],
+        flaggedNeeds:    flaggedNeedsByMom[r.id]    || [],
       };
     });
 

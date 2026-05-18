@@ -2136,10 +2136,6 @@
        <div class="ip-block-body">Each referral counted once by its current outcome status.</div>
       </div>
       <div class="ip-block">
-       <div class="ip-block-label">Did Not Initiate</div>
-       <div class="ip-block-body">Moms who reached Engaged but never started a first track session are split out separately as <strong>Did Not Initiate</strong>. This back-traces the Track Completions DNI cohort into referral-stage outcomes for consistent accounting across the tab.</div>
-      </div>
-      <div class="ip-block">
        <div class="ip-block-label">Excluded</div>
        <div class="ip-block-body">Duplicate Mom records are excluded — applied uniformly across every card on this tab.</div>
       </div>
@@ -2148,14 +2144,10 @@
    </div>
    <h3>Referral outcomes</h3>
    <div class="panel-n"><strong data-hydrate="ref-total-2">38</strong> referrals total</div>
-   <!-- Brand-only palette: green (good) → red-orange (DNI) → yellow (pending) → red-dark (DNE).
-        No off-palette grey/sage. -->
+   <!-- Brand-only palette: green (engaged) → yellow (pending) → red-dark (DNE). -->
    <div class="prop-bar" id="refOutcomeBar" style="margin-top:8px;margin-bottom:14px;">
     <div data-bucket="engaged" style="background:#123939;flex:76;"
          data-label="Engaged in Program" data-pct="76" data-n="29" data-color="#123939" data-unit="referrals"
-         onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
-    <div data-bucket="dni" style="background:#ec482f;flex:0;"
-         data-label="Did Not Initiate" data-pct="0" data-n="0" data-color="#ec482f" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
     <div data-bucket="pending" style="background:#f2a136;flex:16;"
          data-label="Still Pending" data-pct="16" data-n="6" data-color="#f2a136" data-unit="referrals"
@@ -2164,9 +2156,8 @@
          data-label="Did Not Engage" data-pct="8" data-n="3" data-color="#c23018" data-unit="referrals"
          onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"></div>
    </div>
-   <div class="pb-legend" style="grid-template-columns:repeat(4, 1fr);">
+   <div class="pb-legend" style="grid-template-columns:repeat(3, 1fr);">
     <div class="pbl-row"><div class="pbl-dot" style="background:#123939;"></div><span class="pbl-num"><span data-hydrate="ref-engaged">29</span></span> <span class="pbl-label">Engaged in Program</span></div>
-    <div class="pbl-row"><div class="pbl-dot" style="background:#ec482f;"></div><span class="pbl-num"><span data-hydrate="ref-dni">0</span></span> <span class="pbl-label">Did Not Initiate</span></div>
     <div class="pbl-row"><div class="pbl-dot" style="background:#f2a136;"></div><span class="pbl-num"><span data-hydrate="ref-pending">6</span></span> <span class="pbl-label">Still Pending</span></div>
     <div class="pbl-row"><div class="pbl-dot" style="background:#c23018;"></div><span class="pbl-num"><span data-hydrate="ref-didnotengage">3</span></span> <span class="pbl-label">Did Not Engage</span></div>
    </div>
@@ -3852,22 +3843,15 @@
     var el = tabAff.querySelector('[data-hydrate="' + key + '"]');
     if (el && val !== null && val !== undefined) el.textContent = val;
    };
-   // Did Not Initiate (DNI): moms who reached Engaged but never started a track.
-   // Backend exposes per-source did_not_initiate; aggregate here.
-   var totalDNI = (data.referral_sources || []).reduce(function(s, r) {
-     return s + (r.did_not_initiate || 0);
-   }, 0);
-   // Engaged-in-Program is split into "Engaged (initiated)" and "DNI" so they
-   // sum to the original engaged count without double-counting. Conversion
-   // rate denominator stays Engaged + DidNotEngage (resolved); DNI is part of
-   // engaged numerator since they did engage at intake.
-   var engagedInitiated = Math.max(0, totalIntakes - totalDNI);
+   // Referral Outcomes card uses three buckets: Engaged / Pending / Did Not Engage.
+   // DNI (moms who reached Engaged but never started a track) rolls UP into
+   // Engaged in Program here — they did engage at intake. Track Completions has
+   // its own DNI accounting on a different tab.
    var totalResolved = totalIntakes + totalDidNotEngage;
    var convRate = totalResolved > 0 ? Math.round(totalIntakes / totalResolved * 100) : 0;
    setH2('ref-total',         fmt(totalReferrals));
    setH2('ref-total-2',       fmt(totalReferrals));
-   setH2('ref-engaged',       fmt(engagedInitiated));
-   setH2('ref-dni',           fmt(totalDNI));
+   setH2('ref-engaged',       fmt(totalIntakes));
    setH2('ref-convrate',      convRate + '%');
    setH2('ref-convrate-num',  totalIntakes);
    setH2('ref-convrate-den',  totalResolved);
@@ -3879,8 +3863,7 @@
    if (bar && totalReferrals > 0) {
     var pct = function(n) { return Math.round((n / totalReferrals) * 100); };
     var segs = [
-      { sel: '[data-bucket="engaged"]', n: engagedInitiated },
-      { sel: '[data-bucket="dni"]',     n: totalDNI },
+      { sel: '[data-bucket="engaged"]', n: totalIntakes },
       { sel: '[data-bucket="pending"]', n: totalPending },
       { sel: '[data-bucket="dne"]',     n: totalDidNotEngage }
     ];

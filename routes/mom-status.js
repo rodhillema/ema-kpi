@@ -85,7 +85,8 @@ router.get('/', async (req, res) => {
           p."id" AS pairing_id,
           p."trackId" AS track_id,
           p."created_at" AS pairing_started_at,
-          t."title" AS track_title
+          t."title" AS track_title,
+          p."advocacy_type"::text AS pairing_type
         FROM "Pairing" p
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         WHERE p."deleted_at" = 0
@@ -146,6 +147,7 @@ router.get('/', async (req, res) => {
         ap.pairing_id AS "activePairingId",
         ap.track_title AS "activeTrackTitle",
         ap.pairing_started_at AS "pairingStartedAt",
+        ap.pairing_type AS "activePairingType",
         ls.session_date AS "lastSessionDate",
         ls.session_status AS "lastSessionStatus",
         lcs.curriculum_date AS "lastCurriculumDate",
@@ -338,6 +340,7 @@ router.get('/', async (req, res) => {
         inProgressTrack = {
           name: r.activeTrackTitle,
           group,
+          pairingType: r.activePairingType === 'group' ? 'group' : '1:1',
           sessionsDone,
           sessionsTotal,
           stalled,

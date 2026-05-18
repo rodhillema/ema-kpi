@@ -3808,19 +3808,25 @@ function renderDateScale(start, end, isActive) {
 
 // ── Curriculum detail + assessment panel ──────────────────────────────────────
 function renderDetail(pairing, sessions, assessments) {
-  var trackSessions = sessions.filter(function(s){ return s.type === 'Track_Session'; });
-  var heldTrack     = trackSessions.filter(function(s){ return s.status === 'Held'; });
-  var heldSupport   = sessions.filter(function(s){ return s.type !== 'Track_Session' && s.status === 'Held'; });
-  var req           = requiredSessions(pairing.trackTitle);
-  var minReq        = minRequired(pairing.trackTitle);
+  var trackSessions            = sessions.filter(function(s){ return s.type === 'Track_Session'; });
+  var templatedTrackSessions   = trackSessions.filter(function(s){ return !!s.lessonTemplateId; });
+  var untemplatedTrackSessions = trackSessions.filter(function(s){ return !s.lessonTemplateId; });
+  var heldTrack                = templatedTrackSessions.filter(function(s){ return s.status === 'Held'; });
+  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && s.status === 'Held'; });
+  var req                      = requiredSessions(pairing.trackTitle);
+  var minReq                   = minRequired(pairing.trackTitle);
+  // Distinct held lesson template IDs — matches what Trellis counts as completed lessons
+  var heldTemplateIdSet = {};
+  heldTrack.forEach(function(s){ heldTemplateIdSet[s.lessonTemplateId] = true; });
+  var heldDistinctCount = Object.keys(heldTemplateIdSet).length;
 
   // Count label + threshold pill
   var countLbl   = document.getElementById('curr-count-label');
   var threshPill = document.getElementById('curr-threshold');
   if (req) {
-    countLbl.textContent = heldTrack.length + ' / ' + req + ' Curriculum Sessions Held';
+    countLbl.textContent = heldDistinctCount + ' / ' + req + ' Curriculum Sessions Held';
     threshPill.style.display = '';
-    if (heldTrack.length >= minReq) {
+    if (heldDistinctCount >= minReq) {
       threshPill.className   = 'track-threshold-pill above';
       threshPill.textContent = 'Meets completion standard';
     } else {
@@ -3828,7 +3834,7 @@ function renderDetail(pairing, sessions, assessments) {
       threshPill.textContent = 'Below completion standard';
     }
   } else {
-    countLbl.textContent     = heldTrack.length + ' sessions held';
+    countLbl.textContent     = heldDistinctCount + ' sessions held';
     threshPill.style.display = 'none';
   }
 
@@ -3880,44 +3886,38 @@ function renderDetail(pairing, sessions, assessments) {
   }
   seq.appendChild(preEl);
 
-  // Group track sessions by lessonTemplateId so repeats of the same lesson collapse
+  // Group templated track sessions by lessonTemplateId so repeats of the same lesson collapse.
+  // Untemplated Track_Sessions are excluded here and rendered separately (greyed-out row).
   var lessonGroups = (function() {
     var groups = [];
     var keyMap = {};
-    trackSessions.forEach(function(s) {
+    templatedTrackSessions.forEach(function(s) {
       var key = s.lessonTemplateId;
-      if (key && keyMap[key]) {
+      if (keyMap[key]) {
         keyMap[key].sessions.push(s);
       } else {
         var g = {
-          key:          key || null,
+          key:          key,
           lessonNumber: groups.length + 1,
           title:        (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\|\s*/i, '').trim() : null) || trackTitles[groups.length] || null,
           sessions:     [s]
         };
         groups.push(g);
-        if (key) keyMap[key] = g;
+        keyMap[key] = g;
       }
     });
     return groups;
   })();
 
-  // Find the last group with a Held session (for inprog detection)
-  var lastHeldGroupIdx = -1;
-  lessonGroups.forEach(function(g, i) {
-    if (g.sessions.some(function(s){ return s.status === 'Held'; })) lastHeldGroupIdx = i;
-  });
-
   lessonGroups.forEach(function(g, idx) {
     var heldSess  = g.sessions.filter(function(s){ return s.status === 'Held'; });
     var allMissed = g.sessions.every(function(s){ return s.status === 'NotHeld'; });
-    var isInProg  = (idx === lastHeldGroupIdx && pairing.status === 'paired');
 
     var step = document.createElement('div');
-    if (allMissed) {
-      step.className = 'seq-step missed';
-    } else if (heldSess.length && !isInProg) {
+    if (heldSess.length > 0) {
       step.className = 'seq-step done';
+    } else if (allMissed) {
+      step.className = 'seq-step missed';
     } else {
       step.className = 'seq-step inprog';
     }
@@ -3947,6 +3947,18 @@ function renderDetail(pairing, sessions, assessments) {
         + '<div class="seq-content"><div class="seq-name">' + nsTitle + '</div></div>';
       seq.appendChild(step);
     }
+  }
+
+  // Untemplated Track_Sessions (no lesson selected in Trellis) — greyed-out row, not counted in curriculum
+  var heldUntemplated = untemplatedTrackSessions.filter(function(s){ return s.status === 'Held'; });
+  if (untemplatedTrackSessions.length > 0) {
+    var utRow = document.createElement('div');
+    utRow.className = 'seq-step support-summary';
+    utRow.dataset.tip = heldUntemplated.length + ' additional track session' + (heldUntemplated.length !== 1 ? 's' : '') + ' held — no lesson template selected in Trellis, not counted toward curriculum';
+    utRow.innerHTML =
+      '<div class="seq-dot"><span class="si si-s">S</span></div>'
+      + '<div class="seq-content"><div class="seq-name">Additional Track Sessions · ' + heldUntemplated.length + ' held</div></div>';
+    seq.appendChild(utRow);
   }
 
   // Support sessions summary row

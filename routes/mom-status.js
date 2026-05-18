@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
     // Main query — one row per mom with core profile + coordinator + latest FWA + current pairing.
     // DISTINCT ON prevents duplicate rows when a mom has multiple pairings / coordinator assignments.
     const mainQuery = `
-      coord_candidates AS (
+      WITH coord_candidates AS (
         -- Per-mom coordinator resolution. The advocate link is the documented
         -- source of truth, but it must follow the pairing's delivery mode:
         --   · 1:1 pairing  → advocate is Pairing.advocateUserId

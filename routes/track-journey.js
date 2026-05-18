@@ -501,6 +501,29 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
 
     // Assessment marks — pre + post for EP/RR (AssessmentResult) and NPP (AAPIScore).
     // Each side includes name, date, type, and a total_score when computable.
+    //
+    // Track scoping (P1 fix): AssessmentResult has NO pairing_id column, so a
+    // mom with multi-track history would otherwise see assessments from the
+    // wrong track. Two filters applied:
+    //   1. Assessment.name matches this pairing's track type (EP / RR).
+    //   2. completedAt falls within this pairing's window (with grace before
+    //      start_date to capture pre-assessments completed at intake).
+    // NPP pairings skip AssessmentResult entirely (they use AAPIScore below).
+    const trackTitleLc = (p.trackTitle || '').toLowerCase();
+    let trackGroup = null;
+    if (/nurturing|crianza con/.test(trackTitleLc))            trackGroup = 'NPP';
+    else if (/empowered parenting|crianza empoderada/.test(trackTitleLc)) trackGroup = 'EP';
+    else if (/resilience|hoja de ruta/.test(trackTitleLc))     trackGroup = 'RR';
+
+    let assessmentNameFilter = '';
+    if (trackGroup === 'EP') {
+      assessmentNameFilter = `AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%')`;
+    } else if (trackGroup === 'RR') {
+      assessmentNameFilter = `AND (a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%')`;
+    } else if (trackGroup === 'NPP') {
+      assessmentNameFilter = `AND FALSE`; // NPP uses AAPIScore, not AssessmentResult
+    }
+
     let assessments = { pre: null, post: null };
     try {
       const { rows: aRows } = await pool.query(`
@@ -521,11 +544,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
               AND arqr."intResponse" IS NOT NULL) AS "questions_answered"
           FROM "AssessmentResult" ar
           JOIN "Assessment" a ON a."id" = ar."assessmentId"
-         WHERE ar."momId" = (
-               SELECT "momId" FROM "Pairing"
-                WHERE "id" = $1 AND "deleted_at" = 0)
+          JOIN "Pairing" pr ON pr."id" = $1 AND pr."deleted_at" = 0
+         WHERE ar."momId" = pr."momId"
            AND a."name" NOT ILIKE '%Legacy%'
            AND ar."deleted_at" = 0
+           ${assessmentNameFilter}
+           AND ar."completedAt" >= pr."created_at" - INTERVAL '30 days'
+           AND (pr."completed_on" IS NULL OR ar."completedAt" <= pr."completed_on" + INTERVAL '60 days')
          ORDER BY ar."completedAt"
       `, [pairingId]);
       for (const r of aRows) {
@@ -598,25 +623,28 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         }
       }
 
-      // NPP — AAPIScore (5 constructs A–E, pre+post on same row). Only fill
-      // in if the EP/RR query didn't find anything (NPP tracks won't have
-      // AssessmentResult rows for their curriculum).
-      if (!assessments.pre && !assessments.post) {
+      // NPP — AAPIScore (5 constructs A–E, pre+post on same row). Only run
+      // for NPP pairings, and scope temporally to this pairing's window so a
+      // mom with multiple NPP enrollments doesn't see the wrong cycle's
+      // scores. Match report-data.js semantics: AAPIScore.created_at falls
+      // within this pairing's life span.
+      if (trackGroup === 'NPP' && !assessments.pre && !assessments.post) {
         const { rows: aapiRows } = await pool.query(`
-          SELECT "created_at" AS "date",
-                 "constructAPreAssessment",  "constructBPreAssessment",
-                 "constructCPreAssessment",  "constructDPreAssessment",
-                 "constructEPreAssessment",
-                 "constructAPostAssessment", "constructBPostAssessment",
-                 "constructCPostAssessment", "constructDPostAssessment",
-                 "constructEPostAssessment"
-            FROM "AAPIScore"
-           WHERE "mom_id" = (
-                 SELECT "momId" FROM "Pairing"
-                  WHERE "id" = $1 AND "deleted_at" = 0)
-             AND "deleted_at" = 0
-             AND "legacy_ps_id" IS NULL
-           ORDER BY "created_at"
+          SELECT s."created_at" AS "date",
+                 s."constructAPreAssessment",  s."constructBPreAssessment",
+                 s."constructCPreAssessment",  s."constructDPreAssessment",
+                 s."constructEPreAssessment",
+                 s."constructAPostAssessment", s."constructBPostAssessment",
+                 s."constructCPostAssessment", s."constructDPostAssessment",
+                 s."constructEPostAssessment"
+            FROM "AAPIScore" s
+            JOIN "Pairing" pr ON pr."id" = $1 AND pr."deleted_at" = 0
+           WHERE s."mom_id" = pr."momId"
+             AND s."deleted_at" = 0
+             AND s."legacy_ps_id" IS NULL
+             AND s."created_at" >= pr."created_at" - INTERVAL '30 days'
+             AND (pr."completed_on" IS NULL OR s."created_at" <= pr."completed_on" + INTERVAL '60 days')
+           ORDER BY s."created_at" DESC
            LIMIT 1
         `, [pairingId]);
         if (aapiRows.length) {

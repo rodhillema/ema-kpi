@@ -460,6 +460,110 @@ router.get('/debug/coordinator', requireAuth, requireRole, async (req, res) => {
       out.coordinatorNotesByAdvocate = cnByAdv;
     }
 
+    // 7. Advocate names (so we can read who's advocating)
+    if (advIds.length) {
+      const { rows: advRows } = await pool.query(`
+        SELECT "id", "firstName", "lastName", "username"
+          FROM "User" WHERE "id" = ANY($1::text[])
+      `, [advIds]);
+      out.advocateUsers = advRows;
+    }
+
+    // 8. Group advocate IDs from any group pairings
+    const groupIds = [...new Set(pairings.map(p => p.advocacyGroupId).filter(Boolean))];
+    if (groupIds.length) {
+      const { rows: gRows } = await pool.query(`
+        SELECT ag."id", ag."advocateId",
+               u."firstName", u."lastName", u."username"
+          FROM "AdvocacyGroup" ag
+          LEFT JOIN "User" u ON u."id" = ag."advocateId"
+         WHERE ag."id" = ANY($1::text[])
+      `, [groupIds]);
+      out.advocacyGroups = gRows;
+    }
+
+    // 9. _AdvocateToCoordinator mappings — for every advocate (1:1 + group)
+    const allAdvIds = [
+      ...advIds,
+      ...(out.advocacyGroups || []).map(g => g.advocateId).filter(Boolean),
+    ];
+    if (allAdvIds.length) {
+      const { rows: atcRows } = await pool.query(`
+        SELECT atc."A" AS advocate_id, atc."B" AS coordinator_id,
+               adv."firstName" AS adv_first, adv."lastName" AS adv_last,
+               co."firstName" AS coord_first, co."lastName" AS coord_last
+          FROM "_AdvocateToCoordinator" atc
+          LEFT JOIN "User" adv ON adv."id" = atc."A"
+          LEFT JOIN "User" co  ON co."id"  = atc."B"
+         WHERE atc."A" = ANY($1::text[])
+      `, [allAdvIds]);
+      out.advocateToCoordinatorMappings = atcRows;
+    }
+
+    // 10. Run the EXACT priority chain we use in /:pairingId and show every candidate
+    //     row (priority, coordinator) so we can see which level wins.
+    if (pairings.length) {
+      // Use the most recent pairing as the "this_pairing" proxy
+      const pairingId = pairings[0].id;
+      const { rows: candRows } = await pool.query(`
+        WITH this_pairing AS (
+          SELECT p."id", p."momId"
+          FROM "Pairing" p
+          WHERE p."id" = $1 AND p."deleted_at" = 0
+        ),
+        coord_candidates AS (
+          SELECT p."momId" AS mom_id, atc."B" AS coordinator_id,
+                 u."firstName" AS coord_first, u."lastName" AS coord_last,
+                 1 AS priority, p."created_at" AS sort_date
+          FROM "Pairing" p
+          JOIN "_AdvocateToCoordinator" atc ON atc."A" = p."advocateUserId"
+          JOIN "User" u ON u."id" = atc."B"
+          WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."advocacy_type"::text <> 'group'
+          UNION ALL
+          SELECT p."momId", atc."B", u."firstName", u."lastName", 2, p."created_at"
+          FROM "Pairing" p
+          JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+          JOIN "_AdvocateToCoordinator" atc ON atc."A" = ag."advocateId"
+          JOIN "User" u ON u."id" = atc."B"
+          WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+            AND p."advocacy_type"::text = 'group'
+          UNION ALL
+          SELECT p."momId", atc."B", u."firstName", u."lastName", 3, p."created_at"
+          FROM "Pairing" p
+          JOIN "_AdvocateToCoordinator" atc ON atc."A" = p."advocateUserId"
+          JOIN "User" u ON u."id" = atc."B"
+          WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+            AND p."deleted_at" = 0
+            AND p."status"::text <> 'paired'
+            AND p."advocacy_type"::text <> 'group'
+          UNION ALL
+          SELECT p."momId", atc."B", u."firstName", u."lastName", 4, p."created_at"
+          FROM "Pairing" p
+          JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+          JOIN "_AdvocateToCoordinator" atc ON atc."A" = ag."advocateId"
+          JOIN "User" u ON u."id" = atc."B"
+          WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
+            AND p."deleted_at" = 0
+            AND p."status"::text <> 'paired'
+            AND p."advocacy_type"::text = 'group'
+          UNION ALL
+          SELECT cn."mom_id", cn."coordinator_id", u."firstName", u."lastName", 5, cn."created_at"
+          FROM "CoordinatorNote" cn
+          JOIN "User" u ON u."id" = cn."coordinator_id"
+          WHERE cn."mom_id" IN (SELECT "momId" FROM this_pairing)
+            AND cn."deleted_at" = 0
+        )
+        SELECT * FROM coord_candidates ORDER BY priority ASC, sort_date DESC NULLS LAST
+      `, [pairingId]);
+      out.priorityChainCandidates = candRows;
+      out.priorityChainPairingProbed = pairingId;
+    }
+
     res.json(out);
   } catch (err) {
     console.error('[track-journey] /debug/coordinator error:', err.message);

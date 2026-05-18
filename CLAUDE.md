@@ -272,7 +272,7 @@ Pairing.incomplete_reason_sub_status: 'achieved_outcomes', 'extended_wait', 'no_
 - 1:1 advocates: `Pairing.advocateUserId` — not coordinator/staff user ID
 - Group facilitators: `AdvocacyGroup.advocateId` — separate table, `state` enum: active/completed/deleted/planned
 - Union both for total active advocate count
-- `_AdvocateToCoordinator` join table: `A` = advocate user ID, `B` = coordinator user ID
+- `_AdvocateToCoordinator` join table: **`A` = coordinator user ID, `B` = advocate user ID** (reversed from the standard Prisma `_FooToBar` ordering — confirmed via DB probe April 2026). Trellis's "Coordinator (-N slots available)" assignment widget reads from this table; it is the source of truth for current advocate→coordinator assignment. CoordinatorNote rows are history (who wrote about whom) and are NOT authoritative assignment.
 
 ### Advocate Sub-Status Correction (deriveSub)
 - `Active + Paired` with no active pairing AND no active group → corrected to `Waiting_To_Be_Paired` (mismatch flagged)

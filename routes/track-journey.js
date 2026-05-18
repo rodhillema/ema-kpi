@@ -93,6 +93,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
     const { rows } = await pool.query(`
       SELECT
         p."id"          AS "pairingId",
+        m."id"          AS "momId",
         m."first_name" || ' ' || m."last_name" AS "momName",
         t."title"       AS "trackTitle",
         p."status"::text AS "status",
@@ -152,9 +153,12 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
       }
       return {
         pairingId:  p.pairingId,
+        momId:      p.momId,
         momName:    p.momName,
         trackTitle: p.trackTitle,
         status:     p.status,
+        startDate:  p.startDate,
+        endDate:    p.endDate,
         stall,
       };
     });

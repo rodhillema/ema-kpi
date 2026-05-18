@@ -570,18 +570,9 @@ thead tr th.c-chev{background:var(--green)!important}
           <div id="d-track-detail"></div>
         </div>
 
-        <!-- 3. Updates: coordinator note + contact log merged -->
-        <div class="d-card">
-          <div class="d-card-lbl" style="display:flex;align-items:center;justify-content:space-between;">
-            Updates
-            <span style="position:relative;display:inline-block;" class="upd-i-wrap">
-              <span style="font-size:10px;color:var(--mid);cursor:help;font-family:'Oswald',sans-serif;font-weight:600;width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;opacity:.5;line-height:1;text-transform:none;">i</span>
-              <span style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:1000;width:210px;background:var(--white);border:1px solid var(--border);border-radius:7px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.55;white-space:normal;font-weight:400;text-transform:none;letter-spacing:0;" class="upd-i-pop">Includes the most recent coordinator note and contact log entries for this mom, pulled from Trellis.</span>
-            </span>
-          </div>
-          <div id="d-updates"></div>
-
-        </div>
+        <!-- 3. Updates section removed — was sourcing from advocate-side
+             coordinator notes instead of mom-side contact logs / flagged
+             needs. Full rewire is P1. -->
 
         <!-- 4. Contact -->
         <div class="d-card">
@@ -1201,25 +1192,7 @@ function openDrawer(id){
     tSec.style.display="none";
   }
 
-  // ── 3. UPDATES: coordinator note + contact log merged ──
-  var updHtml="";
-  if(m.latestCoordNote&&m.latestCoordNote.text){
-    updHtml+='<div class="upd-note">'
-      +'<div class="upd-header"><span class="upd-date">'+fmtL(m.latestCoordNote.date)+(m.latestCoordNote.author?' · '+m.latestCoordNote.author:'')+'</span><span class="upd-type">Coordinator note</span></div>'
-      +'<div class="upd-note-text">'+m.latestCoordNote.text+'</div>'
-      +'</div>';
-  }
-  if(m.contactLog&&m.contactLog.length){
-    updHtml+=m.contactLog.map(function(e){
-      return'<div class="upd-entry">'
-        +'<div class="upd-header"><span class="upd-date">'+fmtL(e.date)+(e.author?' · '+e.author:'')+'</span><span class="upd-type">'+e.type+'</span></div>'
-        +'<div class="upd-text">'+e.note+'</div>'
-        +'</div>';
-    }).join("");
-  }else if(!m.latestCoordNote||(m.latestCoordNote&&!m.latestCoordNote.text)){
-    updHtml='<div class="upd-empty">No updates on file.</div>';
-  }
-  document.getElementById("d-updates").innerHTML=updHtml;
+  // ── 3. UPDATES section removed (P0 #5). Full rewire to mom-side data is P1.
 
   // ── 4. CONTACT ──
   document.getElementById("d-contact").innerHTML=

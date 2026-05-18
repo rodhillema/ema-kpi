@@ -587,17 +587,26 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     }
 
     // Pairing header + coordinator resolution for THIS pairing's mom.
-    // Source of truth: Trellis's _AdvocateToCoordinator join table
-    // (A = advocate user id, B = coordinator user id) — the same backing
-    // table that powers Trellis's "Coordinator (-N slots available)"
-    // assignment widget. Fall back to CoordinatorNote (history of who
-    // wrote about the mom/advocate) only if no current assignment exists.
+    // Source of truth: Trellis's _AdvocateToCoordinator join table — the
+    // same backing table that powers Trellis's "Coordinator (-N slots
+    // available)" assignment widget.
+    //
+    // IMPORTANT: in this DB the column convention is **A = coordinator
+    // user id, B = advocate user id** — the opposite of the standard
+    // Prisma `_AdvocateToCoordinator` ordering. Confirmed by diagnostic
+    // probe: for advocate Sheila Lamarre (paired with Elbony Ingram),
+    // her row has B=Sheila and A=Babie-Marie Henriquez (the actual
+    // coordinator shown in Trellis). Join on B=advocate and select A
+    // as the coordinator.
+    //
+    // Fall back to CoordinatorNote (history of who wrote about the
+    // mom/advocate) only if no current assignment exists.
     //
     // Priority chain:
-    //   1  active 1:1 pairing  → _AdvocateToCoordinator.A = p.advocateUserId
-    //   2  active group pairing → _AdvocateToCoordinator.A = AdvocacyGroup.advocateId
-    //   3  completed 1:1 pairing → _AdvocateToCoordinator.A = p.advocateUserId
-    //   4  completed group pairing → _AdvocateToCoordinator.A = AdvocacyGroup.advocateId
+    //   1  active 1:1 pairing  → _AdvocateToCoordinator.B = p.advocateUserId
+    //   2  active group pairing → _AdvocateToCoordinator.B = AdvocacyGroup.advocateId
+    //   3  completed 1:1 pairing → _AdvocateToCoordinator.B = p.advocateUserId
+    //   4  completed group pairing → _AdvocateToCoordinator.B = AdvocacyGroup.advocateId
     //   5  direct mom-linked CoordinatorNote (cn.mom_id = mom.id)
     //   6  active 1:1 pairing  → CN via advocate
     //   7  active group pairing → CN via facilitator
@@ -612,47 +621,47 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         WHERE p."id" = $1 AND p."deleted_at" = 0
       ),
       coord_candidates AS (
-        SELECT p."momId" AS mom_id, atc."B" AS coordinator_id,
+        SELECT p."momId" AS mom_id, atc."A" AS coordinator_id,
                u."firstName" AS coord_first, u."lastName" AS coord_last,
                1 AS priority, p."created_at" AS sort_date
         FROM "Pairing" p
-        JOIN "_AdvocateToCoordinator" atc ON atc."A" = p."advocateUserId"
-        JOIN "User" u ON u."id" = atc."B"
+        JOIN "_AdvocateToCoordinator" atc ON atc."B" = p."advocateUserId"
+        JOIN "User" u ON u."id" = atc."A"
         WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
           AND p."deleted_at" = 0
           AND p."status"::text = 'paired'
           AND p."advocacy_type"::text <> 'group'
         UNION ALL
-        SELECT p."momId", atc."B",
+        SELECT p."momId", atc."A",
                u."firstName", u."lastName",
                2, p."created_at"
         FROM "Pairing" p
         JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
-        JOIN "_AdvocateToCoordinator" atc ON atc."A" = ag."advocateId"
-        JOIN "User" u ON u."id" = atc."B"
+        JOIN "_AdvocateToCoordinator" atc ON atc."B" = ag."advocateId"
+        JOIN "User" u ON u."id" = atc."A"
         WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
           AND p."deleted_at" = 0
           AND p."status"::text = 'paired'
           AND p."advocacy_type"::text = 'group'
         UNION ALL
-        SELECT p."momId", atc."B",
+        SELECT p."momId", atc."A",
                u."firstName", u."lastName",
                3, p."created_at"
         FROM "Pairing" p
-        JOIN "_AdvocateToCoordinator" atc ON atc."A" = p."advocateUserId"
-        JOIN "User" u ON u."id" = atc."B"
+        JOIN "_AdvocateToCoordinator" atc ON atc."B" = p."advocateUserId"
+        JOIN "User" u ON u."id" = atc."A"
         WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
           AND p."deleted_at" = 0
           AND p."status"::text <> 'paired'
           AND p."advocacy_type"::text <> 'group'
         UNION ALL
-        SELECT p."momId", atc."B",
+        SELECT p."momId", atc."A",
                u."firstName", u."lastName",
                4, p."created_at"
         FROM "Pairing" p
         JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
-        JOIN "_AdvocateToCoordinator" atc ON atc."A" = ag."advocateId"
-        JOIN "User" u ON u."id" = atc."B"
+        JOIN "_AdvocateToCoordinator" atc ON atc."B" = ag."advocateId"
+        JOIN "User" u ON u."id" = atc."A"
         WHERE p."momId" IN (SELECT "momId" FROM this_pairing)
           AND p."deleted_at" = 0
           AND p."status"::text <> 'paired'

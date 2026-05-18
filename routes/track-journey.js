@@ -178,7 +178,14 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
     if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
 
-    const tables = ['ConnectionLog', 'ServiceReferral'];
+    const tables = [
+      'ConnectionLog',
+      'ServiceReferral',
+      'AssessmentResult',
+      'AssessmentResultQuestionResponse',
+      'AssessmentQuestion',
+      'Assessment',
+    ];
     const out = {};
     for (const tbl of tables) {
       try {
@@ -198,6 +205,42 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       } catch (e) {
         out[tbl] = { exists: false, error: e.message };
       }
+    }
+
+    // Probe the EP/RR question join specifically — counts and one real sample row
+    try {
+      const totalArqr = await pool.query(`
+        SELECT COUNT(*)::int AS c
+          FROM "AssessmentResultQuestionResponse"
+         WHERE "deleted_at" = 0 AND "intResponse" IS NOT NULL
+      `);
+      const joinedArqr = await pool.query(`
+        SELECT COUNT(*)::int AS c
+          FROM "AssessmentResultQuestionResponse" arqr
+          JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
+         WHERE arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL
+      `);
+      const sampleEpRr = await pool.query(`
+        SELECT ar."id" AS ar_id, ar."type"::text AS ar_type, a."name" AS a_name,
+               arqr."id" AS arqr_id, arqr."questionId", arqr."intResponse",
+               aq."id" AS aq_id, aq."label" AS aq_label, aq."order" AS aq_order
+          FROM "AssessmentResult" ar
+          JOIN "Assessment" a ON a."id" = ar."assessmentId"
+          JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
+          LEFT JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
+         WHERE a."name" NOT ILIKE '%Legacy%'
+           AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Resilience%')
+           AND arqr."deleted_at" = 0 AND ar."deleted_at" = 0
+           AND arqr."intResponse" IS NOT NULL
+         LIMIT 5
+      `);
+      out._assessmentJoin = {
+        totalArqrNonLegacy: totalArqr.rows[0].c,
+        joinedToAQ:         joinedArqr.rows[0].c,
+        sampleEpRrRows:     sampleEpRr.rows,
+      };
+    } catch (e) {
+      out._assessmentJoin = { error: e.message };
     }
 
     // Also scan for any table names containing 'connection' or 'referral'

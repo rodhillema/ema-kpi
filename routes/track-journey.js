@@ -178,14 +178,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
     if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
 
-    const tables = [
-      'ConnectionLog',
-      'ServiceReferral',
-      'AssessmentResult',
-      'AssessmentResultQuestionResponse',
-      'AssessmentQuestion',
-      'Assessment',
-    ];
+    const tables = ['ConnectionLog', 'ServiceReferral'];
     const out = {};
     for (const tbl of tables) {
       try {
@@ -205,42 +198,6 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       } catch (e) {
         out[tbl] = { exists: false, error: e.message };
       }
-    }
-
-    // Probe the EP/RR question join specifically — counts and one real sample row
-    try {
-      const totalArqr = await pool.query(`
-        SELECT COUNT(*)::int AS c
-          FROM "AssessmentResultQuestionResponse"
-         WHERE "deleted_at" = 0 AND "intResponse" IS NOT NULL
-      `);
-      const joinedArqr = await pool.query(`
-        SELECT COUNT(*)::int AS c
-          FROM "AssessmentResultQuestionResponse" arqr
-          JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
-         WHERE arqr."deleted_at" = 0 AND arqr."intResponse" IS NOT NULL
-      `);
-      const sampleEpRr = await pool.query(`
-        SELECT ar."id" AS ar_id, ar."type"::text AS ar_type, a."name" AS a_name,
-               arqr."id" AS arqr_id, arqr."questionId", arqr."intResponse",
-               aq."id" AS aq_id, aq."label" AS aq_label, aq."order" AS aq_order
-          FROM "AssessmentResult" ar
-          JOIN "Assessment" a ON a."id" = ar."assessmentId"
-          JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id"
-          LEFT JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
-         WHERE a."name" NOT ILIKE '%Legacy%'
-           AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Resilience%')
-           AND arqr."deleted_at" = 0 AND ar."deleted_at" = 0
-           AND arqr."intResponse" IS NOT NULL
-         LIMIT 5
-      `);
-      out._assessmentJoin = {
-        totalArqrNonLegacy: totalArqr.rows[0].c,
-        joinedToAQ:         joinedArqr.rows[0].c,
-        sampleEpRrRows:     sampleEpRr.rows,
-      };
-    } catch (e) {
-      out._assessmentJoin = { error: e.message };
     }
 
     // Also scan for any table names containing 'connection' or 'referral'
@@ -575,10 +532,10 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     try {
       const { rows: aRows } = await pool.query(`
         SELECT
-          ar."id"          AS "arId",
-          ar."completedAt" AS "date",
-          a."name"         AS "aname",
-          ar."type"::text  AS "atype",
+          ar."id"                                         AS "arId",
+          COALESCE(ar."completedAt", ar."lastSaved")      AS "date",
+          a."name"                                        AS "aname",
+          ar."type"::text                                 AS "atype",
           (SELECT SUM(arqr."intResponse")::int
              FROM "AssessmentResultQuestionResponse" arqr
             WHERE arqr."assessmentResultId" = ar."id"
@@ -596,9 +553,10 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
            AND a."name" NOT ILIKE '%Legacy%'
            AND ar."deleted_at" = 0
            ${assessmentNameFilter}
-           AND ar."completedAt" >= pr."created_at" - INTERVAL '30 days'
-           AND (pr."completed_on" IS NULL OR ar."completedAt" <= pr."completed_on" + INTERVAL '60 days')
-         ORDER BY ar."completedAt"
+           AND COALESCE(ar."completedAt", ar."lastSaved") >= pr."created_at" - INTERVAL '30 days'
+           AND (pr."completed_on" IS NULL
+                OR COALESCE(ar."completedAt", ar."lastSaved") <= pr."completed_on" + INTERVAL '60 days')
+         ORDER BY COALESCE(ar."completedAt", ar."lastSaved")
       `, [pairingId]);
       for (const r of aRows) {
         const isPre = (r.atype === 'pre') || /pre/i.test(r.aname);
@@ -624,12 +582,13 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           const ph = resultIds.map((_, i) => `$${i + 1}`).join(', ');
           const { rows: qRows } = await pool.query(`
             SELECT
-              arqr."assessmentResultId" AS result_id,
-              aq."label",
+              arqr."assessmentResultId"  AS result_id,
+              aq."question"              AS label,
               aq."order",
-              arqr."intResponse"        AS score
+              arqr."intResponse"         AS score
             FROM "AssessmentResultQuestionResponse" arqr
-            JOIN "AssessmentQuestion" aq ON aq."id" = arqr."questionId"
+            JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId"
+              AND aq."deleted_at" = 0
             WHERE arqr."assessmentResultId" IN (${ph})
               AND arqr."deleted_at" = 0
               AND arqr."intResponse" IS NOT NULL

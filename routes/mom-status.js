@@ -57,9 +57,9 @@ router.get('/', async (req, res) => {
         -- that powers Trellis's "Coordinator (-N slots available)"
         -- assignment widget.
         --
-        -- IMPORTANT: in this DB the column convention is **A = coordinator
-        -- user id, B = advocate user id** — the opposite of the standard
-        -- Prisma `_AdvocateToCoordinator` ordering. Confirmed via probe:
+        -- IMPORTANT: in this DB the column convention is A = coordinator
+        -- user id, B = advocate user id -- the opposite of the standard
+        -- Prisma _AdvocateToCoordinator ordering. Confirmed via probe:
         -- advocate Sheila Lamarre (paired with Elbony Ingram) has row
         -- B=Sheila, A=Babie-Marie Henriquez (the actual coordinator).
         -- Join on B=advocate and select A as the coordinator.

@@ -591,9 +591,9 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // same backing table that powers Trellis's "Coordinator (-N slots
     // available)" assignment widget.
     //
-    // IMPORTANT: in this DB the column convention is **A = coordinator
-    // user id, B = advocate user id** — the opposite of the standard
-    // Prisma `_AdvocateToCoordinator` ordering. Confirmed by diagnostic
+    // IMPORTANT: in this DB the column convention is A = coordinator
+    // user id, B = advocate user id -- the opposite of the standard
+    // Prisma _AdvocateToCoordinator ordering. Confirmed by diagnostic
     // probe: for advocate Sheila Lamarre (paired with Elbony Ingram),
     // her row has B=Sheila and A=Babie-Marie Henriquez (the actual
     // coordinator shown in Trellis). Join on B=advocate and select A

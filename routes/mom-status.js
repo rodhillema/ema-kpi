@@ -448,8 +448,10 @@ router.get('/', async (req, res) => {
         const sessionsDone = heldByMom[r.id] || 0;
         const stalledDays = daysSince(r.lastSessionDate);
         const curriculumDays = daysSince(r.lastCurriculumDate);
-        const commStall = stalledDays == null || stalledDays > 14;
-        const currStall = curriculumDays == null || curriculumDays > 30;
+        // Only stalled if a held session EXISTS and was >14 days ago.
+        // Null (no session ever held) is NOT a stall — the clock hasn't started.
+        const commStall = stalledDays != null && stalledDays > 14;
+        const currStall = curriculumDays != null && curriculumDays > 30;
         const stall_type = (commStall && currStall) ? 'both'
                          : commStall ? 'communication'
                          : currStall ? 'curriculum'

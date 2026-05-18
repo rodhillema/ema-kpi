@@ -1038,7 +1038,7 @@ function render(){
   // Metrics (from full filtered list)
   var inProg   =list.filter(function(m){return m.status==="Active"&&!!m.inProgressTrack;}).length;
   var mc       =list.filter(function(m){return m.status==="Active"&&!m.inProgressTrack;}).length;
-  var stalled  =list.filter(function(m){return m.inProgressTrack&&m.inProgressTrack.stalled;}).length;
+  var stalled  =list.filter(function(m){return m.status==="Active"&&m.inProgressTrack&&m.inProgressTrack.stalled;}).length;
   var contOD   =list.filter(function(m){return dsa(m.lastContactDate)>14;}).length;
   var fwaAttn=list.filter(function(m){return dsa(m.lastFwaDate)>=60;}).length;
 

@@ -1130,10 +1130,13 @@ function openDrawer(id){
   // FWA tile: always show — inactive moms get no color alert, just the date for context
   var fwaColor=isInactive?"":(fwaWarn?"color:var(--red)":fwaSoon?"color:#b86b00":"");
   metaHtml+='<div class="d-mi"><div class="d-mi-lbl">Last FWA</div><div class="d-mi-val" style="font-size:13px;'+fwaColor+'">'+(m.lastFwaDate?fmtS(m.lastFwaDate):"Never")+'</div></div>';
-  // Children tile: Mom.children_in_home is the authoritative rollup (361 child
-  // records in Child table; children_in_home is the current-home count). Fall
-  // back to length of children array when the field is null.
-  var nChildren=(typeof m.childrenInHome==="number")?m.childrenInHome:(m.children?m.children.length:0);
+  // Children tile: take the higher of children_in_home (Mom field) and the actual
+  // Child record count — so moms whose children_in_home is 0/null but have Child
+  // records still show the correct count.
+  var nChildren=Math.max(
+    (typeof m.childrenInHome==="number")?m.childrenInHome:0,
+    m.children?m.children.length:0
+  );
   var cwChildCount=m.children?m.children.filter(function(c){return c.cwType;}).length:0;
   var cwDenom=m.children?m.children.length:0;
   var cwPills=cwTypes.length

@@ -3681,8 +3681,13 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
   trackSessions.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
     var isLastHeld  = s === lastHeldTrack && pairing.status === 'paired';
-    var statusLabel = s.status !== 'Held' ? s.status
-                    : isLastHeld          ? 'In Progress · Last held session'
+    // Group context: momAttended distinguishes 'Absent' (session held, mom missed)
+    // from 'NotHeld' (cohort/session never occurred). Backend's CASE collapses
+    // Absent into status='NotHeld' so the lesson counts are right, but tooltip
+    // needs the distinction back.
+    var statusLabel = s.momAttended === 'Absent' ? 'Absent'
+                    : s.status !== 'Held'         ? s.status
+                    : isLastHeld                  ? 'In Progress · Last held session'
                     : 'Completed';
     var el = document.createElement('div');
     el.className = 'mark curr tj-injected' + (isLastHeld ? ' inprog' : '');
@@ -4406,14 +4411,18 @@ function openStallDrawer(clickedStall) {
   // newest first.
   var feedItems = [];
   sessionsInWindow.forEach(function(s) {
+    var isAbsent = s.momAttended === 'Absent';
     var isHeld   = s.status === 'Held';
-    var isMissed = s.status === 'NotHeld';
+    var isMissed = s.status === 'NotHeld' && !isAbsent;
     feedItems.push({
       date:    new Date(s.date),
-      icon:    isHeld ? 'session' : isMissed ? 'no-contact' : 'text',
-      glyph:   isHeld ? '●' : isMissed ? '↺' : '→',
-      type:    isHeld ? 'Session Held' : isMissed ? 'Missed Session' : 'Planned Session',
-      typeCls: isHeld ? 'held' : isMissed ? 'missed' : '',
+      icon:    isHeld ? 'session' : (isAbsent || isMissed) ? 'no-contact' : 'text',
+      glyph:   isHeld ? '●' : (isAbsent || isMissed) ? '↺' : '→',
+      type:    isHeld   ? 'Session Held'
+             : isAbsent ? 'Mom Absent (Session Held)'
+             : isMissed ? 'Session Not Held'
+             :            'Planned Session',
+      typeCls: isHeld ? 'held' : (isAbsent || isMissed) ? 'missed' : '',
       author:  isHeld
         ? (pairing.advocateName ? pairing.advocateName + ' · Advocate' : 'Advocate')
         : 'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),

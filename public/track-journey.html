@@ -3685,13 +3685,14 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     // from 'NotHeld' (cohort/session never occurred). 'Unmarked' = cohort met but
     // the coordinator never marked attendance for this mom — Trellis grid shows
     // these as "—" and we mirror that rather than silently counting as Held.
-    var statusLabel = s.momAttended === 'Absent' ? 'Absent'
+    var momFirstName = (pairing.momName || '').split(' ')[0];
+    var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
                     : s.status === 'Unmarked'     ? 'Unmarked'
                     : s.status !== 'Held'         ? s.status
                     : isLastHeld                  ? 'In Progress · Last held session'
                     : 'Completed';
     var el = document.createElement('div');
-    el.className = 'mark curr tj-injected' + (isLastHeld ? ' inprog' : '');
+    el.className = 'mark curr tj-injected' + (isLastHeld ? ' inprog' : '') + (s.momAttended === 'Absent' ? ' absent' : '');
     el.style.left = p(s.date);
     el.innerHTML =
       (s.lessonNumber || '?')
@@ -3928,9 +3929,12 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
     return groups;
   })();
 
+  var momFirstName = (pairing.momName || '').split(' ')[0];
   lessonGroups.forEach(function(g) {
-    var heldSess  = g.sessions.filter(function(s){ return s.status === 'Held'; });
-    var allMissed = g.sessions.every(function(s){ return s.status === 'NotHeld'; });
+    var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held'; });
+    var absentSess = g.sessions.filter(function(s){ return s.momAttended === 'Absent'; });
+    var allMissed  = g.sessions.every(function(s){ return s.status === 'NotHeld'; });
+    var wasAbsent  = heldSess.length === 0 && absentSess.length > 0;
 
     var step = document.createElement('div');
     if (heldSess.length > 0) {
@@ -3942,7 +3946,12 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
     }
 
     var lastHeldDate = heldSess.length ? heldSess[heldSess.length - 1].date : (g.sessions[0] ? g.sessions[0].date : null);
-    step.dataset.tip = lastHeldDate ? fmtDate(lastHeldDate) : '';
+    if (wasAbsent) {
+      var absDate = absentSess[0].date;
+      step.dataset.tip = 'Cohort met ' + (absDate ? fmtDate(absDate) : '—') + ' · ' + momFirstName + ' absent · not made up';
+    } else {
+      step.dataset.tip = lastHeldDate ? fmtDate(lastHeldDate) : '';
+    }
 
     var repeatHtml = '';
     if (heldSess.length > 1) {

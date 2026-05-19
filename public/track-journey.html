@@ -3911,13 +3911,17 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
       if (keyMap[key]) {
         keyMap[key].sessions.push(s);
       } else {
-        var lt   = ltMap[key] || {};
+        var lt      = ltMap[key] || {};
+        var ltName  = lt.name || '';
+        var numMatch = ltName.match(/^Lesson\s+(\d+)/i);
+        var lessonNum = numMatch ? parseInt(numMatch[1], 10) : (lt.order || (groups.length + 1));
+        var cleanTitle = ltName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim()
+                      || (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
+                      || null;
         var g = {
           key:          key,
-          lessonNumber: lt.order || (groups.length + 1),
-          title:        lt.name
-                        || (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\|\s*/i, '').trim() : null)
-                        || null,
+          lessonNumber: lessonNum,
+          title:        cleanTitle,
           sessions:     [s]
         };
         groups.push(g);
@@ -3973,11 +3977,15 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
   if (ltList.length > 0) {
     ltList.forEach(function(lt) {
       if (!encounteredKeys[lt.id]) {
+        var ltNm    = lt.name || '';
+        var nsMatch = ltNm.match(/^Lesson\s+(\d+)/i);
+        var nsNum   = nsMatch ? parseInt(nsMatch[1], 10) : lt.order;
+        var nsTitle = ltNm.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
         var step = document.createElement('div');
         step.className = 'seq-step not-started';
         step.innerHTML =
-          '<div class="seq-dot">' + lt.order + '</div>'
-          + '<div class="seq-content"><div class="seq-name">' + escHtml(lt.name || ('Session ' + lt.order)) + '</div></div>';
+          '<div class="seq-dot">' + nsNum + '</div>'
+          + '<div class="seq-content"><div class="seq-name">' + escHtml(nsTitle) + '</div></div>';
         seq.appendChild(step);
       }
     });

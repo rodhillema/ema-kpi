@@ -508,6 +508,10 @@ router.get('/', async (req, res) => {
       const childrenResult = await pool.query(childrenQuery, [momIds]);
       const prettifyCw = (raw) => {
         if (!raw) return null;
+        // "No Open Case" variants are not active welfare involvement — exclude them
+        // so they don't appear as welfare pills or inflate the CW child count.
+        // Raw values confirmed from DB: 0_permanently_removed, 30_custody_maintained.
+        if (raw === '0_permanently_removed' || raw === '30_custody_maintained') return null;
         // Strip optional leading "N_" sort prefix, replace underscores, title-case.
         const stripped = raw.replace(/^\d+_/, '').replace(/_/g, ' ').trim();
         if (!stripped) return null;

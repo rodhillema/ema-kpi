@@ -692,8 +692,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       }
 
       // Domain-level rollup for EP/RR — one bar per construct, not per question.
-      // INNER JOIN AssessmentConstruct excludes questions with null assessmentConstructId
-      // (~15% of rows — untagged / Legacy PromiseServes questions).
+      // LEFT JOIN so RR questions with null assessmentConstructId still aggregate;
+      // those fall back to a single "Overall Score" domain (COALESCE).
       const resultIds = [
         assessments.pre  && assessments.pre.arId,
         assessments.post && assessments.post.arId,
@@ -703,22 +703,25 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           const ph = resultIds.map((_, i) => `$${i + 1}`).join(', ');
           const { rows: dRows } = await pool.query(`
             SELECT
-              arqr."assessmentResultId"       AS result_id,
-              ac."name"                        AS construct_name,
-              ac."order"                       AS construct_order,
-              AVG(arqr."intResponse")          AS mean_score,
-              COUNT(*)::int                    AS question_count
+              arqr."assessmentResultId"                    AS result_id,
+              COALESCE(ac."name", 'Overall Score')         AS construct_name,
+              COALESCE(ac."order", 0)                      AS construct_order,
+              AVG(arqr."intResponse")                      AS mean_score,
+              COUNT(*)::int                                AS question_count
             FROM "AssessmentResultQuestionResponse" arqr
             JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId"
               AND aq."deleted_at" = 0
-              AND aq."assessmentConstructId" IS NOT NULL
-            JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
+            JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
+              AND ar."deleted_at" = 0
+            JOIN "Assessment" a ON a."id" = ar."assessmentId"
+              AND a."name" NOT ILIKE '%Legacy%'
+            LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
               AND ac."deleted_at" = 0
             WHERE arqr."assessmentResultId" IN (${ph})
               AND arqr."deleted_at" = 0
               AND arqr."intResponse" IS NOT NULL
             GROUP BY arqr."assessmentResultId", ac."id", ac."name", ac."order"
-            ORDER BY arqr."assessmentResultId", ac."order" ASC
+            ORDER BY arqr."assessmentResultId", COALESCE(ac."order", 0) ASC
           `, resultIds);
           if (dRows.length > 0) {
             const byId = {};

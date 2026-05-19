@@ -586,34 +586,6 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       `, [pairingId]));
     }
 
-    // Number Track_Sessions by unique lesson template (repeats of same lesson share a number)
-    let lessonNum = 0;
-    const seenTemplates = new Map();
-    const sessions = sessRows.map(s => {
-      let lnum = null;
-      if (s.type === 'Track_Session') {
-        const tid = s.lessonTemplateId;
-        if (tid) {
-          if (!seenTemplates.has(tid)) seenTemplates.set(tid, ++lessonNum);
-          lnum = seenTemplates.get(tid);
-        } else {
-          lnum = ++lessonNum;
-        }
-      }
-      return {
-        id:               s.id,
-        date:             s.date,
-        status:           s.status,
-        groupStatus:      s.groupStatus  || null,
-        momAttended:      s.momAttended  || null,
-        type:             s.type,
-        notes:            s.notes,
-        lessonNumber:     lnum,
-        lessonTemplateId: s.lessonTemplateId || null,
-        sessionName:      s.sessionName      || null,
-      };
-    });
-
     // Lesson templates — all templates for this track, ordered by sequence.
     // Drives Curriculum Detail: correct names, ordering, and not-started rows.
     // Tries the Prisma camelCase FK ("trackId"); wrapped in try/catch so a
@@ -637,6 +609,47 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     } catch (_) {
       // LessonTemplate query failed — frontend uses static LESSON_TITLES fallback.
     }
+
+    // Map templateId → lesson number extracted from name ("Lesson 8 | ..." → 8).
+    // lt.order in Trellis doesn't always match the "Lesson N" curriculum number,
+    // so we parse the name as the authoritative source and fall back to lt.order.
+    const templateLessonNumMap = {};
+    for (const lt of lessonTemplates) {
+      const m = lt.name && lt.name.match(/^Lesson\s+(\d+)/i);
+      templateLessonNumMap[lt.id] = m ? parseInt(m[1], 10) : lt.order;
+    }
+
+    // Number Track_Sessions by lesson template — use curriculum number from the
+    // template name, not encounter order, so lessonNumber matches the actual
+    // lesson position rather than the chronological session sequence.
+    let fallbackNum = 0;
+    const seenTemplates = new Map();
+    const sessions = sessRows.map(s => {
+      let lnum = null;
+      if (s.type === 'Track_Session') {
+        const tid = s.lessonTemplateId;
+        if (tid) {
+          if (!seenTemplates.has(tid)) {
+            const mapped = templateLessonNumMap[tid];
+            seenTemplates.set(tid, mapped !== undefined ? mapped : ++fallbackNum);
+          }
+          lnum = seenTemplates.get(tid);
+        }
+        // Untemplated Track_Sessions: lnum stays null (shown in "additional" bucket)
+      }
+      return {
+        id:               s.id,
+        date:             s.date,
+        status:           s.status,
+        groupStatus:      s.groupStatus  || null,
+        momAttended:      s.momAttended  || null,
+        type:             s.type,
+        notes:            s.notes,
+        lessonNumber:     lnum,
+        lessonTemplateId: s.lessonTemplateId || null,
+        sessionName:      s.sessionName      || null,
+      };
+    });
 
     // Stall computation
     const stalls = computeStalls(sessions, p.startDate, p.endDate);

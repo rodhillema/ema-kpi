@@ -237,6 +237,7 @@ router.get('/', async (req, res) => {
         m."email1" AS "email",
         m."status"::text AS "status",
         m."affiliate_id" AS "affiliateId",
+        m."children_in_home" AS "childrenInHome",
         aff."name" AS "affiliateName",
         cfm.coordinator_id AS "coordinatorId",
         cfm.coord_first AS "coordFirstName",
@@ -485,6 +486,42 @@ router.get('/', async (req, res) => {
       // Continue without track history rather than failing the whole endpoint.
     }
 
+    // Children — one row per Child record per mom, with current welfare involvement.
+    // childrenInHome (from Mom.children_in_home) drives the drawer count; this list
+    // drives the X-of-Y welfare denominator + the distinct welfare pills.
+    // Enum values like "0_foster_care" / "5_kinship_placement" are stripped of the
+    // leading sort prefix and title-cased server-side so the frontend renders clean labels.
+    const childrenByMom = {};
+    try {
+      const childrenQuery = `
+        SELECT
+          c."id"                              AS child_id,
+          c."mom_id"                          AS mom_id,
+          c."active_child_welfare_involvement"::text AS cw_raw
+        FROM "Child" c
+        WHERE c."mom_id" = ANY($1)
+          AND c."deleted_at" = 0
+      `;
+      const childrenResult = await pool.query(childrenQuery, [momIds]);
+      const prettifyCw = (raw) => {
+        if (!raw) return null;
+        // Strip optional leading "N_" sort prefix, replace underscores, title-case.
+        const stripped = raw.replace(/^\d+_/, '').replace(/_/g, ' ').trim();
+        if (!stripped) return null;
+        return stripped.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      };
+      for (const r of childrenResult.rows) {
+        if (!childrenByMom[r.mom_id]) childrenByMom[r.mom_id] = [];
+        childrenByMom[r.mom_id].push({
+          id: r.child_id,
+          cwType: prettifyCw(r.cw_raw),
+        });
+      }
+    } catch (err) {
+      console.error('[mom-status] children query failed:', err.message);
+      // Continue without children rather than failing the whole endpoint.
+    }
+
     // Required-sessions lookup by track title — mirrors report-data.js REQUIRED_SESSIONS.
     const REQUIRED_SESSIONS = {
       'Nurturing Parenting Program': 10,
@@ -561,6 +598,8 @@ router.get('/', async (req, res) => {
         email: r.email || null,
         affiliateId: r.affiliateId || null,
         affiliateName: r.affiliateName || null,
+        childrenInHome: (r.childrenInHome == null ? null : Number(r.childrenInHome)),
+        children: childrenByMom[r.id] || [],
         intakeDate: r.intakeDate || null,
         inactiveDate: r.status === 'inactive' ? r.momUpdatedAt || null : null,
         lastContactDate: r.lastSessionDate || null,

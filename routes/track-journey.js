@@ -498,7 +498,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       FROM "Pairing" p
       JOIN "Mom" m      ON m."id" = p."momId"
       LEFT JOIN "Track" t    ON t."id" = p."trackId"
-      LEFT JOIN "User" adv   ON adv."id" = p."advocateUserId"
+      LEFT JOIN "AdvocacyGroup" ag_pair ON ag_pair."id" = p."advocacyGroupId" AND ag_pair."deleted_at" = 0
+      LEFT JOIN "User" adv   ON adv."id" = COALESCE(p."advocateUserId", ag_pair."advocateId")
       LEFT JOIN coord c      ON c.mom_id = p."momId"
       WHERE p."id" = $1
         AND p."deleted_at" = 0

@@ -454,7 +454,8 @@ router.get('/', async (req, res) => {
           adv."lastName"                             AS adv_last
         FROM "Pairing" p
         LEFT JOIN "Track" t ON t."id" = p."trackId"
-        LEFT JOIN "User"  adv ON adv."id" = p."advocateUserId"
+        LEFT JOIN "AdvocacyGroup" ag_pair ON ag_pair."id" = p."advocacyGroupId" AND ag_pair."deleted_at" = 0
+        LEFT JOIN "User"  adv ON adv."id" = COALESCE(p."advocateUserId", ag_pair."advocateId")
         WHERE p."momId" = ANY($1)
           AND p."deleted_at" = 0
         ORDER BY p."momId", p."created_at" DESC

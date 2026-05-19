@@ -1303,6 +1303,7 @@ router.get('/', async (req, res) => {
           AND ${PERIOD_MOM_FRAGMENT}
           AND c."active_child_welfare_involvement" IS NOT NULL
           AND c."active_child_welfare_involvement"::text <> ''
+          AND c."active_child_welfare_involvement"::text NOT IN ('0_permanently_removed', '30_custody_maintained')
           ${affWhere}
       `, affParams),
 

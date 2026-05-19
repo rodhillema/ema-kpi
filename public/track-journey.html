@@ -4001,8 +4001,8 @@ function renderDetail(pairing, sessions, assessments) {
 
   var hasConstructs = (assessments.pre  && assessments.pre.constructs)
                    || (assessments.post && assessments.post.constructs);
-  var hasQuestions  = (assessments.pre  && assessments.pre.questions  && assessments.pre.questions.length)
-                   || (assessments.post && assessments.post.questions && assessments.post.questions.length);
+  var hasDomains    = (assessments.pre  && assessments.pre.domains  && assessments.pre.domains.length)
+                   || (assessments.post && assessments.post.domains && assessments.post.domains.length);
 
   if (!assessments.pre && !assessments.post) {
     if (heldTrack.length > 0) {
@@ -4083,125 +4083,82 @@ function renderDetail(pairing, sessions, assessments) {
     });
 
     ac.innerHTML = html;
-  } else if (hasQuestions) {
-    // EP / RR — per-question bar rendering (same visual as AAPI)
+  } else if (hasDomains) {
+    // EP / RR — one bar per domain (construct mean), scale 1–5
     var pre  = assessments.pre  || null;
     var post = assessments.post || null;
-    var scale = (pre && pre.scale) || (post && post.scale) || { min: 1, max: 5 };
-    var scaleRange = scale.max - scale.min || 1;
-    var hasBoth = pre && post && pre.questions && post.questions;
+    var scaleMin = 1, scaleMax = 5, scaleRange = 4;
+    var hasBoth = pre && post && pre.domains && post.domains;
 
-    // Build a merged question list keyed by label (pre questions are authoritative for order).
-    // Carry the construct grouping (name + order) through from whichever side first sees the question.
-    var qMap = {};
-    var qOrder = [];
-    var srcQ = (pre && pre.questions) ? pre.questions : (post && post.questions ? post.questions : []);
-    srcQ.forEach(function(q) {
-      if (!qMap[q.label]) {
-        qMap[q.label] = {
-          label: q.label, order: q.order, pre: null, post: null,
-          constructName: q.constructName || null, constructOrder: q.constructOrder
-        };
-        qOrder.push(q.label);
+    // Merge pre + post domains by name; preserve sort order from whichever side has it
+    var domainMap = {};
+    var domainOrder = [];
+    var srcD = (pre && pre.domains) ? pre.domains : (post && post.domains ? post.domains : []);
+    srcD.forEach(function(d) {
+      if (!domainMap[d.name]) {
+        domainMap[d.name] = { name: d.name, order: d.order, pre: null, post: null };
+        domainOrder.push(d.name);
       }
-      qMap[q.label].pre = q.score;
+      domainMap[d.name].pre = d.mean;
     });
-    if (post && post.questions) {
-      post.questions.forEach(function(q) {
-        if (!qMap[q.label]) {
-          qMap[q.label] = {
-            label: q.label, order: q.order, pre: null, post: null,
-            constructName: q.constructName || null, constructOrder: q.constructOrder
-          };
-          qOrder.push(q.label);
+    if (post && post.domains) {
+      post.domains.forEach(function(d) {
+        if (!domainMap[d.name]) {
+          domainMap[d.name] = { name: d.name, order: d.order, pre: null, post: null };
+          domainOrder.push(d.name);
         }
-        qMap[q.label].post = q.score;
+        domainMap[d.name].post = d.mean;
       });
     }
+    domainOrder.sort(function(a, b) {
+      var oa = domainMap[a].order != null ? domainMap[a].order : 999;
+      var ob = domainMap[b].order != null ? domainMap[b].order : 999;
+      return oa - ob;
+    });
 
     var html = '';
 
     if (hasBoth) {
-      var improvedCount = 0, totalQ = 0;
-      qOrder.forEach(function(lbl) {
-        var q = qMap[lbl];
-        if (q.pre != null && q.post != null) { totalQ++; if (q.post > q.pre) improvedCount++; }
+      var improvedCount = 0, totalD = 0;
+      domainOrder.forEach(function(name) {
+        var d = domainMap[name];
+        if (d.pre != null && d.post != null) { totalD++; if (d.post > d.pre) improvedCount++; }
       });
-      var preTotal = pre.totalScore != null ? pre.totalScore : null;
-      var postTotal = post.totalScore != null ? post.totalScore : null;
-      var overallChange = (preTotal != null && postTotal != null && preTotal > 0)
-        ? Math.round((postTotal - preTotal) / preTotal * 100) : null;
-      var changeLabel = overallChange != null ? (overallChange >= 0 ? '+' : '') + overallChange + '%' : '—';
       html +=
         '<div class="knowledge-summary">'
-        + '<div class="ks-stat"><span class="ks-label">Questions Improved</span><span class="ks-value">' + improvedCount + ' of ' + totalQ + '</span></div>'
-        + '<div class="ks-stat"><span class="ks-label">Overall Change</span><span class="ks-value">' + changeLabel + '</span></div>'
+        + '<div class="ks-stat"><span class="ks-label">Domains Improved</span><span class="ks-value">' + improvedCount + ' of ' + totalD + '</span></div>'
         + '</div>';
     }
 
-    // Scale tick labels: min, mid, max
-    var midScale = scale.min + Math.round(scaleRange / 2);
-    var scaleTicks =
-      '<div class="scale-row"><span>' + scale.min + '</span><span>' + midScale + '</span><span>' + scale.max + '</span></div>';
+    var scaleTicks = '<div class="scale-row"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>';
 
-    // Group questions by AssessmentConstruct. Null-construct questions go in an
-    // ungrouped bucket at the end ("Other"). Constructs are ordered by ac.order
-    // ASC (preserved from the SQL); within a group, ordering follows pre's order.
-    var groups = {};
-    var groupOrder = [];
-    qOrder.forEach(function(lbl) {
-      var q = qMap[lbl];
-      var key = q.constructName || '__other__';
-      if (!groups[key]) {
-        groups[key] = {
-          name: q.constructName || null,
-          order: q.constructName ? q.constructOrder : Number.MAX_SAFE_INTEGER,
-          items: []
-        };
-        groupOrder.push(key);
+    domainOrder.forEach(function(name) {
+      var d = domainMap[name];
+      var pv = d.pre, ov = d.post;
+      var preWidth  = pv != null ? ((pv - scaleMin) / scaleRange * 100).toFixed(1) + '%' : '0%';
+      var postWidth = ov != null ? ((ov - scaleMin) / scaleRange * 100).toFixed(1) + '%' : '0%';
+
+      var scoresHtml = '';
+      if (pv != null && ov != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv.toFixed(1) + '</span> → <span class="post">Post \xB7 ' + ov.toFixed(1) + '</span>';
+      } else if (pv != null) {
+        scoresHtml = '<span class="pre">Pre \xB7 ' + pv.toFixed(1) + '</span>';
+      } else if (ov != null) {
+        scoresHtml = '<span class="post">Post \xB7 ' + ov.toFixed(1) + '</span>';
       }
-      groups[key].items.push(q);
-    });
-    groupOrder.sort(function(a, b) {
-      var oa = groups[a].order != null ? groups[a].order : Number.MAX_SAFE_INTEGER;
-      var ob = groups[b].order != null ? groups[b].order : Number.MAX_SAFE_INTEGER;
-      return oa - ob;
-    });
-    var hasConstructHeaders = groupOrder.some(function(k) { return groups[k].name != null; });
 
-    groupOrder.forEach(function(key) {
-      var g = groups[key];
-      if (hasConstructHeaders) {
-        var headerText = g.name || 'Other';
-        html += '<div class="construct-group-header">' + escHtml(headerText) + '</div>';
-      }
-      g.items.forEach(function(q) {
-        var pv = q.pre, ov = q.post;
-        var preWidth  = pv != null ? ((pv - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
-        var postWidth = ov != null ? ((ov - scale.min) / scaleRange * 100).toFixed(1) + '%' : '0%';
+      var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
+      var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
+      if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
 
-        var scoresHtml = '';
-        if (pv != null && ov != null) {
-          scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span> → <span class="post">Post \xB7 ' + ov + '</span>';
-        } else if (pv != null) {
-          scoresHtml = '<span class="pre">Pre \xB7 ' + pv + '</span>';
-        } else if (ov != null) {
-          scoresHtml = '<span class="post">Post \xB7 ' + ov + '</span>';
-        }
-
-        var trackClass = (pv != null && ov == null) ? 'score-track pre-only' : 'score-track';
-        var fillHtml   = pv != null ? '<div class="score-fill pre" style="width:' + preWidth + ';"></div>' : '';
-        if (ov != null) fillHtml += '<div class="score-fill post" style="width:' + postWidth + ';"></div>';
-
-        html +=
-          '<div class="construct">'
-          + '<div class="c-name"><span>' + escHtml(q.label) + '</span>'
-          + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
-          + '</div>'
-          + '<div class="' + trackClass + '">' + fillHtml + '</div>'
-          + scaleTicks
-          + '</div>';
-      });
+      html +=
+        '<div class="construct">'
+        + '<div class="c-name"><span>' + escHtml(d.name) + '</span>'
+        + (scoresHtml ? '<span class="c-scores-side">' + scoresHtml + '</span>' : '')
+        + '</div>'
+        + '<div class="' + trackClass + '">' + fillHtml + '</div>'
+        + scaleTicks
+        + '</div>';
     });
 
     ac.innerHTML = html;

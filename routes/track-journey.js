@@ -690,7 +690,9 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         if (!isPre && !assessments.post) assessments.post = payload;
       }
 
-      // Per-question breakdown for EP/RR — one bar per question in the UI
+      // Domain-level rollup for EP/RR — one bar per construct, not per question.
+      // INNER JOIN AssessmentConstruct excludes questions with null assessmentConstructId
+      // (~15% of rows — untagged / Legacy PromiseServes questions).
       const resultIds = [
         assessments.pre  && assessments.pre.arId,
         assessments.post && assessments.post.arId,
@@ -698,62 +700,46 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       if (resultIds.length > 0) {
         try {
           const ph = resultIds.map((_, i) => `$${i + 1}`).join(', ');
-          const { rows: qRows } = await pool.query(`
+          const { rows: dRows } = await pool.query(`
             SELECT
-              arqr."assessmentResultId"  AS result_id,
-              aq."question"              AS label,
-              aq."order"                 AS q_order,
-              arqr."intResponse"         AS score,
-              ac."name"                  AS construct_name,
-              ac."order"                 AS construct_order
+              arqr."assessmentResultId"       AS result_id,
+              ac."name"                        AS construct_name,
+              ac."order"                       AS construct_order,
+              AVG(arqr."intResponse")          AS mean_score,
+              COUNT(*)::int                    AS question_count
             FROM "AssessmentResultQuestionResponse" arqr
             JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId"
               AND aq."deleted_at" = 0
-            LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
+              AND aq."assessmentConstructId" IS NOT NULL
+            JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId"
               AND ac."deleted_at" = 0
             WHERE arqr."assessmentResultId" IN (${ph})
               AND arqr."deleted_at" = 0
               AND arqr."intResponse" IS NOT NULL
-            ORDER BY ac."order" ASC NULLS LAST, aq."order" ASC
+            GROUP BY arqr."assessmentResultId", ac."id", ac."name", ac."order"
+            ORDER BY arqr."assessmentResultId", ac."order" ASC
           `, resultIds);
-          const { rows: scaleRows } = await pool.query(`
-            SELECT MIN(arqr."intResponse") AS scale_min,
-                   MAX(arqr."intResponse") AS scale_max
-            FROM "AssessmentResultQuestionResponse" arqr
-            JOIN "AssessmentResult" ar ON ar."id" = arqr."assessmentResultId"
-            JOIN "Assessment" a        ON a."id"  = ar."assessmentId"
-            WHERE a."name" NOT ILIKE '%Legacy%'
-              AND ar."deleted_at"   = 0
-              AND arqr."deleted_at" = 0
-              AND arqr."intResponse" IS NOT NULL
-          `);
-          if (qRows.length > 0) {
-            const scale = (scaleRows.length && scaleRows[0].scale_min != null)
-              ? { min: Number(scaleRows[0].scale_min), max: Number(scaleRows[0].scale_max) }
-              : null;
+          if (dRows.length > 0) {
             const byId = {};
-            for (const q of qRows) {
-              const rid = q.result_id;
+            for (const d of dRows) {
+              const rid = d.result_id;
               if (!byId[rid]) byId[rid] = [];
               byId[rid].push({
-                label: q.label,
-                order: q.q_order,
-                score: q.score,
-                constructName: q.construct_name,
-                constructOrder: q.construct_order,
+                name:  d.construct_name,
+                order: d.construct_order,
+                mean:  parseFloat(parseFloat(d.mean_score).toFixed(2)),
+                count: d.question_count,
               });
             }
             if (assessments.pre  && byId[assessments.pre.arId]) {
-              assessments.pre.questions = byId[assessments.pre.arId];
-              if (scale) assessments.pre.scale = scale;
+              assessments.pre.domains  = byId[assessments.pre.arId];
             }
             if (assessments.post && byId[assessments.post.arId]) {
-              assessments.post.questions = byId[assessments.post.arId];
-              if (scale) assessments.post.scale = scale;
+              assessments.post.domains = byId[assessments.post.arId];
             }
           }
-        } catch (qErr) {
-          console.warn('[track-journey] per-question enrichment failed:', qErr.message);
+        } catch (dErr) {
+          console.warn('[track-journey] domain enrichment failed:', dErr.message);
         }
       }
 

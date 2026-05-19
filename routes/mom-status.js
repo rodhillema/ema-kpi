@@ -289,7 +289,8 @@ router.get('/', async (req, res) => {
         SELECT ap.mom_id,
                s."lesson_template_id",
                s."status"::text AS session_status,
-               NULL::text AS attendance_status
+               NULL::text       AS attendance_status,
+               false            AS is_group
         FROM active_pairings ap
         JOIN "Session" s ON s."pairing_id" = ap.pairing_id
         WHERE s."deleted_at" = 0
@@ -298,7 +299,8 @@ router.get('/', async (req, res) => {
         SELECT ap.mom_id,
                s."lesson_template_id",
                s."status"::text AS session_status,
-               sa."status"::text AS attendance_status
+               sa."status"::text AS attendance_status,
+               true             AS is_group
         FROM active_pairings ap
         JOIN "Session" s ON s."advocacy_group_id" = ap.group_id
         LEFT JOIN "SessionAttendance" sa ON sa."session_id" = s."id"
@@ -315,7 +317,8 @@ router.get('/', async (req, res) => {
           AND CASE
             WHEN attendance_status = 'Present' THEN true
             WHEN attendance_status = 'Absent'  THEN false
-            ELSE session_status = 'Held'
+            WHEN is_group                      THEN false  -- group + unmarked: don't fall back to cohort
+            ELSE session_status = 'Held'                   -- 1:1: cohort status IS the mom's status
           END
       )
       SELECT mom_id, COUNT(DISTINCT lesson_template_id)::int AS held_sessions

@@ -533,12 +533,20 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     try {
       ({ rows: sessRows } = await pool.query(`
         SELECT s."id",
-               s."date_start"         AS "date",
+               CASE
+                 WHEN s."date_start" IS NOT NULL THEN s."date_start"
+                 WHEN s."status"::text = 'Held'  THEN s."updated_at"
+                 ELSE NULL
+               END                    AS "date",
                s."status"::text       AS "groupStatus",
                sa."status"::text      AS "momAttended",
                CASE
                  WHEN sa."status"::text = 'Present' THEN 'Held'
                  WHEN sa."status"::text = 'Absent'  THEN 'NotHeld'
+                 WHEN s."advocacy_group_id" IS NOT NULL
+                      AND s."status"::text = 'Held'
+                      AND sa."status" IS NULL
+                      THEN 'Unmarked'
                  ELSE s."status"::text
                END                    AS "status",
                s."session_type"::text AS "type",
@@ -558,7 +566,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                AND s."advocacy_group_id" = $2
              )
            )
-         ORDER BY s."date_start" NULLS LAST
+         ORDER BY COALESCE(s."date_start", s."updated_at") NULLS LAST
       `, [pairingId, p.advocacyGroupId, p.momId]));
     } catch (_) {
       ({ rows: sessRows } = await pool.query(`

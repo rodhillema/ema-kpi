@@ -482,6 +482,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       )
       SELECT
         p."id",
+        p."trackId"      AS "trackId",
         p."momId"        AS "momId",
         p."advocacyGroupId" AS "advocacyGroupId",
         m."first_name"   AS "momFirst",
@@ -604,6 +605,30 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         sessionName:      s.sessionName      || null,
       };
     });
+
+    // Lesson templates — all templates for this track, ordered by sequence.
+    // Drives Curriculum Detail: correct names, ordering, and not-started rows.
+    // Tries the Prisma camelCase FK ("trackId"); wrapped in try/catch so a
+    // schema mismatch falls back gracefully and the frontend uses static titles.
+    let lessonTemplates = [];
+    try {
+      if (p.trackId) {
+        const { rows: ltRows } = await pool.query(`
+          SELECT lt."id", lt."name", lt."order"
+          FROM "LessonTemplate" lt
+          WHERE lt."trackId" = $1
+            AND lt."deleted_at" = 0
+          ORDER BY lt."order" ASC
+        `, [p.trackId]);
+        lessonTemplates = ltRows.map(lt => ({
+          id:    lt.id,
+          name:  lt.name,
+          order: lt.order,
+        }));
+      }
+    } catch (_) {
+      // LessonTemplate query failed — frontend uses static LESSON_TITLES fallback.
+    }
 
     // Stall computation
     const stalls = computeStalls(sessions, p.startDate, p.endDate);
@@ -937,6 +962,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       sessions,
       stalls,
       assessments,
+      lessonTemplates,
       coordinatorNotes,
       connectionLogs,
       vitalNeeds,

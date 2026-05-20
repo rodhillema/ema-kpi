@@ -218,14 +218,6 @@ router.get('/', async (req, res) => {
           AND s."lesson_template_id" IS NOT NULL
         ORDER BY p."momId", s."date_start" DESC
       ),
-      intake_first_engaged AS (
-        -- Derived from AuditLog (same pattern as report-data.js INTAKE_CTE).
-        SELECT data->>'id' AS mom_id, MIN(created_at) AS engaged_date
-        FROM "AuditLog"
-        WHERE "table" = 'Mom' AND action = 'Update'
-          AND data->>'prospect_status' = 'engaged_in_program'
-        GROUP BY data->>'id'
-      )
       SELECT
         m."id",
         m."first_name" AS "firstName",
@@ -251,7 +243,7 @@ router.get('/', async (req, res) => {
         ls.session_date AS "lastSessionDate",
         ls.session_status AS "lastSessionStatus",
         lcs.curriculum_date AS "lastCurriculumDate",
-        COALESCE(lfwa.fwa_date, ife.engaged_date) AS "intakeDate",
+        lfwa.fwa_date AS "intakeDate",
         m."updated_at" AS "momUpdatedAt"
       FROM "Mom" m
       LEFT JOIN "Affiliate" aff ON aff."id" = m."affiliate_id"
@@ -260,7 +252,6 @@ router.get('/', async (req, res) => {
       LEFT JOIN active_pairing ap ON ap.mom_id = m."id"
       LEFT JOIN latest_session ls ON ls.mom_id = m."id"
       LEFT JOIN last_curriculum_session lcs ON lcs.mom_id = m."id"
-      LEFT JOIN intake_first_engaged ife ON ife.mom_id = m."id"
       WHERE ${whereClause}
       ORDER BY m."last_name" ASC NULLS LAST, m."first_name" ASC NULLS LAST
     `;

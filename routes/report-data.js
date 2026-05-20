@@ -526,7 +526,7 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
-            AND s."session_type"::text = 'Track_Session'
+            AND s."type"::text = 'Track_Session'
             AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) last_track ON true
         WHERE p."deleted_at" = 0
@@ -752,8 +752,8 @@ router.get('/', async (req, res) => {
         session_counts AS (
           SELECT
             qp.pairing_id,
-            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session')::int AS track_held,
-            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session')::int AS support_held
+            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."type"::text = 'Track_Session')::int AS track_held,
+            COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."type"::text = 'Support_Session')::int AS support_held
           FROM completed_only qp
           LEFT JOIN "Session" s ON s."pairing_id" = qp.pairing_id AND s."deleted_at" = 0
           GROUP BY qp.pairing_id
@@ -994,12 +994,12 @@ router.get('/', async (req, res) => {
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS cnt FROM "Session" s
           WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
-            AND s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session'
+            AND s."status"::text = 'Held' AND s."type"::text = 'Track_Session'
         ) track_sess ON true
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS cnt FROM "Session" s
           WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
-            AND s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session'
+            AND s."status"::text = 'Held' AND s."type"::text = 'Support_Session'
         ) support_sess ON true
         WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
           AND p."complete_reason_sub_status" IS NOT NULL
@@ -1046,9 +1046,9 @@ router.get('/', async (req, res) => {
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         LEFT JOIN LATERAL (
           SELECT
-            SUM(CASE WHEN s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session'
+            SUM(CASE WHEN s."status"::text = 'Held' AND s."type"::text = 'Track_Session'
             THEN 1 ELSE 0 END)::int AS track_session_count,
-            SUM(CASE WHEN s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session'
+            SUM(CASE WHEN s."status"::text = 'Held' AND s."type"::text = 'Support_Session'
             THEN 1 ELSE 0 END)::int AS support_session_count
           FROM "Session" s
           WHERE s."pairing_id" = p."id"

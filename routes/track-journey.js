@@ -122,7 +122,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
           SELECT
             s."pairing_id"                                     AS "pairingId",
             MAX(s."date_start")                                AS "lastHeldAt",
-            MAX(CASE WHEN s."session_type"::text = 'Track_Session'
+            MAX(CASE WHEN s."type"::text = 'Track_Session'
                      THEN s."date_start" END)                  AS "lastHeldTrackAt"
           FROM "Session" s
           WHERE s."pairing_id" = ANY($1)
@@ -170,7 +170,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
   }
 });
 
-// GET /api/track-journey/debug-schema — admin-only schema probe for ConnectionLog + ServiceReferral
+// GET /api/track-journey/debug-schema — admin-only schema probe
 router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
   try {
     const { role, username } = req.session.user;
@@ -178,12 +178,12 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       || ORG_WIDE_NAMES.includes((username || '').toLowerCase());
     if (!isAllowed) return res.status(403).json({ error: 'Admin only' });
 
-    const tables = ['ConnectionLog', 'ServiceReferral'];
+    const tables = ['ConnectionLog', 'ServiceReferral', 'SessionNote'];
     const out = {};
     for (const tbl of tables) {
       try {
         const { rows: cols } = await pool.query(`
-          SELECT column_name, data_type, is_nullable, column_default
+          SELECT column_name, data_type, udt_name, is_nullable, column_default
             FROM information_schema.columns
            WHERE table_name = $1
            ORDER BY ordinal_position
@@ -200,11 +200,78 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       }
     }
 
+    // Session.type enum values — confirm what values exist in production
+    try {
+      const { rows: typeVals } = await pool.query(`
+        SELECT s."type"::text AS type_val, COUNT(*)::int AS cnt
+          FROM "Session" s
+         WHERE s."deleted_at" = 0
+         GROUP BY 1
+         ORDER BY 2 DESC
+      `);
+      out._sessionTypeValues = typeVals;
+    } catch (e) {
+      out._sessionTypeValues = { error: e.message };
+    }
+
+    // Group sessions with lesson_template_id set but type != Track_Session
+    // These are the "mislabeled" sessions: they have a lesson assigned (so they
+    // ARE curriculum sessions) but the type field disagrees.
+    try {
+      const { rows: mislabeled } = await pool.query(`
+        SELECT
+          s."id",
+          s."type"::text            AS "type",
+          s."status"::text          AS "status",
+          s."lesson_template_id"    AS "lessonTemplateId",
+          s."name"                  AS "sessionName",
+          s."date_start"            AS "date",
+          s."advocacy_group_id"     AS "advocacyGroupId",
+          s."pairing_id"            AS "pairingId",
+          ag."name"                 AS "groupName",
+          t."title"                 AS "trackTitle"
+        FROM "Session" s
+        LEFT JOIN "AdvocacyGroup" ag ON ag."id" = s."advocacy_group_id" AND ag."deleted_at" = 0
+        LEFT JOIN "Track" t ON t."id" = ag."trackId" AND t."deleted_at" = 0
+        WHERE s."deleted_at" = 0
+          AND s."advocacy_group_id" IS NOT NULL
+          AND s."lesson_template_id" IS NOT NULL
+          AND s."type"::text <> 'Track_Session'
+        ORDER BY s."date_start" DESC NULLS LAST
+        LIMIT 20
+      `);
+      out._mislabeledGroupSessions = {
+        sample: mislabeled,
+        note: 'Group sessions (advocacy_group_id IS NOT NULL) with lesson_template_id set but type != Track_Session',
+      };
+    } catch (e) {
+      out._mislabeledGroupSessions = { error: e.message };
+    }
+
+    // Count summary of group sessions by type + whether lesson_template_id is set
+    try {
+      const { rows: summary } = await pool.query(`
+        SELECT
+          s."type"::text                                      AS "type",
+          (s."lesson_template_id" IS NOT NULL)::text         AS "hasLesson",
+          COUNT(*)::int                                       AS "cnt"
+        FROM "Session" s
+        WHERE s."deleted_at" = 0
+          AND s."advocacy_group_id" IS NOT NULL
+        GROUP BY 1, 2
+        ORDER BY 1, 2
+      `);
+      out._groupSessionTypeSummary = summary;
+    } catch (e) {
+      out._groupSessionTypeSummary = { error: e.message };
+    }
+
     // Also scan for any table names containing 'connection' or 'referral'
     const { rows: related } = await pool.query(`
       SELECT table_name FROM information_schema.tables
        WHERE table_schema = 'public'
-         AND (table_name ILIKE '%connection%' OR table_name ILIKE '%referral%' OR table_name ILIKE '%contact%')
+         AND (table_name ILIKE '%connection%' OR table_name ILIKE '%referral%'
+              OR table_name ILIKE '%contact%' OR table_name ILIKE '%session%')
        ORDER BY table_name
     `);
     out._relatedTables = related.map(r => r.table_name);
@@ -259,7 +326,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
     for (const p of pairings) {
       const { rows } = await pool.query(`
         SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-               s."session_type"::text AS type, s."pairing_id", s."deleted_at"
+               s."type"::text AS type, s."lesson_template_id", s."pairing_id", s."deleted_at"
           FROM "Session" s
          WHERE s."pairing_id" = $1
          ORDER BY s."date_start"
@@ -276,7 +343,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
         if (!p.advocacyGroupId) continue;
         const { rows } = await pool.query(`
           SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-                 s."session_type"::text AS type, s."pairing_id",
+                 s."type"::text AS type, s."lesson_template_id", s."pairing_id",
                  s."advocacy_group_id", s."deleted_at"
             FROM "Session" s
            WHERE s."advocacy_group_id" = $1
@@ -549,7 +616,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       THEN 'Unmarked'
                  ELSE s."status"::text
                END                    AS "status",
-               s."session_type"::text AS "type",
+               s."type"::text         AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"
@@ -575,7 +642,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                s."status"::text       AS "groupStatus",
                NULL::text             AS "momAttended",
                s."status"::text       AS "status",
-               s."session_type"::text AS "type",
+               s."type"::text         AS "type",
                NULL::text             AS "notes",
                NULL::text             AS "lessonTemplateId",
                NULL::text             AS "sessionName"

@@ -131,7 +131,7 @@ router.get('/', async (req, res) => {
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
             AND s."status"::text = 'Held'
-            AND s."type"::text = 'Track_Session'
+            AND s."session_type"::text = 'Track_Session'
         ) AS "lastHeldTrackSessionAt"
       FROM "Pairing" p
       LEFT JOIN "Mom" m ON m."id" = p."momId"

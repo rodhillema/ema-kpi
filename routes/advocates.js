@@ -140,7 +140,13 @@ router.get('/', async (req, res) => {
         AND p."deleted_at" = 0
       ORDER BY p."advocateUserId", p."created_at" DESC
     `;
-    const pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
+    let pairingsResult;
+    try {
+      pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
+    } catch (e) {
+      console.warn('[api/advocates] pairingsQuery failed; returning advocates without pairing detail:', e.message);
+      pairingsResult = { rows: [] };
+    }
 
     // Fetch AdvocacyGroup assignments for all returned advocates.
     // Includes member_count for the group-pairing display Cristina added.

@@ -285,7 +285,7 @@ router.get('/', async (req, res) => {
         FROM active_pairings ap
         JOIN "Session" s ON s."pairing_id" = ap.pairing_id
         WHERE s."deleted_at" = 0
-          AND s."session_type"::text = 'Track_Session'
+          AND s."lesson_template_id" IS NOT NULL
         UNION ALL
         SELECT ap.mom_id,
                s."lesson_template_id",
@@ -299,7 +299,7 @@ router.get('/', async (req, res) => {
           AND sa."deleted_at" = 0
         WHERE ap.group_id IS NOT NULL
           AND s."deleted_at" = 0
-          AND s."session_type"::text = 'Track_Session'
+          AND s."lesson_template_id" IS NOT NULL
       ),
       held_lessons AS (
         SELECT mom_id, lesson_template_id

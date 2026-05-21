@@ -173,22 +173,19 @@ router.get('/', async (req, res) => {
     const isOrgWide = isOrgWideRole && !req.query.affiliate_id && !excludeAffiliateId;
 
     // Build WHERE clause for affiliate scoping
-    let affWhere, affWhereUser, affWhereAudit, affParams;
+    let affWhere, affWhereUser, affParams;
     if (excludeAffiliateId && isOrgWideRole) {
       // "All except X" mode
       affWhere = `AND m."affiliate_id" != $1`;
       affWhereUser = `AND u."affiliateId" != $1`;
-      affWhereAudit = `AND data->>'affiliateId' != $1::text`;
       affParams = [excludeAffiliateId];
     } else if (isOrgWide) {
       affWhere = '';
       affWhereUser = '';
-      affWhereAudit = '';
       affParams = [];
     } else {
       affWhere = `AND m."affiliate_id" = $1`;
       affWhereUser = `AND u."affiliateId" = $1`;
-      affWhereAudit = `AND data->>'affiliateId' = $1::text`;
       affParams = [affiliateFilter];
     }
 
@@ -1220,37 +1217,14 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Advocate Q1 Activity (read from User table directly) ──
-      // AuditLog-based event detection was unreliable (JSON shape inconsistent,
-      // Railway editor couldn't render rows for diagnosis). This version reads
-      // current advocate state from the User table and anchors on created_at /
-      // updated_at timestamps. Less precise than event-based tracking (won't
-      // capture advocates who cycled through multiple statuses in Q1) but
-      // produces real numbers that reflect Q1 activity.
+      // AuditLog-based event detection (LAG() window function) timed out in
+      // production — AuditLog table is too large for ad-hoc JSONB scans.
+      // This version reads current advocate state from the User table and
+      // anchors on created_at / updated_at timestamps. Less precise than
+      // event-based tracking but produces real numbers that reflect Q1 activity.
       //
       // RD 4/25/26 (item #5 fix): Added ${affWhereUser} to all 5 sub-SELECTs.
-      // Previously the Q1 activity numbers were always org-wide regardless of
-      // the affiliate slicer. Diagnostic confirmed: org-wide returned 38/69/24
-      // while Broward-scoped returned 8/8/8 — the report was always showing
-      // the org-wide numbers because the SQL ignored the affiliate filter.
-      // Advocate Q1 Activity — event-based detection via AuditLog LAG().
-      // Applications/Trained/Approved: User record creation date (unchanged).
-      // Became Active/Inactive: detect state transitions using LAG() window
-      // function on consecutive AuditLog snapshots per user, counting DISTINCT
-      // user_ids who transitioned into that status at any point in Q1.
       pool.query(`
-        WITH advocate_events AS (
-          SELECT
-            data->>'id'              AS user_id,
-            data->>'advocate_status' AS status,
-            created_at,
-            LAG(data->>'advocate_status') OVER (
-              PARTITION BY data->>'id' ORDER BY created_at
-            ) AS prev_status
-          FROM "AuditLog"
-          WHERE "table" = 'User' AND action = 'Update'
-            AND data->>'advocate_status' IS NOT NULL
-            ${affWhereAudit}
-        )
         SELECT
           (SELECT COUNT(*)::int FROM "User" u
             WHERE u."advocate_status" IS NOT NULL
@@ -1278,19 +1252,20 @@ router.get('/', async (req, res) => {
               AND u."created_at" <= '${PERIOD_END} 23:59:59'
               ${affWhereUser}
           ) AS approved,
-          COUNT(DISTINCT CASE
-            WHEN status = 'Active'
-             AND (prev_status IS NULL OR prev_status <> 'Active')
-             AND created_at >= '${PERIOD_START}'
-             AND created_at <= '${PERIOD_END} 23:59:59'
-            THEN user_id END)::int AS became_active,
-          COUNT(DISTINCT CASE
-            WHEN status = 'Inactive'
-             AND (prev_status IS NULL OR prev_status <> 'Inactive')
-             AND created_at >= '${PERIOD_START}'
-             AND created_at <= '${PERIOD_END} 23:59:59'
-            THEN user_id END)::int AS became_inactive
-        FROM advocate_events
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_status"::text = 'Active'
+              AND u."updated_at" >= '${PERIOD_START}'
+              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
+          ) AS became_active,
+          (SELECT COUNT(*)::int FROM "User" u
+            WHERE u."deleted_at" = 0
+              AND u."advocate_status"::text = 'Inactive'
+              AND u."updated_at" >= '${PERIOD_START}'
+              AND u."updated_at" <= '${PERIOD_END} 23:59:59'
+              ${affWhereUser}
+          ) AS became_inactive
       `, affParams),
 
       // ─── NEW: Children with Welfare Involvement ─────────────

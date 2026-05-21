@@ -324,7 +324,63 @@ router.get('/', async (req, res) => {
       FROM held_lessons
       GROUP BY mom_id
     `;
-    const sessionsResult = await pool.query(sessionsQuery, [momIds]);
+    let sessionsResult;
+    try {
+      sessionsResult = await pool.query(sessionsQuery, [momIds]);
+    } catch (_err) {
+      // Fallback: promptness column may not exist — use attendance status only
+      const fallbackQuery = `
+        WITH active_pairings AS (
+          SELECT p."id" AS pairing_id,
+                 p."momId" AS mom_id,
+                 p."advocacyGroupId" AS group_id
+          FROM "Pairing" p
+          WHERE p."momId" = ANY($1)
+            AND p."deleted_at" = 0
+            AND p."status"::text = 'paired'
+        ),
+        pairing_sessions AS (
+          SELECT ap.mom_id,
+                 s."lesson_template_id",
+                 s."status"::text      AS session_status,
+                 NULL::text            AS attendance_status,
+                 false                 AS is_group
+          FROM active_pairings ap
+          JOIN "Session" s ON s."pairing_id" = ap.pairing_id
+          WHERE s."deleted_at" = 0
+            AND s."lesson_template_id" IS NOT NULL
+          UNION ALL
+          SELECT ap.mom_id,
+                 s."lesson_template_id",
+                 s."status"::text      AS session_status,
+                 sa."status"::text     AS attendance_status,
+                 true                  AS is_group
+          FROM active_pairings ap
+          JOIN "Session" s ON s."advocacy_group_id" = ap.group_id
+          LEFT JOIN "SessionAttendance" sa ON sa."session_id" = s."id"
+            AND sa."mom_id" = ap.mom_id
+            AND sa."deleted_at" = 0
+          WHERE ap.group_id IS NOT NULL
+            AND s."deleted_at" = 0
+            AND s."lesson_template_id" IS NOT NULL
+        ),
+        held_lessons AS (
+          SELECT mom_id, lesson_template_id
+          FROM pairing_sessions
+          WHERE lesson_template_id IS NOT NULL
+            AND CASE
+              WHEN attendance_status = 'Present' THEN true
+              WHEN attendance_status = 'Absent'  THEN false
+              WHEN is_group AND attendance_status IS NULL THEN session_status = 'Held'
+              ELSE session_status = 'Held'
+            END
+        )
+        SELECT mom_id, COUNT(DISTINCT lesson_template_id)::int AS held_sessions
+        FROM held_lessons
+        GROUP BY mom_id
+      `;
+      sessionsResult = await pool.query(fallbackQuery, [momIds]);
+    }
     const heldByMom = Object.fromEntries(sessionsResult.rows.map((r) => [r.mom_id, r.held_sessions]));
 
     // Contact log — last 5 entries per mom: held/not-held sessions + mom-linked coordinator notes.

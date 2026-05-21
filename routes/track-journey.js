@@ -22,7 +22,7 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
   // a gap calculation and would otherwise be treated as epoch (1970).
   const allHeld   = sessions.filter(s => s.status === 'Held' && s.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
-  const trackHeld = allHeld.filter(s => s.type === 'Track_Session');
+  const trackHeld = allHeld.filter(s => !!s.lessonTemplateId);
 
   const winStart = new Date(pairingStart);
   const winEnd   = pairingEnd ? new Date(pairingEnd) : new Date();

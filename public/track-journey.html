@@ -3322,6 +3322,22 @@ async function init() {
   }
 
   await loadPairings('');
+
+  // Auto-select a pairing if pairing_id was passed in the URL (e.g. from Mom Status "Open full Track Journey").
+  var params = new URLSearchParams(window.location.search);
+  var deepPairingId = params.get('pairing_id');
+  if (deepPairingId) {
+    var target = ALL_PAIRINGS.find(function(p){ return p.pairingId === deepPairingId; });
+    if (target) {
+      var groups = groupPairingsByMom(ALL_PAIRINGS);
+      var group = groups.find(function(g){ return g.pairings.some(function(p){ return p.pairingId === deepPairingId; }); });
+      if (group) {
+        document.getElementById('mom-search-input').value = group.momName;
+        populateTrackDropdown(group, deepPairingId);
+        await loadPairing(deepPairingId);
+      }
+    }
+  }
 }
 
 async function loadPairings(affiliateId) {

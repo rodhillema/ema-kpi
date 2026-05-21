@@ -4014,6 +4014,8 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
       var repeatHtml = '';
       if (heldSess.length > 1) {
         repeatHtml = ' <span class="repeat-tag">\xD7' + heldSess.length + ' sessions</span>';
+      } else if (wasAbsent) {
+        repeatHtml = ' <span class="repeat-tag missed-tag">missed</span>';
       }
       var titleText = escHtml(g.title || trackTitles[g.lessonNumber - 1] || ('Session ' + g.lessonNumber));
       step.innerHTML =

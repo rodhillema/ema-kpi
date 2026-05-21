@@ -1884,6 +1884,25 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   vertical-align: middle;
 }
 
+/* Warning banner — shown when held sessions exist but have no lesson template linked */
+.curr-warn-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(242,161,54,0.10);
+  border: 1px solid rgba(242,161,54,0.35);
+  border-radius: 6px;
+  padding: 10px 13px;
+  margin-bottom: 12px;
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  color: #6b4200;
+  line-height: 1.5;
+}
+.curr-warn-banner svg { flex-shrink: 0; margin-top: 1px; }
+.curr-warn-banner strong { font-weight: 700; }
+.curr-warn-banner a { color: #6b4200; text-decoration: underline; }
+
 /* Inline date for pre-assessment row only - no pill */
 .seq-date-inline {
   font-size: 10px;
@@ -3145,6 +3164,14 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
                   </div>
                 </span>
               </div>
+              <div id="curr-untempl-warn" class="curr-warn-banner" style="display:none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span id="curr-untempl-warn-text"></span>
+              </div>
               <div class="seq" id="seq-container">
                 <!-- seq-steps injected by JS -->
               </div>
@@ -3849,6 +3876,24 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
   var heldTemplateIdSet = {};
   heldTrack.forEach(function(s){ heldTemplateIdSet[s.lessonTemplateId] = true; });
   var heldDistinctCount = Object.keys(heldTemplateIdSet).length;
+
+  // Unlinked sessions warning — show when sessions were held but had no lesson template
+  // in Trellis. This causes the curriculum count to underreport.
+  var warnEl     = document.getElementById('curr-untempl-warn');
+  var warnText   = document.getElementById('curr-untempl-warn-text');
+  // Show warning when: the track has a curriculum requirement, at least one held session exists,
+  // but zero of them are linked to a lesson template in Trellis.
+  // req === 0 or null → track has no curriculum (warning would be a false positive).
+  if (warnEl && warnText && req && heldSupport.length > 0 && heldDistinctCount === 0) {
+    var n = heldSupport.length;
+    warnText.innerHTML =
+      '<strong>' + n + ' session' + (n > 1 ? 's were' : ' was') + ' held with no lesson linked in Trellis.</strong> '
+      + 'Curriculum progress shows 0 because session records don&rsquo;t reference a lesson template. '
+      + 'To fix, open each session in Trellis and link it to the appropriate lesson.';
+    warnEl.style.display = '';
+  } else if (warnEl) {
+    warnEl.style.display = 'none';
+  }
 
   // Count label + threshold pill
   var countLbl   = document.getElementById('curr-count-label');

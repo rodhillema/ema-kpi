@@ -20,7 +20,7 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
   // Group sessions may have status='Held' but date_start=NULL.
   // Drop null-dated sessions from the stall computation — they can't anchor
   // a gap calculation and would otherwise be treated as epoch (1970).
-  const allHeld   = sessions.filter(s => s.status === 'Held' && s.date)
+  const allHeld   = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const trackHeld = allHeld.filter(s => !!s.lessonTemplateId);
 
@@ -607,13 +607,20 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                END                    AS "date",
                s."status"::text       AS "groupStatus",
                sa."status"::text      AS "momAttended",
+               sa."promptness"::text  AS "promptness",
                CASE
+                 -- Group: attendance record present
                  WHEN sa."status"::text = 'Present' THEN 'Held'
                  WHEN sa."status"::text = 'Absent'  THEN 'NotHeld'
+                 -- Group: no attendance record — cohort held, assume mom was there
                  WHEN s."advocacy_group_id" IS NOT NULL
                       AND s."status"::text = 'Held'
                       AND sa."status" IS NULL
                       THEN 'Unmarked'
+                 -- 1:1: "No show" promptness overrides Session.status = Held
+                 WHEN s."advocacy_group_id" IS NULL
+                      AND sa."promptness"::text = 'No show'
+                      THEN 'NotHeld'
                  ELSE s."status"::text
                END                    AS "status",
                s."session_type"::text AS "type",
@@ -724,9 +731,9 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Current stall for header — only count Held sessions that have a real
     // date_start. Some group sessions are recorded as Held but without a
     // date and can't anchor a stall calc.
-    const heldSessions  = sessions.filter(s => s.status === 'Held' && s.date);
+    const heldSessions  = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date);
     const lastHeld      = heldSessions.at(-1)?.date ?? null;
-    const lastHeldTrack = sessions.filter(s => s.status === 'Held' && s.type === 'Track_Session' && s.date).at(-1)?.date ?? null;
+    const lastHeldTrack = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && !!s.lessonTemplateId && s.date).at(-1)?.date ?? null;
     const dsh = daysSince(lastHeld);
     const dst = daysSince(lastHeldTrack);
     let currentStall = null;

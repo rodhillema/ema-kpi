@@ -643,21 +643,46 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
          ORDER BY COALESCE(s."date_start", s."updated_at") NULLS LAST
       `, [pairingId, p.advocacyGroupId, p.momId]));
     } catch (_) {
+      // Fallback: promptness column may not exist — keep full SA join and lesson_template_id
+      // so group attendance and curriculum counting still work correctly.
       ({ rows: sessRows } = await pool.query(`
         SELECT s."id",
-               s."date_start"         AS "date",
+               CASE
+                 WHEN s."date_start" IS NOT NULL THEN s."date_start"
+                 WHEN s."status"::text = 'Held'  THEN s."updated_at"
+                 ELSE NULL
+               END                    AS "date",
                s."status"::text       AS "groupStatus",
-               NULL::text             AS "momAttended",
-               s."status"::text       AS "status",
+               sa."status"::text      AS "momAttended",
+               NULL::text             AS "promptness",
+               CASE
+                 WHEN sa."status"::text = 'Present' THEN 'Held'
+                 WHEN sa."status"::text = 'Absent'  THEN 'NotHeld'
+                 WHEN s."advocacy_group_id" IS NOT NULL
+                      AND s."status"::text = 'Held'
+                      AND sa."status" IS NULL
+                      THEN 'Unmarked'
+                 ELSE s."status"::text
+               END                    AS "status",
                s."session_type"::text AS "type",
-               NULL::text             AS "notes",
-               NULL::text             AS "lessonTemplateId",
-               NULL::text             AS "sessionName"
+               s."description"        AS "notes",
+               s."lesson_template_id" AS "lessonTemplateId",
+               s."name"               AS "sessionName"
           FROM "Session" s
-         WHERE s."pairing_id" = $1
-           AND s."deleted_at" = 0
-         ORDER BY s."date_start"
-      `, [pairingId]));
+          LEFT JOIN "SessionAttendance" sa
+            ON sa."session_id" = s."id"
+           AND sa."mom_id"     = $3
+           AND sa."deleted_at" = 0
+         WHERE s."deleted_at" = 0
+           AND (
+             s."pairing_id" = $1
+             OR (
+               $2::text IS NOT NULL
+               AND s."advocacy_group_id" = $2
+             )
+           )
+         ORDER BY COALESCE(s."date_start", s."updated_at") NULLS LAST
+      `, [pairingId, p.advocacyGroupId, p.momId]));
     }
 
     // Lesson templates — all templates for this track, ordered by sequence.

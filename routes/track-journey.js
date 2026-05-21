@@ -725,6 +725,12 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       };
     });
 
+    // Count sessions with no lesson template linked in Trellis.
+    // Non-zero means curriculum progress may be underreported (see Trellis data-entry gap).
+    const untemplatedCount      = sessions.filter(s => !s.lessonTemplateId).length;
+    const heldUntemplatedCount  = sessions.filter(s => !s.lessonTemplateId
+      && (s.status === 'Held' || s.status === 'Unmarked')).length;
+
     // Stall computation
     const stalls = computeStalls(sessions, p.startDate, p.endDate);
 
@@ -1061,6 +1067,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       coordinatorNotes,
       connectionLogs,
       vitalNeeds,
+      untemplatedSessionCount:     untemplatedCount,
+      heldUntemplatedSessionCount: heldUntemplatedCount,
     });
   } catch (err) {
     console.error('[track-journey] /:pairingId error:', err.message);

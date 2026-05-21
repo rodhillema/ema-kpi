@@ -1266,7 +1266,7 @@ function openDrawer(id){
   // ── 5. TRACK HISTORY ──
   var activeTrack=m.trackHistory.filter(function(t){return t.outcome==="active";})[0];
   var journeyLink=activeTrack
-    ?'<a href="/track-journey?mom_id='+m.id+'" class="d-journey-link">Open full Track Journey &#8594;</a>'
+    ?'<a href="/track-journey?pairing_id='+activeTrack.pairingId+'" class="d-journey-link">Open full Track Journey &#8594;</a>'
     :'';
   document.getElementById("d-tracks").innerHTML=journeyLink+(m.trackHistory.length
     ?m.trackHistory.slice().reverse().map(function(tr){

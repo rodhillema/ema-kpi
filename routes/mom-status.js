@@ -600,7 +600,7 @@ router.get('/', async (req, res) => {
         children: childrenByMom[r.id] || [],
         intakeDate: r.intakeDate || null,
         inactiveDate: r.status === 'inactive' ? r.momUpdatedAt || null : null,
-        lastContactDate: r.lastSessionDate || null,
+        lastContactDate: r.lastSessionDate || (connectionLogsByMom[r.id]?.[0]?.date ?? null),
         lastFwaDate: r.lastFwaDate || null,
         inProgressTrack,
         trackHistory:    trackHistoryByMom[r.id]    || [],

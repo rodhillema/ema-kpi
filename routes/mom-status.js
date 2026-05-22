@@ -193,30 +193,37 @@ router.get('/', async (req, res) => {
         ORDER BY p."momId", p."created_at" DESC
       ),
       latest_session AS (
-        -- Latest HELD session per mom — source for communication stall (Fix 8).
-        -- Held-only: Planned/NotHeld sessions are not actual contact.
-        SELECT DISTINCT ON (p."momId")
-          p."momId" AS mom_id,
-          s."date_start" AS session_date,
-          s."status"::text AS session_status
-        FROM "Session" s
-        JOIN "Pairing" p ON p."id" = s."pairing_id"
-        WHERE s."deleted_at" = 0
-          AND s."status"::text = 'Held'
-        ORDER BY p."momId", s."date_start" DESC
+        -- Latest session note per mom — date_submitted_c is the true completion date.
+        -- Uses Session.mom_id to cover both 1:1 and group pairings. Captures lessons
+        -- marked complete via SessionNote even when Session.status stays 'Planned'.
+        SELECT DISTINCT ON (s."mom_id")
+          s."mom_id" AS mom_id,
+          sn."date_submitted_c" AS session_date,
+          'Complete'::text AS session_status
+        FROM "SessionNote" sn
+        JOIN "Session" s ON s."id" = sn."session_id"
+          AND s."deleted_at" = 0
+          AND s."mom_id" IS NOT NULL
+        WHERE sn."deleted_at" = 0
+          AND sn."date_submitted_c" IS NOT NULL
+        ORDER BY s."mom_id", sn."date_submitted_c" DESC NULLS LAST
       ),
       last_curriculum_session AS (
-        -- Latest held session with lesson content (lesson_template_id IS NOT NULL).
-        -- Source for curriculum stall threshold (30 days, Fix 8).
+        -- Latest SessionNote that covered a completed Lesson — true curriculum date.
+        -- Session.status may say 'Planned' but Lesson.status='completed' confirms the lesson was done.
         SELECT DISTINCT ON (p."momId")
           p."momId" AS mom_id,
-          s."date_start" AS curriculum_date
-        FROM "Session" s
-        JOIN "Pairing" p ON p."id" = s."pairing_id"
-        WHERE s."deleted_at" = 0
-          AND s."status"::text = 'Held'
-          AND s."lesson_template_id" IS NOT NULL
-        ORDER BY p."momId", s."date_start" DESC
+          sn."date_submitted_c" AS curriculum_date
+        FROM "SessionNote" sn
+        JOIN "Session" s ON s."id" = sn."session_id"
+          AND s."deleted_at" = 0
+        JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+          AND l."status"::text = 'completed'
+        JOIN "Pairing" p ON p."id" = l."pairing_id"
+          AND p."deleted_at" = 0
+        WHERE sn."deleted_at" = 0
+          AND sn."covered_lesson_id" IS NOT NULL
+        ORDER BY p."momId", sn."date_submitted_c" DESC NULLS LAST
       )
       SELECT
         m."id",
@@ -264,122 +271,26 @@ router.get('/', async (req, res) => {
 
     const momIds = rows.map((r) => r.id);
 
-    // Held-session count per active pairing — distinct lesson_template_ids held (matching Trellis count).
-    // Handles both 1:1 (pairing_id) and group (advocacy_group_id) sessions with per-mom SessionAttendance.
+    // Lesson completion count per active pairing — Lesson.status='completed' is the
+    // authoritative source, matching what Trellis shows in its lesson tracker.
+    // Replaces the prior Session.status='Held' approach which missed lessons marked
+    // complete via SessionNote without Session.status being updated.
     const sessionsQuery = `
-      WITH active_pairings AS (
-        SELECT p."id" AS pairing_id,
-               p."momId" AS mom_id,
-               p."advocacyGroupId" AS group_id
-        FROM "Pairing" p
-        WHERE p."momId" = ANY($1)
-          AND p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-      ),
-      pairing_sessions AS (
-        SELECT ap.mom_id,
-               s."lesson_template_id",
-               s."status"::text      AS session_status,
-               sa."status"::text     AS attendance_status,
-               sa."promptness"::text AS promptness,
-               false                 AS is_group
-        FROM active_pairings ap
-        JOIN "Session" s ON s."pairing_id" = ap.pairing_id
-        LEFT JOIN "SessionAttendance" sa ON sa."session_id" = s."id"
-          AND sa."mom_id" = ap.mom_id
-          AND sa."deleted_at" = 0
-        WHERE s."deleted_at" = 0
-          AND s."lesson_template_id" IS NOT NULL
-        UNION ALL
-        SELECT ap.mom_id,
-               s."lesson_template_id",
-               s."status"::text      AS session_status,
-               sa."status"::text     AS attendance_status,
-               sa."promptness"::text AS promptness,
-               true                  AS is_group
-        FROM active_pairings ap
-        JOIN "Session" s ON s."advocacy_group_id" = ap.group_id
-        LEFT JOIN "SessionAttendance" sa ON sa."session_id" = s."id"
-          AND sa."mom_id" = ap.mom_id
-          AND sa."deleted_at" = 0
-        WHERE ap.group_id IS NOT NULL
-          AND s."deleted_at" = 0
-          AND s."lesson_template_id" IS NOT NULL
-      ),
-      held_lessons AS (
-        SELECT mom_id, lesson_template_id
-        FROM pairing_sessions
-        WHERE lesson_template_id IS NOT NULL
-          AND CASE
-            WHEN attendance_status = 'Present' THEN true
-            WHEN attendance_status = 'Absent'  THEN false
-            -- Group + no attendance record (Unmarked): count as held (benefit of doubt)
-            WHEN is_group AND attendance_status IS NULL THEN session_status = 'Held'
-            -- 1:1 + No show promptness: override Session.status = Held
-            WHEN NOT is_group AND promptness = 'No show' THEN false
-            ELSE session_status = 'Held'
-          END
-      )
-      SELECT mom_id, COUNT(DISTINCT lesson_template_id)::int AS held_sessions
-      FROM held_lessons
-      GROUP BY mom_id
+      SELECT p."momId" AS mom_id,
+             COUNT(l."id")::int AS held_sessions
+      FROM "Pairing" p
+      LEFT JOIN "Lesson" l ON l."pairing_id" = p."id"
+        AND l."status"::text = 'completed'
+      WHERE p."momId" = ANY($1)
+        AND p."deleted_at" = 0
+        AND p."status"::text = 'paired'
+      GROUP BY p."momId"
     `;
     let sessionsResult;
     try {
       sessionsResult = await pool.query(sessionsQuery, [momIds]);
     } catch (_err) {
-      // Fallback: promptness column may not exist — use attendance status only
-      const fallbackQuery = `
-        WITH active_pairings AS (
-          SELECT p."id" AS pairing_id,
-                 p."momId" AS mom_id,
-                 p."advocacyGroupId" AS group_id
-          FROM "Pairing" p
-          WHERE p."momId" = ANY($1)
-            AND p."deleted_at" = 0
-            AND p."status"::text = 'paired'
-        ),
-        pairing_sessions AS (
-          SELECT ap.mom_id,
-                 s."lesson_template_id",
-                 s."status"::text      AS session_status,
-                 NULL::text            AS attendance_status,
-                 false                 AS is_group
-          FROM active_pairings ap
-          JOIN "Session" s ON s."pairing_id" = ap.pairing_id
-          WHERE s."deleted_at" = 0
-            AND s."lesson_template_id" IS NOT NULL
-          UNION ALL
-          SELECT ap.mom_id,
-                 s."lesson_template_id",
-                 s."status"::text      AS session_status,
-                 sa."status"::text     AS attendance_status,
-                 true                  AS is_group
-          FROM active_pairings ap
-          JOIN "Session" s ON s."advocacy_group_id" = ap.group_id
-          LEFT JOIN "SessionAttendance" sa ON sa."session_id" = s."id"
-            AND sa."mom_id" = ap.mom_id
-            AND sa."deleted_at" = 0
-          WHERE ap.group_id IS NOT NULL
-            AND s."deleted_at" = 0
-            AND s."lesson_template_id" IS NOT NULL
-        ),
-        held_lessons AS (
-          SELECT mom_id, lesson_template_id
-          FROM pairing_sessions
-          WHERE lesson_template_id IS NOT NULL
-            AND CASE
-              WHEN attendance_status = 'Present' THEN true
-              WHEN attendance_status = 'Absent'  THEN false
-              WHEN is_group AND attendance_status IS NULL THEN session_status = 'Held'
-              ELSE session_status = 'Held'
-            END
-        )
-        SELECT mom_id, COUNT(DISTINCT lesson_template_id)::int AS held_sessions
-        FROM held_lessons
-        GROUP BY mom_id
-      `;
-      sessionsResult = await pool.query(fallbackQuery, [momIds]);
+      sessionsResult = { rows: [] };
     }
     const heldByMom = Object.fromEntries(sessionsResult.rows.map((r) => [r.mom_id, r.held_sessions]));
 

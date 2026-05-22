@@ -112,26 +112,32 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
 
     console.log('[track-journey] /pairings — base query returned', rows.length, 'rows');
 
-    // Step 2: fetch last-held dates for stall detection in a single batch query.
-    // Only run if there are rows to avoid an empty-IN error.
+    // Step 2: fetch last-activity dates for stall detection using SessionNote.date_submitted_c.
+    // Session.status='Held' misses lessons marked complete via SessionNote in Trellis.
+    // Uses Session.mom_id to cover both 1:1 and group pairings.
     let lastHeldMap = {};
     if (rows.length > 0) {
-      const ids = rows.map(r => r.pairingId);
+      const ids    = rows.map(r => r.pairingId);
+      const momIds = rows.map(r => r.momId);
+      const momToPairing = Object.fromEntries(rows.map(r => [r.momId, r.pairingId]));
       try {
         const { rows: stallRows } = await pool.query(`
           SELECT
-            s."pairing_id"                                     AS "pairingId",
-            MAX(s."date_start")                                AS "lastHeldAt",
-            MAX(CASE WHEN s."session_type"::text = 'Track_Session'
-                     THEN s."date_start" END)                  AS "lastHeldTrackAt"
-          FROM "Session" s
-          WHERE s."pairing_id" = ANY($1)
+            s."mom_id"                                            AS "momId",
+            MAX(sn."date_submitted_c")                            AS "lastHeldAt",
+            MAX(CASE WHEN sn."covered_lesson_id" IS NOT NULL
+                     THEN sn."date_submitted_c" END)              AS "lastHeldTrackAt"
+          FROM "SessionNote" sn
+          JOIN "Session" s ON s."id" = sn."session_id"
             AND s."deleted_at" = 0
-            AND s."status"::text = 'Held'
-          GROUP BY s."pairing_id"
-        `, [ids]);
+            AND s."mom_id" = ANY($1)
+          WHERE sn."deleted_at" = 0
+            AND sn."date_submitted_c" IS NOT NULL
+          GROUP BY s."mom_id"
+        `, [momIds]);
         for (const r of stallRows) {
-          lastHeldMap[r.pairingId] = { lastHeldAt: r.lastHeldAt, lastHeldTrackAt: r.lastHeldTrackAt };
+          const pid = momToPairing[r.momId];
+          if (pid) lastHeldMap[pid] = { lastHeldAt: r.lastHeldAt, lastHeldTrackAt: r.lastHeldTrackAt };
         }
       } catch (stallErr) {
         console.error('[track-journey] stall sub-query failed (stall badges skipped):', stallErr.message);
@@ -203,7 +209,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
     // Session.type enum values — confirm what values exist in production
     try {
       const { rows: typeVals } = await pool.query(`
-        SELECT s."session_type"::text AS type_val, COUNT(*)::int AS cnt
+        SELECT s."type"::text AS type_val, COUNT(*)::int AS cnt
           FROM "Session" s
          WHERE s."deleted_at" = 0
          GROUP BY 1
@@ -221,7 +227,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       const { rows: mislabeled } = await pool.query(`
         SELECT
           s."id",
-          s."session_type"::text    AS "type",
+          s."type"::text            AS "type",
           s."status"::text          AS "status",
           s."lesson_template_id"    AS "lessonTemplateId",
           s."name"                  AS "sessionName",
@@ -236,7 +242,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
         WHERE s."deleted_at" = 0
           AND s."advocacy_group_id" IS NOT NULL
           AND s."lesson_template_id" IS NOT NULL
-          AND s."session_type"::text <> 'Track_Session'
+          AND s."type"::text <> 'Track_Session'
         ORDER BY s."date_start" DESC NULLS LAST
         LIMIT 20
       `);
@@ -252,7 +258,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
     try {
       const { rows: summary } = await pool.query(`
         SELECT
-          s."session_type"::text                              AS "type",
+          s."type"::text                                      AS "type",
           (s."lesson_template_id" IS NOT NULL)::text         AS "hasLesson",
           COUNT(*)::int                                       AS "cnt"
         FROM "Session" s
@@ -326,7 +332,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
     for (const p of pairings) {
       const { rows } = await pool.query(`
         SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-               s."session_type"::text AS type, s."lesson_template_id", s."pairing_id", s."deleted_at"
+               s."type"::text AS type, s."lesson_template_id", s."pairing_id", s."deleted_at"
           FROM "Session" s
          WHERE s."pairing_id" = $1
          ORDER BY s."date_start"
@@ -343,7 +349,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
         if (!p.advocacyGroupId) continue;
         const { rows } = await pool.query(`
           SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-                 s."session_type"::text AS type, s."lesson_template_id", s."pairing_id",
+                 s."type"::text AS type, s."lesson_template_id", s."pairing_id",
                  s."advocacy_group_id", s."deleted_at"
             FROM "Session" s
            WHERE s."advocacy_group_id" = $1
@@ -664,7 +670,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       THEN 'Unmarked'
                  ELSE s."status"::text
                END                    AS "status",
-               s."session_type"::text AS "type",
+               s."type"::text         AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"
@@ -708,6 +714,24 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     } catch (_) {
       // LessonTemplate query failed — frontend uses static LESSON_TITLES fallback.
     }
+
+    // Per-pairing Lesson rows — Lesson.status='completed' is the authoritative
+    // curriculum completion state in Trellis, more reliable than Session.status='Held'.
+    let lessons = [];
+    try {
+      const { rows: lRows } = await pool.query(`
+        SELECT
+          l."id",
+          l."source_lesson_template_id" AS "lessonTemplateId",
+          l."status"::text              AS "status",
+          l."title",
+          l."order"
+        FROM "Lesson" l
+        WHERE l."pairing_id" = $1
+        ORDER BY l."order" ASC NULLS LAST
+      `, [pairingId]);
+      lessons = lRows;
+    } catch (_) { /* Lesson table unavailable — frontend falls back to session-based count */ }
 
     // Map templateId → lesson number extracted from name ("Lesson 8 | ..." → 8).
     // lt.order in Trellis doesn't always match the "Lesson N" curriculum number,
@@ -756,17 +780,56 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     const heldUntemplatedCount  = sessions.filter(s => !s.lessonTemplateId
       && (s.status === 'Held' || s.status === 'Unmarked')).length;
 
-    // Stall computation
-    const stalls = computeStalls(sessions, p.startDate, p.endDate);
+    // SessionNote activity dates — true completion evidence for stall computation.
+    // Covers lessons marked complete via SessionNote even when Session.status='Planned'.
+    let noteActivitySessions = [];
+    try {
+      const { rows: snRows } = await pool.query(`
+        SELECT
+          sn."date_submitted_c"                      AS date,
+          (sn."covered_lesson_id" IS NOT NULL)::bool AS "isCurriculum",
+          l."source_lesson_template_id"              AS "lessonTemplateId"
+        FROM "SessionNote" sn
+        JOIN "Session" s ON s."id" = sn."session_id"
+          AND s."deleted_at" = 0
+          AND s."mom_id" = $1
+        LEFT JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+        WHERE sn."deleted_at" = 0
+          AND sn."date_submitted_c" IS NOT NULL
+        ORDER BY sn."date_submitted_c" ASC
+      `, [p.momId]);
+      noteActivitySessions = snRows.map(r => ({
+        date:             r.date,
+        status:           'Held',
+        type:             r.isCurriculum ? 'Track_Session' : 'Support_Session',
+        lessonTemplateId: r.lessonTemplateId || null,
+      }));
+    } catch (_) { /* SessionNote unavailable — stall computation uses Session.status only */ }
 
-    // Current stall for header — only count Held sessions that have a real
-    // date_start. Some group sessions are recorded as Held but without a
-    // date and can't anchor a stall calc.
-    const heldSessions  = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date);
-    const lastHeld      = heldSessions.at(-1)?.date ?? null;
-    const lastHeldTrack = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && !!s.lessonTemplateId && s.date).at(-1)?.date ?? null;
-    const dsh = daysSince(lastHeld);
-    const dst = daysSince(lastHeldTrack);
+    // Merge note activity with session data, deduplicating same-day same-lesson events.
+    const sessionHeldDayKeys = new Set(
+      sessions
+        .filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
+        .map(s => new Date(s.date).toISOString().slice(0, 10) + ':' + (s.lessonTemplateId || ''))
+    );
+    const dedupedNoteActivity = noteActivitySessions.filter(n => {
+      const key = new Date(n.date).toISOString().slice(0, 10) + ':' + (n.lessonTemplateId || '');
+      return !sessionHeldDayKeys.has(key);
+    });
+    const sessionsForStall = [...sessions, ...dedupedNoteActivity]
+      .filter(s => s.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Stall computation uses note-augmented session list.
+    const stalls = computeStalls(sessionsForStall, p.startDate, p.endDate);
+
+    // Last activity date — derived from SessionNote-augmented list.
+    const heldForStall   = sessionsForStall.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const lastActivityDate      = heldForStall.at(-1)?.date ?? null;
+    const lastCurrActivityDate  = heldForStall.filter(s => !!s.lessonTemplateId).at(-1)?.date ?? null;
+    const dsh = daysSince(lastActivityDate);
+    const dst = daysSince(lastCurrActivityDate);
     let currentStall = null;
     if (p.status === 'paired') {
       if (dst !== null && dst >= 30)       currentStall = { type: 'curriculum', days: dst };
@@ -1074,20 +1137,22 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
 
     res.json({
       pairing: {
-        id:              p.id,
-        momName:         `${p.momFirst} ${p.momLast}`.trim(),
-        trackTitle:      p.trackTitle,
-        status:          p.status,
-        advocacyType:    p.advocacyType || null,
-        startDate:       p.startDate,
-        endDate:         p.endDate,
-        advocateName:    p.advFirst ? `${p.advFirst} ${p.advLast}`.trim() : null,
-        coordinatorName: p.coord_first ? `${p.coord_first} ${p.coord_last}`.trim() : null,
+        id:               p.id,
+        momName:          `${p.momFirst} ${p.momLast}`.trim(),
+        trackTitle:       p.trackTitle,
+        status:           p.status,
+        advocacyType:     p.advocacyType || null,
+        startDate:        p.startDate,
+        endDate:          p.endDate,
+        advocateName:     p.advFirst ? `${p.advFirst} ${p.advLast}`.trim() : null,
+        coordinatorName:  p.coord_first ? `${p.coord_first} ${p.coord_last}`.trim() : null,
         currentStall,
+        lastActivityDate, // SessionNote-aware last contact date for stall drawer display
       },
       sessions,
       stalls,
       assessments,
+      lessons,
       lessonTemplates,
       coordinatorNotes,
       connectionLogs,

@@ -3650,7 +3650,7 @@ function renderJourney(data) {
   // Track selector — populated by populateTrackDropdown when a mom is picked.
 
   renderTimeline(pairing, sessions, stalls, assessments, data.vitalNeeds || [], winStart, winEnd);
-  renderDetail(pairing, sessions, assessments, data.lessonTemplates || []);
+  renderDetail(pairing, sessions, assessments, data.lessonTemplates || [], data.lessons || []);
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
@@ -3865,17 +3865,43 @@ function renderDateScale(start, end, isActive) {
 }
 
 // ── Curriculum detail + assessment panel ──────────────────────────────────────
-function renderDetail(pairing, sessions, assessments, lessonTemplates) {
-  var templatedTrackSessions   = sessions.filter(function(s){ return !!s.lessonTemplateId; });
-  var untemplatedTrackSessions = [];
+function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) {
+  var trackSessions            = sessions.filter(function(s){ return s.type === 'Track_Session'; });
+  var templatedTrackSessions   = trackSessions.filter(function(s){ return !!s.lessonTemplateId; });
+  var untemplatedTrackSessions = trackSessions.filter(function(s){ return !s.lessonTemplateId; });
   var heldTrack                = templatedTrackSessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
-  var heldSupport              = sessions.filter(function(s){ return !s.lessonTemplateId && (s.status === 'Held' || s.status === 'Unmarked'); });
+  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && (s.status === 'Held' || s.status === 'Unmarked'); });
   var req                      = requiredSessions(pairing.trackTitle);
   var minReq                   = minRequired(pairing.trackTitle);
-  // Distinct held lesson template IDs — matches what Trellis counts as completed lessons
-  var heldTemplateIdSet = {};
-  heldTrack.forEach(function(s){ heldTemplateIdSet[s.lessonTemplateId] = true; });
-  var heldDistinctCount = Object.keys(heldTemplateIdSet).length;
+  // Curriculum count — use Lesson.status='completed' from the Lesson table when available.
+  // This matches Trellis's lesson tracker which marks lessons complete via SessionNote,
+  // even when Session.status was never updated to 'Held'.
+  var heldDistinctCount;
+  if (lessons && lessons.length > 0) {
+    heldDistinctCount = lessons.filter(function(l){ return l.status === 'completed'; }).length;
+  } else {
+    var heldTemplateIdSet = {};
+    heldTrack.forEach(function(s){ heldTemplateIdSet[s.lessonTemplateId] = true; });
+    heldDistinctCount = Object.keys(heldTemplateIdSet).length;
+  }
+
+  // Unlinked sessions warning — show when sessions were held but had no lesson template
+  // in Trellis. This causes the curriculum count to underreport.
+  var warnEl     = document.getElementById('curr-untempl-warn');
+  var warnText   = document.getElementById('curr-untempl-warn-text');
+  // Show warning when: the track has a curriculum requirement, at least one held session exists,
+  // but zero of them are linked to a lesson template in Trellis.
+  // req === 0 or null → track has no curriculum (warning would be a false positive).
+  if (warnEl && warnText && req && heldSupport.length > 0 && heldDistinctCount === 0 && (!lessons || lessons.length === 0)) {
+    var n = heldSupport.length;
+    warnText.innerHTML =
+      '<strong>' + n + ' session' + (n > 1 ? 's were' : ' was') + ' held with no lesson linked in Trellis.</strong> '
+      + 'Curriculum progress shows 0 because session records don&rsquo;t reference a lesson template. '
+      + 'To fix, open each session in Trellis and link it to the appropriate lesson.';
+    warnEl.style.display = '';
+  } else if (warnEl) {
+    warnEl.style.display = 'none';
+  }
 
   // Unlinked sessions warning — show when sessions were held but had no lesson template
   // in Trellis. This causes the curriculum count to underreport.
@@ -3967,67 +3993,87 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
   }
   seq.appendChild(preEl);
 
-  // Group templated track sessions by lessonTemplateId so repeats of the same lesson collapse.
-  // Name and order come from the LessonTemplate lookup (ltMap); sessionName and static
-  // LESSON_TITLES are fallbacks for when the template query returned nothing.
-  // Untemplated Track_Sessions are excluded here and merged into the Support row below.
-  var lessonGroups = (function() {
-    var groups = [];
-    var keyMap = {};
-    templatedTrackSessions.forEach(function(s) {
-      var key = s.lessonTemplateId;
-      if (keyMap[key]) {
-        keyMap[key].sessions.push(s);
-      } else {
-        var lt      = ltMap[key] || {};
-        var ltName  = lt.name || '';
-        var numMatch = ltName.match(/^Lesson\s+(\d+)/i);
-        var lessonNum = numMatch ? parseInt(numMatch[1], 10) : (lt.order || (groups.length + 1));
-        var cleanTitle = ltName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim()
-                      || (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
-                      || null;
-        var g = {
-          key:          key,
-          lessonNumber: lessonNum,
-          title:        cleanTitle,
-          sessions:     [s]
-        };
-        groups.push(g);
-        keyMap[key] = g;
-      }
+  // Build lesson slots from the Lesson table when available (authoritative source),
+  // otherwise fall back to session-derived groups + not-started placeholders.
+  // Lesson.status='completed' is the truth from Trellis — do NOT infer completion
+  // from Session.status='Held' alone (coordinators complete lessons via SessionNote
+  // without always updating Session.status).
+  var allLessonSlots;
+  if (lessons && lessons.length > 0) {
+    var lessonsSorted = lessons.slice().sort(function(a, b) {
+      return (a.order != null ? a.order : 999) - (b.order != null ? b.order : 999);
     });
-    // Sort by LessonTemplate.order so curriculum renders in Trellis sequence.
-    groups.sort(function(a, b){ return (a.lessonNumber || 999) - (b.lessonNumber || 999); });
-    return groups;
-  })();
+    allLessonSlots = lessonsSorted.map(function(lesson, idx) {
+      var ltId = lesson.lessonTemplateId;
+      var lessonSessions = ltId
+        ? templatedTrackSessions.filter(function(s) { return s.lessonTemplateId === ltId; })
+        : [];
+      return {
+        key:          lesson.id,
+        lessonNumber: idx + 1,
+        title:        lesson.title || null,
+        sessions:     lessonSessions,
+        lessonDone:   lesson.status === 'completed',
+        notStarted:   lessonSessions.length === 0 && lesson.status !== 'completed',
+      };
+    });
+  } else {
+    // Session-based fallback: group sessions by lessonTemplateId, fill in not-started slots.
+    var lessonGroups = (function() {
+      var groups = [];
+      var keyMap = {};
+      templatedTrackSessions.forEach(function(s) {
+        var key = s.lessonTemplateId;
+        if (keyMap[key]) {
+          keyMap[key].sessions.push(s);
+        } else {
+          var lt      = ltMap[key] || {};
+          var ltName  = lt.name || '';
+          var numMatch = ltName.match(/^Lesson\s+(\d+)/i);
+          var lessonNum = numMatch ? parseInt(numMatch[1], 10) : (lt.order || (groups.length + 1));
+          var cleanTitle = ltName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim()
+                        || (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
+                        || null;
+          var g = {
+            key:          key,
+            lessonNumber: lessonNum,
+            title:        cleanTitle,
+            sessions:     [s]
+          };
+          groups.push(g);
+          keyMap[key] = g;
+        }
+      });
+      groups.sort(function(a, b){ return (a.lessonNumber || 999) - (b.lessonNumber || 999); });
+      return groups;
+    })();
 
-  // Build not-started slots and merge with lessonGroups so all lesson numbers
-  // sort together — moms may complete lessons out of order.
-  var encounteredKeys = {};
-  lessonGroups.forEach(function(g){ encounteredKeys[g.key] = true; });
-  var notStartedSlots = [];
-  if (ltList.length > 0) {
-    ltList.forEach(function(lt) {
-      if (!encounteredKeys[lt.id]) {
-        var ltNm    = lt.name || '';
-        var nsMatch = ltNm.match(/^Lesson\s+(\d+)/i);
-        var nsNum   = nsMatch ? parseInt(nsMatch[1], 10) : lt.order;
-        var nsTitle = ltNm.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
-        notStartedSlots.push({ key: lt.id, lessonNumber: nsNum, title: nsTitle, notStarted: true });
-      }
-    });
-  } else if (req) {
-    var encounteredNums = {};
-    lessonGroups.forEach(function(g){ if (g.lessonNumber) encounteredNums[g.lessonNumber] = true; });
-    for (var i = 1; i <= req; i++) {
-      if (!encounteredNums[i]) {
-        notStartedSlots.push({ key: 'ns-' + i, lessonNumber: i, title: trackTitles[i - 1] || ('Session ' + i), notStarted: true });
+    var encounteredKeys = {};
+    lessonGroups.forEach(function(g){ encounteredKeys[g.key] = true; });
+    var notStartedSlots = [];
+    if (ltList.length > 0) {
+      ltList.forEach(function(lt) {
+        if (!encounteredKeys[lt.id]) {
+          var ltNm    = lt.name || '';
+          var nsMatch = ltNm.match(/^Lesson\s+(\d+)/i);
+          var nsNum   = nsMatch ? parseInt(nsMatch[1], 10) : lt.order;
+          var nsTitle = ltNm.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
+          notStartedSlots.push({ key: lt.id, lessonNumber: nsNum, title: nsTitle, notStarted: true });
+        }
+      });
+    } else if (req) {
+      var encounteredNums = {};
+      lessonGroups.forEach(function(g){ if (g.lessonNumber) encounteredNums[g.lessonNumber] = true; });
+      for (var i = 1; i <= req; i++) {
+        if (!encounteredNums[i]) {
+          notStartedSlots.push({ key: 'ns-' + i, lessonNumber: i, title: trackTitles[i - 1] || ('Session ' + i), notStarted: true });
+        }
       }
     }
-  }
 
-  var allLessonSlots = lessonGroups.concat(notStartedSlots);
-  allLessonSlots.sort(function(a, b){ return (a.lessonNumber || 999) - (b.lessonNumber || 999); });
+    allLessonSlots = lessonGroups.concat(notStartedSlots);
+    allLessonSlots.sort(function(a, b){ return (a.lessonNumber || 999) - (b.lessonNumber || 999); });
+  }
 
   var momFirstName = (pairing.momName || '').split(' ')[0];
   allLessonSlots.forEach(function(g) {
@@ -4040,9 +4086,11 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates) {
     } else {
       var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
       var absentSess = g.sessions.filter(function(s){ return s.momAttended === 'Absent'; });
-      var allMissed  = g.sessions.every(function(s){ return s.status === 'NotHeld'; });
+      var allMissed  = g.sessions.length > 0 && g.sessions.every(function(s){ return s.status === 'NotHeld'; });
       var wasAbsent  = heldSess.length === 0 && absentSess.length > 0;
-      if (heldSess.length > 0) {
+      // g.lessonDone = Lesson.status='completed' from Trellis (authoritative).
+      // A lesson can be done even when Session.status is still 'Planned'.
+      if (g.lessonDone || heldSess.length > 0) {
         step.className = 'seq-step done';
       } else if (allMissed) {
         step.className = 'seq-step missed';
@@ -4361,10 +4409,12 @@ function openStallDrawer(clickedStall) {
   }
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
   var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
+  // Use SessionNote-aware last activity date from server when more recent than last Held session
+  var lastActivityDate = pairing.lastActivityDate || (lastHeld ? lastHeld.date : null);
   var subParts = [];
   if (pairing.trackTitle) subParts.push(abbrevTrack(pairing.trackTitle));
   if (lastHeld && lastHeld.lessonNumber) subParts.push('Lesson ' + lastHeld.lessonNumber);
-  if (lastHeld) subParts.push('Last held ' + fmtDate(lastHeld.date));
+  if (lastActivityDate) subParts.push('Last held ' + fmtDate(lastActivityDate));
   var sub = subParts.join(' · ');
 
   document.getElementById('drawer-eyebrow').textContent = eyebrow;
@@ -4390,7 +4440,7 @@ function openStallDrawer(clickedStall) {
   var outreachEl = document.getElementById('drawer-outreach');
   if (outreachEl) {
     if (outreachCount) {
-      var noResponseText = (!lastHeld || (stallStart && new Date(lastHeld.date) < stallStart))
+      var noResponseText = (!lastActivityDate || (stallStart && new Date(lastActivityDate) < stallStart))
         ? ' · <span style="opacity:.7;">no response</span>' : '';
       outreachEl.innerHTML = '<span class="do-em">' + outreachCount + ' outreach attempt' + (outreachCount > 1 ? 's' : '') + '</span> during this period' + noResponseText;
       outreachEl.removeAttribute('hidden');
@@ -4434,8 +4484,8 @@ function openStallDrawer(clickedStall) {
   if (outreachCount) {
     html += '<strong>' + outreachCount + ' outreach attempt' + (outreachCount > 1 ? 's' : '') + '</strong> during this period. ';
   }
-  if (lastHeld) {
-    html += 'Last contact was <strong>' + fmtDate(lastHeld.date) + '</strong>. ';
+  if (lastActivityDate) {
+    html += 'Last contact was <strong>' + fmtDate(lastActivityDate) + '</strong>. ';
   }
   if (activeNeeds.length) {
     var needNames = activeNeeds.map(function(n){ return (n.needType || 'need').replace(/_/g,' '); }).slice(0,3).join(', ');

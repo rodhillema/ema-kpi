@@ -629,7 +629,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       THEN 'NotHeld'
                  ELSE s."status"::text
                END                    AS "status",
-               s."session_type"::text AS "type",
+               s."type"::text         AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"

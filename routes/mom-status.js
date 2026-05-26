@@ -294,6 +294,43 @@ router.get('/', async (req, res) => {
     }
     const heldByMom = Object.fromEntries(sessionsResult.rows.map((r) => [r.mom_id, r.held_sessions]));
 
+    // Support_Session held count per active pairing. A support session counts as held when
+    // Session.status='Held'/'Unmarked' OR when a SessionNote with date_submitted_c exists
+    // (Trellis treats the latter as held even when Session.status stays 'Planned').
+    // Joins both pairing_id and advocacy_group_id to cover 1:1 and group delivery.
+    const supportQuery = `
+      SELECT p."momId" AS mom_id,
+             COUNT(DISTINCT s."id")::int AS support_sessions
+      FROM "Pairing" p
+      JOIN "Session" s
+        ON (
+          s."pairing_id" = p."id"
+          OR (p."advocacyGroupId" IS NOT NULL AND s."advocacy_group_id" = p."advocacyGroupId")
+        )
+        AND s."session_type"::text = 'Support_Session'
+        AND s."deleted_at" = 0
+        AND (
+          s."status"::text IN ('Held', 'Unmarked')
+          OR EXISTS (
+            SELECT 1 FROM "SessionNote" sn
+             WHERE sn."session_id" = s."id"
+               AND sn."deleted_at" = 0
+               AND sn."date_submitted_c" IS NOT NULL
+          )
+        )
+      WHERE p."momId" = ANY($1)
+        AND p."deleted_at" = 0
+        AND p."status"::text = 'paired'
+      GROUP BY p."momId"
+    `;
+    let supportResult;
+    try {
+      supportResult = await pool.query(supportQuery, [momIds]);
+    } catch (_err) {
+      supportResult = { rows: [] };
+    }
+    const supportByMom = Object.fromEntries(supportResult.rows.map((r) => [r.mom_id, r.support_sessions]));
+
     // Contact log — last 5 entries per mom: held/not-held sessions + mom-linked coordinator notes.
     // CoordinatorNotes are joined directly on cn.mom_id (not via advocate).
     const contactLogQuery = `
@@ -555,6 +592,7 @@ router.get('/', async (req, res) => {
           pairingType: r.activePairingType === 'group' ? 'group' : '1:1',
           sessionsDone,
           sessionsTotal,
+          supportSessions: supportByMom[r.id] || 0,
           stalled,
           stall_type,
           stalledDays,

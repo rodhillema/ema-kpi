@@ -1296,11 +1296,24 @@ body.drawer-open .drawer {
   font-weight: 700;
 }
 
-/* In-progress lesson - solid amber so the number stays readable. */
+/* In-progress lesson - solid amber so the number stays readable.
+   Reserved for a future explicit "in progress" pick; currently unused
+   because color now reflects only the session's own status. */
 .mark.curr.inprog {
   background: var(--amber);
   border: 2.5px solid white;
   color: white;
+}
+
+/* Planned/scheduled curriculum session - outlined so it reads as "not yet
+   held" without looking like a completed lesson. Independent of any
+   "current/upcoming" indicator: every Planned circle uses this regardless
+   of whether it is also the next-up lesson. */
+.mark.curr.planned {
+  background: white;
+  color: var(--green);
+  border: 2.5px solid var(--green);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 /* Support marks - bolder, distinct color */
@@ -3821,19 +3834,29 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
 
   curriculumMarks.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
-    var isInProgress = s === inProgressRef && pairing.status === 'paired';
-    var isUpcoming   = isInProgress && s === nextPlannedRef;
-    // Group context: momAttended distinguishes 'Absent' (session held, mom missed)
-    // from 'NotHeld' (cohort/session never occurred). 'Unmarked' = cohort met but
-    // the coordinator never marked attendance for this mom — Trellis grid shows
-    // these as "—" and we mirror that rather than silently counting as Held.
+    // Each circle's color is decided by its OWN status. We no longer pick a single
+    // "in progress" mark and recolor it amber — that bound color to position and
+    // made completed lessons look in-progress (or vice versa) when a tie-break
+    // landed on the wrong one. Planned, Held, Absent, Unmarked each get their
+    // own visual.
+    var isPlanned = s.status === 'Planned';
+    var isHeld    = s.status === 'Held' || s.status === 'Unmarked';
+    // Surface "Next scheduled" in the tooltip for the upcoming planned mark so
+    // coordinators can still see at a glance what's next — but the visual cue is
+    // the outlined .planned style, not a color override.
+    var isNextUp  = s === nextPlannedRef && pairing.status === 'paired';
     var momFirstName = (pairing.momName || '').split(' ')[0];
     var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
                     : s.status === 'Unmarked'     ? 'Unmarked'
-                    : s.status !== 'Held'         ? (isUpcoming ? 'In Progress · Next scheduled session' : s.status)
-                    : 'Completed';
+                    : isPlanned                   ? (isNextUp ? 'Scheduled · Next up' : 'Scheduled')
+                    : s.status === 'NotHeld'      ? 'Not Held'
+                    : isHeld                      ? 'Completed'
+                    : s.status;
+    var classes = ['mark', 'curr', 'tj-injected'];
+    if (s.momAttended === 'Absent') classes.push('absent');
+    else if (isPlanned)             classes.push('planned');
     var el = document.createElement('div');
-    el.className = 'mark curr tj-injected' + (isInProgress ? ' inprog' : '') + (s.momAttended === 'Absent' ? ' absent' : '');
+    el.className = classes.join(' ');
     // Stagger same-day marks horizontally so they don't stack invisibly.
     var basePos    = p(s.date);
     var dayOffset  = (s._dayIndex || 0) * 28; // px shift per same-day collision

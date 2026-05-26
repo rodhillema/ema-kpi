@@ -550,6 +550,8 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
   position: absolute;
   top: 6px;
   left: 6px;
+  right: 6px;                /* constrain inside the band so it can't overflow into the next */
+  max-width: calc(100% - 12px);
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 9px;
@@ -557,6 +559,8 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
   text-transform: uppercase;
   color: var(--red);
   white-space: nowrap;
+  overflow: hidden;          /* clip if band is too narrow to fit the short label */
+  text-overflow: ellipsis;
   background: white;
   padding: 2px 5px;
   border-radius: 3px;
@@ -724,15 +728,20 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
 
 /* Group-specific marker states */
 
-/* Cohort session that happened before the mom joined the group - very faded, not hers */
+/* Cohort session that happened before the mom joined the group.
+   Visually merged with .absent: both convey "session didn't count for this
+   mom" regardless of reason. Kept as a separate class for any future case
+   where we want to distinguish them (currently we don't apply this class). */
 .mark.curr.before-join {
   background: white;
-  color: var(--mid);
-  border: 2px dashed var(--border);
-  opacity: 0.5;
+  color: var(--red);
+  border: 2.5px solid var(--red);
+  opacity: 0.7;
 }
 
-/* Cohort session held but mom was absent - outlined red */
+/* Cohort session held but mom was absent - outlined red.
+   Also applied for before-join sessions (see the JS render — both share this
+   class so the visual rule is "outlined red = session didn't count for her"). */
 .mark.curr.absent {
   background: white;
   color: var(--red);
@@ -3691,17 +3700,23 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
       + (s.isActive ? '' : ' past');
     el.style.left  = lp.toFixed(1) + '%';
     el.style.width = Math.max(0, rp - lp).toFixed(1) + '%';
-    var lbl = s.type === 'curriculum' ? 'Curriculum Stall'
-            : s.isActive              ? '⚠ Stalled'
-            : 'General Stall';
+    // Short label keeps narrow bands readable (full text is in the tooltip).
+    // "Curr" / "Stall" / "⚠ Active" + day count. Color/dash style already
+    // communicates the type, so the prefix can stay terse.
+    var lblShort = s.type === 'curriculum' ? 'Curr'
+                 : s.isActive              ? '⚠ Active'
+                 : 'Stall';
+    var lblFull  = s.type === 'curriculum' ? 'Curriculum Stall'
+                 : s.isActive              ? '⚠ Active Stall'
+                 : 'General Stall';
     el.style.cursor = 'pointer';
     (function(stall) {
       el.onclick = function(e) { e.stopPropagation(); openStallDrawer(stall); };
     })(s);
     el.innerHTML =
-      '<span class="stall-band-label">' + lbl + ' · ' + s.days + 'd</span>'
+      '<span class="stall-band-label">' + lblShort + ' · ' + s.days + 'd</span>'
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">' + lbl + ' · ' + s.days + ' days</div>'
+      +   '<div class="mark-tip-title">' + lblFull + ' · ' + s.days + ' days</div>'
       +   '<div class="mark-tip-meta">'
       +     fmtDateShort(s.startDate) + ' → ' + (s.isActive ? 'today' : fmtDateShort(s.endDate))
       +   '</div>'
@@ -3832,29 +3847,60 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     dayBuckets[dayKey].push(s);
   });
 
+  // Pre-compute "this lesson has been completed by a later session" so earlier
+  // attempts for the same lesson can render as faded green (earlier-attempt).
+  // Single rule, no special "in progress" pick — once any session for a
+  // lessonTemplateId is Held, every prior session for that template is an
+  // earlier attempt.
+  var latestHeldDateByTemplate = {};
+  curriculumMarks.forEach(function(s){
+    var isH = s.status === 'Held' || s.status === 'Unmarked';
+    if (!isH || !s.lessonTemplateId || !s.date) return;
+    var d = new Date(s.date).getTime();
+    if (!latestHeldDateByTemplate[s.lessonTemplateId] || d > latestHeldDateByTemplate[s.lessonTemplateId]) {
+      latestHeldDateByTemplate[s.lessonTemplateId] = d;
+    }
+  });
+
+  var pairingStartMs = pairing.startDate ? new Date(pairing.startDate).getTime() : null;
+
   curriculumMarks.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
-    // Each circle's color is decided by its OWN status. We no longer pick a single
-    // "in progress" mark and recolor it amber — that bound color to position and
-    // made completed lessons look in-progress (or vice versa) when a tie-break
-    // landed on the wrong one. Planned, Held, Absent, Unmarked each get their
-    // own visual.
+    // Each circle's color reflects only its own status (Held / Planned / Absent /
+    // earlier-attempt). No single mark is recolored as "the in progress one" —
+    // that bound color to position and made completed lessons look in-progress
+    // when a tie-break landed on the wrong one. The next-up planned session is
+    // still surfaced via tooltip text, not via a color override.
     var isPlanned = s.status === 'Planned';
     var isHeld    = s.status === 'Held' || s.status === 'Unmarked';
+    var isNotHeld = s.status === 'NotHeld';
+    // Before-join: cohort session that happened before this mom joined the
+    // group. Same "didn't count for this mom" semantic as Absent, so we render
+    // both with the same outlined-red treatment (.absent class).
+    var isBeforeJoin = pairingStartMs != null && new Date(s.date).getTime() < pairingStartMs;
+    // Earlier attempt: a session for a lesson that's been completed by a more
+    // recent session. Faded green so completed attempts stand out without
+    // disappearing from the timeline.
+    var isEarlierAttempt = !!s.lessonTemplateId
+      && latestHeldDateByTemplate[s.lessonTemplateId] != null
+      && new Date(s.date).getTime() < latestHeldDateByTemplate[s.lessonTemplateId];
     // Surface "Next scheduled" in the tooltip for the upcoming planned mark so
-    // coordinators can still see at a glance what's next — but the visual cue is
-    // the outlined .planned style, not a color override.
+    // coordinators can still see at a glance what's next — but the visual cue
+    // remains the outlined .planned style, not a color override.
     var isNextUp  = s === nextPlannedRef && pairing.status === 'paired';
     var momFirstName = (pairing.momName || '').split(' ')[0];
     var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
+                    : isBeforeJoin                ? 'Cohort met before ' + momFirstName + ' joined'
                     : s.status === 'Unmarked'     ? 'Unmarked'
+                    : isEarlierAttempt            ? 'Earlier attempt · superseded by later session'
                     : isPlanned                   ? (isNextUp ? 'Scheduled · Next up' : 'Scheduled')
-                    : s.status === 'NotHeld'      ? 'Not Held'
+                    : isNotHeld                   ? 'Not Held'
                     : isHeld                      ? 'Completed'
                     : s.status;
     var classes = ['mark', 'curr', 'tj-injected'];
-    if (s.momAttended === 'Absent') classes.push('absent');
-    else if (isPlanned)             classes.push('planned');
+    if (s.momAttended === 'Absent' || isBeforeJoin) classes.push('absent');
+    else if (isEarlierAttempt)                      classes.push('earlier-attempt');
+    else if (isPlanned)                             classes.push('planned');
     var el = document.createElement('div');
     el.className = classes.join(' ');
     // Stagger same-day marks horizontally so they don't stack invisibly.

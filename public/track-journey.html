@@ -3762,17 +3762,20 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     });
 
   // Identify the most recent completion across both sources for "In Progress" styling.
+  // On a date tie, the later-iterated entry wins — synthetic lessons are iterated in
+  // curriculum order (Lesson.order ASC), so two same-day completions resolve to the
+  // higher-numbered lesson, matching the curriculum-order progression a coordinator expects.
   var lastHeldDate = null;
   var lastHeldRef  = null;
   trackSessions.forEach(function(s){
     if (s.status === 'Held' && s.date) {
       var d = new Date(s.date);
-      if (!lastHeldDate || d > lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
+      if (!lastHeldDate || d >= lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
     }
   });
   syntheticCompleted.forEach(function(s){
     var d = new Date(s.date);
-    if (!lastHeldDate || d > lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
+    if (!lastHeldDate || d >= lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
   });
 
   // Hide non-Held templated sessions whose lesson has been completed via SessionNote —
@@ -4495,7 +4498,9 @@ function openStallDrawer(clickedStall) {
   }
   (data.lessons || []).forEach(function(l) {
     if (l.status !== 'completed' || !l.completedDate) return;
-    if (lastHeldLessonDate && new Date(l.completedDate) <= new Date(lastHeldLessonDate)) return;
+    // Strict < so same-day completions resolve to the higher-order lesson (data.lessons
+    // is ordered by Lesson.order ASC, so the later iteration wins curriculum-wise).
+    if (lastHeldLessonDate && new Date(l.completedDate) < new Date(lastHeldLessonDate)) return;
     var m = (l.title || '').match(/^Lesson\s+(\d+)/i);
     lastHeldLessonNumber = m ? parseInt(m[1], 10) : l.order;
     lastHeldLessonDate   = l.completedDate;

@@ -209,7 +209,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
     // Session.type enum values — confirm what values exist in production
     try {
       const { rows: typeVals } = await pool.query(`
-        SELECT s."type"::text AS type_val, COUNT(*)::int AS cnt
+        SELECT s."session_type"::text AS type_val, COUNT(*)::int AS cnt
           FROM "Session" s
          WHERE s."deleted_at" = 0
          GROUP BY 1
@@ -227,7 +227,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
       const { rows: mislabeled } = await pool.query(`
         SELECT
           s."id",
-          s."type"::text            AS "type",
+          s."session_type"::text    AS "type",
           s."status"::text          AS "status",
           s."lesson_template_id"    AS "lessonTemplateId",
           s."name"                  AS "sessionName",
@@ -242,7 +242,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
         WHERE s."deleted_at" = 0
           AND s."advocacy_group_id" IS NOT NULL
           AND s."lesson_template_id" IS NOT NULL
-          AND s."type"::text <> 'Track_Session'
+          AND s."session_type"::text <> 'Track_Session'
         ORDER BY s."date_start" DESC NULLS LAST
         LIMIT 20
       `);
@@ -258,7 +258,7 @@ router.get('/debug-schema', requireAuth, requireRole, async (req, res) => {
     try {
       const { rows: summary } = await pool.query(`
         SELECT
-          s."type"::text                                      AS "type",
+          s."session_type"::text                              AS "type",
           (s."lesson_template_id" IS NOT NULL)::text         AS "hasLesson",
           COUNT(*)::int                                       AS "cnt"
         FROM "Session" s
@@ -332,7 +332,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
     for (const p of pairings) {
       const { rows } = await pool.query(`
         SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-               s."type"::text AS type, s."lesson_template_id", s."pairing_id", s."deleted_at"
+               s."session_type"::text AS type, s."lesson_template_id", s."pairing_id", s."deleted_at"
           FROM "Session" s
          WHERE s."pairing_id" = $1
          ORDER BY s."date_start"
@@ -349,7 +349,7 @@ router.get('/debug/sessions', requireAuth, requireRole, async (req, res) => {
         if (!p.advocacyGroupId) continue;
         const { rows } = await pool.query(`
           SELECT s."id", s."date_start" AS date, s."status"::text AS status,
-                 s."type"::text AS type, s."lesson_template_id", s."pairing_id",
+                 s."session_type"::text AS type, s."lesson_template_id", s."pairing_id",
                  s."advocacy_group_id", s."deleted_at"
             FROM "Session" s
            WHERE s."advocacy_group_id" = $1
@@ -629,7 +629,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       THEN 'NotHeld'
                  ELSE s."status"::text
                END                    AS "status",
-               s."type"::text         AS "type",
+               s."session_type"::text  AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"
@@ -670,7 +670,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       THEN 'Unmarked'
                  ELSE s."status"::text
                END                    AS "status",
-               s."type"::text         AS "type",
+               s."session_type"::text AS "type",
                s."description"        AS "notes",
                s."lesson_template_id" AS "lessonTemplateId",
                s."name"               AS "sessionName"

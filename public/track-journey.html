@@ -3783,10 +3783,22 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     if (l.status === 'completed' && l.lessonTemplateId) lessonCompletedByTemplate[l.lessonTemplateId] = true;
   });
 
-  trackSessions
+  var curriculumMarks = trackSessions
     .filter(function(s){ return s.status === 'Held' || !lessonCompletedByTemplate[s.lessonTemplateId]; })
-    .concat(syntheticCompleted)
-    .forEach(function(s) {
+    .concat(syntheticCompleted);
+
+  // Same-day stagger: multiple lessons completed on the same day land at the same
+  // horizontal position. Assign a within-day index so we can offset them visually.
+  var dayBuckets = {};
+  curriculumMarks.forEach(function(s){
+    if (!s.date) return;
+    var dayKey = new Date(s.date).toISOString().slice(0, 10);
+    if (!dayBuckets[dayKey]) dayBuckets[dayKey] = [];
+    s._dayIndex = dayBuckets[dayKey].length;
+    dayBuckets[dayKey].push(s);
+  });
+
+  curriculumMarks.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
     var isLastHeld  = s === lastHeldRef && pairing.status === 'paired';
     // Group context: momAttended distinguishes 'Absent' (session held, mom missed)
@@ -3801,7 +3813,10 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
                     : 'Completed';
     var el = document.createElement('div');
     el.className = 'mark curr tj-injected' + (isLastHeld ? ' inprog' : '') + (s.momAttended === 'Absent' ? ' absent' : '');
-    el.style.left = p(s.date);
+    // Stagger same-day marks horizontally so they don't stack invisibly.
+    var basePos    = p(s.date);
+    var dayOffset  = (s._dayIndex || 0) * 28; // px shift per same-day collision
+    el.style.left  = dayOffset ? 'calc(' + basePos + ' + ' + dayOffset + 'px)' : basePos;
     el.innerHTML =
       (s.lessonNumber || '?')
       + '<div class="mark-tip">'

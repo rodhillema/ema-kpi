@@ -20,7 +20,7 @@ function computeStalls(sessions, pairingStart, pairingEnd) {
   // Group sessions may have status='Held' but date_start=NULL.
   // Drop null-dated sessions from the stall computation — they can't anchor
   // a gap calculation and would otherwise be treated as epoch (1970).
-  const allHeld   = sessions.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
+  const allHeld   = sessions.filter(s => s.status === 'Held' && s.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const trackHeld = allHeld.filter(s => !!s.lessonTemplateId);
 
@@ -873,7 +873,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Non-zero means curriculum progress may be underreported (see Trellis data-entry gap).
     const untemplatedCount      = sessions.filter(s => !s.lessonTemplateId).length;
     const heldUntemplatedCount  = sessions.filter(s => !s.lessonTemplateId
-      && (s.status === 'Held' || s.status === 'Unmarked')).length;
+      && s.status === 'Held').length;
 
     // SessionNote activity dates — true completion evidence for stall computation.
     // Covers lessons marked complete via SessionNote even when Session.status='Planned'.
@@ -904,7 +904,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Merge note activity with session data, deduplicating same-day same-lesson events.
     const sessionHeldDayKeys = new Set(
       sessions
-        .filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
+        .filter(s => s.status === 'Held' && s.date)
         .map(s => new Date(s.date).toISOString().slice(0, 10) + ':' + (s.lessonTemplateId || ''))
     );
     const dedupedNoteActivity = noteActivitySessions.filter(n => {
@@ -919,7 +919,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     const stalls = computeStalls(sessionsForStall, p.startDate, p.endDate);
 
     // Last activity date — derived from SessionNote-augmented list.
-    const heldForStall   = sessionsForStall.filter(s => (s.status === 'Held' || s.status === 'Unmarked') && s.date)
+    const heldForStall   = sessionsForStall.filter(s => s.status === 'Held' && s.date)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
     const lastActivityDate      = heldForStall.at(-1)?.date ?? null;
     const lastCurrActivityDate  = heldForStall.filter(s => !!s.lessonTemplateId).at(-1)?.date ?? null;

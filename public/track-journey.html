@@ -3852,10 +3852,13 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
   // Single rule, no special "in progress" pick — once any session for a
   // lessonTemplateId is Held, every prior session for that template is an
   // earlier attempt.
+  // Unmarked group sessions are NOT counted as Held here: the coordinator
+  // never recorded attendance, so we can't confirm the mom was present.
+  // They're treated as assumed-absent for both the visual and the held-ness
+  // determination (see the per-mark render below).
   var latestHeldDateByTemplate = {};
   curriculumMarks.forEach(function(s){
-    var isH = s.status === 'Held' || s.status === 'Unmarked';
-    if (!isH || !s.lessonTemplateId || !s.date) return;
+    if (s.status !== 'Held' || !s.lessonTemplateId || !s.date) return;
     var d = new Date(s.date).getTime();
     if (!latestHeldDateByTemplate[s.lessonTemplateId] || d > latestHeldDateByTemplate[s.lessonTemplateId]) {
       latestHeldDateByTemplate[s.lessonTemplateId] = d;
@@ -3871,12 +3874,17 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     // that bound color to position and made completed lessons look in-progress
     // when a tie-break landed on the wrong one. The next-up planned session is
     // still surfaced via tooltip text, not via a color override.
-    var isPlanned = s.status === 'Planned';
-    var isHeld    = s.status === 'Held' || s.status === 'Unmarked';
-    var isNotHeld = s.status === 'NotHeld';
+    var isPlanned  = s.status === 'Planned';
+    var isHeld     = s.status === 'Held';
+    var isNotHeld  = s.status === 'NotHeld';
+    // Unmarked: group cohort met but no SessionAttendance row for this mom.
+    // Assume absent — a visible signal to the coordinator that either the
+    // attendance data needs cleanup, or the mom needs a make-up session logged.
+    var isUnmarked = s.status === 'Unmarked';
     // Before-join: cohort session that happened before this mom joined the
     // group. Same "didn't count for this mom" semantic as Absent, so we render
-    // both with the same outlined-red treatment (.absent class).
+    // all three (Absent, Before-join, Unmarked) with the same outlined-red
+    // treatment.
     var isBeforeJoin = pairingStartMs != null && new Date(s.date).getTime() < pairingStartMs;
     // Earlier attempt: a session for a lesson that's been completed by a more
     // recent session. Faded green so completed attempts stand out without
@@ -3891,16 +3899,16 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     var momFirstName = (pairing.momName || '').split(' ')[0];
     var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
                     : isBeforeJoin                ? 'Cohort met before ' + momFirstName + ' joined'
-                    : s.status === 'Unmarked'     ? 'Unmarked'
+                    : isUnmarked                  ? 'Attendance not recorded · assumed absent · verify in Trellis or log a make-up'
                     : isEarlierAttempt            ? 'Earlier attempt · superseded by later session'
                     : isPlanned                   ? (isNextUp ? 'Scheduled · Next up' : 'Scheduled')
                     : isNotHeld                   ? 'Not Held'
                     : isHeld                      ? 'Completed'
                     : s.status;
     var classes = ['mark', 'curr', 'tj-injected'];
-    if (s.momAttended === 'Absent' || isBeforeJoin) classes.push('absent');
-    else if (isEarlierAttempt)                      classes.push('earlier-attempt');
-    else if (isPlanned)                             classes.push('planned');
+    if (s.momAttended === 'Absent' || isBeforeJoin || isUnmarked) classes.push('absent');
+    else if (isEarlierAttempt)                                     classes.push('earlier-attempt');
+    else if (isPlanned)                                            classes.push('planned');
     var el = document.createElement('div');
     el.className = classes.join(' ');
     // Stagger same-day marks horizontally so they don't stack invisibly.
@@ -4031,8 +4039,8 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   var trackSessions            = sessions.filter(function(s){ return s.type === 'Track_Session'; });
   var templatedTrackSessions   = trackSessions.filter(function(s){ return !!s.lessonTemplateId; });
   var untemplatedTrackSessions = trackSessions.filter(function(s){ return !s.lessonTemplateId; });
-  var heldTrack                = templatedTrackSessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
-  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && (s.status === 'Held' || s.status === 'Unmarked'); });
+  var heldTrack                = templatedTrackSessions.filter(function(s){ return s.status === 'Held'; });
+  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && (s.status === 'Held'); });
   var req                      = requiredSessions(pairing.trackTitle);
   var minReq                   = minRequired(pairing.trackTitle);
   // Curriculum count — use Lesson.status='completed' from the Lesson table when available.
@@ -4246,7 +4254,7 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
         '<div class="seq-dot">' + g.lessonNumber + '</div>'
         + '<div class="seq-content"><div class="seq-name">' + escHtml(g.title) + '</div></div>';
     } else {
-      var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
+      var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held'; });
       var absentSess = g.sessions.filter(function(s){ return s.momAttended === 'Absent'; });
       var allMissed  = g.sessions.length > 0 && g.sessions.every(function(s){ return s.status === 'NotHeld'; });
       var wasAbsent  = heldSess.length === 0 && absentSess.length > 0;
@@ -4282,7 +4290,7 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
 
   // Untemplated Track_Sessions (no lesson linked in Trellis — data issue per Cristina)
   // are merged into the Support Sessions row rather than shown as a separate row type.
-  var heldUntemplated = untemplatedTrackSessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
+  var heldUntemplated = untemplatedTrackSessions.filter(function(s){ return s.status === 'Held'; });
 
   // Support sessions row — includes untemplated Track_Sessions on the same row.
   // Per spec: unlinked Track_Sessions are a Trellis data issue; they render here
@@ -4569,7 +4577,7 @@ function openStallDrawer(clickedStall) {
     if (/roadmap|resilience/i.test(t)) return 'RR';
     return t;
   }
-  var heldSessions = sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
+  var heldSessions = sessions.filter(function(s){ return s.status === 'Held'; });
   var lastHeldSess = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
 
   // Authoritative "last held lesson" — derive lesson number AND date from the same event.
@@ -4772,7 +4780,7 @@ function openStallDrawer(clickedStall) {
       glyph:   isHeld ? '●' : (isAbsent || isMissed || isUnmarked) ? '↺' : '→',
       type:    isHeld     ? 'Session Held'
              : isAbsent   ? 'Mom Absent (Session Held)'
-             : isUnmarked ? 'Unmarked (Session Held)'
+             : isUnmarked ? 'Attendance Not Recorded (Cohort Met)'
              : isMissed   ? 'Session Not Held'
              :              'Planned Session',
       typeCls: isHeld ? 'held' : (isAbsent || isMissed || isUnmarked) ? 'missed' : '',

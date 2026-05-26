@@ -4480,13 +4480,35 @@ function openStallDrawer(clickedStall) {
     return t;
   }
   var heldSessions = sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
-  var lastHeld     = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
-  // Use SessionNote-aware last activity date from server when more recent than last Held session
-  var lastActivityDate = pairing.lastActivityDate || (lastHeld ? lastHeld.date : null);
+  var lastHeldSess = heldSessions.length ? heldSessions[heldSessions.length - 1] : null;
+
+  // Authoritative "last held lesson" — derive lesson number AND date from the same event.
+  // Combines the last Held Session and the latest completed Lesson (status='completed' +
+  // completedDate from SessionNote). Picks whichever is more recent so a Lesson completed
+  // via SessionNote without its Session row flipping to 'Held' isn't shown with a stale
+  // lesson number from an earlier Held Session.
+  var lastHeldLessonNumber = null;
+  var lastHeldLessonDate   = null;
+  if (lastHeldSess && lastHeldSess.date) {
+    lastHeldLessonNumber = lastHeldSess.lessonNumber || null;
+    lastHeldLessonDate   = lastHeldSess.date;
+  }
+  (data.lessons || []).forEach(function(l) {
+    if (l.status !== 'completed' || !l.completedDate) return;
+    if (lastHeldLessonDate && new Date(l.completedDate) <= new Date(lastHeldLessonDate)) return;
+    var m = (l.title || '').match(/^Lesson\s+(\d+)/i);
+    lastHeldLessonNumber = m ? parseInt(m[1], 10) : l.order;
+    lastHeldLessonDate   = l.completedDate;
+  });
+
+  // "Last contact" in At a Glance is a broader activity signal (held lessons,
+  // SessionNote submissions, etc.) — preserve the server's SessionNote-aware date there.
+  var lastActivityDate = lastHeldLessonDate || pairing.lastActivityDate || null;
+
   var subParts = [];
   if (pairing.trackTitle) subParts.push(abbrevTrack(pairing.trackTitle));
-  if (lastHeld && lastHeld.lessonNumber) subParts.push('Lesson ' + lastHeld.lessonNumber);
-  if (lastActivityDate) subParts.push('Last held ' + fmtDate(lastActivityDate));
+  if (lastHeldLessonNumber) subParts.push('Lesson ' + lastHeldLessonNumber);
+  if (lastHeldLessonDate) subParts.push('Last held ' + fmtDate(lastHeldLessonDate));
   var sub = subParts.join(' · ');
 
   document.getElementById('drawer-eyebrow').textContent = eyebrow;

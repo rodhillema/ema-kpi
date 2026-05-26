@@ -226,10 +226,11 @@ Set in Railway dashboard or `.env` file (never commit `.env`):
 
 **pg + Railway:**
 - All USER-DEFINED enum columns require explicit `::text` casting before string comparison:
-  - `Mom.status`, `Pairing.status`, `Pairing.track_status`, `Session.status`, `User.advocate_status`
+  - `Mom.status`, `Pairing.status`, `Pairing.track_status`, `Session.status`, `Session.type`, `Lesson.status`, `User.advocate_status`
   - Example: `WHERE p."status"::text = 'paired'`
 - Always use parameterized queries (`$1`, `$2`) — never string interpolation in SQL
 - Quote all table and column names with double quotes — Railway PostgreSQL is case-sensitive
+- `Session.type` is the correct column name (not `session_type` — that column is all NULL). Cast: `s."type"::text`
 
 ---
 
@@ -254,7 +255,9 @@ Pairing.incomplete_reason_sub_status: 'achieved_outcomes', 'extended_wait', 'no_
 - `"Mom"."status"::text = 'active' AND NOT EXISTS (SELECT 1 FROM "Pairing" p WHERE p."momId" = m."id" AND p."status"::text = 'paired')`
 
 ### Stalled Moms
-- Last **held** session (`s."status"::text = 'Held'`) > 14 days ago while pairing is paired
+- Last **held** session > 14 days ago while pairing is paired
+- **Authoritative source: `SessionNote.date_submitted_c`** — this is when the coordinator submitted the session note, which is the true "session happened" date. `Session.status='Held'` is NOT reliable; Trellis marks lessons complete via `SessionNote` + `Lesson.status='completed'` without necessarily updating `Session.status` from 'Planned'.
+- Stall computation in `routes/track-journey.js` augments the session list with `SessionNote`-derived activity dates before calling `computeStalls()`. Mom Status uses `SessionNote.date_submitted_c` for both `latest_session` and `last_curriculum_session` CTEs.
 - Flagged needs do NOT reset the stall clock — held sessions only
 - Rescheduling pattern (2+ planned sessions, no held session following) is a separate signal, not stall
 
@@ -546,18 +549,27 @@ Returns the full journey payload for one pairing:
 ```
 {
   pairing:         { id, momName, trackTitle, status, advocacyType, startDate, endDate,
-                     advocateName, coordinatorName, currentStall }
+                     advocateName, coordinatorName, currentStall, lastActivityDate }
   sessions:        [{ id, date, status, type, notes, lessonNumber, lessonTemplateId, sessionName }]
   stalls:          [{ type, startDate, endDate, days, isActive }]
   assessments:     { pre: {..., questions?, constructs?}, post: {...} }
+  lessons:         [{ id, lessonTemplateId, status, title, order }]   ← from Lesson table
+  lessonTemplates: [{ id, name, order }]
   coordinatorNotes:[{ date, text, coordinatorName }]
   connectionLogs:  [{ id, date, summary, contactMethod, createdByName, visibleToAdvocate }]
   vitalNeeds:      [{ id, date, requestedDate, needType, context, urgent, status, serviceReferral }]
 }
 ```
+`pairing.lastActivityDate` is the SessionNote-aware last activity date (most recent `SessionNote.date_submitted_c`), used in the stall drawer. May differ from the last `Session.status='Held'` date.
 
 ### Stall computation (`computeStalls`)
 Runs server-side in `routes/track-journey.js`. Two types:
+
+**Input:** `computeStalls` receives a `sessionsForStall` array that is the union of:
+1. Sessions from the main sessions query (Session table, with SessionAttendance projection)
+2. SessionNote activity rows (from `SessionNote.date_submitted_c` joined to `Session.mom_id`) — these capture lessons marked complete via note even when `Session.status` never moved from 'Planned'
+
+The two sets are deduplicated by (date-day + lessonTemplateId) before merging.
 
 **Curriculum Stall** (amber, dashed border on timeline):
 - Gap between consecutive `Track_Session` held dates ≥ 30 days
@@ -591,15 +603,45 @@ The original cohort status is preserved as `groupStatus` in the response, and th
 
 **Rule:** Never read `Session.status` directly when computing what a specific mom did. Always go through the SessionAttendance-aware projection. This affects stall detection, curriculum counts, the "last held" anchor, and any per-mom completion logic.
 
+### Lesson table (authoritative curriculum state)
+```
+id                       — PK
+pairing_id               — FK to Pairing
+source_lesson_template_id — FK to LessonTemplate (the template this lesson was cloned from)
+status                   — USER-DEFINED enum: 'completed' | 'not_started' — cast ::text
+title                    — lesson title
+order                    — display order within the track
+deleted_at               — standard soft delete
+```
+**`Lesson.status='completed'` is the authoritative source for curriculum completion** — it is set by Trellis when a coordinator submits a `SessionNote` covering that lesson. `Session.status='Held'` is NOT authoritative; many sessions remain 'Planned' in the Session table even after the lesson was completed and the note submitted.
+
+`/api/track-journey/:pairingId` returns the full `lessons` array for the pairing. The frontend uses `lessons.filter(l => l.status === 'completed').length` for the curriculum count, falling back to distinct-Held-session counting only when `lessons` is empty.
+
+### SessionNote table (true session activity dates)
+```
+id                — PK
+session_id        — FK to Session
+covered_lesson_id — FK to Lesson (null for non-curriculum notes)
+date_submitted_c  — the real date the coordinator submitted the note (= session happened date)
+status            — enum: 'Approved' | 'Submitted' | 'New'
+deleted_at        — standard soft delete
+```
+**`SessionNote.date_submitted_c` is the authoritative "session happened" date.** Used for:
+- `latest_session` CTE in `routes/mom-status.js` (last contact date on Mom Status)
+- `last_curriculum_session` CTE in `routes/mom-status.js` (last curriculum date)
+- Stall detection augmentation in `routes/track-journey.js`
+
+Always query: `WHERE sn."deleted_at" = 0 AND sn."date_submitted_c" IS NOT NULL`
+
 ### Session lesson numbering and counting
 Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same lesson share the same number (the `×N` badge on the timeline).
 
-**Curriculum progress count** (anywhere we say "X / Y Curriculum Sessions Held"): count of **distinct `lesson_template_id`s** that have at least one Held session for this mom — matches what Trellis displays as completed lessons. Never `COUNT(*)` raw Held Track_Session rows; a lesson held twice is still one lesson done.
+**Curriculum progress count** (anywhere we say "X / Y Curriculum Sessions Held"): use `COUNT(Lesson WHERE status='completed' AND pairing_id=$1)` — this matches Trellis's lesson tracker. Do NOT use `COUNT(DISTINCT lesson_template_id) WHERE Session.status='Held'`; that misses lessons completed via SessionNote when Session.status was never updated.
 
 **Untemplated Track_Sessions** (Trellis "Session" entries with no lesson template selected — `lesson_template_id IS NULL`): these are **not** part of the curriculum count and **must not** be renumbered with sequential lesson numbers or backfilled with track-lesson titles. On Track Journey they render as a greyed-out "Additional Track Sessions · N held" row below the curriculum (same style as the support sessions row). They exist as a data-quality signal — the coordinator/advocate logged a session but didn't tag the lesson.
 
 **Lesson step states** (Track Journey seq UI):
-- `done` — at least one Held session for this lesson_template_id (green). A held lesson is always DONE; do not mark the most-recent held lesson as "in progress."
+- `done` — `Lesson.status='completed'` (green). A lesson is done if the Lesson record says so, regardless of Session.status.
 - `inprog` — lesson has scheduled/planned sessions but none Held yet, and the pairing is still active.
 - `missed` — all sessions for this lesson are NotHeld.
 - `not-started` — no session rows exist for this lesson slot yet.
@@ -695,7 +737,7 @@ Never use `AdvocacyGroup.advocateId` as the coordinator directly — it is the g
 
 Org-wide access: `administrator` role OR username `cristina.galloway`. Affiliate-scoped for all other coordinator-and-above roles.
 
-**Sessions-done count (`held_sessions` on the in-progress track):** Distinct held `lesson_template_id`s across the mom's active pairing — matches Trellis's completed-lesson count. The query unions sessions from both `Session.pairing_id` (1:1) and `Session.advocacy_group_id` (group pairings), applies `SessionAttendance` for per-mom effective held status on group sessions (Present→Held, Absent→NotHeld, null→fall back to `Session.status`), filters out `lesson_template_id IS NULL` (untemplated Track_Sessions don't count), then `COUNT(DISTINCT lesson_template_id)`. A 1:1-only query or `COUNT(*)` of Held rows undercounts group-pairing moms and overcounts moms who repeated a lesson.
+**Sessions-done count (`held_sessions` on the in-progress track):** `COUNT(Lesson WHERE status='completed' AND pairing_id = active_pairing_id)` — matches Trellis's completed-lesson count. Uses the `Lesson` table as the authoritative source (set by Trellis when coordinator submits a SessionNote covering that lesson). Do NOT count `DISTINCT lesson_template_id WHERE Session.status='Held'` — that misses lessons completed via SessionNote when Session.status was never updated from 'Planned'.
 
 ---
 

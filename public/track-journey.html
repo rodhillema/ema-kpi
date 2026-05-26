@@ -3725,13 +3725,70 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
   }
 
   // ── Curriculum (Track) sessions ───────────────────────────────────────────
+  // Authoritative completion source: Lesson.status='completed' from the Lesson table.
+  // Trellis marks lessons complete via SessionNote even when the Session row stays
+  // 'Planned' with no lesson_template_id, so iterating over Sessions alone underreports
+  // curriculum progress on the timeline. For each completed Lesson without a matching
+  // Held Session, we synthesize a timeline mark using SessionNote.date_submitted_c
+  // (returned as lesson.completedDate from /api/track-journey/:pairingId).
   var trackSessions = sessions.filter(function(s){ return !!s.lessonTemplateId; });
-  var lastHeldTrack = null;
-  trackSessions.forEach(function(s){ if (s.status === 'Held') lastHeldTrack = s; });
 
-  trackSessions.forEach(function(s) {
+  // Templates already represented by a Held Session — skip when synthesizing from lessons.
+  var heldByTemplate = {};
+  trackSessions.forEach(function(s){
+    if (s.status === 'Held' && s.lessonTemplateId) heldByTemplate[s.lessonTemplateId] = s;
+  });
+
+  // Synthesize timeline marks for lessons completed via SessionNote (no Held session row).
+  var syntheticCompleted = (lessons || [])
+    .filter(function(l){
+      return l.status === 'completed'
+          && l.completedDate
+          && l.lessonTemplateId
+          && !heldByTemplate[l.lessonTemplateId];
+    })
+    .map(function(l){
+      var m = (l.title || '').match(/^Lesson\s+(\d+)/i);
+      return {
+        date:             l.completedDate,
+        status:           'Held',
+        type:             'Track_Session',
+        lessonTemplateId: l.lessonTemplateId,
+        lessonNumber:     m ? parseInt(m[1], 10) : l.order,
+        sessionName:      l.title,
+        momAttended:      null,
+        _synthetic:       true,
+      };
+    });
+
+  // Identify the most recent completion across both sources for "In Progress" styling.
+  var lastHeldDate = null;
+  var lastHeldRef  = null;
+  trackSessions.forEach(function(s){
+    if (s.status === 'Held' && s.date) {
+      var d = new Date(s.date);
+      if (!lastHeldDate || d > lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
+    }
+  });
+  syntheticCompleted.forEach(function(s){
+    var d = new Date(s.date);
+    if (!lastHeldDate || d > lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
+  });
+
+  // Hide non-Held templated sessions whose lesson has been completed via SessionNote —
+  // the synthetic Completed mark replaces them so we don't render a stale Planned circle
+  // on top of a real Completion.
+  var lessonCompletedByTemplate = {};
+  (lessons || []).forEach(function(l){
+    if (l.status === 'completed' && l.lessonTemplateId) lessonCompletedByTemplate[l.lessonTemplateId] = true;
+  });
+
+  trackSessions
+    .filter(function(s){ return s.status === 'Held' || !lessonCompletedByTemplate[s.lessonTemplateId]; })
+    .concat(syntheticCompleted)
+    .forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
-    var isLastHeld  = s === lastHeldTrack && pairing.status === 'paired';
+    var isLastHeld  = s === lastHeldRef && pairing.status === 'paired';
     // Group context: momAttended distinguishes 'Absent' (session held, mom missed)
     // from 'NotHeld' (cohort/session never occurred). 'Unmarked' = cohort met but
     // the coordinator never marked attendance for this mom — Trellis grid shows

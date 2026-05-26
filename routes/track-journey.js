@@ -743,9 +743,10 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
 
     // Per-pairing Lesson rows — Lesson.status='completed' is the authoritative
     // curriculum completion state in Trellis, more reliable than Session.status='Held'.
-    // completedDate is the latest SessionNote.date_submitted_c for the lesson, used by
-    // the frontend timeline to position synthetic curriculum marks for lessons that
-    // were completed via SessionNote without their Session row ever flipping to 'Held'.
+    // completedDate is when the SESSION actually happened (Session.date_start), pulled
+    // through the linking SessionNote. We use date_start, not SessionNote.date_submitted_c,
+    // because coordinators routinely submit notes a day after the session — using the
+    // submission date would shift the displayed "last held" date forward incorrectly.
     let lessons = [];
     try {
       const { rows: lRows } = await pool.query(`
@@ -755,11 +756,12 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           l."status"::text              AS "status",
           l."title",
           l."order",
-          (SELECT MAX(sn."date_submitted_c")
+          (SELECT MAX(s."date_start")
              FROM "SessionNote" sn
+             JOIN "Session" s ON s."id" = sn."session_id" AND s."deleted_at" = 0
             WHERE sn."covered_lesson_id" = l."id"
               AND sn."deleted_at" = 0
-              AND sn."date_submitted_c" IS NOT NULL
+              AND s."date_start" IS NOT NULL
           )                              AS "completedDate"
         FROM "Lesson" l
         WHERE l."pairing_id" = $1

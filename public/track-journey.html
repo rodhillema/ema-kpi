@@ -3761,10 +3761,26 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
       };
     });
 
-  // Identify the most recent completion across both sources for "In Progress" styling.
-  // On a date tie, the later-iterated entry wins — synthetic lessons are iterated in
-  // curriculum order (Lesson.order ASC), so two same-day completions resolve to the
-  // higher-numbered lesson, matching the curriculum-order progression a coordinator expects.
+  // "In Progress" highlight = the next upcoming planned curriculum session (e.g. the
+  // mom's scheduled Lesson 10 session). Falls back to the most recent completion if
+  // no future planned session exists. Completed lessons should look completed —
+  // surfacing the *next* lesson as the in-progress one matches what coordinators
+  // expect to see when checking what's coming up.
+  var nowMs            = Date.now();
+  var nextPlannedRef   = null;
+  var nextPlannedDate  = null;
+  trackSessions.forEach(function(s){
+    if (s.status === 'Planned' && s.date) {
+      var d = new Date(s.date);
+      if (d.getTime() >= nowMs && (!nextPlannedDate || d < nextPlannedDate)) {
+        nextPlannedDate = d;
+        nextPlannedRef  = s;
+      }
+    }
+  });
+
+  // Fallback: most recent completion across both sources, in case no future planned
+  // session is on the calendar (mom hasn't scheduled the next lesson yet).
   var lastHeldDate = null;
   var lastHeldRef  = null;
   trackSessions.forEach(function(s){
@@ -3777,6 +3793,8 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     var d = new Date(s.date);
     if (!lastHeldDate || d >= lastHeldDate) { lastHeldDate = d; lastHeldRef = s; }
   });
+
+  var inProgressRef = nextPlannedRef || lastHeldRef;
 
   // Hide non-Held templated sessions whose lesson has been completed via SessionNote —
   // the synthetic Completed mark replaces them so we don't render a stale Planned circle
@@ -3803,7 +3821,8 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
 
   curriculumMarks.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
-    var isLastHeld  = s === lastHeldRef && pairing.status === 'paired';
+    var isInProgress = s === inProgressRef && pairing.status === 'paired';
+    var isUpcoming   = isInProgress && s === nextPlannedRef;
     // Group context: momAttended distinguishes 'Absent' (session held, mom missed)
     // from 'NotHeld' (cohort/session never occurred). 'Unmarked' = cohort met but
     // the coordinator never marked attendance for this mom — Trellis grid shows
@@ -3811,11 +3830,10 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     var momFirstName = (pairing.momName || '').split(' ')[0];
     var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
                     : s.status === 'Unmarked'     ? 'Unmarked'
-                    : s.status !== 'Held'         ? s.status
-                    : isLastHeld                  ? 'In Progress · Last held session'
+                    : s.status !== 'Held'         ? (isUpcoming ? 'In Progress · Next scheduled session' : s.status)
                     : 'Completed';
     var el = document.createElement('div');
-    el.className = 'mark curr tj-injected' + (isLastHeld ? ' inprog' : '') + (s.momAttended === 'Absent' ? ' absent' : '');
+    el.className = 'mark curr tj-injected' + (isInProgress ? ' inprog' : '') + (s.momAttended === 'Absent' ? ' absent' : '');
     // Stagger same-day marks horizontally so they don't stack invisibly.
     var basePos    = p(s.date);
     var dayOffset  = (s._dayIndex || 0) * 28; // px shift per same-day collision
@@ -4153,11 +4171,20 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   var momFirstName = (pairing.momName || '').split(' ')[0];
   allLessonSlots.forEach(function(g) {
     var step = document.createElement('div');
+    // Strip "Lesson N |" / "Lesson N -" / "Lesson N ·" prefix from lesson titles —
+    // the number is already shown in the seq-dot, so the prefix is redundant and
+    // inconsistent across the curriculum (e.g. Trellis stores "Lesson 1 - S.P.I.C.E.S."
+    // with a dash but "Lesson 2 | Healthy Expectations" with a pipe).
+    function cleanLessonTitle(t) {
+      if (!t) return t;
+      return String(t).replace(/^\s*Lesson\s+\d+\s*[\|·\-–—:]\s*/i, '').trim() || t;
+    }
+
     if (g.notStarted) {
       step.className = 'seq-step not-started';
       step.innerHTML =
         '<div class="seq-dot">' + g.lessonNumber + '</div>'
-        + '<div class="seq-content"><div class="seq-name">' + escHtml(g.title) + '</div></div>';
+        + '<div class="seq-content"><div class="seq-name">' + escHtml(cleanLessonTitle(g.title)) + '</div></div>';
     } else {
       var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
       var absentSess = g.sessions.filter(function(s){ return s.momAttended === 'Absent'; });
@@ -4185,7 +4212,7 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
       } else if (wasAbsent) {
         repeatHtml = ' <span class="repeat-tag missed-tag">missed</span>';
       }
-      var titleText = escHtml(g.title || trackTitles[g.lessonNumber - 1] || ('Session ' + g.lessonNumber));
+      var titleText = escHtml(cleanLessonTitle(g.title) || trackTitles[g.lessonNumber - 1] || ('Session ' + g.lessonNumber));
       step.innerHTML =
         '<div class="seq-dot">' + g.lessonNumber + '</div>'
         + '<div class="seq-content"><div class="seq-name">' + titleText + repeatHtml + '</div></div>';

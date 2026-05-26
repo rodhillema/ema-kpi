@@ -627,14 +627,12 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                  WHEN s."advocacy_group_id" IS NULL
                       AND sa."promptness"::text = 'No show'
                       THEN 'NotHeld'
-                 -- Support_Session with a submitted SessionNote — Trellis flags it as
-                 -- held/approved even when Session.status stays 'Planned'. Track_Sessions
-                 -- are intentionally NOT promoted here because the Lesson table is the
-                 -- authoritative source for curriculum completion and promoting Track
-                 -- Sessions would double-count untemplated rows in "Additional Track
-                 -- Sessions".
+                 -- General: any session with a SUBMITTED SessionNote is effectively held.
+                 -- Trellis often leaves Session.status='Planned' even after the coordinator
+                 -- approves a SessionNote for it. Applies to Track and Support alike — the
+                 -- Lesson table remains the authoritative curriculum-completion source so
+                 -- this promotion doesn't double-count curriculum progress.
                  WHEN s."status"::text = 'Planned'
-                      AND s."session_type"::text = 'Support_Session'
                       AND EXISTS (
                         SELECT 1 FROM "SessionNote" sn
                          WHERE sn."session_id" = s."id"
@@ -646,8 +644,34 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                END                    AS "status",
                s."session_type"::text  AS "type",
                s."description"        AS "notes",
-               s."lesson_template_id" AS "lessonTemplateId",
-               s."name"               AS "sessionName"
+               -- Project lesson info from the linked SessionNote when the Session itself
+               -- has no lesson_template_id. Coordinators sometimes create the Session
+               -- without picking a lesson template, then submit a SessionNote with
+               -- covered_lesson_id pointing to the Lesson row. We use the latest such
+               -- SessionNote (preferring submitted ones) so the timeline can show the
+               -- session against its real lesson position.
+               COALESCE(
+                 s."lesson_template_id",
+                 (SELECT l."source_lesson_template_id"
+                    FROM "SessionNote" sn
+                    JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+                   WHERE sn."session_id" = s."id"
+                     AND sn."deleted_at" = 0
+                     AND sn."covered_lesson_id" IS NOT NULL
+                   ORDER BY sn."date_submitted_c" DESC NULLS LAST
+                   LIMIT 1)
+               )                       AS "lessonTemplateId",
+               COALESCE(
+                 (SELECT l."title"
+                    FROM "SessionNote" sn
+                    JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+                   WHERE sn."session_id" = s."id"
+                     AND sn."deleted_at" = 0
+                     AND sn."covered_lesson_id" IS NOT NULL
+                   ORDER BY sn."date_submitted_c" DESC NULLS LAST
+                   LIMIT 1),
+                 s."name"
+               )                       AS "sessionName"
           FROM "Session" s
           LEFT JOIN "SessionAttendance" sa
             ON sa."session_id" = s."id"
@@ -683,10 +707,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       AND s."status"::text = 'Held'
                       AND sa."status" IS NULL
                       THEN 'Unmarked'
-                 -- Support_Session with a submitted SessionNote — see primary query
-                 -- for rationale. Track_Sessions deliberately excluded.
+                 -- General SessionNote-based promotion (see primary query for rationale).
                  WHEN s."status"::text = 'Planned'
-                      AND s."session_type"::text = 'Support_Session'
                       AND EXISTS (
                         SELECT 1 FROM "SessionNote" sn
                          WHERE sn."session_id" = s."id"
@@ -698,8 +720,28 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                END                    AS "status",
                s."session_type"::text AS "type",
                s."description"        AS "notes",
-               s."lesson_template_id" AS "lessonTemplateId",
-               s."name"               AS "sessionName"
+               COALESCE(
+                 s."lesson_template_id",
+                 (SELECT l."source_lesson_template_id"
+                    FROM "SessionNote" sn
+                    JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+                   WHERE sn."session_id" = s."id"
+                     AND sn."deleted_at" = 0
+                     AND sn."covered_lesson_id" IS NOT NULL
+                   ORDER BY sn."date_submitted_c" DESC NULLS LAST
+                   LIMIT 1)
+               )                       AS "lessonTemplateId",
+               COALESCE(
+                 (SELECT l."title"
+                    FROM "SessionNote" sn
+                    JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
+                   WHERE sn."session_id" = s."id"
+                     AND sn."deleted_at" = 0
+                     AND sn."covered_lesson_id" IS NOT NULL
+                   ORDER BY sn."date_submitted_c" DESC NULLS LAST
+                   LIMIT 1),
+                 s."name"
+               )                       AS "sessionName"
           FROM "Session" s
           LEFT JOIN "SessionAttendance" sa
             ON sa."session_id" = s."id"

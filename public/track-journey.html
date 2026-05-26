@@ -3841,7 +3841,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     el.innerHTML =
       (s.lessonNumber || '?')
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\|\s*/i,'').trim()) : '') + '</div>'
+      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim()) : '') + '</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + statusLabel + '</div>'
       + '</div>';
     currLane.appendChild(el);
@@ -4171,20 +4171,11 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   var momFirstName = (pairing.momName || '').split(' ')[0];
   allLessonSlots.forEach(function(g) {
     var step = document.createElement('div');
-    // Strip "Lesson N |" / "Lesson N -" / "Lesson N ·" prefix from lesson titles —
-    // the number is already shown in the seq-dot, so the prefix is redundant and
-    // inconsistent across the curriculum (e.g. Trellis stores "Lesson 1 - S.P.I.C.E.S."
-    // with a dash but "Lesson 2 | Healthy Expectations" with a pipe).
-    function cleanLessonTitle(t) {
-      if (!t) return t;
-      return String(t).replace(/^\s*Lesson\s+\d+\s*[\|·\-–—:]\s*/i, '').trim() || t;
-    }
-
     if (g.notStarted) {
       step.className = 'seq-step not-started';
       step.innerHTML =
         '<div class="seq-dot">' + g.lessonNumber + '</div>'
-        + '<div class="seq-content"><div class="seq-name">' + escHtml(cleanLessonTitle(g.title)) + '</div></div>';
+        + '<div class="seq-content"><div class="seq-name">' + escHtml(g.title) + '</div></div>';
     } else {
       var heldSess   = g.sessions.filter(function(s){ return s.status === 'Held' || s.status === 'Unmarked'; });
       var absentSess = g.sessions.filter(function(s){ return s.momAttended === 'Absent'; });
@@ -4212,7 +4203,7 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
       } else if (wasAbsent) {
         repeatHtml = ' <span class="repeat-tag missed-tag">missed</span>';
       }
-      var titleText = escHtml(cleanLessonTitle(g.title) || trackTitles[g.lessonNumber - 1] || ('Session ' + g.lessonNumber));
+      var titleText = escHtml(g.title || trackTitles[g.lessonNumber - 1] || ('Session ' + g.lessonNumber));
       step.innerHTML =
         '<div class="seq-dot">' + g.lessonNumber + '</div>'
         + '<div class="seq-content"><div class="seq-name">' + titleText + repeatHtml + '</div></div>';

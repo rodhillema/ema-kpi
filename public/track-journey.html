@@ -3649,12 +3649,12 @@ function renderJourney(data) {
 
   // Track selector — populated by populateTrackDropdown when a mom is picked.
 
-  renderTimeline(pairing, sessions, stalls, assessments, data.vitalNeeds || [], winStart, winEnd);
+  renderTimeline(pairing, sessions, stalls, assessments, data.vitalNeeds || [], winStart, winEnd, data.lessons || []);
   renderDetail(pairing, sessions, assessments, data.lessonTemplates || [], data.lessons || []);
 }
 
 // ── Timeline ──────────────────────────────────────────────────────────────────
-function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winStart, winEnd) {
+function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winStart, winEnd, lessons) {
   var tlRoot      = document.getElementById('tl-root');
   var currLane    = document.getElementById('lane-curr');
   var suppLane    = document.getElementById('lane-supp');

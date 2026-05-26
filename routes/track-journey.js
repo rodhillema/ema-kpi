@@ -627,6 +627,21 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                  WHEN s."advocacy_group_id" IS NULL
                       AND sa."promptness"::text = 'No show'
                       THEN 'NotHeld'
+                 -- Support_Session with a submitted SessionNote — Trellis flags it as
+                 -- held/approved even when Session.status stays 'Planned'. Track_Sessions
+                 -- are intentionally NOT promoted here because the Lesson table is the
+                 -- authoritative source for curriculum completion and promoting Track
+                 -- Sessions would double-count untemplated rows in "Additional Track
+                 -- Sessions".
+                 WHEN s."status"::text = 'Planned'
+                      AND s."session_type"::text = 'Support_Session'
+                      AND EXISTS (
+                        SELECT 1 FROM "SessionNote" sn
+                         WHERE sn."session_id" = s."id"
+                           AND sn."deleted_at" = 0
+                           AND sn."date_submitted_c" IS NOT NULL
+                      )
+                      THEN 'Held'
                  ELSE s."status"::text
                END                    AS "status",
                s."session_type"::text  AS "type",
@@ -668,6 +683,17 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       AND s."status"::text = 'Held'
                       AND sa."status" IS NULL
                       THEN 'Unmarked'
+                 -- Support_Session with a submitted SessionNote — see primary query
+                 -- for rationale. Track_Sessions deliberately excluded.
+                 WHEN s."status"::text = 'Planned'
+                      AND s."session_type"::text = 'Support_Session'
+                      AND EXISTS (
+                        SELECT 1 FROM "SessionNote" sn
+                         WHERE sn."session_id" = s."id"
+                           AND sn."deleted_at" = 0
+                           AND sn."date_submitted_c" IS NOT NULL
+                      )
+                      THEN 'Held'
                  ELSE s."status"::text
                END                    AS "status",
                s."session_type"::text AS "type",

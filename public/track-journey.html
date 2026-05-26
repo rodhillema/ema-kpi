@@ -3847,25 +3847,38 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     dayBuckets[dayKey].push(s);
   });
 
-  // Pre-compute "this lesson has been completed by a later session" so earlier
-  // attempts for the same lesson can render as faded green (earlier-attempt).
-  // Single rule, no special "in progress" pick — once any session for a
-  // lessonTemplateId is Held, every prior session for that template is an
-  // earlier attempt.
-  // Unmarked group sessions are NOT counted as Held here: the coordinator
-  // never recorded attendance, so we can't confirm the mom was present.
-  // They're treated as assumed-absent for both the visual and the held-ness
-  // determination (see the per-mark render below).
-  var latestHeldDateByTemplate = {};
+  // Pre-compute per-lessonTemplateId date markers:
+  //   latestHeldDateByTemplate  – latest Held date (drives "earlier attempt")
+  //   earliestMissByTemplate    – earliest miss date for this mom (drives
+  //                               "make-up" detection — a later Held session
+  //                               for a template whose first occurrence for
+  //                               this mom was a miss is a make-up).
+  // A "miss" here covers any session that didn't count for THIS mom: 1:1
+  // NotHeld, group Absent, group Unmarked (assumed absent), or group Before-
+  // join. Unifying these means the same make-up rule works for both delivery
+  // modes (Scenario A: group missed → 1:1 later; Scenario B: 1:1 missed →
+  // rescheduled).
+  var latestHeldDateByTemplate    = {};
+  var earliestMissByTemplate      = {};
+  var pairingStartMs = pairing.startDate ? new Date(pairing.startDate).getTime() : null;
   curriculumMarks.forEach(function(s){
-    if (s.status !== 'Held' || !s.lessonTemplateId || !s.date) return;
+    if (!s.lessonTemplateId || !s.date) return;
     var d = new Date(s.date).getTime();
-    if (!latestHeldDateByTemplate[s.lessonTemplateId] || d > latestHeldDateByTemplate[s.lessonTemplateId]) {
-      latestHeldDateByTemplate[s.lessonTemplateId] = d;
+    var isMissForMom = s.momAttended === 'Absent'
+      || s.status === 'NotHeld'
+      || s.status === 'Unmarked'
+      || (pairingStartMs != null && d < pairingStartMs);
+    if (s.status === 'Held') {
+      if (!latestHeldDateByTemplate[s.lessonTemplateId] || d > latestHeldDateByTemplate[s.lessonTemplateId]) {
+        latestHeldDateByTemplate[s.lessonTemplateId] = d;
+      }
+    }
+    if (isMissForMom) {
+      if (!earliestMissByTemplate[s.lessonTemplateId] || d < earliestMissByTemplate[s.lessonTemplateId]) {
+        earliestMissByTemplate[s.lessonTemplateId] = d;
+      }
     }
   });
-
-  var pairingStartMs = pairing.startDate ? new Date(pairing.startDate).getTime() : null;
 
   curriculumMarks.forEach(function(s) {
     if (!s.date) return; // group sessions with no scheduled date — skip from timeline
@@ -3874,6 +3887,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     // that bound color to position and made completed lessons look in-progress
     // when a tie-break landed on the wrong one. The next-up planned session is
     // still surfaced via tooltip text, not via a color override.
+    var sDateMs    = new Date(s.date).getTime();
     var isPlanned  = s.status === 'Planned';
     var isHeld     = s.status === 'Held';
     var isNotHeld  = s.status === 'NotHeld';
@@ -3882,33 +3896,44 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     // attendance data needs cleanup, or the mom needs a make-up session logged.
     var isUnmarked = s.status === 'Unmarked';
     // Before-join: cohort session that happened before this mom joined the
-    // group. Same "didn't count for this mom" semantic as Absent, so we render
-    // all three (Absent, Before-join, Unmarked) with the same outlined-red
-    // treatment.
-    var isBeforeJoin = pairingStartMs != null && new Date(s.date).getTime() < pairingStartMs;
-    // Earlier attempt: a session for a lesson that's been completed by a more
-    // recent session. Faded green so completed attempts stand out without
-    // disappearing from the timeline.
-    var isEarlierAttempt = !!s.lessonTemplateId
+    // group. Same "didn't count for this mom" semantic as Absent / NotHeld /
+    // Unmarked — all four render with the outlined-red .absent style.
+    var isBeforeJoin = pairingStartMs != null && sDateMs < pairingStartMs;
+    var didNotCount  = (s.momAttended === 'Absent') || isNotHeld || isUnmarked || isBeforeJoin;
+    // Make-up: a Held session for a lessonTemplateId whose first occurrence
+    // for this mom was a miss (Absent / NotHeld / Unmarked / Before-join).
+    // Catches both Scenario A (group missed → separate 1:1 later) and
+    // Scenario B (1:1 missed → rescheduled). Visual is green with a "↻"
+    // badge so the make-up reads as held-with-history.
+    var isMakeup = isHeld
+      && !!s.lessonTemplateId
+      && earliestMissByTemplate[s.lessonTemplateId] != null
+      && sDateMs > earliestMissByTemplate[s.lessonTemplateId];
+    // Earlier attempt: a Held session for a lesson with an even later Held
+    // session for the same template. Faded green — the lesson is now done by
+    // the later session.
+    var isEarlierAttempt = isHeld
+      && !!s.lessonTemplateId
       && latestHeldDateByTemplate[s.lessonTemplateId] != null
-      && new Date(s.date).getTime() < latestHeldDateByTemplate[s.lessonTemplateId];
-    // Surface "Next scheduled" in the tooltip for the upcoming planned mark so
-    // coordinators can still see at a glance what's next — but the visual cue
-    // remains the outlined .planned style, not a color override.
+      && sDateMs < latestHeldDateByTemplate[s.lessonTemplateId];
+    // Surface "Next scheduled" in the tooltip for the upcoming planned mark.
     var isNextUp  = s === nextPlannedRef && pairing.status === 'paired';
     var momFirstName = (pairing.momName || '').split(' ')[0];
     var statusLabel = s.momAttended === 'Absent' ? 'Cohort attended · ' + momFirstName + ' absent · not made up'
                     : isBeforeJoin                ? 'Cohort met before ' + momFirstName + ' joined'
                     : isUnmarked                  ? 'Attendance not recorded · assumed absent · verify in Trellis or log a make-up'
+                    : isNotHeld                   ? 'Not Held'
+                    : isMakeup                    ? 'Make-up · attended after earlier miss'
                     : isEarlierAttempt            ? 'Earlier attempt · superseded by later session'
                     : isPlanned                   ? (isNextUp ? 'Scheduled · Next up' : 'Scheduled')
-                    : isNotHeld                   ? 'Not Held'
                     : isHeld                      ? 'Completed'
                     : s.status;
+    // Class priority: didNotCount > makeup > earlier-attempt > planned > default.
     var classes = ['mark', 'curr', 'tj-injected'];
-    if (s.momAttended === 'Absent' || isBeforeJoin || isUnmarked) classes.push('absent');
-    else if (isEarlierAttempt)                                     classes.push('earlier-attempt');
-    else if (isPlanned)                                            classes.push('planned');
+    if (didNotCount)            classes.push('absent');
+    else if (isMakeup)          classes.push('makeup');
+    else if (isEarlierAttempt)  classes.push('earlier-attempt');
+    else if (isPlanned)         classes.push('planned');
     var el = document.createElement('div');
     el.className = classes.join(' ');
     // Stagger same-day marks horizontally so they don't stack invisibly.

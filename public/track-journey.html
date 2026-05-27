@@ -1325,6 +1325,21 @@ body.drawer-open .drawer {
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
+/* Orphan Track Session - a Track Session row with no lesson_template_id
+   and no SessionNote linking to a Lesson. Render as a dashed amber "?" so
+   the coordinator can see at a glance which sessions need a lesson attached
+   in Trellis (or converted to support). Distinct from .planned (outlined
+   green, normal not-yet-held) because this is a DATA QUALITY signal, not
+   a normal state. */
+.mark.curr.orphan {
+  background: white;
+  color: var(--amber);
+  border: 2.5px dashed var(--amber);
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
 /* Support marks - bolder, distinct color */
 .mark.supp {
   width: 24px;
@@ -3988,7 +4003,18 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
     + '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>'
     + '</svg>';
-  sessions.filter(function(s){ return !s.lessonTemplateId && s.status === 'Held' && s.date; })
+  // Only TRUE support sessions land on the support lane. Track Sessions with
+  // no lesson_template_id (orphan curriculum sessions) used to slip in here
+  // because the prior filter only looked at "no template + Held" without
+  // checking type, painting curriculum-orphans as heart-icon support
+  // sessions. We exclude Track Sessions now and render them as "?" orphans
+  // on the curriculum lane below.
+  sessions.filter(function(s){
+    return s.type !== 'Track_Session'
+        && !s.lessonTemplateId
+        && s.status === 'Held'
+        && s.date;
+  })
     .forEach(function(s) {
       var el = document.createElement('div');
       el.className = 'mark supp tj-injected';
@@ -4001,6 +4027,34 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
         +   '<div class="mark-tip-meta">Held ' + fmtDate(s.date) + '</div>'
         + '</div>';
       suppLane.appendChild(el);
+    });
+
+  // ── Orphan Track Sessions (needs lesson attached) ───────────────────────
+  // Track Sessions with no lesson_template_id on the row AND no SessionNote
+  // linking to a Lesson — i.e. the ~40 org-wide rows where the coordinator
+  // never picked a lesson and never filed a covered_lesson_id note. Render
+  // with a "?" pill on the curriculum lane so the coordinator can see and
+  // act (link a lesson in Trellis, or convert to a Support Session).
+  sessions.filter(function(s){
+    return s.type === 'Track_Session'
+        && !s.lessonTemplateId
+        && s.date
+        && (s.status === 'Held' || s.status === 'Planned' || s.status === 'Unmarked');
+  })
+    .forEach(function(s) {
+      var el = document.createElement('div');
+      el.className = 'mark curr tj-injected orphan';
+      el.style.left = p(s.date);
+      var stateLbl = s.status === 'Held'    ? 'Held'
+                   : s.status === 'Planned' ? 'Scheduled'
+                   : s.status;
+      el.innerHTML =
+        '?'
+        + '<div class="mark-tip">'
+        +   '<div class="mark-tip-title">Track Session · Lesson not attached</div>'
+        +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + stateLbl + ' · Link a lesson in Trellis or convert to Support</div>'
+        + '</div>';
+      currLane.appendChild(el);
     });
 
   // ── Vital Needs / Flagged Needs (BenevolenceNeed) ────────────────────────

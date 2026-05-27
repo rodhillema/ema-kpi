@@ -110,7 +110,11 @@
     fetch('/api/me', { credentials: 'same-origin' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
-        var username = (data && data.user && data.user.username) || '';
+        if (!data || !data.user) {
+          window.location.replace('/');
+          return;
+        }
+        var username = data.user.username || '';
         var isChampionAdmin = CHAMPION_ADMIN_USERNAMES.indexOf(username.toLowerCase()) !== -1;
         injectNav(isChampionAdmin);
       })

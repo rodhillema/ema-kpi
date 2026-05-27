@@ -3916,7 +3916,17 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     // Before-join: cohort session that happened before this mom joined the
     // group. Same "didn't count for this mom" semantic as Absent / NotHeld /
     // Unmarked — all four render with the outlined-red .absent style.
-    var isBeforeJoin = pairingStartMs != null && sDateMs < pairingStartMs;
+    //
+    // BUT: if the mom has explicit SessionAttendance='Present' for this session
+    // (s.momAttended === 'Present') OR Session.status is already Held for her,
+    // she really did attend — Trellis's pairing.created_at sometimes lags the
+    // actual join date. The attendance record is more authoritative than the
+    // pairing-start timestamp, so we suppress the before-join treatment in
+    // that case to avoid mislabeling a genuine attendance as "didn't count."
+    var isBeforeJoin = pairingStartMs != null
+      && sDateMs < pairingStartMs
+      && !isHeld
+      && s.momAttended !== 'Present';
     var didNotCount  = (s.momAttended === 'Absent') || isNotHeld || isUnmarked || isBeforeJoin;
     // Make-up: a Held session for a lessonTemplateId whose first occurrence
     // for this mom was a miss (Absent / NotHeld / Unmarked / Before-join).
@@ -4082,6 +4092,10 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
         + (n.status === 'Fulfilled' || n.status === 'Resolved' ? ' fulfilled' : '');
       el.style.left = p(n.date);
       var typeLbl = n.needType ? String(n.needType).replace(/_/g,' ') : 'Need';
+      // Flagged needs tooltip is intentionally brief — just type, urgency,
+      // date, and status. Full context lives in the drawer (click the flag).
+      // Keeping the hover short prevents long needs from sprawling across the
+      // timeline and matches the rest of the timeline's tooltip vocabulary.
       el.innerHTML =
         '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
         + '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>'
@@ -4090,7 +4104,6 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
         + '<div class="mark-tip">'
         +   '<div class="mark-tip-title">' + escHtml(typeLbl) + (n.urgent ? ' · Urgent' : '') + '</div>'
         +   '<div class="mark-tip-meta">' + fmtDate(n.date) + ' · ' + escHtml(n.status || 'Requested') + '</div>'
-        +   (n.context ? '<div class="mark-tip-meta" style="margin-top:4px;font-style:italic;">' + escHtml(n.context.slice(0, 120)) + (n.context.length > 120 ? '…' : '') + '</div>' : '')
         + '</div>';
       (function(need){ el.onclick = function(e){ e.stopPropagation(); openFlagDrawer(need); }; })(n);
       flaggedLane.appendChild(el);

@@ -1079,7 +1079,7 @@ function render(){
   if(!list.length){tbody.innerHTML='<tr><td colspan="9" class="no-results">No moms match the current filters.</td></tr>';return;}
   tbody.innerHTML=list.map(function(m){
     var ca=dsa(m.lastContactDate);
-    var cWarn=ca>14;
+    var cWarn=m.status==="Active"&&!!m.inProgressTrack&&ca>14;
     var cTxt=m.lastContactDate?(ca===0?"Today":ca===1?"Yesterday":ca+"d ago"):"No log";
     return'<tr class="dr'+(openId===m.id?" sel":"")+'" onclick="openDrawer(\''+m.id+'\')">'
       +'<td style="font-weight:700;">'+m.name+'</td>'
@@ -1137,7 +1137,7 @@ function openDrawer(id){
   var statusDateVal=isInactive?(m.inactiveDate?fmtS(m.inactiveDate):"Unknown"):(m.intakeDate?fmtS(m.intakeDate):"Unknown");
   var metaHtml='<div class="d-mi"><div class="d-mi-lbl">Tracks completed</div><div class="d-mi-val">'+completed+'</div></div>'
     +'<div class="d-mi"><div class="d-mi-lbl">'+statusDateLbl+'</div><div class="d-mi-val" style="font-size:13px;">'+statusDateVal+'</div></div>'
-    +'<div class="d-mi"><div class="d-mi-lbl">Last contact</div><div class="d-mi-val" style="font-size:13px;'+(ca>14?"color:var(--yellow)":"")+'">'+(m.lastContactDate?fmtS(m.lastContactDate):"None")+'</div></div>';
+    +'<div class="d-mi"><div class="d-mi-lbl">Last contact</div><div class="d-mi-val" style="font-size:13px;'+((m.status==="Active"&&!!m.inProgressTrack&&ca>14)?"color:var(--yellow)":"")+'">'+(m.lastContactDate?fmtS(m.lastContactDate):"None")+'</div></div>';
   // FWA tile: always show — inactive moms get no color alert, just the date for context
   var fwaColor=isInactive?"":(fwaWarn?"color:var(--red)":fwaSoon?"color:#b86b00":"");
   metaHtml+='<div class="d-mi"><div class="d-mi-lbl">Last FWA</div><div class="d-mi-val" style="font-size:13px;'+fwaColor+'">'+(m.lastFwaDate?fmtS(m.lastFwaDate):"Never")+'</div></div>';

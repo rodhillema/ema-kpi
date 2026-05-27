@@ -1834,17 +1834,18 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   line-height: 1.3;
 }
 
-/* Not-started lesson — uses the same "faded green" vocabulary as the timeline's
-   .planned mark so the two views agree on what "hasn't happened yet" looks like.
-   Soft green fill at reduced opacity reads as "scheduled / pending" rather than
-   "neutral gray placeholder," matching the timeline's outlined-green-then-faded
-   convention for not-yet-held lessons. */
-.seq-step.not-started .seq-dot {
-  background: var(--green-soft);
-  border-color: var(--green-soft);
-  color: var(--green);
-  opacity: 0.6;
-}
+/* Not-started lesson on the Curriculum Detail panel — neutral gray.
+   The panel and the timeline intentionally use different vocabularies for
+   "hasn't happened yet":
+     Timeline (faded green .planned)  = a specific scheduled session that
+                                        hasn't been held — has a date.
+     Panel (gray .not-started)        = this lesson hasn't been reached yet
+                                        for this mom — aggregated across
+                                        all sessions for the lesson.
+   Trellis auto-creates Planned stub sessions for every lesson at pairing
+   creation, so most panel "not-started" slots technically have stubs — but
+   from the mom's perspective nothing has actually happened on those lessons,
+   so the panel reads gray (neutral) rather than green (scheduled). */
 .seq-step.not-started .seq-name {
   font-weight: 400;
   color: var(--mid);

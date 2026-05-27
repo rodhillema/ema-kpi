@@ -4030,24 +4030,28 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     });
 
   // ── Orphan Track Sessions (needs lesson attached) ───────────────────────
-  // Track Sessions with no lesson_template_id on the row AND no SessionNote
-  // linking to a Lesson — i.e. the ~40 org-wide rows where the coordinator
-  // never picked a lesson and never filed a covered_lesson_id note. Render
-  // with a "?" pill on the curriculum lane so the coordinator can see and
-  // act (link a lesson in Trellis, or convert to a Support Session).
+  // Track Sessions where a session definitely happened (Held or Unmarked)
+  // but no lesson is attached anywhere — neither on the Session row nor via
+  // a SessionNote.covered_lesson_id. That's the case worth flagging: a
+  // session occurred but won't ever count toward curriculum progress unless
+  // a coordinator goes back and links it.
+  //
+  // We deliberately EXCLUDE Planned orphans. When a group is created, every
+  // Track session for that group is auto-created as Planned with no date and
+  // a generic "Session" name — that's the default state coordinators fill in
+  // over time, not a data quality issue. Flagging Planned would produce
+  // dozens of false positives per group.
   sessions.filter(function(s){
     return s.type === 'Track_Session'
         && !s.lessonTemplateId
         && s.date
-        && (s.status === 'Held' || s.status === 'Planned' || s.status === 'Unmarked');
+        && (s.status === 'Held' || s.status === 'Unmarked');
   })
     .forEach(function(s) {
       var el = document.createElement('div');
       el.className = 'mark curr tj-injected orphan';
       el.style.left = p(s.date);
-      var stateLbl = s.status === 'Held'    ? 'Held'
-                   : s.status === 'Planned' ? 'Scheduled'
-                   : s.status;
+      var stateLbl = s.status === 'Unmarked' ? 'Attendance not recorded' : 'Held';
       el.innerHTML =
         '?'
         + '<div class="mark-tip">'

@@ -763,19 +763,26 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // Drives Curriculum Detail: correct names, ordering, and not-started rows.
     // Tries the Prisma camelCase FK ("trackId"); wrapped in try/catch so a
     // schema mismatch falls back gracefully and the frontend uses static titles.
+    // LessonTemplate column names: lt.title (NOT lt.name) and lt.track_id (NOT
+    // lt.trackId). The earlier query used the wrong column names, fell into the
+    // catch silently, and returned [] for every pairing — which is why the
+    // curriculum number resolution couldn't fall back to LessonTemplate-name
+    // parsing and the sort order kept relying on the inconsistent Lesson.order.
+    // We alias lt.title → name in the response so downstream code (this file
+    // and the frontend ltMap) keeps treating the field as `name`.
     let lessonTemplates = [];
     try {
       if (p.trackId) {
         const { rows: ltRows } = await pool.query(`
-          SELECT lt."id", lt."name", lt."order"
+          SELECT lt."id", lt."title", lt."order"
           FROM "LessonTemplate" lt
-          WHERE lt."trackId" = $1
+          WHERE lt."track_id" = $1
             AND lt."deleted_at" = 0
           ORDER BY lt."order" ASC
         `, [p.trackId]);
         lessonTemplates = ltRows.map(lt => ({
           id:    lt.id,
-          name:  lt.name,
+          name:  lt.title,
           order: lt.order,
         }));
       }

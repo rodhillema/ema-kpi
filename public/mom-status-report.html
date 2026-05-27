@@ -1159,7 +1159,7 @@ function openDrawer(id){
     fwaAlertEl.style.display="";
     var fwaITip='A record may appear current if only a single field was updated rather than a full re-assessment. Check the data integrity report for details.';
     var alertCls=fwaWarn?"danger":"warn";
-    var alertLbl=fwaWarn?"FWA overdue":"FWA due soon";
+    var alertLbl=fwaWarn?"FWA OVERDUE":"FWA DUE SOON";
     fwaAlertEl.innerHTML='<div class="d-alert '+alertCls+'">'
       +'<div class="d-alert-lbl" style="display:flex;align-items:center;justify-content:space-between;"><span style="text-transform:none;font-family:\'Oswald\',sans-serif;font-weight:600;font-size:10px;letter-spacing:.8px;">'+alertLbl+'</span>'
       +'<span class="upd-i-wrap" style="position:relative;display:inline-block;"><span class="metric-tip-icon" style="opacity:.6;text-transform:none;" onclick="event.stopPropagation()">i</span>'
@@ -1193,7 +1193,7 @@ function openDrawer(id){
     }
     var tHtml='<div class="d-track-badges">'
       +'<span style="font-size:13px;font-weight:600;color:var(--dark);">'+tFullName+'</span>'
-      +(t.stalled?' <span class="badge b-stalled">Stalled</span>':"")
+      +(t.stalled?' <span class="badge b-stalled">STALLED</span>':"")
       +'</div>'
       +'<div class="d-track-grid">'
       +'<div class="d-mi"><div class="d-mi-lbl">Track sessions</div><div class="d-mi-val">'+t.sessionsDone+' / '+t.sessionsTotal+'</div></div>'
@@ -1202,7 +1202,7 @@ function openDrawer(id){
       +'</div>';
     if(t.stalled){
       tHtml+='<div class="d-alert warn">'
-        +'<div class="d-alert-lbl"><span style="text-transform:none;font-family:\'Oswald\',sans-serif;font-weight:600;font-size:10px;letter-spacing:.8px;">Stalled \u00b7 '+t.stalledDays+' days</span></div>'
+        +'<div class="d-alert-lbl"><span style="text-transform:none;font-family:\'Oswald\',sans-serif;font-weight:600;font-size:10px;letter-spacing:.8px;">STALLED \u00b7 '+t.stalledDays+' DAYS</span></div>'
         +'No session has been held in '+t.stalledDays+' days. The pairing is still active. A track is considered stalled after 14 days without a held session.'
         +'</div>';
     }

@@ -1274,7 +1274,7 @@ function openDrawer(id){
       var ol=tr.outcome==="active"?"In progress":tr.outcome==="completed"?"Completed":"Incomplete";
       return'<div class="th-entry'+(tr.outcome==="active"?" th-entry-curr":"")+'">'
         +'<div><div class="th-name">'+(TRACK_NAMES[tr.name]||tr.name)+'</div>'
-        +'<div class="th-meta">'+tr.start+' \u2013 '+tr.end+(tr.advocateName?' \u00b7 '+(tr.pairingType==='group'?'Group: '+(tr.groupName||tr.advocateName):(tr.advocateName)):"")+'</div></div>'
+        +'<div class="th-meta">'+fmtS(tr.start)+(tr.end?' \u2013 '+fmtS(tr.end):'')+(tr.advocateName?' \u00b7 '+(tr.pairingType==='group'?'Group: '+(tr.groupName||tr.advocateName):(tr.advocateName)):"")+'</div></div>'
         +'<div class="th-out'+(tr.outcome==="active"?" curr":"")+'">'+ol+'</div>'
         +'</div>';
     }).join("")

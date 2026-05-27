@@ -4259,16 +4259,24 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   // Lesson.status='completed' is the truth from Trellis — do NOT infer completion
   // from Session.status='Held' alone (coordinators complete lessons via SessionNote
   // without always updating Session.status).
-  // Lesson curriculum-number resolution (handles inconsistent Lesson.order across
-  // pairings AND Spanish-titled tracks). Priority order:
-  //   1. Parse the lesson title: "Lesson 8 | ..." or "Lección 4 | ..." → 8 or 4.
-  //      Always 1-indexed and language-aware.
-  //   2. Fall back to Lesson.order, normalizing 0→1 since some pairings store
-  //      it 0-indexed and others 1-indexed.
+  // Lesson curriculum-number resolution. Three sources, in priority order:
+  //   1. Parse Lesson.title: "Lesson 8 | ..." or "Lección 4 | ..." → 8 or 4.
+  //   2. Parse the matching LessonTemplate.name from ltMap. Per-pairing Lesson
+  //      rows sometimes store the title WITHOUT the "Lección N|" prefix (Darlyn
+  //      Lopez's RR rows confirmed), but the master LessonTemplate.name does
+  //      include it ("Lección 1| Cómo construir un sistema de apoyo").
+  //   3. Lesson.order, normalizing 0→1 since some pairings store it 0-indexed.
+  // Order matters: title parsing first because the per-pairing title may have
+  // been customized by a coordinator and is what we'll actually display.
   function lessonCurriculumNum(l) {
     if (l.title) {
       var m = String(l.title).match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
       if (m) return parseInt(m[1], 10);
+    }
+    if (l.lessonTemplateId && ltMap[l.lessonTemplateId] && ltMap[l.lessonTemplateId].name) {
+      var ltName = String(ltMap[l.lessonTemplateId].name);
+      var m2 = ltName.match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
+      if (m2) return parseInt(m2[1], 10);
     }
     if (l.order != null) {
       var n = parseInt(l.order, 10);
@@ -4295,13 +4303,25 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
       // position rather than the array index (which would still be wrong if any
       // lessons are missing/skipped).
       var curriculumNum = lessonCurriculumNum(lesson);
+      // Display title — prefer per-pairing Lesson.title when it includes the
+      // "Lesson N|" / "Lección N|" prefix. When the per-pairing title is just
+      // the descriptive part (some RR Spanish pairings store it this way), fall
+      // back to LessonTemplate.name which keeps the prefix.
+      var displayTitle = lesson.title || null;
+      var lt = ltId ? ltMap[ltId] : null;
+      if (displayTitle && lt && lt.name && !/^(?:Lesson|Lecci[óo]n)\s+\d+/i.test(displayTitle)) {
+        displayTitle = lt.name;
+      } else if (!displayTitle && lt && lt.name) {
+        displayTitle = lt.name;
+      }
       return {
-        key:          lesson.id,
-        lessonNumber: curriculumNum != null ? curriculumNum : (idx + 1),
-        title:        lesson.title || null,
-        sessions:     lessonSessions,
-        lessonDone:   lesson.status === 'completed',
-        notStarted:   lessonSessions.length === 0 && lesson.status !== 'completed',
+        key:               lesson.id,
+        lessonNumber:      curriculumNum != null ? curriculumNum : (idx + 1),
+        title:             displayTitle,
+        lessonTemplateId:  ltId || null,
+        sessions:          lessonSessions,
+        lessonDone:        lesson.status === 'completed',
+        notStarted:        lessonSessions.length === 0 && lesson.status !== 'completed',
       };
     });
   } else {

@@ -834,22 +834,41 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // tracks use Spanish lesson titles. Language-agnostic so both EN and ES
     // pairings number correctly.
     const LESSON_TITLE_RE = /^(?:Lesson|Lecci[óo]n)\s+(\d+)/i;
+    // Resolve curriculum number for a templateId across all available sources.
+    // Priority order matters: per-pairing Lesson.title may be customized but is
+    // unreliable (some RR pairings store only the descriptive part with no
+    // "Lección N|" prefix); LessonTemplate.name from the master template is the
+    // most stable source; orders are last-resort and inconsistent across pairings.
+    const ltById = {};
+    for (const lt of lessonTemplates) { ltById[lt.id] = lt; }
+    function curriculumNumForLesson(l) {
+      if (l.title) {
+        const m = String(l.title).match(LESSON_TITLE_RE);
+        if (m) return parseInt(m[1], 10);
+      }
+      const lt = l.lessonTemplateId && ltById[l.lessonTemplateId];
+      if (lt && lt.name) {
+        const m = String(lt.name).match(LESSON_TITLE_RE);
+        if (m) return parseInt(m[1], 10);
+      }
+      let n = normalizeOrderToLessonNum(l.order);
+      if (n != null) return n;
+      if (lt) n = normalizeOrderToLessonNum(lt.order);
+      return n;
+    }
     const templateLessonNumMap = {};
     for (const l of lessons) {
       if (!l.lessonTemplateId) continue;
-      let num = null;
-      if (l.title) {
-        const m = l.title.match(LESSON_TITLE_RE);
-        if (m) num = parseInt(m[1], 10);
-      }
-      if (num == null) num = normalizeOrderToLessonNum(l.order);
+      const num = curriculumNumForLesson(l);
       if (num != null) templateLessonNumMap[l.lessonTemplateId] = num;
     }
+    // Any LessonTemplates not represented by a per-pairing Lesson row (rare —
+    // would mean the pairing skipped a curriculum slot) still get a number.
     for (const lt of lessonTemplates) {
       if (templateLessonNumMap[lt.id] != null) continue;
       let num = null;
       if (lt.name) {
-        const m = lt.name.match(LESSON_TITLE_RE);
+        const m = String(lt.name).match(LESSON_TITLE_RE);
         if (m) num = parseInt(m[1], 10);
       }
       if (num == null) num = normalizeOrderToLessonNum(lt.order);

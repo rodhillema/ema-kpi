@@ -1270,7 +1270,7 @@ function openDrawer(id){
     ?'<a href="/track-journey?pairing_id='+activeTrack.pairingId+'" class="d-journey-link">Open full Track Journey &#8594;</a>'
     :'';
   document.getElementById("d-tracks").innerHTML=journeyLink+(m.trackHistory.length
-    ?m.trackHistory.slice().reverse().map(function(tr){
+    ?m.trackHistory.map(function(tr){
       var ol=tr.outcome==="active"?"In progress":tr.outcome==="completed"?"Completed":"Incomplete";
       return'<div class="th-entry'+(tr.outcome==="active"?" th-entry-curr":"")+'">'
         +'<div><div class="th-name">'+(TRACK_NAMES[tr.name]||tr.name)+'</div>'

@@ -4417,12 +4417,23 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
       var wasAbsent  = heldSess.length === 0 && absentSess.length > 0;
       // g.lessonDone = Lesson.status='completed' from Trellis (authoritative).
       // A lesson can be done even when Session.status is still 'Planned'.
+      //
+      // Class priority:
+      //   done      — lesson completed, regardless of Session.status
+      //   missed    — every session for this lesson is NotHeld (no rescheduling)
+      //   not-started — no held sessions and no all-missed pattern. Includes
+      //                  the common case where Trellis auto-creates Planned
+      //                  stub sessions for every lesson at pairing-creation
+      //                  time; those stubs shouldn't paint the lesson amber
+      //                  ("in progress") because nothing has actually happened.
+      // The .inprog amber styling is reserved for future cases (e.g. multiple
+      // attempts in flight) — keeping the CSS class but not assigning it here.
       if (g.lessonDone || heldSess.length > 0) {
         step.className = 'seq-step done';
       } else if (allMissed) {
         step.className = 'seq-step missed';
       } else {
-        step.className = 'seq-step inprog';
+        step.className = 'seq-step not-started';
       }
       var lastHeldDate = heldSess.length ? heldSess[heldSess.length - 1].date : (g.sessions[0] ? g.sessions[0].date : null);
       if (wasAbsent) {

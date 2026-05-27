@@ -829,12 +829,17 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       // assumed to already be 1-indexed (1..N) and used as-is.
       return n === 0 ? 1 : n;
     }
+    // Title-parse regex handles both English ("Lesson 8 | ...") and Spanish
+    // ("Lección 4 | ..." or "Leccion 4 | ...") — Hoja de Ruta and Crianza
+    // tracks use Spanish lesson titles. Language-agnostic so both EN and ES
+    // pairings number correctly.
+    const LESSON_TITLE_RE = /^(?:Lesson|Lecci[óo]n)\s+(\d+)/i;
     const templateLessonNumMap = {};
     for (const l of lessons) {
       if (!l.lessonTemplateId) continue;
       let num = null;
       if (l.title) {
-        const m = l.title.match(/^Lesson\s+(\d+)/i);
+        const m = l.title.match(LESSON_TITLE_RE);
         if (m) num = parseInt(m[1], 10);
       }
       if (num == null) num = normalizeOrderToLessonNum(l.order);
@@ -844,7 +849,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       if (templateLessonNumMap[lt.id] != null) continue;
       let num = null;
       if (lt.name) {
-        const m = lt.name.match(/^Lesson\s+(\d+)/i);
+        const m = lt.name.match(LESSON_TITLE_RE);
         if (m) num = parseInt(m[1], 10);
       }
       if (num == null) num = normalizeOrderToLessonNum(lt.order);

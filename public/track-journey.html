@@ -3794,7 +3794,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
           && !heldByTemplate[l.lessonTemplateId];
     })
     .map(function(l){
-      var m = (l.title || '').match(/^Lesson\s+(\d+)/i);
+      var m = (l.title || '').match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
       return {
         date:             l.completedDate,
         status:           'Held',
@@ -3961,7 +3961,7 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     el.innerHTML =
       ((s.lessonNumber != null && s.lessonNumber !== '') ? s.lessonNumber : '?')
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">Lesson ' + ((s.lessonNumber != null && s.lessonNumber !== '') ? s.lessonNumber : '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim()) : '') + '</div>'
+      +   '<div class="mark-tip-title">Lesson ' + ((s.lessonNumber != null && s.lessonNumber !== '') ? s.lessonNumber : '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|·\-–—:]\s*/i,'').trim()) : '') + '</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + statusLabel + '</div>'
       + '</div>';
     currLane.appendChild(el);
@@ -4259,19 +4259,45 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   // Lesson.status='completed' is the truth from Trellis — do NOT infer completion
   // from Session.status='Held' alone (coordinators complete lessons via SessionNote
   // without always updating Session.status).
+  // Lesson curriculum-number resolution (handles inconsistent Lesson.order across
+  // pairings AND Spanish-titled tracks). Priority order:
+  //   1. Parse the lesson title: "Lesson 8 | ..." or "Lección 4 | ..." → 8 or 4.
+  //      Always 1-indexed and language-aware.
+  //   2. Fall back to Lesson.order, normalizing 0→1 since some pairings store
+  //      it 0-indexed and others 1-indexed.
+  function lessonCurriculumNum(l) {
+    if (l.title) {
+      var m = String(l.title).match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
+      if (m) return parseInt(m[1], 10);
+    }
+    if (l.order != null) {
+      var n = parseInt(l.order, 10);
+      if (!isNaN(n)) return n === 0 ? 1 : n;
+    }
+    return null;
+  }
+
   var allLessonSlots;
   if (lessons && lessons.length > 0) {
+    // Sort by parsed curriculum number, not by raw Lesson.order — the latter is
+    // reversed for some pairings (Spanish RR rows confirmed 4→1 instead of 1→4).
     var lessonsSorted = lessons.slice().sort(function(a, b) {
-      return (a.order != null ? a.order : 999) - (b.order != null ? b.order : 999);
+      var na = lessonCurriculumNum(a); if (na == null) na = 999;
+      var nb = lessonCurriculumNum(b); if (nb == null) nb = 999;
+      return na - nb;
     });
     allLessonSlots = lessonsSorted.map(function(lesson, idx) {
       var ltId = lesson.lessonTemplateId;
       var lessonSessions = ltId
         ? templatedTrackSessions.filter(function(s) { return s.lessonTemplateId === ltId; })
         : [];
+      // Prefer the parsed lesson number so the dot reads as the real curriculum
+      // position rather than the array index (which would still be wrong if any
+      // lessons are missing/skipped).
+      var curriculumNum = lessonCurriculumNum(lesson);
       return {
         key:          lesson.id,
-        lessonNumber: idx + 1,
+        lessonNumber: curriculumNum != null ? curriculumNum : (idx + 1),
         title:        lesson.title || null,
         sessions:     lessonSessions,
         lessonDone:   lesson.status === 'completed',
@@ -4290,10 +4316,10 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
         } else {
           var lt      = ltMap[key] || {};
           var ltName  = lt.name || '';
-          var numMatch = ltName.match(/^Lesson\s+(\d+)/i);
+          var numMatch = ltName.match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
           var lessonNum = numMatch ? parseInt(numMatch[1], 10) : (lt.order || (groups.length + 1));
-          var cleanTitle = ltName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim()
-                        || (s.sessionName ? s.sessionName.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
+          var cleanTitle = ltName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim()
+                        || (s.sessionName ? s.sessionName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
                         || null;
           var g = {
             key:          key,
@@ -4316,9 +4342,9 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
       ltList.forEach(function(lt) {
         if (!encounteredKeys[lt.id]) {
           var ltNm    = lt.name || '';
-          var nsMatch = ltNm.match(/^Lesson\s+(\d+)/i);
+          var nsMatch = ltNm.match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
           var nsNum   = nsMatch ? parseInt(nsMatch[1], 10) : lt.order;
-          var nsTitle = ltNm.replace(/^Lesson\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
+          var nsTitle = ltNm.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
           notStartedSlots.push({ key: lt.id, lessonNumber: nsNum, title: nsTitle, notStarted: true });
         }
       });
@@ -4687,7 +4713,7 @@ function openStallDrawer(clickedStall) {
     // Strict < so same-day completions resolve to the higher-order lesson (data.lessons
     // is ordered by Lesson.order ASC, so the later iteration wins curriculum-wise).
     if (lastHeldLessonDate && new Date(l.completedDate) < new Date(lastHeldLessonDate)) return;
-    var m = (l.title || '').match(/^Lesson\s+(\d+)/i);
+    var m = (l.title || '').match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
     lastHeldLessonNumber = m ? parseInt(m[1], 10) : l.order;
     lastHeldLessonDate   = l.completedDate;
   });
@@ -4877,7 +4903,7 @@ function openStallDrawer(clickedStall) {
     // Build a richer author line when we know the lesson — surfaces the
     // curriculum context instead of the bare "Session Held".
     var lessonSuffix = s.lessonNumber != null
-      ? ' · Lesson ' + s.lessonNumber + (s.sessionName ? ' · ' + s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim() : '')
+      ? ' · Lesson ' + s.lessonNumber + (s.sessionName ? ' · ' + s.sessionName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|·\-–—:]\s*/i,'').trim() : '')
       : '';
     feedItems.push({
       date:    new Date(s.date),

@@ -719,11 +719,14 @@ body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);pad
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-/* Earlier attempts of a repeated lesson - faded */
+/* Earlier attempt — a held session for a lesson that was later held again.
+   Outlined green: solid evidence that something happened, but it isn't the
+   latest attempt. Reads as "this did happen, just no longer the current one." */
 .mark.curr.earlier-attempt {
-  opacity: 0.4;
-  background: var(--green-soft);
+  background: white;
   color: var(--green);
+  border: 2.5px solid var(--green);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 /* Group-specific marker states */
@@ -1319,9 +1322,10 @@ body.drawer-open .drawer {
    "current/upcoming" indicator: every Planned circle uses this regardless
    of whether it is also the next-up lesson. */
 .mark.curr.planned {
-  background: white;
+  background: var(--green-soft);
   color: var(--green);
-  border: 2.5px solid var(--green);
+  opacity: 0.5;
+  border: 2.5px solid white;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
@@ -1830,6 +1834,17 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   line-height: 1.3;
 }
 
+/* Not-started lesson — uses the same "faded green" vocabulary as the timeline's
+   .planned mark so the two views agree on what "hasn't happened yet" looks like.
+   Soft green fill at reduced opacity reads as "scheduled / pending" rather than
+   "neutral gray placeholder," matching the timeline's outlined-green-then-faded
+   convention for not-yet-held lessons. */
+.seq-step.not-started .seq-dot {
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+  color: var(--green);
+  opacity: 0.6;
+}
 .seq-step.not-started .seq-name {
   font-weight: 400;
   color: var(--mid);

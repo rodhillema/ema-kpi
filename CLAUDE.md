@@ -642,6 +642,15 @@ Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same 
 
 **Why orphan untemplated Track_Sessions exist (historical):** For a long period in Trellis, **dates on existing Session rows were not editable**. When a session got rescheduled or a coordinator needed to correct a date, the only option was to **create a new Session row** with the right date. That workaround produced many of the orphan rows we see today — coordinators creating "extra" Sessions to document what really happened, often without re-attaching the lesson template. As of the May 2026 Trellis update, dates are editable, so this pattern should taper off going forward. When auditing orphan data, treat pre-mid-2026 untemplated rows as expected historical artifacts rather than coordinator error, and focus cleanup on anything created after dates became editable.
 
+### Pairing.created_at is also not editable in Trellis
+A related quirk: **the pairing start date (`Pairing.created_at`) cannot be edited** in Trellis today. When a coordinator pairs a mom into a track AFTER she's already attended one or more sessions, `Pairing.created_at` is set to the day the pairing was created — not the day she actually joined. This produces a data pattern where `Session.date_start < Pairing.created_at` but the mom has `SessionAttendance.status='Present'` for that earlier session (e.g. Darlyn Lopez's RR pairing).
+
+The Hub must NOT treat `session.date < pairing.start` as "before-join didn't count" without first checking whether the mom actually attended. The `isBeforeJoin` check in `public/track-journey.html` is suppressed when:
+- `s.status === 'Held'` (session is held for this mom after SessionAttendance derivation), OR
+- `s.momAttended === 'Present'` (explicit attendance record)
+
+An explicit attendance record is more authoritative than the pairing start timestamp. The same defense should be applied anywhere else in the codebase that compares session dates to pairing start dates.
+
 ### Lesson.order indexing inconsistency
 `Lesson.order` in the per-pairing Lesson table is **not consistently 1-indexed across all pairings**. Some moms' Lesson rows are 1-indexed (Aniyah Childress: order 1..10), others are 0-indexed (Kenna Anderson: order 0..9 for the same NPP curriculum). When mapping templateId → curriculum lesson number for timeline display:
 1. **Always prefer parsing the lesson TITLE first** ("Lesson 8 | ..." → 8) — titles are user-facing and reliably 1-indexed.

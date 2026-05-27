@@ -640,6 +640,16 @@ Track Sessions are numbered by unique `lesson_template_id`. Repeats of the same 
 
 **Untemplated Track_Sessions** (Trellis "Session" entries with no lesson template selected — `lesson_template_id IS NULL`): these are **not** part of the curriculum count and **must not** be renumbered with sequential lesson numbers or backfilled with track-lesson titles. On Track Journey they render as a greyed-out "Additional Track Sessions · N held" row below the curriculum (same style as the support sessions row). They exist as a data-quality signal — the coordinator/advocate logged a session but didn't tag the lesson.
 
+**Why orphan untemplated Track_Sessions exist (historical):** For a long period in Trellis, **dates on existing Session rows were not editable**. When a session got rescheduled or a coordinator needed to correct a date, the only option was to **create a new Session row** with the right date. That workaround produced many of the orphan rows we see today — coordinators creating "extra" Sessions to document what really happened, often without re-attaching the lesson template. As of the May 2026 Trellis update, dates are editable, so this pattern should taper off going forward. When auditing orphan data, treat pre-mid-2026 untemplated rows as expected historical artifacts rather than coordinator error, and focus cleanup on anything created after dates became editable.
+
+### Lesson.order indexing inconsistency
+`Lesson.order` in the per-pairing Lesson table is **not consistently 1-indexed across all pairings**. Some moms' Lesson rows are 1-indexed (Aniyah Childress: order 1..10), others are 0-indexed (Kenna Anderson: order 0..9 for the same NPP curriculum). When mapping templateId → curriculum lesson number for timeline display:
+1. **Always prefer parsing the lesson TITLE first** ("Lesson 8 | ..." → 8) — titles are user-facing and reliably 1-indexed.
+2. Fall back to `Lesson.order`, normalizing 0 → 1 to handle 0-indexed pairings.
+3. Use `LessonTemplate.order` with the same 0→1 normalization as a last resort.
+
+Frontend display must use an explicit `!= null` check, not a truthy `||` fallback — JavaScript treats `0` as falsy, so a 0-indexed lesson would display as `?` instead of `0` (or `1` after normalization). See `routes/track-journey.js` `normalizeOrderToLessonNum` and the timeline render in `public/track-journey.html`.
+
 **Lesson step states** (Track Journey seq UI):
 - `done` — `Lesson.status='completed'` (green). A lesson is done if the Lesson record says so, regardless of Session.status.
 - `inprog` — lesson has scheduled/planned sessions but none Held yet, and the pairing is still active.

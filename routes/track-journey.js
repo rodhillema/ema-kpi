@@ -796,14 +796,25 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     // through the linking SessionNote. We use date_start, not SessionNote.date_submitted_c,
     // because coordinators routinely submit notes a day after the session — using the
     // submission date would shift the displayed "last held" date forward incorrectly.
+    //
+    // Title resolution: join the matching LessonTemplate directly via
+    // source_lesson_template_id so we don't depend on the separate lessonTemplates
+    // query (which is keyed off Pairing.trackId and silently returns nothing for some
+    // pairings where the trackId doesn't line up). If Lesson.title lacks a
+    // "Lesson N|" / "Lección N|" prefix, substitute LessonTemplate.title which
+    // reliably carries the prefix per the Trellis Lesson Templates table.
     let lessons = [];
     try {
       const { rows: lRows } = await pool.query(`
         SELECT
           l."id",
-          l."source_lesson_template_id" AS "lessonTemplateId",
-          l."status"::text              AS "status",
-          l."title",
+          l."source_lesson_template_id"   AS "lessonTemplateId",
+          l."status"::text                AS "status",
+          CASE
+            WHEN l."title" ~ '^(Lesson|Lecci[óo]n)\\s+\\d+' THEN l."title"
+            WHEN lt."title" IS NOT NULL THEN lt."title"
+            ELSE l."title"
+          END                              AS "title",
           l."order",
           (SELECT MAX(s."date_start")
              FROM "SessionNote" sn
@@ -811,8 +822,11 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
             WHERE sn."covered_lesson_id" = l."id"
               AND sn."deleted_at" = 0
               AND s."date_start" IS NOT NULL
-          )                              AS "completedDate"
+          )                                AS "completedDate"
         FROM "Lesson" l
+        LEFT JOIN "LessonTemplate" lt
+          ON lt."id" = l."source_lesson_template_id"
+         AND lt."deleted_at" = 0
         WHERE l."pairing_id" = $1
         ORDER BY l."order" ASC NULLS LAST
       `, [pairingId]);

@@ -5,6 +5,7 @@
 :root {
   --ln-nav-w: 220px;
   --ln-nav-w-collapsed: 48px;
+  --ln-topbar-h: 58px;
   --ln-red: #ec482f;
   --ln-red-lt: #fef0ed;
   --ln-border: #E0E0E0;
@@ -18,7 +19,7 @@
 
 .shared-leftnav {
   position: fixed;
-  top: 0; left: 0; bottom: 0;
+  top: var(--ln-topbar-h); left: 0; bottom: 0;
   width: var(--ln-nav-w);
   background: var(--ln-white);
   border-right: 1px solid var(--ln-border-lt);
@@ -114,8 +115,19 @@
 
 /* Body offset — JS adds .shared-leftnav-loaded once injected,
    and the collapse class toggles .nav-collapsed on <body>. */
-body.shared-leftnav-loaded { padding-left: var(--ln-nav-w); transition: padding-left .2s ease; }
+body.shared-leftnav-loaded {
+  padding-left: var(--ln-nav-w);
+  padding-top: var(--ln-topbar-h);
+  transition: padding-left .2s ease;
+}
 body.shared-leftnav-loaded.nav-collapsed { padding-left: var(--ln-nav-w-collapsed); }
+
+/* Fix the page topbar to span full width above the sidebar */
+body.shared-leftnav-loaded .nav {
+  position: fixed !important;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+}
 
 @media (max-width: 720px) {
   body.shared-leftnav-loaded { padding-left: var(--ln-nav-w-collapsed); }

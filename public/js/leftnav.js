@@ -15,21 +15,25 @@
       { href: '/', label: 'Home', match: ['/'],
         icon: '<svg viewBox="0 0 16 16"><path d="M2,8 L8,2 L14,8"/><polyline points="4,8 4,14 12,14 12,8"/></svg>' },
     ]},
-    { group: 'Reports', items: [
-      { href: '/report', label: 'Quarterly Impact', match: ['/report', '/report/quarterly/q1-2026'],
+    { group: "How We're Doing", items: [
+      { href: '/report', label: 'Impact Reports', match: ['/report', '/report/quarterly/q1-2026'],
         icon: '<svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg>' },
-      { href: '/report/advocate-care', label: 'Advocate Care', match: ['/report/advocate-care'],
-        icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },
-      { href: '/report/mom-status', label: 'Mom Status', match: ['/report/mom-status'],
+    ]},
+    { group: 'Trellis Live', items: [
+      { href: '/report/mom-status', label: 'Our Moms', match: ['/report/mom-status'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg>' },
-      { href: '/track-journey', label: 'Track Journey', match: ['/track-journey'],
-        icon: '<svg viewBox="0 0 16 16"><polyline points="2,10 5,7 8,9 12,4"/><circle cx="2" cy="10" r="1"/><circle cx="5" cy="7" r="1"/><circle cx="8" cy="9" r="1"/><circle cx="12" cy="4" r="1"/></svg>' },
+      { href: '/report/advocate-care', label: 'Our Advocates', match: ['/report/advocate-care'],
+        icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },
       { href: '/report/users', label: 'Trellis Users', match: ['/report/users'],
         icon: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg>' },
     ]},
-    { group: 'Admin', championOnly: true, items: [
+    { group: 'Affiliates & Admin', championOnly: true, items: [
       { href: '/admin/champions', label: 'Champion Management', match: ['/admin/champions'], championOnly: true,
         icon: '<svg viewBox="0 0 16 16"><path d="M8,2 L10,6 L14,6.5 L11,9.5 L12,14 L8,11.5 L4,14 L5,9.5 L2,6.5 L6,6 Z"/></svg>' },
+    ]},
+    { group: null, items: [
+      { href: '/integrity', label: 'Our Approach to Data', match: ['/integrity'],
+        icon: '<svg viewBox="0 0 16 16"><path d="M8,2 L14,5 L14,10 C14,13 8,15 8,15 C8,15 2,13 2,10 L2,5 Z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="5.5" r=".5" fill="currentColor" stroke="none"/></svg>' },
     ]},
   ];
 

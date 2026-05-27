@@ -484,8 +484,18 @@ thead tr th.c-chev{background:var(--green)!important}
                     <div class="pop-lbl">Contact recency</div>
                     <select id="pf-contact" onchange="render()">
                       <option value="">Any</option>
-                      <option value="overdue">No contact &gt;14 days</option>
-                      <option value="recent">Within 7 days</option>
+                      <optgroup label="No contact in...">
+                        <option value="od7">No contact &gt;7 days</option>
+                        <option value="od14">No contact &gt;14 days</option>
+                        <option value="od30">No contact &gt;30 days</option>
+                        <option value="od60">No contact &gt;60 days</option>
+                        <option value="never">Never contacted</option>
+                      </optgroup>
+                      <optgroup label="Contacted within...">
+                        <option value="r7">Within 7 days</option>
+                        <option value="r14">Within 14 days</option>
+                        <option value="r30">Within 30 days</option>
+                      </optgroup>
                     </select>
                     <button class="pop-clear" onclick="clearPop('contact')">Clear</button>
                   </div>
@@ -916,7 +926,7 @@ function getFiltered(){
     if(f.name&&!nm.includes(f.name))return false;
     if(f.status.length&&!f.status.includes(m.status))return false;
     if(f.track.length){var tn=m.inProgressTrack?(m.inProgressTrack.group||m.inProgressTrack.name):"none";if(!f.track.includes(tn))return false;}
-    if(f.contact){var ca=dsa(m.lastContactDate);if(f.contact==="overdue"&&ca<=14)return false;if(f.contact==="recent"&&ca>=7)return false;}
+    if(f.contact){var ca=m.lastContactDate?dsa(m.lastContactDate):Infinity;if(f.contact==="never"&&!!m.lastContactDate)return false;if(f.contact==="od7"&&!(ca>7))return false;if(f.contact==="od14"&&!(ca>14))return false;if(f.contact==="od30"&&!(ca>30))return false;if(f.contact==="od60"&&!(ca>60))return false;if(f.contact==="r7"&&!(ca<=7))return false;if(f.contact==="r14"&&!(ca<=14))return false;if(f.contact==="r30"&&!(ca<=30))return false;}
     if(f.pairing.length){
       var pairingMatch=f.pairing.some(function(v){
         if(v==="none")return !m.inProgressTrack;
@@ -945,7 +955,7 @@ function getFiltered(){
     if(activeCards.has("inprog")&&!m.inProgressTrack)return false;
     if(activeCards.has("mc")&&(m.status!=="Active"||!!m.inProgressTrack))return false;
     if(activeCards.has("stalled")&&!(m.inProgressTrack&&m.inProgressTrack.stalled))return false;
-    if(activeCards.has("contact")&&dsa(m.lastContactDate)<=14)return false;
+    if(activeCards.has("contact")&&!(m.status==="Active"&&!!m.inProgressTrack&&dsa(m.lastContactDate)>14))return false;
     if(activeCards.has("fwaattn")){
       var _fa=dsa(m.lastFwaDate);
       // FWA Needs Attention = overdue (>90d) OR due soon (60-90d)
@@ -1040,7 +1050,7 @@ function render(){
   var inProg   =list.filter(function(m){return m.status==="Active"&&!!m.inProgressTrack;}).length;
   var mc       =list.filter(function(m){return m.status==="Active"&&!m.inProgressTrack;}).length;
   var stalled  =list.filter(function(m){return m.status==="Active"&&m.inProgressTrack&&m.inProgressTrack.stalled;}).length;
-  var contOD   =list.filter(function(m){return dsa(m.lastContactDate)>14;}).length;
+  var contOD   =list.filter(function(m){return m.status==="Active"&&!!m.inProgressTrack&&dsa(m.lastContactDate)>14;}).length;
   var fwaAttn=list.filter(function(m){return dsa(m.lastFwaDate)>=60;}).length;
 
   var mCards=[
@@ -1051,7 +1061,7 @@ function render(){
     {key:"stalled", lbl:"Stalled Tracks",         val:stalled, sub:"no session in >14 days",
      tip:"Moms in a track where no session has been held in more than 14 days. A stall does not mean the track is closed \u2014 the pairing is still active."},
     {key:"contact", lbl:"Contact Overdue",        val:contOD,  sub:"no contact log entry >14 days",
-     tip:"Moms with no contact log entry recorded in more than 14 days."},
+     tip:"Active moms currently in a track with no contact log entry recorded in more than 14 days. Membership Community and inactive moms are excluded."},
     {key:"fwaattn",lbl:"FWA Needs Attention",val:fwaAttn,sub:"overdue or due within 30 days",
      tip:"Moms whose Family Wellbeing Assessment is overdue (more than 90 days since last update) or will lapse within 30 days. Includes moms never assessed."},
   ];

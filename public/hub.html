@@ -776,6 +776,19 @@ function applySession(u) {
   // What's Coming: hide for champion (external viewers don't need the internal roadmap)
   var wcs = document.getElementById("wc-section");
   if (wcs) wcs.style.display = (u.role === "champion") ? "none" : "";
+
+  applyHashNav();
+}
+
+function applyHashNav() {
+  var HASH_VIEWS = {
+    '#impact':        'view-impact',
+    '#moms':          'view-mom',
+    '#advocates':     'view-advocate',
+    '#trellis-users': 'view-user'
+  };
+  var view = HASH_VIEWS[window.location.hash];
+  if (view) svById(view);
 }
 
 // ── WHAT'S NEW ──────────────────────────────────────────

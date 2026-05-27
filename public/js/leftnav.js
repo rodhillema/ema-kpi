@@ -16,15 +16,15 @@
         icon: '<svg viewBox="0 0 16 16"><path d="M2,8 L8,2 L14,8"/><polyline points="4,8 4,14 12,14 12,8"/></svg>' },
     ]},
     { group: "How We're Doing", items: [
-      { href: '/report', label: 'Impact Reports', match: ['/report', '/report/quarterly/q1-2026'],
+      { href: '/#impact', label: 'Impact Reports', match: ['/report', '/report/quarterly/q1-2026'],
         icon: '<svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg>' },
     ]},
     { group: 'Trellis Live', items: [
-      { href: '/report/mom-status', label: 'Our Moms', match: ['/report/mom-status'],
+      { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg>' },
-      { href: '/report/advocate-care', label: 'Our Advocates', match: ['/report/advocate-care'],
+      { href: '/#advocates', label: 'Our Advocates', match: ['/report/advocate-care'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },
-      { href: '/report/users', label: 'Trellis Users', match: ['/report/users'],
+      { href: '/#trellis-users', label: 'Trellis Users', match: ['/report/users'],
         icon: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg>' },
     ]},
     { group: 'Affiliates & Admin', championOnly: true, items: [

@@ -3592,6 +3592,11 @@ async function loadPairing(pairingId) {
       console.error('[track-journey] /:pairingId returned HTTP ' + res.status);
       var errBody = await res.text().catch(function(){ return ''; });
       if (errBody) console.error('[track-journey] body:', errBody);
+      if (res.status === 401) {
+        document.body.classList.remove('logged-in');
+        document.body.classList.add('show-login');
+        return;
+      }
       alert('Could not load journey (HTTP ' + res.status + '). Check console for detail.');
       return;
     }

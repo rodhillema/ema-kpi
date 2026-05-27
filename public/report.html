@@ -3558,7 +3558,7 @@
      var delta = rate - target;
      var absDelta = Math.abs(Math.round(delta));
      var cls, arrow, text;
-     if (delta >= 0) {
+     if (delta >= 0 || absDelta === 0) {
        cls = 'above';
        arrow = '\u2191';  // up arrow
        text = absDelta === 0 ? 'on target' : absDelta + 'pt above target';

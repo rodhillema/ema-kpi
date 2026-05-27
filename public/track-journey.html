@@ -4352,9 +4352,12 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
           var ltName  = lt.name || '';
           var numMatch = ltName.match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
           var lessonNum = numMatch ? parseInt(numMatch[1], 10) : (lt.order || (groups.length + 1));
-          var cleanTitle = ltName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim()
-                        || (s.sessionName ? s.sessionName.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim() : null)
-                        || null;
+          // Keep the "Lesson N|" / "Lección N|" prefix in the displayed title — it's
+          // a visual reinforcement on the panel rows alongside the lesson dot. The
+          // old code stripped the prefix here, which is why Spanish RR pairings
+          // (where Lesson rows don't exist and we fall into this path) lost the
+          // "Lección N|" prefix the rest of the codebase preserves.
+          var cleanTitle = ltName || (s.sessionName || null) || null;
           var g = {
             key:          key,
             lessonNumber: lessonNum,
@@ -4378,7 +4381,10 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
           var ltNm    = lt.name || '';
           var nsMatch = ltNm.match(/^(?:Lesson|Lecci[óo]n)\s+(\d+)/i);
           var nsNum   = nsMatch ? parseInt(nsMatch[1], 10) : lt.order;
-          var nsTitle = ltNm.replace(/^(?:Lesson|Lecci[óo]n)\s+\d+\s*[\|\·]\s*/i, '').trim() || ('Session ' + nsNum);
+          // Same as the held-sessions branch above: preserve the prefix instead
+          // of stripping it, so not-started slots in the fallback path display
+          // consistently with everywhere else.
+          var nsTitle = ltNm || ('Session ' + nsNum);
           notStartedSlots.push({ key: lt.id, lessonNumber: nsNum, title: nsTitle, notStarted: true });
         }
       });

@@ -534,12 +534,20 @@ router.get('/', async (req, res) => {
 
     // Required-sessions lookup by track title — mirrors report-data.js REQUIRED_SESSIONS.
     const REQUIRED_SESSIONS = {
+      // Historical names — kept for old pairing records
       'Nurturing Parenting Program': 10,
       'El programa de Crianza con cariño NPP': 10,
       'Empowered Parenting': 8,
       'Crianza empoderada EP': 8,
       'Roadmap to Resilience': 4,
       'Hoja de ruta hacia la resiliencia RR': 4,
+      // Current names — CODE - Title format
+      'NPP - Nurturing Parenting Program': 10,
+      'NPP - El programa de Crianza con cariño': 10,
+      'EP - Empowered Parenting': 8,
+      'EP - Crianza empoderada': 8,
+      'RR - Roadmap to Resilience': 4,
+      'RR - Hoja de ruta hacia la resiliencia': 4,
     };
 
     // Days-since helper. Null-safe.

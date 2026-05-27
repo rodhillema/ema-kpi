@@ -292,6 +292,7 @@ thead tr th.c-chev{background:var(--green)!important}
 .th-meta{font-size:10px;font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.6px;color:var(--mid)}
 .th-out{color:var(--mid);font-size:11px;white-space:nowrap;padding-top:2px}
 .th-out.curr{color:var(--green);font-weight:700;font-family:'Oswald',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.th-entry-curr{background:#f2faf5;border-left:3px solid var(--green);padding-left:11px}
 
 /* ── AOR MODAL ── */
 .aor-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
@@ -1271,7 +1272,7 @@ function openDrawer(id){
   document.getElementById("d-tracks").innerHTML=journeyLink+(m.trackHistory.length
     ?m.trackHistory.slice().reverse().map(function(tr){
       var ol=tr.outcome==="active"?"In progress":tr.outcome==="completed"?"Completed":"Incomplete";
-      return'<div class="th-entry">'
+      return'<div class="th-entry'+(tr.outcome==="active"?" th-entry-curr":"")+'">'
         +'<div><div class="th-name">'+(TRACK_NAMES[tr.name]||tr.name)+'</div>'
         +'<div class="th-meta">'+tr.start+' \u2013 '+tr.end+(tr.advocateName?' \u00b7 '+(tr.pairingType==='group'?'Group: '+(tr.groupName||tr.advocateName):(tr.advocateName)):"")+'</div></div>'
         +'<div class="th-out'+(tr.outcome==="active"?" curr":"")+'">'+ol+'</div>'

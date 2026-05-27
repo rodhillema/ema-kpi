@@ -812,29 +812,43 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       lessons = lRows;
     } catch (_) { /* Lesson table unavailable — frontend falls back to session-based count */ }
 
-    // Map templateId → curriculum lesson number. Three sources, in priority order:
-    //   1. Per-pairing Lesson rows: l.order is the authoritative curriculum position
-    //      and is set reliably by Trellis (we use it for the Curriculum Detail panel).
-    //   2. Per-pairing Lesson title parsing: "Lesson 8 | ..." → 8 if l.order is null.
-    //   3. LessonTemplate name parsing, then lt.order as a last resort.
-    // Earlier code used only #3, which failed when LessonTemplate.name lacked the
-    // "Lesson N" prefix — sessions then fell back to chronological-encounter
-    // numbering, mislabeling later-completed lessons (e.g. a session for Lesson 7
-    // completed in April got labeled "5" because it was the 5th session encountered).
+    // Map templateId → curriculum lesson number (1-indexed). Sources in priority:
+    //   1. Per-pairing Lesson title parsing: "Lesson 8 | ..." → 8. This is the most
+    //      reliable source — Trellis's user-facing curriculum names are 1-indexed
+    //      and the parsed number always matches the curriculum position.
+    //   2. Per-pairing Lesson.order, with 0→1 normalization. Trellis stores some
+    //      lessons 0-indexed (Kenna Anderson's NPP rows) and some 1-indexed
+    //      (Aniyah Childress's NPP rows), so we treat any non-negative order as
+    //      "shift by 1 if it would otherwise be 0" to land on a 1-indexed display.
+    //   3. LessonTemplate name parsing, then lt.order normalized the same way.
+    function normalizeOrderToLessonNum(orderVal) {
+      if (orderVal == null) return null;
+      const n = parseInt(orderVal, 10);
+      if (isNaN(n)) return null;
+      // Treat 0 as "this is 0-indexed data" — bump to 1. Any higher value is
+      // assumed to already be 1-indexed (1..N) and used as-is.
+      return n === 0 ? 1 : n;
+    }
     const templateLessonNumMap = {};
     for (const l of lessons) {
       if (!l.lessonTemplateId) continue;
-      let num = (l.order != null) ? l.order : null;
-      if (num == null && l.title) {
+      let num = null;
+      if (l.title) {
         const m = l.title.match(/^Lesson\s+(\d+)/i);
         if (m) num = parseInt(m[1], 10);
       }
+      if (num == null) num = normalizeOrderToLessonNum(l.order);
       if (num != null) templateLessonNumMap[l.lessonTemplateId] = num;
     }
     for (const lt of lessonTemplates) {
       if (templateLessonNumMap[lt.id] != null) continue;
-      const m = lt.name && lt.name.match(/^Lesson\s+(\d+)/i);
-      templateLessonNumMap[lt.id] = m ? parseInt(m[1], 10) : lt.order;
+      let num = null;
+      if (lt.name) {
+        const m = lt.name.match(/^Lesson\s+(\d+)/i);
+        if (m) num = parseInt(m[1], 10);
+      }
+      if (num == null) num = normalizeOrderToLessonNum(lt.order);
+      if (num != null) templateLessonNumMap[lt.id] = num;
     }
 
     // Number Track_Sessions by lesson template — use curriculum number from the

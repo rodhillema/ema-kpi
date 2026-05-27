@@ -1326,18 +1326,21 @@ body.drawer-open .drawer {
 }
 
 /* Orphan Track Session - a Track Session row with no lesson_template_id
-   and no SessionNote linking to a Lesson. Render as a dashed amber "?" so
-   the coordinator can see at a glance which sessions need a lesson attached
-   in Trellis (or converted to support). Distinct from .planned (outlined
-   green, normal not-yet-held) because this is a DATA QUALITY signal, not
-   a normal state. */
+   and no SessionNote linking to a Lesson. Render as a faded green dashed
+   "?" — soft warning, not alarm. Reads as "unknown / needs attention"
+   without competing visually with completed (filled green) or absent
+   (outlined red) circles. */
 .mark.curr.orphan {
   background: white;
-  color: var(--amber);
-  border: 2.5px dashed var(--amber);
+  color: var(--green);
+  border: 2px dashed var(--green);
+  opacity: 0.5;
   font-weight: 700;
-  font-size: 18px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  font-size: 16px;
+  box-shadow: none;
+}
+.mark.curr.orphan:hover {
+  opacity: 1;
 }
 
 /* Support marks - bolder, distinct color */
@@ -3956,9 +3959,9 @@ function renderTimeline(pairing, sessions, stalls, assessments, vitalNeeds, winS
     var dayOffset  = (s._dayIndex || 0) * 28; // px shift per same-day collision
     el.style.left  = dayOffset ? 'calc(' + basePos + ' + ' + dayOffset + 'px)' : basePos;
     el.innerHTML =
-      (s.lessonNumber || '?')
+      ((s.lessonNumber != null && s.lessonNumber !== '') ? s.lessonNumber : '?')
       + '<div class="mark-tip">'
-      +   '<div class="mark-tip-title">Lesson ' + (s.lessonNumber || '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim()) : '') + '</div>'
+      +   '<div class="mark-tip-title">Lesson ' + ((s.lessonNumber != null && s.lessonNumber !== '') ? s.lessonNumber : '?') + (s.sessionName ? ' · ' + escHtml(s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim()) : '') + '</div>'
       +   '<div class="mark-tip-meta">' + fmtDate(s.date) + ' · ' + statusLabel + '</div>'
       + '</div>';
     currLane.appendChild(el);
@@ -4856,12 +4859,26 @@ function openStallDrawer(clickedStall) {
   // ── 4. Full activity feed ────────────────────────────────────────────────
   // Unified chronological feed: connection logs + coordinator notes + sessions,
   // newest first.
+  // Trellis stores the literal string "Session Description" as a placeholder
+  // when the coordinator never writes a real description — filter it out so
+  // it doesn't show as content in the activity feed.
+  function realSessionNotes(s) {
+    if (!s.notes) return null;
+    var trimmed = String(s.notes).trim();
+    if (!trimmed || /^session description$/i.test(trimmed)) return null;
+    return trimmed;
+  }
   var feedItems = [];
   sessionsInWindow.forEach(function(s) {
     var isAbsent   = s.momAttended === 'Absent';
     var isUnmarked = s.status === 'Unmarked';
     var isHeld     = s.status === 'Held';
     var isMissed   = s.status === 'NotHeld' && !isAbsent;
+    // Build a richer author line when we know the lesson — surfaces the
+    // curriculum context instead of the bare "Session Held".
+    var lessonSuffix = s.lessonNumber != null
+      ? ' · Lesson ' + s.lessonNumber + (s.sessionName ? ' · ' + s.sessionName.replace(/^Lesson\s+\d+\s*[\|·\-–—:]\s*/i,'').trim() : '')
+      : '';
     feedItems.push({
       date:    new Date(s.date),
       icon:    isHeld ? 'session' : (isAbsent || isMissed || isUnmarked) ? 'no-contact' : 'text',
@@ -4873,9 +4890,9 @@ function openStallDrawer(clickedStall) {
              :              'Planned Session',
       typeCls: isHeld ? 'held' : (isAbsent || isMissed || isUnmarked) ? 'missed' : '',
       author:  isHeld
-        ? (pairing.advocateName ? pairing.advocateName + ' · Advocate' : 'Advocate')
-        : 'System · ' + sessionTypeLabel(s.type) + (s.lessonNumber ? ' Lesson ' + s.lessonNumber + ' was scheduled' : ''),
-      text:    s.notes || null,
+        ? ((pairing.advocateName ? pairing.advocateName + ' · Advocate' : 'Advocate') + lessonSuffix)
+        : ('System · ' + sessionTypeLabel(s.type) + lessonSuffix),
+      text:    realSessionNotes(s),
     });
   });
   filteredNotes.forEach(function(n) {

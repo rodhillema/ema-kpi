@@ -24,6 +24,7 @@
   --nav-w:220px;
 }
 body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark)}
+body:not(.show-login):not(.logged-in){visibility:hidden}
 
 /* View toggling — login vs portal */
 .login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--bg)}
@@ -316,7 +317,7 @@ body.logged-in .login-view{display:none !important}
 body.champ-admin .champ-mgmt-section{display:flex}
 </style>
 </head>
-<body class="show-login">
+<body>
 
 <!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
 <div class="login-view">

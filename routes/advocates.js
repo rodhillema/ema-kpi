@@ -141,11 +141,39 @@ router.get('/', async (req, res) => {
       ORDER BY p."advocateUserId", p."created_at" DESC
     `;
     let pairingsResult;
+    let _pairingsQueryError = null;
     try {
       pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
     } catch (e) {
-      console.warn('[api/advocates] pairingsQuery failed; returning advocates without pairing detail:', e.message);
-      pairingsResult = { rows: [] };
+      _pairingsQueryError = e.message;
+      console.warn('[api/advocates] pairingsQuery failed (full):', e.message);
+      // Fallback: simplified query without Session subqueries to isolate the failure point
+      const simplePairingsQuery = `
+        SELECT
+          p."id" AS "pairingId",
+          p."advocateUserId",
+          m."first_name" AS "momFirstName",
+          m."last_name" AS "momLastName",
+          p."status"::text AS "status",
+          t."title" AS "trackTitle",
+          p."created_at" AS "startDate",
+          p."completed_on" AS "endDate",
+          NULL::timestamptz AS "lastHeldSessionAt",
+          NULL::timestamptz AS "lastHeldTrackSessionAt"
+        FROM "Pairing" p
+        LEFT JOIN "Mom" m ON m."id" = p."momId"
+        LEFT JOIN "Track" t ON t."id" = p."trackId"
+        WHERE p."advocateUserId" = ANY($1)
+          AND p."deleted_at" = 0
+        ORDER BY p."advocateUserId", p."created_at" DESC
+      `;
+      try {
+        pairingsResult = await pool.query(simplePairingsQuery, [advocateIds]);
+        console.warn('[api/advocates] simplified pairingsQuery succeeded — Session subqueries are the failure point. Full error was:', _pairingsQueryError);
+      } catch (e2) {
+        console.warn('[api/advocates] simplified pairingsQuery also failed:', e2.message);
+        pairingsResult = { rows: [] };
+      }
     }
 
     // Fetch AdvocacyGroup assignments for all returned advocates.
@@ -412,6 +440,7 @@ router.get('/', async (req, res) => {
         availability: (() => { try { return r.availability ? JSON.parse(r.availability) : null; } catch { return null; } })(),
         pairings: pairingsByAdvocate[r.id] || [],
         contactLog: contactLogByAdvocate[r.id] || [],
+        _pairingsError: _pairingsQueryError || undefined,
       };
     });
 

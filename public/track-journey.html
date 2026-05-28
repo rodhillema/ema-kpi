@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track Journey · Maria Santos · ĒMA Impact Hub</title>
+<title>Track Journey · ĒMA Impact Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -2123,6 +2123,7 @@ body[data-supp-icon="quote"] .si-quote { display: inline-flex; align-items: cent
   transition: border-color 0.15s, color 0.15s, background 0.15s;
   padding: 0;
   line-height: 1;
+  text-transform: none;
 }
 
 .info-icon-btn:hover,
@@ -4164,11 +4165,18 @@ function renderDateScale(start, end, isActive) {
 
 // ── Curriculum detail + assessment panel ──────────────────────────────────────
 function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) {
-  var trackSessions            = sessions.filter(function(s){ return s.type === 'Track_Session'; });
+  // Curriculum sessions = Track_Sessions OR any session with a lessonTemplateId.
+  // Trellis sometimes creates make-up sessions with the wrong type (Support_Session)
+  // because the group session edit UI doesn't allow changing session type after creation.
+  // Treating lesson-linked sessions as curriculum regardless of type matches what
+  // renderTimeline already does (it filters by !!lessonTemplateId, not by type).
+  var trackSessions            = sessions.filter(function(s){ return s.type === 'Track_Session' || !!s.lessonTemplateId; });
   var templatedTrackSessions   = trackSessions.filter(function(s){ return !!s.lessonTemplateId; });
-  var untemplatedTrackSessions = trackSessions.filter(function(s){ return !s.lessonTemplateId; });
+  var untemplatedTrackSessions = sessions.filter(function(s){ return s.type === 'Track_Session' && !s.lessonTemplateId; });
   var heldTrack                = templatedTrackSessions.filter(function(s){ return s.status === 'Held'; });
-  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && (s.status === 'Held'); });
+  // Exclude sessions with a lessonTemplateId from support count — they are now treated
+  // as curriculum make-ups regardless of their session_type value.
+  var heldSupport              = sessions.filter(function(s){ return s.type !== 'Track_Session' && !s.lessonTemplateId && (s.status === 'Held'); });
   var req                      = requiredSessions(pairing.trackTitle);
   var minReq                   = minRequired(pairing.trackTitle);
   // Curriculum count — use Lesson.status='completed' from the Lesson table when available.
@@ -4177,37 +4185,27 @@ function renderDetail(pairing, sessions, assessments, lessonTemplates, lessons) 
   var heldDistinctCount;
   if (lessons && lessons.length > 0) {
     heldDistinctCount = lessons.filter(function(l){ return l.status === 'completed'; }).length;
+    // Fallback: for group pairings, Trellis tracks lesson completion on the group's
+    // shared Lesson records rather than each member's per-pairing Lesson rows, so
+    // per-member Lesson.status stays 'assigned' even after the group session is held
+    // and approved. If lesson-based count is 0 but we have held sessions with
+    // per-mom attendance recorded, use session-based count instead.
+    if (heldDistinctCount === 0 && heldTrack.length > 0) {
+      var _grpFallback = {};
+      heldTrack.forEach(function(s){ if (s.lessonTemplateId) _grpFallback[s.lessonTemplateId] = true; });
+      heldDistinctCount = Object.keys(_grpFallback).length;
+    }
   } else {
     var heldTemplateIdSet = {};
     heldTrack.forEach(function(s){ heldTemplateIdSet[s.lessonTemplateId] = true; });
     heldDistinctCount = Object.keys(heldTemplateIdSet).length;
   }
 
-  // Unlinked sessions warning — show when sessions were held but had no lesson template
-  // in Trellis. This causes the curriculum count to underreport.
-  var warnEl     = document.getElementById('curr-untempl-warn');
-  var warnText   = document.getElementById('curr-untempl-warn-text');
-  // Show warning when: the track has a curriculum requirement, at least one held session exists,
-  // but zero of them are linked to a lesson template in Trellis.
-  // req === 0 or null → track has no curriculum (warning would be a false positive).
-  if (warnEl && warnText && req && heldSupport.length > 0 && heldDistinctCount === 0 && (!lessons || lessons.length === 0)) {
-    var n = heldSupport.length;
-    warnText.innerHTML =
-      '<strong>' + n + ' session' + (n > 1 ? 's were' : ' was') + ' held with no lesson linked in Trellis.</strong> '
-      + 'Curriculum progress shows 0 because session records don&rsquo;t reference a lesson template. '
-      + 'To fix, open each session in Trellis and link it to the appropriate lesson.';
-    warnEl.style.display = '';
-  } else if (warnEl) {
-    warnEl.style.display = 'none';
-  }
-
-  // Unlinked sessions warning — show when sessions were held but had no lesson template
-  // in Trellis. This causes the curriculum count to underreport.
-  var warnEl     = document.getElementById('curr-untempl-warn');
-  var warnText   = document.getElementById('curr-untempl-warn-text');
-  // Show warning when: the track has a curriculum requirement, at least one held session exists,
-  // but zero of them are linked to a lesson template in Trellis.
-  // req === 0 or null → track has no curriculum (warning would be a false positive).
+  // Unlinked sessions warning — show when held sessions exist but none are linked to a
+  // lesson template in Trellis, causing the curriculum count to underreport.
+  // req === 0 or null → track has no curriculum requirement (warning would be a false positive).
+  var warnEl   = document.getElementById('curr-untempl-warn');
+  var warnText = document.getElementById('curr-untempl-warn-text');
   if (warnEl && warnText && req && heldSupport.length > 0 && heldDistinctCount === 0) {
     var n = heldSupport.length;
     warnText.innerHTML =

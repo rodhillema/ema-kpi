@@ -425,6 +425,7 @@ router.get('/', async (req, res) => {
           JOIN "Mom" m ON m."id" = wa."mom_id"
           WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
             AND wa."cpi_total" IS NOT NULL
+            AND wa."created_at" <= '${PERIOD_END} 23:59:59'
             ${affWhere}
         ),
         pre_post AS (
@@ -761,6 +762,7 @@ router.get('/', async (req, res) => {
             COUNT(*) FILTER (WHERE s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session')::int AS support_held
           FROM completed_only qp
           LEFT JOIN "Session" s ON s."pairing_id" = qp.pairing_id AND s."deleted_at" = 0
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
           GROUP BY qp.pairing_id
         ),
         post_assessment AS (
@@ -769,6 +771,7 @@ router.get('/', async (req, res) => {
               WHEN qp.track_group = 'NPP' THEN EXISTS (
                 SELECT 1 FROM "AAPIScore" a
                 WHERE a."mom_id" = qp."momId" AND a."deleted_at" = 0 AND a."legacy_ps_id" IS NULL
+                  AND a."updated_at" <= '${PERIOD_END} 23:59:59'
                   AND (a."constructAPostAssessment" IS NOT NULL OR a."constructBPostAssessment" IS NOT NULL
                        OR a."constructCPostAssessment" IS NOT NULL OR a."constructDPostAssessment" IS NOT NULL
                        OR a."constructEPostAssessment" IS NOT NULL)
@@ -778,6 +781,7 @@ router.get('/', async (req, res) => {
                 JOIN "Assessment" a ON a."id" = ar."assessmentId"
                 WHERE ar."momId" = qp."momId" AND ar."deleted_at" = 0
                   AND ar."type"::text = 'post' AND a."name" NOT ILIKE '%Legacy%'
+                  AND COALESCE(ar."completedAt", ar."created_at") <= '${PERIOD_END} 23:59:59'
                   AND (
                     (qp.track_group = 'EP' AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'))
                     OR (qp.track_group = 'RR' AND (a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%'))
@@ -1000,11 +1004,13 @@ router.get('/', async (req, res) => {
           SELECT COUNT(*)::int AS cnt FROM "Session" s
           WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
             AND s."status"::text = 'Held' AND s."session_type"::text = 'Track_Session'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) track_sess ON true
         LEFT JOIN LATERAL (
           SELECT COUNT(*)::int AS cnt FROM "Session" s
           WHERE (s."pairing_id" = p."id" OR s."mom_id" = p."momId") AND s."deleted_at" = 0
             AND s."status"::text = 'Held' AND s."session_type"::text = 'Support_Session'
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) support_sess ON true
         WHERE p."deleted_at" = 0 AND p."status"::text = 'pairing_complete'
           AND p."complete_reason_sub_status" IS NOT NULL
@@ -1027,6 +1033,7 @@ router.get('/', async (req, res) => {
         JOIN "Mom" m ON m."id" = p."momId"
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         LEFT JOIN "Session" s ON s."pairing_id" = p."id" AND s."deleted_at" = 0
+          AND s."date_start" <= '${PERIOD_END} 23:59:59'
         WHERE m."deleted_at" = 0
           AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
@@ -1058,6 +1065,7 @@ router.get('/', async (req, res) => {
           FROM "Session" s
           WHERE s."pairing_id" = p."id"
             AND s."deleted_at" = 0
+            AND s."date_start" <= '${PERIOD_END} 23:59:59'
         ) pairing_sessions ON true
         WHERE m."deleted_at" = 0
           AND ${PERIOD_PAIRING_FRAGMENT}
@@ -1098,6 +1106,7 @@ router.get('/', async (req, res) => {
                   AND p."deleted_at" = 0
                   AND s."deleted_at" = 0
                   AND s."status"::text = 'Held'
+                  AND s."date_start" <= '${PERIOD_END} 23:59:59'
               )
             THEN 1 ELSE 0 END)::int AS did_not_initiate
         FROM "Mom" m
@@ -1139,6 +1148,7 @@ router.get('/', async (req, res) => {
           ON s."pairing_id" = p."id"
           AND s."deleted_at" = 0
           AND s."status"::text = 'Held'
+          AND s."date_start" <= '${PERIOD_END} 23:59:59'
         WHERE m."deleted_at" = 0
           AND ${PERIOD_PAIRING_FRAGMENT}
           ${affWhere}
@@ -1442,6 +1452,7 @@ router.get('/', async (req, res) => {
              + COALESCE(wa."trnprt_score",0) + COALESCE(wa."well_score",0)) AS fss_total
           FROM "WellnessAssessment" wa
           WHERE wa."deleted_at" = 0 AND wa."cpi_total" IS NOT NULL
+            AND wa."created_at" <= '${PERIOD_END} 23:59:59'
         ),
         mom_fss AS (
           SELECT

@@ -1033,7 +1033,7 @@ function render(){
         const showDur=stallStatuses.includes(d.sub)&&a.subStatusSince;
         const durTxt=showDur?`<div class="sub-dur">since ${fmtS(a.subStatusSince)}</div>`:"";
         const hasStall=d.sub==="Paired"&&a.pairings&&a.pairings.some(p=>p.outcome==="active"&&p.stalled);
-        const stallTxt=hasStall?`<div class="sub-dur">&#9888; stalled pairing</div>`:"";
+        const stallTxt=hasStall?`<div style="margin-top:3px;"><span class="b-stalled-adv">Stalled</span></div>`:"";
         if(d.mismatch)return`<span class="sub-mismatch sub-flag" tabindex="0">${subDisplay} &#x2691;<span class="flag-tip">The advocate's profile says "${a.sub}" but the mom's profile shows a different status. When there's a conflict, we use the mom's pairing first.</span></span>${durTxt}${stallTxt}`;
         return`<span style="color:var(--mid)">${subDisplay}</span>${durTxt}${stallTxt}`;
       })()}</td>

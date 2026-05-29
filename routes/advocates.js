@@ -110,6 +110,11 @@ router.get('/', async (req, res) => {
 
     // Fetch pairings for all returned advocates in one query.
     // Includes last-held-session date per pairing so we can compute the "stalled" flag.
+    // Stall detection uses SessionNote.date_submitted_c (authoritative "session happened" date)
+    // rather than Session.status='Held' — per CLAUDE.md, Session.status is unreliable because
+    // Trellis marks lessons complete via SessionNote without always updating Session.status.
+    // Curriculum stall uses Lesson.status='completed' (set when coordinator submits a SessionNote
+    // covering that lesson) rather than Session.type='Track_Session'.
     const pairingsQuery = `
       SELECT
         p."id" AS "pairingId",
@@ -121,17 +126,23 @@ router.get('/', async (req, res) => {
         p."created_at" AS "startDate",
         p."completed_on" AS "endDate",
         (
-          SELECT MAX(s."date_start") FROM "Session" s
+          SELECT MAX(sn."date_submitted_c")
+          FROM "SessionNote" sn
+          JOIN "Session" s ON s."id" = sn."session_id"
           WHERE s."pairing_id" = p."id"
-            AND s."deleted_at" = 0
-            AND s."status"::text = 'Held'
+            AND sn."deleted_at" = 0
+            AND sn."date_submitted_c" IS NOT NULL
         ) AS "lastHeldSessionAt",
         (
-          SELECT MAX(s."date_start") FROM "Session" s
+          SELECT MAX(sn."date_submitted_c")
+          FROM "SessionNote" sn
+          JOIN "Session" s ON s."id" = sn."session_id"
+          JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
           WHERE s."pairing_id" = p."id"
-            AND s."deleted_at" = 0
-            AND s."status"::text = 'Held'
-            AND s."type"::text = 'Track_Session'
+            AND sn."deleted_at" = 0
+            AND l."deleted_at" = 0
+            AND l."status"::text = 'completed'
+            AND sn."date_submitted_c" IS NOT NULL
         ) AS "lastHeldTrackSessionAt"
       FROM "Pairing" p
       LEFT JOIN "Mom" m ON m."id" = p."momId"
@@ -146,8 +157,8 @@ router.get('/', async (req, res) => {
       pairingsResult = await pool.query(pairingsQuery, [advocateIds]);
     } catch (e) {
       _pairingsQueryError = e.message;
-      console.warn('[api/advocates] pairingsQuery failed (full):', e.message);
-      // Fallback: simplified query without Session subqueries to isolate the failure point
+      console.warn('[api/advocates] pairingsQuery failed:', e.message);
+      // Fallback: no session-date subqueries — pairings still display, stall detection disabled
       const simplePairingsQuery = `
         SELECT
           p."id" AS "pairingId",
@@ -169,7 +180,6 @@ router.get('/', async (req, res) => {
       `;
       try {
         pairingsResult = await pool.query(simplePairingsQuery, [advocateIds]);
-        console.warn('[api/advocates] simplified pairingsQuery succeeded — Session subqueries are the failure point. Full error was:', _pairingsQueryError);
       } catch (e2) {
         console.warn('[api/advocates] simplified pairingsQuery also failed:', e2.message);
         pairingsResult = { rows: [] };
@@ -440,7 +450,6 @@ router.get('/', async (req, res) => {
         availability: (() => { try { return r.availability ? JSON.parse(r.availability) : null; } catch { return null; } })(),
         pairings: pairingsByAdvocate[r.id] || [],
         contactLog: contactLogByAdvocate[r.id] || [],
-        _pairingsError: _pairingsQueryError || undefined,
       };
     });
 

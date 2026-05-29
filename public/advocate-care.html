@@ -544,9 +544,14 @@ thead tr th.c-chev{background:var(--green)!important}
           <div id="d-updates"></div>
         </div>
         <div class="d-sec">
-          <div class="d-sec-lbl">Pairing history</div>
+          <div class="d-sec-lbl" style="display:flex;align-items:center;justify-content:space-between;">
+            Pairing history
+            <span style="position:relative;display:inline-block;" class="upd-i-wrap">
+              <span style="font-size:10px;color:var(--mid);cursor:help;font-family:'Oswald',sans-serif;font-weight:600;width:14px;height:14px;border-radius:50%;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;opacity:.5;line-height:1;text-transform:none;">i</span>
+              <span style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:1000;width:220px;background:var(--white);border:1px solid var(--border);border-radius:7px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.55;white-space:normal;font-weight:400;text-transform:none;letter-spacing:0;" class="upd-i-pop">Pairings are pulled from the mom's record. When there's a conflict between an advocate's profile and a mom's profile, we use the mom's pairing first.</span>
+            </span>
+          </div>
           <div id="d-pairings"></div>
-          <div class="src-note">Pairings are pulled from the mom's record. When there's a conflict between an advocate's profile and a mom's profile, we use the mom's pairing first.</div>
         </div>
       </div>
     </aside>

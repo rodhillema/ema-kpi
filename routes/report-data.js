@@ -19,6 +19,12 @@ const PERIOD_END = '2026-03-31';
 // but isn't logged into Trellis until early Q2.
 const PERIOD_GRACE_END = '2026-04-30';
 const PERIOD_LABEL = 'Q1 2026';
+// Snapshot key — matches the period_key column in ReportPeriodSnapshot.
+// Category C queries (mutable status fields) JOIN this table so Q1 values
+// are locked to what they were on PERIOD_END, regardless of later changes.
+// Run scripts/generate-period-snapshot.js once to populate; re-run after
+// any data correction.
+const PERIOD_KEY = '2026-Q1';
 
 // Period-bounding SQL fragments — anchor "currently active" filters to the
 // reporting window so the same Q1 report is stable across refreshes.
@@ -289,11 +295,23 @@ router.get('/', async (req, res) => {
 
       // ─── TAB 1: KPIs & Status ───────────────────────────────
 
+      // Category C fix: Mom.status is a mutable field. Join to ReportPeriodSnapshot
+      // so Q1 report shows the status each mom had on PERIOD_END, not today.
+      // Also restricts cohort to moms that existed at period end (created_at cap).
+      // COALESCE: if snapshot row is missing, falls back to live value as a safety net.
       pool.query(`
-        SELECT m."status"::text AS status, COUNT(*)::int AS count
+        SELECT COALESCE(rps."field_value", m."status"::text) AS status,
+               COUNT(*)::int AS count
         FROM "Mom" m
-        WHERE m."deleted_at" = 0 ${affWhere}
-        GROUP BY m."status"::text
+        LEFT JOIN "ReportPeriodSnapshot" rps
+          ON rps."period_key" = '${PERIOD_KEY}'
+         AND rps."record_type" = 'Mom'
+         AND rps."record_id" = m."id"::text
+         AND rps."field_name" = 'status'
+        WHERE m."deleted_at" = 0
+          AND m."created_at" <= '${PERIOD_END} 23:59:59'
+          ${affWhere}
+        GROUP BY 1
         ORDER BY 1
       `, affParams),
 
@@ -1078,6 +1096,11 @@ router.get('/', async (req, res) => {
       // RD 4/25/26: 'Self-Referred' agency-named rows are normalized into the
       // 'Self-Referral' bucket along with referral_type_c='self' moms — they're
       // the same thing, surface as one row.
+      //
+      // Category C fix: prospect_status is mutable. LEFT JOIN to snapshot so
+      // the intakes_completed / did_not_engage / pending / did_not_initiate
+      // buckets reflect where each mom stood on PERIOD_END, not today.
+      // rps_ps = "report period snapshot, prospect_status"
       pool.query(`
         SELECT
           CASE
@@ -1089,16 +1112,16 @@ router.get('/', async (req, res) => {
             ELSE a."name"
           END AS referral_source,
           COUNT(*)::int AS referrals_received,
-          SUM(CASE WHEN m."prospect_status"::text = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS intakes_completed,
-          SUM(CASE WHEN m."prospect_status"::text = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
-          SUM(CASE WHEN m."prospect_status"::text IN ('prospect', 'prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending,
+          SUM(CASE WHEN COALESCE(rps_ps."field_value", m."prospect_status"::text) = 'engaged_in_program' THEN 1 ELSE 0 END)::int AS intakes_completed,
+          SUM(CASE WHEN COALESCE(rps_ps."field_value", m."prospect_status"::text) = 'did_not_engage_in_program' THEN 1 ELSE 0 END)::int AS did_not_engage,
+          SUM(CASE WHEN COALESCE(rps_ps."field_value", m."prospect_status"::text) IN ('prospect', 'prospect_intake_scheduled') THEN 1 ELSE 0 END)::int AS pending,
           -- Did Not Initiate (DNI): mom reached engaged_in_program but never had
           -- a held session on any pairing. Back-traces the Track Completions DNI
           -- cohort into referral-stage outcomes so accounting is consistent
           -- across this tab. Pairing/Session may be missing entirely (no record
           -- yet created for the mom), which still counts as DNI.
           SUM(CASE
-            WHEN m."prospect_status"::text = 'engaged_in_program'
+            WHEN COALESCE(rps_ps."field_value", m."prospect_status"::text) = 'engaged_in_program'
               AND NOT EXISTS (
                 SELECT 1 FROM "Pairing" p
                 JOIN "Session" s ON s."pairing_id" = p."id"
@@ -1111,6 +1134,11 @@ router.get('/', async (req, res) => {
             THEN 1 ELSE 0 END)::int AS did_not_initiate
         FROM "Mom" m
         LEFT JOIN "Agency" a ON a."id" = m."agency_id"
+        LEFT JOIN "ReportPeriodSnapshot" rps_ps
+          ON rps_ps."period_key" = '${PERIOD_KEY}'
+         AND rps_ps."record_type" = 'Mom'
+         AND rps_ps."record_id" = m."id"::text
+         AND rps_ps."field_name" = 'prospect_status'
         WHERE m."deleted_at" = 0
           AND m."created_at" >= '${PERIOD_START}'
           AND m."created_at" <= '${PERIOD_END} 23:59:59'
@@ -1120,13 +1148,19 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Did Not Engage reasons breakdown ──────────────────
+      // Category C fix: use snapshot prospect_status for cohort selection.
       pool.query(`
         SELECT
           COALESCE(m."referral_sub_status"::text, 'no_reason_recorded') AS reason,
           COUNT(*)::int AS count
         FROM "Mom" m
+        LEFT JOIN "ReportPeriodSnapshot" rps_ps
+          ON rps_ps."period_key" = '${PERIOD_KEY}'
+         AND rps_ps."record_type" = 'Mom'
+         AND rps_ps."record_id" = m."id"::text
+         AND rps_ps."field_name" = 'prospect_status'
         WHERE m."deleted_at" = 0
-          AND m."prospect_status"::text = 'did_not_engage_in_program'
+          AND COALESCE(rps_ps."field_value", m."prospect_status"::text) = 'did_not_engage_in_program'
           AND m."created_at" >= '${PERIOD_START}'
           AND m."created_at" <= '${PERIOD_END} 23:59:59'
           ${affWhere}
@@ -1157,28 +1191,43 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── NEW: Advocate Pipeline ─────────────────────────────
+      // Category C fix: advocate_status is mutable. Restricts to advocates
+      // that existed at PERIOD_END and uses snapshot value for their status.
+      // COALESCE falls back to live if snapshot was not yet generated.
 
       pool.query(`
         SELECT
-          u."advocate_status"::text AS advocate_status,
+          COALESCE(rps_as."field_value", u."advocate_status"::text) AS advocate_status,
           COUNT(*)::int AS count
         FROM "User" u
+        LEFT JOIN "ReportPeriodSnapshot" rps_as
+          ON rps_as."period_key" = '${PERIOD_KEY}'
+         AND rps_as."record_type" = 'User'
+         AND rps_as."record_id" = u."id"::text
+         AND rps_as."field_name" = 'advocate_status'
         WHERE u."deleted_at" = 0
+          AND u."created_at" <= '${PERIOD_END} 23:59:59'
           ${affWhereUser}
-        GROUP BY u."advocate_status"::text
-        ORDER BY u."advocate_status"::text
+        GROUP BY 1
+        ORDER BY 1
       `, affParams),
 
       pool.query(`
         SELECT
-          u."advocate_sub_status"::text AS advocate_sub_status,
+          COALESCE(rps_ss."field_value", u."advocate_sub_status"::text) AS advocate_sub_status,
           COUNT(*)::int AS count
         FROM "User" u
+        LEFT JOIN "ReportPeriodSnapshot" rps_ss
+          ON rps_ss."period_key" = '${PERIOD_KEY}'
+         AND rps_ss."record_type" = 'User'
+         AND rps_ss."record_id" = u."id"::text
+         AND rps_ss."field_name" = 'advocate_sub_status'
         WHERE u."deleted_at" = 0
-          AND u."advocate_sub_status" IS NOT NULL
+          AND u."created_at" <= '${PERIOD_END} 23:59:59'
+          AND COALESCE(rps_ss."field_value", u."advocate_sub_status"::text) IS NOT NULL
           ${affWhereUser}
-        GROUP BY u."advocate_sub_status"::text
-        ORDER BY u."advocate_sub_status"::text
+        GROUP BY 1
+        ORDER BY 1
       `, affParams),
 
       // ─── Advocate Active Breakdown (priority-based unique count) ──
@@ -1287,16 +1336,24 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── NEW: Children with Welfare Involvement ─────────────
+      // Category C fix: active_child_welfare_involvement is mutable. Use
+      // snapshot value so Q1 count reflects involvement status on PERIOD_END.
+      // COALESCE falls back to live if snapshot was not yet generated.
 
       pool.query(`
         SELECT COUNT(c."id")::int AS count
         FROM "Child" c
         JOIN "Mom" m ON m."id" = c."mom_id"
+        LEFT JOIN "ReportPeriodSnapshot" rps_cw
+          ON rps_cw."period_key" = '${PERIOD_KEY}'
+         AND rps_cw."record_type" = 'Child'
+         AND rps_cw."record_id" = c."id"::text
+         AND rps_cw."field_name" = 'active_child_welfare_involvement'
         WHERE c."deleted_at" = 0
           AND ${PERIOD_MOM_FRAGMENT}
-          AND c."active_child_welfare_involvement" IS NOT NULL
-          AND c."active_child_welfare_involvement"::text <> ''
-          AND c."active_child_welfare_involvement"::text NOT IN ('0_permanently_removed', '30_custody_maintained')
+          AND COALESCE(rps_cw."field_value", c."active_child_welfare_involvement"::text) IS NOT NULL
+          AND COALESCE(rps_cw."field_value", c."active_child_welfare_involvement"::text) <> ''
+          AND COALESCE(rps_cw."field_value", c."active_child_welfare_involvement"::text) NOT IN ('0_permanently_removed', '30_custody_maintained')
           ${affWhere}
       `, affParams),
 

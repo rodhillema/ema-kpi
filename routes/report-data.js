@@ -1148,10 +1148,12 @@ router.get('/', async (req, res) => {
       `, affParams),
 
       // ─── Did Not Engage reasons breakdown ──────────────────
-      // Category C fix: use snapshot prospect_status for cohort selection.
+      // Category C fix: both the cohort filter (prospect_status) and the
+      // grouping dimension (referral_sub_status) are mutable — snapshot both
+      // so neither the who nor the why changes after PERIOD_END.
       pool.query(`
         SELECT
-          COALESCE(m."referral_sub_status"::text, 'no_reason_recorded') AS reason,
+          COALESCE(rps_rss."field_value", m."referral_sub_status"::text, 'no_reason_recorded') AS reason,
           COUNT(*)::int AS count
         FROM "Mom" m
         LEFT JOIN "ReportPeriodSnapshot" rps_ps
@@ -1159,12 +1161,17 @@ router.get('/', async (req, res) => {
          AND rps_ps."record_type" = 'Mom'
          AND rps_ps."record_id" = m."id"::text
          AND rps_ps."field_name" = 'prospect_status'
+        LEFT JOIN "ReportPeriodSnapshot" rps_rss
+          ON rps_rss."period_key" = '${PERIOD_KEY}'
+         AND rps_rss."record_type" = 'Mom'
+         AND rps_rss."record_id" = m."id"::text
+         AND rps_rss."field_name" = 'referral_sub_status'
         WHERE m."deleted_at" = 0
           AND COALESCE(rps_ps."field_value", m."prospect_status"::text) = 'did_not_engage_in_program'
           AND m."created_at" >= '${PERIOD_START}'
           AND m."created_at" <= '${PERIOD_END} 23:59:59'
           ${affWhere}
-        GROUP BY m."referral_sub_status"::text
+        GROUP BY 1
         ORDER BY count DESC
       `, affParams),
 

@@ -47,6 +47,16 @@ const SNAPSHOT_FIELDS = [
     note: 'Mom prospect/intake funnel status — used in referralSources, didNotEngageReasons'
   },
   {
+    recordType: 'Mom',
+    fieldName: 'referral_sub_status',
+    auditTable: 'Mom',
+    liveTable: '"Mom"',
+    liveField: '"referral_sub_status"',
+    liveWhere: `m."deleted_at" = 0 AND m."created_at" <= '${PERIOD_END_TS}'`,
+    liveAlias: 'm',
+    note: 'DNE reason breakdown — used in didNotEngageReasons grouping dimension'
+  },
+  {
     recordType: 'User',
     fieldName: 'advocate_status',
     auditTable: 'User',

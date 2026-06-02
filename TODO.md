@@ -1,9 +1,37 @@
 # ĒMA Impact Hub — To Do List
-**Last updated:** April 16, 2026
+**Last updated:** June 2, 2026
 
 ---
 
 ## RD Tasks — Blocking
+
+### 0. Seed the Q1 ReportPeriodSnapshot (one command — blocks Q1 data lock)
+The `ReportPeriodSnapshot` table has been created in production. It needs to be seeded with locked-as-of-March-31 values for 6 mutable status fields. Railway's query editor blocks all INSERT...SELECT variants with its LIMIT injection — this must be run from outside the editor.
+
+**Run from the project directory:**
+```
+railway run node scripts/generate-period-snapshot.js
+```
+Or from the Railway ema-kpi service shell:
+```
+node scripts/generate-period-snapshot.js
+```
+
+The script prints AuditLog coverage per field, then writes all rows. Safe to re-run after any data corrections (uses ON CONFLICT DO UPDATE).
+
+**Fields being locked:** `Mom.status`, `Mom.prospect_status`, `Mom.referral_sub_status`, `User.advocate_status`, `User.advocate_sub_status`, `Child.active_child_welfare_involvement`
+
+**After running:** paste the console output to Cristina so she can verify counts.
+
+**Open question for RD:** When you correct Q1 data on the backend after period close, does it show up in AuditLog? If so, should we extend the reconstruction window to include the grace period, or do corrections go directly into the snapshot table? See email thread.
+
+- [ ] Run seed script
+- [ ] Share output with Cristina
+- [ ] Answer correction-process question
+
+*Owner: RD — email sent June 2, 2026*
+
+---
 
 ### 1. Intake date: spot-check output across all three populations
 Implementation matches documented spec (posted Tue 4/15). Need a quick spot-check: pick a few moms from each population (coordinator-led, link-based, PS-migrated) in the live `/api/report-data` output and confirm dates look right. Cross-check: Families Served count, Referral Conversion Rate denominator.
@@ -144,6 +172,8 @@ Add CNAME records to `ema.org` DNS so Champion invite/reset emails deliver. Curr
 
 ## Completed ✅
 
+- [x] **Q1 data locking — Category A/B (event data)** — All 10 session/assessment/pairing date caps applied in `routes/report-data.js`. Sessions, WellnessAssessments, post-assessment checks all bounded by `<= PERIOD_END 23:59:59`. Root cause was FSS KPI drifting as Q2 assessments were entered. (June 2026)
+- [x] **Q1 data locking — Category C infrastructure** — `ReportPeriodSnapshot` table created in production. `generate-period-snapshot.js` script built. All 6 Category C queries in `report-data.js` wired to snapshot with live fallback. Pending: RD to run seed script. (June 2026)
 - [x] Login + role-based access (Trellis auth)
 - [x] Champion auth system (separate table, invite/reset emails, admin panel)
 - [x] Impact Hub landing page (Cristina's design)

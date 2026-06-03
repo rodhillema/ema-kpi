@@ -829,7 +829,7 @@ var SAMPLE_MOMS=[
 ];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function dsa(s){if(!s)return 9999;return Math.floor((TODAY-new Date(s))/86400000);}
+function dsa(s){if(!s)return 9999;return Math.floor((TODAY-new Date(s.replace(/-/g,'/')))/86400000);}
 function fmtS(s){if(!s)return'';return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
 function fmtL(s){if(!s)return'';return new Date(s).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});}
 function escHtml(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

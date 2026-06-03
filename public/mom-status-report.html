@@ -958,8 +958,7 @@ function getFiltered(){
     if(activeCards.has("contact")&&!(m.status==="Active"&&!!m.inProgressTrack&&dsa(m.lastContactDate)>14))return false;
     if(activeCards.has("fwaattn")){
       var _fa=dsa(m.lastFwaDate);
-      // FWA Needs Attention = overdue (>90d) OR due soon (60-90d)
-      if(!(_fa>=60))return false;
+      if(!(m.status==="Active"&&_fa>=60))return false;
     }
     return true;
   });
@@ -1051,7 +1050,7 @@ function render(){
   var mc       =list.filter(function(m){return m.status==="Active"&&!m.inProgressTrack;}).length;
   var stalled  =list.filter(function(m){return m.status==="Active"&&m.inProgressTrack&&m.inProgressTrack.stalled;}).length;
   var contOD   =list.filter(function(m){return m.status==="Active"&&!!m.inProgressTrack&&dsa(m.lastContactDate)>14;}).length;
-  var fwaAttn=list.filter(function(m){return dsa(m.lastFwaDate)>=60;}).length;
+  var fwaAttn=list.filter(function(m){return m.status==="Active"&&dsa(m.lastFwaDate)>=60;}).length;
 
   var mCards=[
     {key:"inprog",  lbl:"In a Track",            val:inProg,  sub:"active \u00b7 open track",

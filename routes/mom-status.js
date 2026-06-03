@@ -185,7 +185,8 @@ router.get('/', async (req, res) => {
           p."trackId" AS track_id,
           p."created_at" AS pairing_started_at,
           t."title" AS track_title,
-          p."advocacy_type"::text AS pairing_type
+          p."advocacy_type"::text AS pairing_type,
+          p."advocacyGroupId" AS advocacy_group_id
         FROM "Pairing" p
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         WHERE p."deleted_at" = 0
@@ -194,36 +195,42 @@ router.get('/', async (req, res) => {
       ),
       latest_session AS (
         -- Latest session note per mom — date_submitted_c is the true completion date.
-        -- Uses Session.mom_id to cover both 1:1 and group pairings. Captures lessons
-        -- marked complete via SessionNote even when Session.status stays 'Planned'.
-        SELECT DISTINCT ON (s."mom_id")
-          s."mom_id" AS mom_id,
-          sn."date_submitted_c" AS session_date,
+        -- Joins through active_pairing using both pairing_id and advocacy_group_id so
+        -- group sessions (Session.mom_id = null, Session.advocacy_group_id set) are
+        -- included alongside 1:1 sessions. Mirrors the supportQuery join pattern.
+        SELECT ap.mom_id,
+          MAX(sn."date_submitted_c") AS session_date,
           'Complete'::text AS session_status
-        FROM "SessionNote" sn
-        JOIN "Session" s ON s."id" = sn."session_id"
+        FROM active_pairing ap
+        JOIN "Session" s ON (
+          s."pairing_id" = ap.pairing_id
+          OR (ap.advocacy_group_id IS NOT NULL AND s."advocacy_group_id" = ap.advocacy_group_id)
+        )
           AND s."deleted_at" = 0
-          AND s."mom_id" IS NOT NULL
-        WHERE sn."deleted_at" = 0
+        JOIN "SessionNote" sn ON sn."session_id" = s."id"
+          AND sn."deleted_at" = 0
           AND sn."date_submitted_c" IS NOT NULL
-        ORDER BY s."mom_id", sn."date_submitted_c" DESC NULLS LAST
+        GROUP BY ap.mom_id
       ),
       last_curriculum_session AS (
         -- Latest SessionNote that covered a completed Lesson — true curriculum date.
         -- Session.status may say 'Planned' but Lesson.status='completed' confirms the lesson was done.
-        SELECT DISTINCT ON (p."momId")
-          p."momId" AS mom_id,
-          sn."date_submitted_c" AS curriculum_date
-        FROM "SessionNote" sn
-        JOIN "Session" s ON s."id" = sn."session_id"
+        -- Joins through active_pairing (pairing_id OR advocacy_group_id) so group sessions
+        -- with null Session.mom_id are found the same way as latest_session above.
+        SELECT ap.mom_id,
+          MAX(sn."date_submitted_c") AS curriculum_date
+        FROM active_pairing ap
+        JOIN "Session" s ON (
+          s."pairing_id" = ap.pairing_id
+          OR (ap.advocacy_group_id IS NOT NULL AND s."advocacy_group_id" = ap.advocacy_group_id)
+        )
           AND s."deleted_at" = 0
+        JOIN "SessionNote" sn ON sn."session_id" = s."id"
+          AND sn."deleted_at" = 0
+          AND sn."covered_lesson_id" IS NOT NULL
         JOIN "Lesson" l ON l."id" = sn."covered_lesson_id"
           AND l."status"::text = 'completed'
-        JOIN "Pairing" p ON p."id" = l."pairing_id"
-          AND p."deleted_at" = 0
-        WHERE sn."deleted_at" = 0
-          AND sn."covered_lesson_id" IS NOT NULL
-        ORDER BY p."momId", sn."date_submitted_c" DESC NULLS LAST
+        GROUP BY ap.mom_id
       )
       SELECT
         m."id",

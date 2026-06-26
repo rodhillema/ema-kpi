@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  Child Welfare Status Review                                  ║
+     ║  Trellis Live · Our Moms · third report card                  ║
+     ║  HQ administrator access only (initial rollout).             ║
+     ║                                                              ║
+     ║  RD INTEGRATION POINTS:                                      ║
+     ║  · /api/child-welfare returns one row per ChildSnapshot       ║
+     ║  · Latest welfare status joined from live Child table         ║
+     ║  · Intake date = Mom.created_at (open item #3)               ║
+     ║  · Track status derived from Pairing.complete_reason_sub_status║
+     ║  · Program status from Mom.status                            ║
+     ║  · 346 of 622 rows have no changed_by_name — see open item #5║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Child Welfare Status Review · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fff3dc;
+  --pink:#f9ece8;--lpink:#fdf7f3;
+  --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
+  --faint:#f4f6f3;--white:#fff;
+  --intake-tint:#fef6f0;--latest-tint:#f0f5f0;--impact-tint:#fdfaf0;
+}
+html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
+
+/* ── LOGIN ── */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none!important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:5px}
+.field input{width:100%;font-family:'Lato',sans-serif;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--dark);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green)}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.login-btn:hover{background:var(--red-dk)}
+
+/* ── PORTAL ── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+.cw-loading .toolbar,.cw-loading .steps-strip,.cw-loading .filter-row,.cw-loading .table-wrap{visibility:hidden;height:0;overflow:hidden;margin:0;padding:0}
+.cw-loading-overlay{display:none;text-align:center;padding:120px 20px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)}
+.cw-loading .cw-loading-overlay{display:block}
+.cw-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;position:relative}
+.main{flex:1;overflow-y:auto;overflow-x:clip;padding:0 26px 22px;min-width:0}
+
+/* ── REPORT HEADER ── */
+.report-hdr{background:var(--lpink);border-bottom:2px solid var(--red);padding:14px 26px;margin:0 -26px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rh-left{display:flex;flex-direction:column;gap:3px}
+.rh-title-row{display:flex;align-items:center;gap:8px}
+.rh-title{font-family:'Shrikhand',cursive;font-size:20px;color:var(--dark)}
+.rh-info{position:relative;display:inline-flex}
+.rh-info-btn{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--mid);background:none;cursor:help;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;color:var(--mid);line-height:1;opacity:.6;transition:opacity .15s;flex-shrink:0}
+.rh-info-btn:hover{opacity:1}
+.rh-info-pop{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:500;width:300px;background:var(--white);border:1px solid var(--border);border-radius:7px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.55;white-space:normal;font-weight:400}
+.rh-info:hover .rh-info-pop,.rh-info:focus-within .rh-info-pop{display:block}
+.rh-desc{font-size:12px;color:var(--mid);line-height:1.5;max-width:680px}
+.rh-right{display:flex;align-items:center;gap:10px}
+.rh-aff-wrap{display:none;align-items:center;gap:7px}
+.rh-aff-wrap.show{display:flex}
+.rh-aff-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);white-space:nowrap}
+.rh-aff-sel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;transition:border-color .15s;max-width:220px}
+.rh-aff-sel:focus{outline:none;border-color:var(--green)}
+.rh-aff-sel.scoped{border-color:var(--green);color:var(--green);font-weight:600}
+
+/* ── STEPS STRIP ── */
+.steps-strip{display:flex;gap:0;margin:14px 0 4px;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.step{flex:1;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-right:1px solid var(--border)}
+.step:last-child{border-right:none}
+.step-num{font-family:'Shrikhand',cursive;font-size:22px;color:var(--red);line-height:1;flex-shrink:0}
+.step-text{font-size:12px;color:var(--mid);line-height:1.5;padding-top:3px}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin:12px 0 4px;flex-wrap:wrap}
+.srch{position:relative}
+.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--mid);fill:none;pointer-events:none;stroke-width:2}
+.srch input{font-family:'Lato',sans-serif;font-size:13px;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--dark);width:220px}
+.srch input:focus{outline:none;border-color:var(--green)}
+.flagged-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:5px 13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.flagged-btn:hover{border-color:var(--red);color:var(--red)}
+.flagged-btn.on{color:var(--red);background:var(--red-lt);border-color:var(--red)}
+.flagged-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.toolbar-spacer{flex:1}
+.active-count{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:.6px;color:var(--mid)}
+.clear-btn{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);background:none;border:1px solid var(--border);border-radius:5px;padding:6px 11px;cursor:pointer;transition:all .15s;display:none}
+.clear-btn.show{display:inline-block}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+.export-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--green);border:none;border-radius:5px;padding:7px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.export-btn:hover{background:var(--red)}
+.export-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── FILTER ROW ── */
+.filter-row{display:flex;gap:10px;align-items:center;margin:4px 0 6px;flex-wrap:wrap;min-height:24px}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
+.fpill{display:flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;background:var(--yellow-lt);color:#6d3a00;border:1px solid rgba(242,161,54,.35);border-radius:20px;padding:3px 8px 3px 10px;white-space:nowrap}
+.fpill button{background:none;border:none;cursor:pointer;color:#6d3a00;font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.6}
+.fpill button:hover{opacity:1}
+
+/* ── TABLE ── */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:visible;position:relative}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+thead tr th{background:var(--green);font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green-lt);padding:9px 8px;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.07);position:relative}
+thead tr th:last-child{border-right:none}
+/* Column group tints in header */
+thead tr th.col-intake{background:rgba(180,80,30,.72)}
+thead tr th.col-latest{background:rgba(18,57,57,.82)}
+thead tr th.col-impact{background:rgba(100,90,20,.65)}
+/* Column group tints in body */
+td.col-intake{background:var(--intake-tint)}
+td.col-latest{background:var(--latest-tint)}
+td.col-impact{background:var(--impact-tint)}
+tbody tr:nth-child(even) td{background:#faf9f7}
+tbody tr:nth-child(even) td.col-intake{background:#fdeee4}
+tbody tr:nth-child(even) td.col-latest{background:#e8f0e8}
+tbody tr:nth-child(even) td.col-impact{background:#f7f5e4}
+.th-inner{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.th-sort{cursor:pointer;display:flex;align-items:center;gap:3px;flex:1}
+.th-sort:hover{color:#fff}
+.th-sort.sorted{color:var(--yellow)}
+.arr{font-size:9px;opacity:.5}
+.th-sort.sorted .arr{opacity:1}
+.th-ficon{width:18px;height:18px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
+.th-ficon:hover{background:rgba(255,255,255,.15)}
+.th-ficon svg{width:9px;height:9px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:1.5;pointer-events:none}
+.th-ficon.on{background:rgba(242,161,54,.25);border-color:rgba(242,161,54,.5)}
+.th-ficon.on svg{stroke:var(--yellow)}
+/* Filter popovers */
+.pop{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:180px;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:normal;font-weight:400;text-align:left}
+.pop.open{display:flex;flex-direction:column;align-items:stretch;gap:0}
+.pop-lbl{font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:8px}
+.chips{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
+.chip-opt{display:flex;align-items:center;gap:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);cursor:pointer;padding:4px 6px;border-radius:5px;transition:background .1s}
+.chip-opt:hover{background:var(--faint);color:var(--dark)}
+.chip-opt input[type=checkbox]{margin:0;accent-color:var(--green);cursor:pointer;width:13px;height:13px;flex-shrink:0}
+.chip-count{font-size:10px;color:var(--mid);margin-left:auto;flex-shrink:0}
+.pop-clear{margin-top:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;align-self:flex-start}
+.pop-clear:hover{color:var(--red)}
+/* Table cells */
+td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.b-active{background:#d4ede4;color:#0d4a33}
+.b-inactive{background:#fde8e5;color:#8b2212}
+.b-track-comp{background:var(--green-lt);color:var(--green)}
+.b-track-in{background:#e8f0e8;color:#1a4a2e}
+.b-track-none{background:var(--faint);color:var(--mid)}
+.changed-cue{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--red);background:var(--red-lt);border:1px solid rgba(236,72,47,.25);border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}
+.missing{font-style:italic;color:var(--mid)}
+
+/* ── FLAG CELL ── */
+.flag-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--mid);background:var(--white);border:1.5px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.flag-btn:hover{border-color:var(--red);color:var(--red)}
+.flag-cell-expanded{display:none;flex-direction:column;gap:6px;min-width:200px}
+.flag-cell-expanded.show{display:flex}
+.flag-tag-row{display:flex;align-items:center;gap:6px}
+.flag-tag{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--red);background:var(--red-lt);border:1.5px solid rgba(236,72,47,.35);border-radius:5px;padding:3px 8px}
+.unflag-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--mid);line-height:1;padding:0 2px;transition:color .15s}
+.unflag-btn:hover{color:var(--red)}
+.flag-picker{font-family:'Lato',sans-serif;font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none;width:100%}
+.flag-picker:focus{border-color:var(--green)}
+.flag-note{font-family:'Lato',sans-serif;font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none;width:100%;resize:none}
+.flag-note:focus{border-color:var(--green)}
+.flag-note-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
+
+/* ── FOOTER ── */
+.footer{background:var(--green);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.footer-brand{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.footer-integrity{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5);text-decoration:none;transition:color .15s}
+.footer-integrity:hover{color:rgba(255,255,255,.85)}
+
+/* ── AOR MODAL ── */
+.aor-overlay{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.45);align-items:center;justify-content:center}
+.aor-overlay.show{display:flex}
+.aor-box{background:#fff;border-radius:12px;padding:32px 36px;max-width:480px;width:90%;box-shadow:0 12px 48px rgba(0,0,0,.18)}
+.aor-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;color:var(--dark);margin-bottom:6px}
+.aor-subtitle{font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:18px}
+.aor-ack{background:var(--red-lt);border:1px solid rgba(236,72,47,.18);border-left:3px solid var(--red);border-radius:7px;padding:13px 14px;margin-bottom:16px}
+.aor-ack-title{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.aor-ack p{font-size:12px;color:var(--dark);line-height:1.55;margin-bottom:7px}
+.aor-ack p:last-child{margin-bottom:0}
+.aor-confirm-row{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:18px}
+.aor-confirm-row input{margin-top:2px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.aor-confirm-row span{font-size:12px;color:var(--dark);line-height:1.5}
+.aor-actions{display:flex;gap:10px;justify-content:flex-end}
+.aor-cancel{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);background:none;border:1px solid var(--border);border-radius:5px;padding:8px 16px;cursor:pointer;transition:all .15s}
+.aor-cancel:hover{border-color:var(--dark);color:var(--dark)}
+.aor-confirm{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--white);background:var(--mid);border:none;border-radius:5px;padding:8px 16px;cursor:default;opacity:.5;transition:all .15s}
+.aor-confirm.ready{background:var(--green);opacity:1;cursor:pointer}
+.aor-confirm.ready:hover{background:var(--red)}
+</style>
+</head>
+<body class="show-login">
+
+<!-- ══════════════════════════════════════════════
+     LOGIN VIEW
+     ══════════════════════════════════════════════ -->
+<div class="login-view">
+  <div class="login-box">
+    <div class="login-title">ĒMA Impact Hub</div>
+    <div class="login-sub">Child Welfare Status Review<br>Sign in with your Trellis credentials</div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="field">
+      <label for="loginUser">Username</label>
+      <input type="text" id="loginUser" autocomplete="username" placeholder="username">
+    </div>
+    <div class="field">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" autocomplete="current-password" placeholder="password">
+    </div>
+    <button class="login-btn" id="loginBtn">Sign In</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PORTAL VIEW
+     ══════════════════════════════════════════════ -->
+<div class="portal-view cw-loading">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a class="nav-logo-link" href="/">
+        <img src="/ema-logo-white.svg" alt="ĒMA" height="28" onerror="this.style.display='none'">
+        <span class="nav-hub">Impact Hub</span>
+      </a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-sep"></div>
+      <div class="nav-scope">
+        <span class="nav-scope-lbl">Scope</span>
+        <span class="nav-scope-val" id="navScope">All affiliates</span>
+      </div>
+      <div class="nav-sep"></div>
+      <div class="nav-user">
+        <div class="nav-avatar" id="navAvatar">--</div>
+        <div>
+          <div class="nav-name" id="navName"></div>
+          <div class="nav-role" id="navRole"></div>
+        </div>
+      </div>
+      <button class="nav-signout" id="signoutBtn">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <div class="main">
+
+      <!-- REPORT HEADER -->
+      <div class="report-hdr">
+        <div class="rh-left">
+          <div class="rh-title-row">
+            <span class="rh-title">Review child welfare status</span>
+            <div class="rh-info">
+              <button class="rh-info-btn" aria-label="About this report">i</button>
+              <div class="rh-info-pop">Preservation impact is calculated automatically from the intake and latest welfare status, so there is nothing to edit in that column - if it looks wrong, the fix is in the intake or latest status. Track status and program status come from the family's pairing record in Trellis.</div>
+            </div>
+          </div>
+          <div class="rh-desc">Because this information has not been easily surfaced in Trellis V1, we want to ensure it is correct in our reporting for year-to-date information. Please use the table below to review whether the intake and latest welfare information is accurate to the best of your knowledge.</div>
+        </div>
+        <div class="rh-right">
+          <div class="rh-aff-wrap" id="affWrap">
+            <span class="rh-aff-lbl">Affiliate</span>
+            <select class="rh-aff-sel" id="affiliateSlicer">
+              <option value="">All affiliates</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING OVERLAY -->
+      <div class="cw-loading-overlay">
+        <div class="cw-spinner"></div>
+        Loading child welfare data...
+      </div>
+
+      <!-- STEPS STRIP -->
+      <div class="steps-strip">
+        <div class="step">
+          <span class="step-num">1</span>
+          <span class="step-text">Review each child's intake and latest welfare status.</span>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be.</span>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span class="step-text">Export the list and send it to us - we make the correction in Trellis.</span>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="srch">
+          <svg viewBox="0 0 14 14"><circle cx="5.5" cy="5.5" r="4"/><line x1="9" y1="9" x2="13" y2="13"/></svg>
+          <input type="text" id="searchInput" placeholder="Search mom or child name..." oninput="onSearch()">
+        </div>
+        <button class="flagged-btn" id="flaggedBtn" onclick="toggleFlaggedOnly()">
+          <svg viewBox="0 0 14 14"><path d="M2,2 L2,12"/><path d="M2,2 L9,2 L7,5 L9,8 L2,8"/></svg>
+          Flagged only
+        </button>
+        <div class="toolbar-spacer"></div>
+        <span class="active-count" id="activeCount"></span>
+        <button class="clear-btn" id="clearBtn" onclick="clearAll()">Clear filters</button>
+        <button class="export-btn" onclick="showAor()">
+          <svg viewBox="0 0 14 14"><path d="M7,1 L7,9"/><polyline points="4,6 7,9 10,6"/><path d="M2,11 L12,11"/></svg>
+          Export list
+        </button>
+      </div>
+
+      <!-- FILTER PILLS -->
+      <div class="filter-row">
+        <div class="filter-pills" id="filterPills"></div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <table id="cwTable">
+          <thead>
+            <tr>
+              <th style="min-width:130px"><div class="th-inner"><span class="th-sort sorted" onclick="sortBy('mom_name')">Mom <span class="arr" id="arr-mom_name">&#9650;</span></span></div></th>
+              <th style="min-width:100px"><div class="th-inner"><span class="th-sort" onclick="sortBy('child_name')">Child <span class="arr" id="arr-child_name">&#9650;</span></span></div></th>
+              <th style="min-width:44px"><div class="th-inner"><span class="th-sort" onclick="sortBy('age')">Age <span class="arr" id="arr-age">&#9650;</span></span></div></th>
+              <th style="min-width:110px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('track_status')">Track status <span class="arr" id="arr-track_status">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-track_status" onclick="togglePop('track_status',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-track_status"></div>
+                </div>
+              </th>
+              <th style="min-width:90px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('program_status')">Program status <span class="arr" id="arr-program_status">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-program_status" onclick="togglePop('program_status',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-program_status"></div>
+                </div>
+              </th>
+              <th class="col-intake" style="min-width:90px"><div class="th-inner"><span class="th-sort" onclick="sortBy('intake_date')">Intake date <span class="arr" id="arr-intake_date">&#9650;</span></span></div></th>
+              <th class="col-intake" style="min-width:130px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('intake_welfare_label')">Welfare status <span class="arr" id="arr-intake_welfare_label">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-intake_welfare" onclick="togglePop('intake_welfare',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-intake_welfare"></div>
+                </div>
+              </th>
+              <th class="col-intake" style="min-width:140px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('intake_goal_label')">Intake goal <span class="arr" id="arr-intake_goal_label">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-intake_goal" onclick="togglePop('intake_goal',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-intake_goal"></div>
+                </div>
+              </th>
+              <th class="col-latest" style="min-width:140px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('latest_welfare_label')">Latest welfare status <span class="arr" id="arr-latest_welfare_label">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-latest_welfare" onclick="togglePop('latest_welfare',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-latest_welfare"></div>
+                </div>
+              </th>
+              <th class="col-latest" style="min-width:100px"><div class="th-inner"><span class="th-sort" onclick="sortBy('record_updated')">Record updated <span class="arr" id="arr-record_updated">&#9650;</span></span></div></th>
+              <th class="col-latest" style="min-width:110px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('updated_by')">Updated by <span class="arr" id="arr-updated_by">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-updated_by" onclick="togglePop('updated_by',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-updated_by"></div>
+                </div>
+              </th>
+              <th class="col-impact" style="min-width:170px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('derived_impact')">Preservation impact <span class="arr" id="arr-derived_impact">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-derived_impact" onclick="togglePop('derived_impact',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-derived_impact"></div>
+                </div>
+              </th>
+              <th style="min-width:200px">Flag for correction</th>
+            </tr>
+          </thead>
+          <tbody id="cwTbody"></tbody>
+        </table>
+        <div id="emptyMsg" style="display:none;padding:48px;text-align:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)">No rows match the current filters.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">ĒMA &middot; Every Mother's Advocate</div>
+    <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+  </div>
+
+  <!-- AOR MODAL -->
+  <div class="aor-overlay" id="aorOverlay">
+    <div class="aor-box">
+      <div class="aor-title">Export Child Welfare List</div>
+      <div class="aor-subtitle">This export contains protected health information (PHI) and personally identifiable information (PII) about program participants and their children. It is subject to HIPAA and ĒMA data use policies.</div>
+      <div class="aor-ack">
+        <div class="aor-ack-title">Acknowledgment of Responsibility</div>
+        <p>This export contains confidential information about children and families in the program. You are authorized to access this data for program purposes only.</p>
+        <p>You must not share this file with unauthorized parties, use it for purposes outside of ĒMA program activities, or store it on unsecured personal devices.</p>
+        <p>Any suspected breach must be reported immediately to your supervisor and ĒMA leadership.</p>
+      </div>
+      <label class="aor-confirm-row">
+        <input type="checkbox" id="aorCheckbox" onchange="document.getElementById('aorConfirm').classList.toggle('ready',this.checked)">
+        <span>I acknowledge my responsibility for the safe handling of this data and confirm I am authorized to export it for ĒMA program use.</span>
+      </label>
+      <div class="aor-actions">
+        <button class="aor-cancel" onclick="closeAor()">Cancel</button>
+        <button class="aor-confirm" id="aorConfirm" onclick="confirmExport()">Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/leftnav.js"></script>
+<script>
+'use strict';
+
+/* ── LABEL MAPS ─────────────────────────────────────────────────── */
+var WELFARE_LABELS = {
+  '30_custody_maintained':   'Custody maintained',
+  '25_supportive_services':  'Supportive services',
+  '20_differential_Response':'Differential response',
+  '15_open_investigation':   'Open investigation',
+  '10_protective_services':  'Protective services',
+  '0_foster_care':           'Foster care',
+  '5_kinship_placement':     'Kinship placement',
+  '0_permanently_removed':   'Permanently removed'
+};
+var GOAL_LABELS = {
+  'prevent_cps_involvement':       'Prevent CPS involvement',
+  'prevent_foster_care_placement': 'Prevent foster care placement',
+  'prevent_permanent_removal':     'Prevent permanent removal',
+  'not_eligible_program':          'Not eligible for program'
+};
+var WELFARE_RANK = {
+  '30_custody_maintained':   0,
+  '25_supportive_services':  0,
+  '20_differential_Response':1,
+  '15_open_investigation':   2,
+  '10_protective_services':  3,
+  '0_foster_care':           4,
+  '5_kinship_placement':     4,
+  '0_permanently_removed':   5
+};
+
+/* ── DERIVATION ─────────────────────────────────────────────────── */
+function deriveImpact(intakeRaw, latestRaw) {
+  if (!intakeRaw || !latestRaw) return 'No impact at point of entry (cannot derive)';
+  var i = WELFARE_RANK[intakeRaw];
+  var l = WELFARE_RANK[latestRaw];
+  if (i === undefined || l === undefined) return 'No impact at point of entry (cannot derive)';
+  if (l === 5) return 'Permanent removal (did not prevent)';
+  if (l === 4) return 'Temporary removal (did not prevent)';
+  if (i === 4) return 'Prevented from permanent removal';
+  if (i >= 1 && i <= 3 && l <= 3) return 'Prevented from foster care placement';
+  if (i === 0 && l === 0) return 'Prevented from CPS involvement';
+  if (i === 0 && l >= 1 && l <= 3) return 'Prevented from foster care placement';
+  return 'No impact at point of entry (cannot derive)';
+}
+
+function deriveTrackStatus(row) {
+  var COMPLETED = ['completed_full_track','completed_without_post_assessment','completed_without_support_sessions'];
+  if (row.complete_reason && COMPLETED.indexOf(row.complete_reason) !== -1) return 'Completed track';
+  if (row.pairing_id && row.pairing_status === 'paired') return 'In a track';
+  return 'No active track';
+}
+
+function deriveProgramStatus(row) {
+  if (!row.mom_status) return 'Inactive';
+  return row.mom_status === 'active' ? 'Active' : 'Inactive';
+}
+
+function calcAge(birthdate) {
+  if (!birthdate) return null;
+  var dob = new Date(birthdate);
+  if (isNaN(dob)) return null;
+  var now = new Date();
+  var age = now.getFullYear() - dob.getFullYear();
+  var m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+function fmtDate(val) {
+  if (!val) return null;
+  var d = new Date(val);
+  if (isNaN(d)) return null;
+  return (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear();
+}
+
+/* ── STATE ──────────────────────────────────────────────────────── */
+var ROWS = [];
+var FLAGS = {};
+var SORT_COL = 'mom_name';
+var SORT_DIR = 1;
+var SEARCH = '';
+var FLAGGED_ONLY = false;
+var FILTERS = {};
+var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
+
+/* ── AFFILIATES ─────────────────────────────────────────────────── */
+var AFFILIATES = [];
+
+function populateAffSlicer(affiliates) {
+  var sel = document.getElementById('affiliateSlicer');
+  affiliates.forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function() {
+    var v = sel.value;
+    if (v) sel.classList.add('scoped'); else sel.classList.remove('scoped');
+    document.getElementById('navScope').textContent = v
+      ? affiliates.find(function(a){ return a.id === v; }).name
+      : 'All affiliates';
+    loadData();
+  });
+}
+
+/* ── DATA LOAD ──────────────────────────────────────────────────── */
+function processRows(raw) {
+  return raw.map(function(r) {
+    var trackStatus = deriveTrackStatus(r);
+    var programStatus = deriveProgramStatus(r);
+    var intakeLabel = r.intake_welfare_status ? (WELFARE_LABELS[r.intake_welfare_status] || r.intake_welfare_status) : null;
+    var latestLabel = r.latest_welfare_status ? (WELFARE_LABELS[r.latest_welfare_status] || r.latest_welfare_status) : null;
+    var goalLabel = r.intake_goal ? (GOAL_LABELS[r.intake_goal] || r.intake_goal) : null;
+    var derived = deriveImpact(r.intake_welfare_status, r.latest_welfare_status);
+    var age = calcAge(r.birthdate);
+    return {
+      snapshot_id:          r.snapshot_id,
+      child_id:             r.child_id,
+      mom_id:               r.mom_id,
+      affiliate_id:         r.affiliate_id,
+      affiliate_name:       r.affiliate_name || '',
+      mom_name:             r.mom_name || '',
+      child_name:           r.child_name || 'unknown',
+      age:                  age,
+      track_status:         trackStatus,
+      program_status:       programStatus,
+      intake_date:          fmtDate(r.intake_date),
+      intake_welfare_status: r.intake_welfare_status || '',
+      intake_welfare_label:  intakeLabel,
+      intake_goal:           r.intake_goal || '',
+      intake_goal_label:     goalLabel,
+      latest_welfare_status: r.latest_welfare_status || '',
+      latest_welfare_label:  latestLabel,
+      welfare_changed:       r.intake_welfare_status && r.latest_welfare_status && r.intake_welfare_status !== r.latest_welfare_status,
+      record_updated:        fmtDate(r.record_updated),
+      updated_by:            r.updated_by || '',
+      derived_impact:        derived
+    };
+  });
+}
+
+async function loadData() {
+  document.querySelector('.portal-view').classList.add('cw-loading');
+  try {
+    var url = '/api/child-welfare';
+    var sel = document.getElementById('affiliateSlicer');
+    if (sel && sel.value) url += '?affiliate_id=' + encodeURIComponent(sel.value);
+    var res = await fetch(url);
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return {}; });
+      throw new Error(err.error || ('HTTP ' + res.status));
+    }
+    var raw = await res.json();
+    ROWS = processRows(raw);
+    FILTERS = {};
+    SEARCH = '';
+    document.getElementById('searchInput').value = '';
+    FLAGGED_ONLY = false;
+    document.getElementById('flaggedBtn').classList.remove('on');
+    buildPopovers();
+    render();
+  } catch(e) {
+    console.error('[child-welfare] load error:', e);
+    ROWS = [];
+    render();
+  }
+  document.querySelector('.portal-view').classList.remove('cw-loading');
+}
+
+/* ── POPOVERS ───────────────────────────────────────────────────── */
+var FILTER_COLS = [
+  { key:'track_status',        label:'Track status' },
+  { key:'program_status',      label:'Program status' },
+  { key:'intake_welfare',      label:'Welfare status',        valueKey:'intake_welfare_label',  fallback:'(missing)' },
+  { key:'intake_goal',         label:'Intake goal',           valueKey:'intake_goal_label',     fallback:'(missing)' },
+  { key:'latest_welfare',      label:'Latest welfare status', valueKey:'latest_welfare_label',  fallback:'(missing)' },
+  { key:'updated_by',          label:'Updated by',            fallback:'not recorded' },
+  { key:'derived_impact',      label:'Preservation impact' }
+];
+
+function getDisplayVal(row, fc) {
+  if (fc.valueKey) return row[fc.valueKey] || fc.fallback;
+  var v = row[fc.key];
+  if (v === '' || v === null || v === undefined) return fc.fallback || '';
+  return v;
+}
+
+function buildPopovers() {
+  FILTER_COLS.forEach(function(fc) {
+    var counts = {};
+    ROWS.forEach(function(r) {
+      var v = getDisplayVal(r, fc);
+      counts[v] = (counts[v] || 0) + 1;
+    });
+    var values = Object.keys(counts).sort();
+    var pop = document.getElementById('pop-' + fc.key);
+    if (!pop) return;
+    var html = '<div class="pop-lbl">' + fc.label + '</div><div class="chips">';
+    values.forEach(function(v) {
+      html += '<label class="chip-opt">'
+        + '<input type="checkbox" onchange="onChipChange(\''+fc.key+'\',\''+escAttr(v)+'\')">'
+        + '<span>' + esc(v) + '</span>'
+        + '<span class="chip-count">' + counts[v] + '</span>'
+        + '</label>';
+    });
+    html += '</div>';
+    html += '<button class="pop-clear" onclick="clearFilter(\''+fc.key+'\')">Clear</button>';
+    pop.innerHTML = html;
+  });
+}
+
+function togglePop(key, e) {
+  e.stopPropagation();
+  var pop = document.getElementById('pop-' + key);
+  var wasOpen = pop.classList.contains('open');
+  closeAllPops();
+  if (!wasOpen) pop.classList.add('open');
+}
+function closeAllPops() {
+  document.querySelectorAll('.pop.open').forEach(function(p){ p.classList.remove('open'); });
+}
+document.addEventListener('click', closeAllPops);
+
+function onChipChange(key, val) {
+  if (!FILTERS[key]) FILTERS[key] = [];
+  var idx = FILTERS[key].indexOf(val);
+  if (idx === -1) FILTERS[key].push(val);
+  else FILTERS[key].splice(idx, 1);
+  if (FILTERS[key].length === 0) delete FILTERS[key];
+  updateFilterIcon(key);
+  render();
+}
+function clearFilter(key) {
+  delete FILTERS[key];
+  var pop = document.getElementById('pop-' + key);
+  if (pop) pop.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  updateFilterIcon(key);
+  render();
+}
+function updateFilterIcon(key) {
+  var fi = document.getElementById('fi-' + key);
+  if (fi) fi.classList.toggle('on', !!(FILTERS[key] && FILTERS[key].length));
+}
+function clearAll() {
+  FILTERS = {};
+  SEARCH = '';
+  FLAGGED_ONLY = false;
+  document.getElementById('searchInput').value = '';
+  document.getElementById('flaggedBtn').classList.remove('on');
+  document.querySelectorAll('.th-ficon').forEach(function(fi){ fi.classList.remove('on'); });
+  document.querySelectorAll('.pop input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  render();
+}
+
+/* ── SEARCH / FLAG TOGGLE ───────────────────────────────────────── */
+function onSearch() {
+  SEARCH = document.getElementById('searchInput').value.trim().toLowerCase();
+  render();
+}
+function toggleFlaggedOnly() {
+  FLAGGED_ONLY = !FLAGGED_ONLY;
+  document.getElementById('flaggedBtn').classList.toggle('on', FLAGGED_ONLY);
+  render();
+}
+
+/* ── SORT ───────────────────────────────────────────────────────── */
+function sortBy(col) {
+  if (SORT_COL === col) SORT_DIR *= -1;
+  else { SORT_COL = col; SORT_DIR = 1; }
+  document.querySelectorAll('.th-sort').forEach(function(el){ el.classList.remove('sorted'); });
+  var el = document.querySelector('[onclick="sortBy(\''+col+'\')"]');
+  if (el) el.classList.add('sorted');
+  document.querySelectorAll('.arr').forEach(function(el){ el.style.opacity = '.5'; });
+  var arr = document.getElementById('arr-'+col);
+  if (arr) { arr.innerHTML = SORT_DIR === 1 ? '&#9650;' : '&#9660;'; arr.style.opacity = '1'; }
+  render();
+}
+
+/* ── FILTER + RENDER ────────────────────────────────────────────── */
+function getFiltered() {
+  return ROWS.filter(function(r) {
+    if (FLAGGED_ONLY && !FLAGS[r.snapshot_id]) return false;
+    if (SEARCH) {
+      var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
+      if (hay.indexOf(SEARCH) === -1) return false;
+    }
+    var ok = true;
+    FILTER_COLS.forEach(function(fc) {
+      if (!FILTERS[fc.key] || !FILTERS[fc.key].length) return;
+      var v = getDisplayVal(r, fc);
+      if (FILTERS[fc.key].indexOf(v) === -1) ok = false;
+    });
+    return ok;
+  }).slice().sort(function(a, b) {
+    var av = a[SORT_COL], bv = b[SORT_COL];
+    if (av === null || av === undefined) av = '';
+    if (bv === null || bv === undefined) bv = '';
+    if (typeof av === 'number' && typeof bv === 'number') return SORT_DIR * (av - bv);
+    return SORT_DIR * String(av).localeCompare(String(bv));
+  });
+}
+
+function render() {
+  var filtered = getFiltered();
+  var hasAnyFilter = SEARCH || FLAGGED_ONLY || Object.keys(FILTERS).length > 0;
+
+  // Active count
+  document.getElementById('activeCount').textContent =
+    filtered.length + ' of ' + ROWS.length + ' children';
+
+  // Clear button
+  document.getElementById('clearBtn').classList.toggle('show', hasAnyFilter);
+
+  // Filter pills
+  var pillsEl = document.getElementById('filterPills');
+  var pillsHtml = '';
+  Object.keys(FILTERS).forEach(function(key) {
+    var fc = FILTER_COLS.find(function(f){ return f.key === key; });
+    var lbl = fc ? fc.label : key;
+    FILTERS[key].forEach(function(v) {
+      pillsHtml += '<span class="fpill">' + esc(lbl) + ': ' + esc(v)
+        + '<button onclick="removeFilterVal(\''+key+'\',\''+escAttr(v)+'\')" title="Remove">&times;</button></span>';
+    });
+  });
+  pillsEl.innerHTML = pillsHtml;
+
+  // Table body
+  var tbody = document.getElementById('cwTbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    document.getElementById('emptyMsg').style.display = 'block';
+    return;
+  }
+  document.getElementById('emptyMsg').style.display = 'none';
+
+  var html = '';
+  filtered.forEach(function(r) {
+    var flag = FLAGS[r.snapshot_id] || null;
+
+    // age cell
+    var ageCell = r.age !== null ? String(r.age) : '<span class="missing">-</span>';
+
+    // track badge
+    var trackBadge = r.track_status === 'Completed track'
+      ? '<span class="badge b-track-comp">Completed</span>'
+      : r.track_status === 'In a track'
+        ? '<span class="badge b-track-in">In a track</span>'
+        : '<span class="badge b-track-none">No active track</span>';
+
+    // program badge
+    var progBadge = r.program_status === 'Active'
+      ? '<span class="badge b-active">Active</span>'
+      : '<span class="badge b-inactive">Inactive</span>';
+
+    // intake date
+    var intakeDateCell = r.intake_date || '<span class="missing">-</span>';
+
+    // welfare status (intake)
+    var welfareCell = r.intake_welfare_label
+      ? esc(r.intake_welfare_label)
+      : '<span class="missing">missing</span>';
+
+    // intake goal
+    var goalCell = r.intake_goal_label
+      ? esc(r.intake_goal_label)
+      : '<span class="missing">missing</span>';
+
+    // latest welfare status + changed cue
+    var latestCell = r.latest_welfare_label
+      ? esc(r.latest_welfare_label) + (r.welfare_changed ? '<span class="changed-cue">changed</span>' : '')
+      : '<span class="missing">missing</span>';
+
+    // record updated
+    var updatedCell = r.record_updated || '<span class="missing">-</span>';
+
+    // updated by
+    var updatedByCell = r.updated_by
+      ? esc(r.updated_by)
+      : '<span class="missing">not recorded</span>';
+
+    // flag cell
+    var sid = escAttr(r.snapshot_id);
+    var flagCell;
+    if (flag) {
+      flagCell = '<div class="flag-cell-expanded show">'
+        + '<div class="flag-tag-row">'
+        + '<span class="flag-tag">Flagged</span>'
+        + '<button class="unflag-btn" onclick="unflagRow(\''+sid+'\')" title="Remove flag">&times;</button>'
+        + '</div>'
+        + '<select class="flag-picker" onchange="setFlagField(\''+sid+'\',this.value)" data-sid="'+sid+'">'
+        + '<option value="">Which is wrong?</option>'
+        + '<option value="Intake welfare status"' + (flag.field==='Intake welfare status'?' selected':'') + '>Intake welfare status</option>'
+        + '<option value="Latest welfare status"' + (flag.field==='Latest welfare status'?' selected':'') + '>Latest welfare status</option>'
+        + '<option value="Both"' + (flag.field==='Both'?' selected':'') + '>Both</option>'
+        + '</select>'
+        + '<span class="flag-note-lbl">What should it be?</span>'
+        + '<textarea class="flag-note" rows="2" placeholder="Describe the correct value..." onchange="setFlagNote(\''+sid+'\',this.value)" data-sid="'+sid+'">' + esc(flag.note || '') + '</textarea>'
+        + '</div>';
+    } else {
+      flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Flag</button>';
+    }
+
+    html += '<tr>'
+      + '<td title="' + escAttr(r.mom_name) + '">' + esc(r.mom_name) + '</td>'
+      + '<td title="' + escAttr(r.child_name) + '">' + esc(r.child_name) + '</td>'
+      + '<td>' + ageCell + '</td>'
+      + '<td>' + trackBadge + '</td>'
+      + '<td>' + progBadge + '</td>'
+      + '<td class="col-intake">' + intakeDateCell + '</td>'
+      + '<td class="col-intake" title="' + escAttr(r.intake_welfare_label || '') + '">' + welfareCell + '</td>'
+      + '<td class="col-intake" title="' + escAttr(r.intake_goal_label || '') + '">' + goalCell + '</td>'
+      + '<td class="col-latest">' + latestCell + '</td>'
+      + '<td class="col-latest">' + updatedCell + '</td>'
+      + '<td class="col-latest" title="' + escAttr(r.updated_by) + '">' + updatedByCell + '</td>'
+      + '<td class="col-impact" title="' + escAttr(r.derived_impact) + '">' + esc(r.derived_impact) + '</td>'
+      + '<td style="overflow:visible;white-space:normal;max-width:none">' + flagCell + '</td>'
+      + '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function removeFilterVal(key, val) {
+  if (!FILTERS[key]) return;
+  FILTERS[key] = FILTERS[key].filter(function(v){ return v !== val; });
+  if (FILTERS[key].length === 0) delete FILTERS[key];
+  var pop = document.getElementById('pop-' + key);
+  if (pop) pop.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+    if (cb.parentElement.querySelector('span').textContent === val) cb.checked = false;
+  });
+  updateFilterIcon(key);
+  render();
+}
+
+/* ── FLAG ACTIONS ───────────────────────────────────────────────── */
+function flagRow(sid) {
+  FLAGS[sid] = { field:'', note:'' };
+  renderFlagCell(sid);
+}
+function unflagRow(sid) {
+  delete FLAGS[sid];
+  renderFlagCell(sid);
+}
+function setFlagField(sid, val) {
+  if (FLAGS[sid]) FLAGS[sid].field = val;
+}
+function setFlagNote(sid, val) {
+  if (FLAGS[sid]) FLAGS[sid].note = val;
+}
+
+function renderFlagCell(sid) {
+  var flag = FLAGS[sid] || null;
+  var cells = document.querySelectorAll('td:last-child');
+  var row = ROWS.find(function(r){ return r.snapshot_id === sid; });
+  if (!row) return;
+  // Find the td by walking the tbody rows
+  var trs = document.getElementById('cwTbody').querySelectorAll('tr');
+  var filtered = getFiltered();
+  var idx = filtered.findIndex(function(r){ return r.snapshot_id === sid; });
+  if (idx === -1) return;
+  var td = trs[idx] ? trs[idx].querySelector('td:last-child') : null;
+  if (!td) return;
+
+  if (flag) {
+    td.innerHTML = '<div class="flag-cell-expanded show">'
+      + '<div class="flag-tag-row">'
+      + '<span class="flag-tag">Flagged</span>'
+      + '<button class="unflag-btn" onclick="unflagRow(\''+escAttr(sid)+'\')" title="Remove flag">&times;</button>'
+      + '</div>'
+      + '<select class="flag-picker" onchange="setFlagField(\''+escAttr(sid)+'\',this.value)">'
+      + '<option value="">Which is wrong?</option>'
+      + '<option value="Intake welfare status">Intake welfare status</option>'
+      + '<option value="Latest welfare status">Latest welfare status</option>'
+      + '<option value="Both">Both</option>'
+      + '</select>'
+      + '<span class="flag-note-lbl">What should it be?</span>'
+      + '<textarea class="flag-note" rows="2" placeholder="Describe the correct value..." onchange="setFlagNote(\''+escAttr(sid)+'\',this.value)"></textarea>'
+      + '</div>';
+  } else {
+    td.innerHTML = '<button class="flag-btn" onclick="flagRow(\''+escAttr(sid)+'\')">Flag</button>';
+  }
+}
+
+/* ── EXPORT ─────────────────────────────────────────────────────── */
+function showAor() {
+  document.getElementById('aorCheckbox').checked = false;
+  document.getElementById('aorConfirm').classList.remove('ready');
+  document.getElementById('aorOverlay').classList.add('show');
+}
+function closeAor() {
+  document.getElementById('aorOverlay').classList.remove('show');
+}
+
+function confirmExport() {
+  closeAor();
+  var list = getFiltered();
+
+  fetch('/api/export-audit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      timestamp:   new Date().toISOString(),
+      recordCount: list.length,
+      recordIds:   list.map(function(r){ return r.snapshot_id; }),
+      filters:     FILTERS
+    })
+  }).catch(function(e){ console.error('Audit log failed:', e); });
+
+  var headers = [
+    'snapshot_id','child_id','mom_id','affiliate','mom_name','child_name','age',
+    'track_status','program_status','intake_date',
+    'intake_welfare_status','intake_goal','latest_welfare_status',
+    'record_updated','updated_by','derived_impact',
+    'flagged_for_correction','field_to_correct','note'
+  ];
+  var csvRows = [headers.join(',')];
+  list.forEach(function(r) {
+    var flag = FLAGS[r.snapshot_id] || null;
+    var cols = [
+      r.snapshot_id,
+      r.child_id,
+      r.mom_id,
+      r.affiliate_name,
+      r.mom_name,
+      r.child_name,
+      r.age !== null ? String(r.age) : '',
+      r.track_status,
+      r.program_status,
+      r.intake_date || '',
+      r.intake_welfare_label || '',
+      r.intake_goal_label || '',
+      r.latest_welfare_label || '',
+      r.record_updated || '',
+      r.updated_by || 'not recorded',
+      r.derived_impact,
+      flag ? 'YES' : 'NO',
+      flag ? (flag.field || '') : '',
+      flag ? (flag.note || '') : ''
+    ];
+    csvRows.push(cols.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(','));
+  });
+
+  var blob = new Blob([csvRows.join('\n')], { type:'text/csv' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'child-welfare-status-review.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ── NAV / SESSION ──────────────────────────────────────────────── */
+function updateNav(user) {
+  var initials = ((user.firstName||'').charAt(0) + (user.lastName||'').charAt(0)).toUpperCase() || '??';
+  document.getElementById('navAvatar').textContent = initials;
+  document.getElementById('navName').textContent   = (user.firstName||'') + ' ' + (user.lastName||'');
+  document.getElementById('navRole').textContent   = user.role || '';
+}
+
+document.getElementById('signoutBtn').addEventListener('click', async function() {
+  await fetch('/api/logout', { method:'POST' });
+  window.location.replace('/');
+});
+
+/* ── LOGIN ──────────────────────────────────────────────────────── */
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+async function doLogin() {
+  var user = document.getElementById('loginUser').value.trim();
+  var pass = document.getElementById('loginPass').value;
+  var err  = document.getElementById('loginErr');
+  err.classList.remove('show');
+  try {
+    var res = await fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username:user, password:pass })
+    });
+    var data = await res.json();
+    if (!res.ok) { err.textContent = data.error || 'Login failed.'; err.classList.add('show'); return; }
+    document.body.classList.remove('show-login');
+    document.body.classList.add('logged-in');
+    init(data);
+  } catch(e) {
+    err.textContent = 'Network error - please try again.';
+    err.classList.add('show');
+  }
+}
+
+/* ── INIT ───────────────────────────────────────────────────────── */
+async function init(loginData) {
+  try {
+    var res  = await fetch('/api/me', { credentials:'same-origin' });
+    if (!res.ok) { document.body.classList.add('show-login'); document.body.classList.remove('logged-in'); return; }
+    var data = await res.json();
+    if (!data.user) { document.body.classList.add('show-login'); document.body.classList.remove('logged-in'); return; }
+    var u = data.user;
+    CURRENT_USER = u;
+    document.body.classList.remove('show-login');
+    document.body.classList.add('logged-in');
+    updateNav(u);
+
+    // HQ admin check — redirect non-admins
+    if (u.role !== 'administrator' && !u.isOrgWide) {
+      document.querySelector('.portal-view').innerHTML =
+        '<div style="padding:80px;text-align:center;font-family:Oswald,sans-serif;font-size:14px;color:#5A6A6A;">This report is currently available to ĒMA administrators only.</div>';
+      return;
+    }
+
+    // Affiliate slicer (org-wide only)
+    if (u.isOrgWide) {
+      document.getElementById('affWrap').classList.add('show');
+      // Populate affiliates from data (populated after first load)
+    }
+
+    await loadData();
+
+    // Build affiliate slicer from loaded data
+    if (u.isOrgWide) {
+      var affMap = {};
+      ROWS.forEach(function(r) {
+        if (r.affiliate_id && r.affiliate_name) affMap[r.affiliate_id] = r.affiliate_name;
+      });
+      var sel = document.getElementById('affiliateSlicer');
+      // Remove existing options past first
+      while (sel.options.length > 1) sel.remove(1);
+      Object.keys(affMap).sort(function(a,b){ return affMap[a].localeCompare(affMap[b]); }).forEach(function(id) {
+        var opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = affMap[id];
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', function() {
+        var v = sel.value;
+        sel.classList.toggle('scoped', !!v);
+        document.getElementById('navScope').textContent = v ? affMap[v] : 'All affiliates';
+        loadData();
+      });
+    }
+
+  } catch(e) {
+    console.error('init error:', e);
+    document.body.classList.add('show-login');
+    document.body.classList.remove('logged-in');
+  }
+}
+
+/* ── UTILS ──────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

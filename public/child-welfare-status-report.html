@@ -185,6 +185,9 @@ tr:last-child td{border-bottom:none}
 .changed-cue{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--red);background:var(--red-lt);border:1px solid rgba(236,72,47,.25);border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}
 .missing{font-style:italic;color:var(--mid)}
 
+/* ── AGE PILL ── */
+.age-pill{display:inline-block;font-family:'Oswald',sans-serif;font-weight:400;font-size:10px;letter-spacing:.4px;background:var(--faint);color:var(--mid);border:1px solid var(--border);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+
 /* ── FLAG CELL ── */
 .flag-btn{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--mid);background:var(--white);border:1.5px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .flag-btn:hover{border-color:var(--red);color:var(--red)}
@@ -290,7 +293,7 @@ tr:last-child td{border-bottom:none}
             <span class="rh-title">Review child welfare status</span>
             <div class="rh-info">
               <button class="rh-info-btn" aria-label="About this report">i</button>
-              <div class="rh-info-pop">Preservation impact is calculated automatically from the intake and latest welfare status, so there is nothing to edit in that column - if it looks wrong, the fix is in the intake or latest status. Track status and program status come from the family's pairing record in Trellis.</div>
+              <div class="rh-info-pop">Track status and program status come from the family's pairing record in Trellis. Latest welfare status is pulled live from the child's current Trellis profile. If intake or latest welfare status looks wrong, flag that row.</div>
             </div>
           </div>
           <div class="rh-desc">Because this information has not been easily surfaced in Trellis V1, we want to ensure it is correct in our reporting for year-to-date information. Please use the table below to review whether the intake and latest welfare information is accurate to the best of your knowledge.</div>
@@ -357,8 +360,7 @@ tr:last-child td{border-bottom:none}
           <thead>
             <tr>
               <th style="min-width:130px"><div class="th-inner"><span class="th-sort sorted" onclick="sortBy('mom_name')">Mom <span class="arr" id="arr-mom_name">&#9650;</span></span></div></th>
-              <th style="min-width:100px"><div class="th-inner"><span class="th-sort" onclick="sortBy('child_name')">Child <span class="arr" id="arr-child_name">&#9650;</span></span></div></th>
-              <th style="min-width:44px"><div class="th-inner"><span class="th-sort" onclick="sortBy('age')">Age <span class="arr" id="arr-age">&#9650;</span></span></div></th>
+              <th style="min-width:120px"><div class="th-inner"><span class="th-sort" onclick="sortBy('child_name')">Child <span class="arr" id="arr-child_name">&#9650;</span></span></div></th>
               <th style="min-width:110px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('track_status')">Track status <span class="arr" id="arr-track_status">&#9650;</span></span>
@@ -401,13 +403,6 @@ tr:last-child td{border-bottom:none}
                   <span class="th-sort" onclick="sortBy('updated_by')">Updated by <span class="arr" id="arr-updated_by">&#9650;</span></span>
                   <div class="th-ficon" id="fi-updated_by" onclick="togglePop('updated_by',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
                   <div class="pop" id="pop-updated_by"></div>
-                </div>
-              </th>
-              <th class="col-impact" style="min-width:170px">
-                <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('derived_impact')">Preservation impact <span class="arr" id="arr-derived_impact">&#9650;</span></span>
-                  <div class="th-ficon" id="fi-derived_impact" onclick="togglePop('derived_impact',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
-                  <div class="pop" id="pop-derived_impact"></div>
                 </div>
               </th>
               <th style="min-width:200px">Flag for correction</th>
@@ -629,8 +624,7 @@ var FILTER_COLS = [
   { key:'intake_welfare',      label:'Welfare status',        valueKey:'intake_welfare_label',  fallback:'(missing)' },
   { key:'intake_goal',         label:'Intake goal',           valueKey:'intake_goal_label',     fallback:'(missing)' },
   { key:'latest_welfare',      label:'Latest welfare status', valueKey:'latest_welfare_label',  fallback:'(missing)' },
-  { key:'updated_by',          label:'Updated by',            fallback:'not recorded' },
-  { key:'derived_impact',      label:'Preservation impact' }
+  { key:'updated_by',          label:'Updated by',            fallback:'not recorded' }
 ];
 
 function getDisplayVal(row, fc) {
@@ -792,8 +786,8 @@ function render() {
   filtered.forEach(function(r) {
     var flag = FLAGS[r.snapshot_id] || null;
 
-    // age cell
-    var ageCell = r.age !== null ? String(r.age) : '<span class="missing">-</span>';
+    // age pill (inline with child name)
+    var agePill = r.age !== null ? '<span class="age-pill">' + r.age + ' yrs</span>' : '';
 
     // track badge
     var trackBadge = r.track_status === 'Completed track'
@@ -857,8 +851,7 @@ function render() {
 
     html += '<tr>'
       + '<td title="' + escAttr(r.mom_name) + '">' + esc(r.mom_name) + '</td>'
-      + '<td title="' + escAttr(r.child_name) + '">' + esc(r.child_name) + '</td>'
-      + '<td>' + ageCell + '</td>'
+      + '<td title="' + escAttr(r.child_name) + '" style="white-space:nowrap">' + esc(r.child_name) + agePill + '</td>'
       + '<td>' + trackBadge + '</td>'
       + '<td>' + progBadge + '</td>'
       + '<td class="col-intake">' + intakeDateCell + '</td>'
@@ -867,7 +860,6 @@ function render() {
       + '<td class="col-latest">' + latestCell + '</td>'
       + '<td class="col-latest">' + updatedCell + '</td>'
       + '<td class="col-latest" title="' + escAttr(r.updated_by) + '">' + updatedByCell + '</td>'
-      + '<td class="col-impact" title="' + escAttr(r.derived_impact) + '">' + esc(r.derived_impact) + '</td>'
       + '<td style="overflow:visible;white-space:normal;max-width:none">' + flagCell + '</td>'
       + '</tr>';
   });
@@ -964,7 +956,7 @@ function confirmExport() {
     'snapshot_id','child_id','mom_id','affiliate','mom_name','child_name','age',
     'track_status','program_status','intake_date',
     'intake_welfare_status','intake_goal','latest_welfare_status',
-    'record_updated','updated_by','derived_impact',
+    'record_updated','updated_by',
     'flagged_for_correction','field_to_correct','note'
   ];
   var csvRows = [headers.join(',')];
@@ -986,7 +978,6 @@ function confirmExport() {
       r.latest_welfare_label || '',
       r.record_updated || '',
       r.updated_by || 'not recorded',
-      r.derived_impact,
       flag ? 'YES' : 'NO',
       flag ? (flag.field || '') : '',
       flag ? (flag.note || '') : ''

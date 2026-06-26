@@ -55,8 +55,11 @@ router.get('/', async (req, res) => {
     const momIds       = [...new Set(snapshotRows.map(r => r.mom_id).filter(Boolean))];
     const affiliateIds = [...new Set(snapshotRows.map(r => r.affiliate_id).filter(Boolean))];
 
-    // Parallel queries against Trellis V1
-    const [momsResult, affiliatesResult, pairingsResult] = await Promise.all([
+    // Collect unique child_ids for live Child lookup
+    const childIds = [...new Set(snapshotRows.map(r => r.child_id).filter(Boolean))];
+
+    // Parallel queries against Trellis V1 — each degraded gracefully on failure
+    const [momsResult, affiliatesResult, pairingsResult, childrenResult] = await Promise.all([
       // Mom: name, status, created_at (intake date)
       momIds.length > 0
         ? pool.query(
@@ -64,7 +67,7 @@ router.get('/', async (req, res) => {
              FROM "Mom" m
              WHERE m."id" = ANY($1) AND m."deleted_at" = 0`,
             [momIds]
-          )
+          ).catch(err => { console.error('[child-welfare] mom query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
 
       // Affiliate: name
@@ -72,7 +75,7 @@ router.get('/', async (req, res) => {
         ? pool.query(
             `SELECT a."id", a."name" FROM "Affiliate" a WHERE a."id" = ANY($1)`,
             [affiliateIds]
-          )
+          ).catch(err => { console.error('[child-welfare] affiliate query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
 
       // Pairing: most-recent per mom for track status
@@ -91,7 +94,17 @@ router.get('/', async (req, res) => {
                  OR p."complete_reason_sub_status" IS NOT NULL)
              ORDER BY p."momId", p."createdAt" DESC NULLS LAST`,
             [momIds]
-          )
+          ).catch(err => { console.error('[child-welfare] pairing query failed:', err.message); return { rows: [] }; })
+        : Promise.resolve({ rows: [] }),
+
+      // Child: live latest welfare status from Trellis V1
+      childIds.length > 0
+        ? pool.query(
+            `SELECT c."id", c."active_child_welfare_involvement"::text AS latest_welfare_status
+             FROM "Child" c
+             WHERE c."id" = ANY($1) AND c."deleted_at" = 0`,
+            [childIds]
+          ).catch(err => { console.error('[child-welfare] child query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
     ]);
 
@@ -99,12 +112,14 @@ router.get('/', async (req, res) => {
     const momMap       = Object.fromEntries(momsResult.rows.map(r => [r.id, r]));
     const affiliateMap = Object.fromEntries(affiliatesResult.rows.map(r => [r.id, r]));
     const pairingMap   = Object.fromEntries(pairingsResult.rows.map(r => [r.mom_id, r]));
+    const childMap     = Object.fromEntries(childrenResult.rows.map(r => [r.id, r]));
 
     // Build response rows
     const result = snapshotRows.map(cs => {
-      const mom      = momMap[cs.mom_id]      || {};
+      const mom      = momMap[cs.mom_id]          || {};
       const aff      = affiliateMap[cs.affiliate_id] || {};
-      const pairing  = pairingMap[cs.mom_id]  || {};
+      const pairing  = pairingMap[cs.mom_id]      || {};
+      const child    = childMap[cs.child_id]       || {};
 
       return {
         snapshot_id:            cs.id,
@@ -120,9 +135,8 @@ router.get('/', async (req, res) => {
         intake_date:            mom.created_at || '',
         intake_welfare_status:  cs.active_child_welfare_involvement || '',
         intake_goal:            cs.family_preservation_goal || '',
-        // Latest welfare status: using ChildSnapshot value for now
-        // (live Child record join is open item #2 — requires Supabase access)
-        latest_welfare_status:  cs.active_child_welfare_involvement || '',
+        // Latest welfare status: live from Trellis V1 Child table; falls back to snapshot
+        latest_welfare_status:  child.latest_welfare_status || cs.active_child_welfare_involvement || '',
         record_updated:         cs.child_updated_at || '',
         updated_by:             cs.changed_by_name || '',
         mom_status:             mom.status || '',

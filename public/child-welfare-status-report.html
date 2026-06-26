@@ -171,11 +171,12 @@ tbody tr:nth-child(even) td{background:#faf9f7}
 tbody tr:nth-child(even) td.col-intake{background:#fdeee4}
 tbody tr:nth-child(even) td.col-latest{background:#e8f0e8}
 tbody tr:nth-child(even) td.col-impact{background:#f7f5e4}
-.th-inner{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.th-sort{cursor:pointer;display:flex;align-items:center;gap:3px;flex:1}
+.th-inner{display:flex;align-items:center;gap:4px}
+.th-sort{cursor:pointer;display:flex;align-items:center;gap:3px;flex:1;min-width:0;overflow:hidden}
+.th-sort > span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th-sort:hover{color:#fff}
 .th-sort.sorted{color:var(--yellow)}
-.arr{font-size:9px;opacity:.5}
+.arr{font-size:9px;opacity:.5;flex-shrink:0}
 .th-sort.sorted .arr{opacity:1}
 .th-ficon{width:18px;height:18px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
 .th-ficon:hover{background:rgba(255,255,255,.15)}
@@ -183,7 +184,7 @@ tbody tr:nth-child(even) td.col-impact{background:#f7f5e4}
 .th-ficon.on{background:rgba(242,161,54,.25);border-color:rgba(242,161,54,.5)}
 .th-ficon.on svg{stroke:var(--yellow)}
 /* Filter popovers */
-.pop{display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:180px;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:normal;font-weight:400;text-align:left}
+.pop{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:190px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.12);text-transform:none;letter-spacing:normal;font-weight:400;text-align:left}
 .pop.open{display:flex;flex-direction:column;align-items:stretch;gap:0}
 .pop-lbl{font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:8px}
 .chips{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}

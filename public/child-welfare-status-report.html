@@ -104,16 +104,24 @@ body.logged-in .portal-view{display:flex}
 .rh-aff-sel:focus{outline:none;border-color:var(--green)}
 .rh-aff-sel.scoped{border-color:var(--green);color:var(--green);font-weight:600}
 
-/* ── STEPS STRIP ── */
-.steps-strip{display:flex;gap:0;margin:14px 0 0;background:var(--white);border:1px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden}
-.step{flex:1;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-right:1px solid var(--border)}
+/* ── STEPS GUIDE ── */
+.steps-guide{margin:14px 0 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.steps-guide-hdr{background:var(--green);padding:7px 14px;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.steps-strip{display:flex;gap:0;background:var(--white);border:none;border-radius:0;overflow:hidden;border-top:1px solid var(--border)}
+.step{flex:1;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-right:1px solid var(--border);position:relative}
 .step:last-child{border-right:none}
 .step-num{font-family:'Shrikhand',cursive;font-size:22px;color:var(--red);line-height:1;flex-shrink:0}
 .step-text{font-size:12px;color:var(--mid);line-height:1.5;padding-top:3px}
 .step-text a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
 .step-text a:hover{color:var(--red-dk)}
 .step-text strong{color:var(--dark)}
-.session-caution{background:rgba(242,161,54,.10);border:1px solid rgba(242,161,54,.4);border-top:none;border-radius:0 0 8px 8px;padding:8px 14px;font-family:'Lato',sans-serif;font-size:11px;color:#6d3a00;line-height:1.5;margin:0 0 4px}
+.session-caution{background:rgba(242,161,54,.10);border-top:1px solid rgba(242,161,54,.35);padding:7px 14px;font-family:'Lato',sans-serif;font-size:11px;color:#6d3a00;line-height:1.5}
+
+/* ── INFO POPOVER ── */
+.atd-section{margin-bottom:10px}
+.atd-section:last-child{margin-bottom:0}
+.atd-label{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--yellow);margin-bottom:4px}
+.atd-text{font-size:11px;color:var(--dark);line-height:1.6}
 
 /* ── TOOLBAR ── */
 .toolbar{display:flex;align-items:center;gap:10px;margin:12px 0 4px;flex-wrap:wrap}
@@ -319,8 +327,18 @@ tr:last-child td{border-bottom:none}
             <div class="rh-info">
               <button class="rh-info-btn" aria-label="About this report">i</button>
               <div class="rh-info-pop">
-                <p><strong>Completed track</strong> — the record is final and feeds year-to-date reporting. Review now so it's correct before it counts.</p>
-                <p><strong>Active in a track</strong> — in-progress validation. Review the intake status while the track is still running. The latest status is still changing, so some impact derivations may be incomplete — that is expected, not an error.</p>
+                <div class="atd-section">
+                  <div class="atd-label">What counts</div>
+                  <div class="atd-text">Active moms currently in a track, and moms who completed a track this year with a welfare status on record at intake. One row per child.</div>
+                </div>
+                <div class="atd-section">
+                  <div class="atd-label">Excluded</div>
+                  <div class="atd-text">Moms who completed a track this year but have no welfare status on record at intake — there is nothing to validate.</div>
+                </div>
+                <div class="atd-section">
+                  <div class="atd-label">Known limitation</div>
+                  <div class="atd-text">Welfare status fields in Trellis are not consistently kept up to date. This report surfaces them for manual review because automated accuracy cannot be assumed.</div>
+                </div>
               </div>
             </div>
           </div>
@@ -351,26 +369,29 @@ tr:last-child td{border-bottom:none}
         Loading child welfare data...
       </div>
 
-      <!-- STEPS STRIP -->
-      <div class="steps-strip">
-        <div class="step">
-          <span class="step-num">1</span>
-          <span class="step-text">Review the definitions. Open the <a href="https://www.notion.so/everymothersadvocate/Trellis-Child-Welfare-Involvement-Definitions-36decd674a6980729360d7131c18cdbc" target="_blank" rel="noopener">Trellis Child Welfare Involvement Definitions</a> so the statuses below are clear before you start.</span>
+      <!-- STEPS GUIDE -->
+      <div class="steps-guide">
+        <div class="steps-guide-hdr">What do I need to do?</div>
+        <div class="steps-strip">
+          <div class="step">
+            <span class="step-num">1</span>
+            <span class="step-text">Review the definitions. Open the <a href="https://www.notion.so/everymothersadvocate/Trellis-Child-Welfare-Involvement-Definitions-36decd674a6980729360d7131c18cdbc" target="_blank" rel="noopener">Trellis Child Welfare Involvement Definitions</a> so the statuses below are clear before you start.</span>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <span class="step-text">Review each child's profile in the table below — intake and latest welfare status.</span>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be. <strong>Flagging is just for your review — it is not shared with us until you export.</strong></span>
+          </div>
+          <div class="step">
+            <span class="step-num">4</span>
+            <span class="step-text">Download the CSV and send it to us. We make the correction in Trellis.</span>
+          </div>
         </div>
-        <div class="step">
-          <span class="step-num">2</span>
-          <span class="step-text">Review each child's profile in the table below — intake and latest welfare status.</span>
-        </div>
-        <div class="step">
-          <span class="step-num">3</span>
-          <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be. <strong>Flagging is just for your review — it is not shared with us until you export.</strong></span>
-        </div>
-        <div class="step">
-          <span class="step-num">4</span>
-          <span class="step-text">Download the CSV and send it to us. We make the correction in Trellis.</span>
-        </div>
+        <div class="session-caution">&#9888; Your flags are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
       </div>
-      <div class="session-caution">&#9888; Your flags are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
 
       <!-- TOOLBAR -->
       <div class="toolbar">

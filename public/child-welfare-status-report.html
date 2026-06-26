@@ -90,7 +90,10 @@ body.logged-in .portal-view{display:flex}
 .rh-info{position:relative;display:inline-flex}
 .rh-info-btn{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--mid);background:none;cursor:help;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;color:var(--mid);line-height:1;opacity:.6;transition:opacity .15s;flex-shrink:0}
 .rh-info-btn:hover{opacity:1}
-.rh-info-pop{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:500;width:300px;background:var(--white);border:1px solid var(--border);border-radius:7px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.55;white-space:normal;font-weight:400}
+.rh-info-pop{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:500;width:280px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.13);font-size:11px;font-family:'Lato',sans-serif;color:var(--dark);line-height:1.6;white-space:normal;font-weight:400}
+.rh-info-pop p{margin:0 0 8px}
+.rh-info-pop p:last-child{margin:0}
+.rh-info-pop strong{font-weight:700;color:var(--dark)}
 .rh-info:hover .rh-info-pop,.rh-info:focus-within .rh-info-pop{display:block}
 .rh-desc{font-size:12px;color:var(--mid);line-height:1.5;max-width:680px}
 .rh-right{display:flex;align-items:center;gap:10px}
@@ -315,7 +318,10 @@ tr:last-child td{border-bottom:none}
             <span class="rh-title">Review child welfare status</span>
             <div class="rh-info">
               <button class="rh-info-btn" aria-label="About this report">i</button>
-              <div class="rh-info-pop">This list includes two groups. Completed track: the record is final and feeds reporting - review now so it's correct. Active in a track: in-progress validation; review the intake status while the track is still running. For active families the latest status is still changing, so some impact derivations may be incomplete - that is expected, not an error.</div>
+              <div class="rh-info-pop">
+                <p><strong>Completed track</strong> — the record is final and feeds year-to-date reporting. Review now so it's correct before it counts.</p>
+                <p><strong>Active in a track</strong> — in-progress validation. Review the intake status while the track is still running. The latest status is still changing, so some impact derivations may be incomplete — that is expected, not an error.</p>
+              </div>
             </div>
           </div>
           <div class="rh-desc">Because this information has not been easily surfaced in Trellis V1, we want to ensure it is correct in our reporting for year-to-date information. Please use the table below to review whether the intake and latest welfare information is accurate to the best of your knowledge.</div>

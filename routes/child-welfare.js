@@ -61,12 +61,12 @@ router.get('/', async (req, res) => {
 
     // Parallel queries against Trellis V1 — each degraded gracefully on failure
     const [momsResult, affiliatesResult, pairingsResult, childrenResult] = await Promise.all([
-      // Mom: name, status, created_at (intake date)
+      // Mom: name, status, created_at — no deleted_at filter so soft-deleted moms still show name
       momIds.length > 0
         ? pool.query(
             `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at"
              FROM "Mom" m
-             WHERE m."id" = ANY($1) AND m."deleted_at" = 0`,
+             WHERE m."id" = ANY($1)`,
             [momIds]
           ).catch(err => { console.error('[child-welfare] mom query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
@@ -79,7 +79,7 @@ router.get('/', async (req, res) => {
           ).catch(err => { console.error('[child-welfare] affiliate query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
 
-      // Pairing: most-recent per mom for track status
+      // Pairing: most-recent per mom — no status filter; deriveTrackStatus decides
       momIds.length > 0
         ? pool.query(
             `SELECT DISTINCT ON (p."momId")
@@ -88,11 +88,7 @@ router.get('/', async (req, res) => {
                p."status"::text                       AS pairing_status,
                p."complete_reason_sub_status"::text   AS complete_reason
              FROM "Pairing" p
-             WHERE p."momId" = ANY($1)
-               AND p."deleted_at" = 0
-               AND (p."status"::text = 'paired'
-                 OR p."status"::text = 'pairing_complete'
-                 OR p."complete_reason_sub_status" IS NOT NULL)
+             WHERE p."momId" = ANY($1) AND p."deleted_at" = 0
              ORDER BY p."momId", p."createdAt" DESC NULLS LAST`,
             [momIds]
           ).catch(err => { console.error('[child-welfare] pairing query failed:', err.message); return { rows: [] }; })

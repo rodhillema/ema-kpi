@@ -359,8 +359,20 @@ tr:last-child td{border-bottom:none}
         <table id="cwTable">
           <thead>
             <tr>
-              <th style="min-width:130px"><div class="th-inner"><span class="th-sort sorted" onclick="sortBy('mom_name')">Mom <span class="arr" id="arr-mom_name">&#9650;</span></span></div></th>
-              <th style="min-width:120px"><div class="th-inner"><span class="th-sort" onclick="sortBy('child_name')">Child <span class="arr" id="arr-child_name">&#9650;</span></span></div></th>
+              <th style="min-width:130px">
+                <div class="th-inner">
+                  <span class="th-sort sorted" onclick="sortBy('mom_name')">Mom <span class="arr" id="arr-mom_name">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-mom_name" onclick="togglePop('mom_name',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-mom_name"></div>
+                </div>
+              </th>
+              <th style="min-width:120px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('child_name')">Child <span class="arr" id="arr-child_name">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-child_name" onclick="togglePop('child_name',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-child_name"></div>
+                </div>
+              </th>
               <th style="min-width:110px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('track_status')">Track status <span class="arr" id="arr-track_status">&#9650;</span></span>
@@ -614,6 +626,8 @@ async function loadData() {
 
 /* ── POPOVERS ───────────────────────────────────────────────────── */
 var FILTER_COLS = [
+  { key:'mom_name',            label:'Mom',           fallback:'(no name)' },
+  { key:'child_name',          label:'Child',         fallback:'(no name)' },
   { key:'track_status',        label:'Track status' },
   { key:'program_status',      label:'Program status' },
   { key:'intake_welfare',      label:'Welfare status',        valueKey:'intake_welfare_label',  fallback:'(missing)' },

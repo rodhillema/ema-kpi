@@ -1272,8 +1272,8 @@ function initResizableColumns() {
   var table  = document.getElementById('cwTable');
   var ths    = Array.prototype.slice.call(table.querySelectorAll('thead th'));
   var STORAGE_KEY = 'cw-col-widths-v1';
+  localStorage.removeItem(STORAGE_KEY);
   var saved  = {};
-  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
 
   table.style.tableLayout = 'fixed';
 

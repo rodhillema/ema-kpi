@@ -613,6 +613,8 @@ async function loadData() {
     console.error('[child-welfare] load error:', e);
     ROWS = [];
     render();
+    document.getElementById('emptyMsg').style.display = 'block';
+    document.getElementById('emptyMsg').textContent = 'Could not load data: ' + e.message;
   }
   document.querySelector('.portal-view').classList.remove('cw-loading');
 }

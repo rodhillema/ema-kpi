@@ -3,14 +3,12 @@
    GET /api/child-welfare
    HQ admin only (administrator role or org-wide whitelist).
 
-   Data sources:
-   - ChildSnapshot: loaded from data/child-snapshot.json
-     (Supabase export; not in Trellis V1 DB)
-   - Mom name, status, created_at: Trellis V1 Mom table
-   - Affiliate name: Trellis V1 Affiliate table
-   - Track status: Trellis V1 Pairing table
-   - Latest welfare status: ChildSnapshot only for now
-     (live Child record join is a future open item)
+   Inclusion rule (canonical):
+   A child row appears only if the mom qualifies via Pairing:
+   1. Active in a track (status='paired', any advocacy_type) — always include;
+      mark intake_missing=true if no welfare status at intake.
+   2. Completed a track YTD (status='pairing_complete' + completed reason +
+      completed_on >= YTD_START) — include only if intake welfare status exists.
    ============================================================ */
 
 const express  = require('express');
@@ -22,11 +20,18 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 router.use(requireAuth, requireRole);
 
+const COMPLETED_REASONS = [
+  'completed_full_track',
+  'completed_without_post_assessment',
+  'completed_without_support_sessions',
+];
+const YTD_START = '2026-01-01';
+
 // Load snapshot data once at startup
 const SNAPSHOT_PATH = path.join(__dirname, '../data/child-snapshot.json');
 let SNAPSHOT_ROWS = [];
 try {
-  const raw = fs.readFileSync(SNAPSHOT_PATH, 'utf8').replace(/^﻿/, ''); // strip UTF-8 BOM
+  const raw = fs.readFileSync(SNAPSHOT_PATH, 'utf8').replace(/^﻿/, '');
   SNAPSHOT_ROWS = JSON.parse(raw);
   console.log(`[child-welfare] loaded ${SNAPSHOT_ROWS.length} ChildSnapshot rows from JSON`);
 } catch (err) {
@@ -42,36 +47,72 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    // Filter snapshot rows by affiliate if requested
-    const affFilter = req.query.affiliate_id || null;
-    const snapshotRows = affFilter
-      ? SNAPSHOT_ROWS.filter(r => r.affiliate_id === affFilter)
-      : SNAPSHOT_ROWS;
+    // ── Step 1: qualifying moms from Trellis V1 Pairing ──────────────────────
+    const pairingsResult = await pool.query(
+      `SELECT DISTINCT ON (p."momId")
+         p."momId"                              AS mom_id,
+         p."id"                                 AS pairing_id,
+         p."status"::text                       AS pairing_status,
+         p."complete_reason_sub_status"::text   AS complete_reason,
+         p."advocacy_type"::text                AS advocacy_type,
+         p."advocacyGroupId"                    AS advocacy_group_id,
+         p."completed_on"                       AS pairing_completed_on
+       FROM "Pairing" p
+       WHERE p."deleted_at" = 0
+         AND (
+           p."status"::text = 'paired'
+           OR (
+             p."status"::text = 'pairing_complete'
+             AND p."complete_reason_sub_status"::text = ANY($1)
+             AND p."completed_on" >= $2
+           )
+         )
+       ORDER BY p."momId", p."created_at" DESC NULLS LAST`,
+      [COMPLETED_REASONS, YTD_START]
+    ).catch(err => {
+      console.error('[child-welfare] pairing inclusion query failed:', err.message);
+      return { rows: [] };
+    });
 
-    if (snapshotRows.length === 0) {
-      return res.json([]);
+    const qualifyingPairings = Object.fromEntries(
+      pairingsResult.rows.map(r => [r.mom_id, r])
+    );
+    const qualifyingMomIds = new Set(Object.keys(qualifyingPairings));
+
+    // ── Step 2: filter snapshot to qualifying moms + optional affiliate ───────
+    const affFilter = req.query.affiliate_id || null;
+    let snapshotRows = SNAPSHOT_ROWS.filter(r => qualifyingMomIds.has(r.mom_id));
+    if (affFilter) {
+      snapshotRows = snapshotRows.filter(r => r.affiliate_id === affFilter);
     }
 
-    // Collect unique mom_ids and affiliate_ids for Trellis V1 lookups
-    const momIds       = [...new Set(snapshotRows.map(r => r.mom_id).filter(Boolean))];
+    // ── Step 3: apply exclusion rule ─────────────────────────────────────────
+    // Completed moms with no intake welfare status → exclude (nothing to validate)
+    // Active moms with no intake welfare status → include, flagged as intake_missing
+    snapshotRows = snapshotRows.filter(r => {
+      const pairing  = qualifyingPairings[r.mom_id];
+      const isActive = pairing && pairing.pairing_status === 'paired';
+      const hasIntake = !!r.active_child_welfare_involvement;
+      if (!isActive && !hasIntake) return false;
+      return true;
+    });
+
+    if (snapshotRows.length === 0) return res.json([]);
+
+    // ── Step 4: enrichment queries against Trellis V1 ────────────────────────
+    const momIds      = [...new Set(snapshotRows.map(r => r.mom_id).filter(Boolean))];
     const affiliateIds = [...new Set(snapshotRows.map(r => r.affiliate_id).filter(Boolean))];
+    const childIds    = [...new Set(snapshotRows.map(r => r.child_id).filter(Boolean))];
 
-    // Collect unique child_ids for live Child lookup
-    const childIds = [...new Set(snapshotRows.map(r => r.child_id).filter(Boolean))];
-
-    // Parallel queries against Trellis V1 — each degraded gracefully on failure
-    const [momsResult, affiliatesResult, pairingsResult, childrenResult] = await Promise.all([
-      // Mom: name, status, created_at — no deleted_at filter so soft-deleted moms still show name
+    const [momsResult, affiliatesResult, childrenResult] = await Promise.all([
       momIds.length > 0
         ? pool.query(
             `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at"
-             FROM "Mom" m
-             WHERE m."id" = ANY($1)`,
+             FROM "Mom" m WHERE m."id" = ANY($1)`,
             [momIds]
           ).catch(err => { console.error('[child-welfare] mom query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
 
-      // Affiliate: name
       affiliateIds.length > 0
         ? pool.query(
             `SELECT a."id", a."name" FROM "Affiliate" a WHERE a."id" = ANY($1)`,
@@ -79,67 +120,50 @@ router.get('/', async (req, res) => {
           ).catch(err => { console.error('[child-welfare] affiliate query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
 
-      // Pairing: most-recent per mom — no status filter; deriveTrackStatus decides
-      momIds.length > 0
-        ? pool.query(
-            `SELECT DISTINCT ON (p."momId")
-               p."momId"                              AS mom_id,
-               p."id"                                 AS pairing_id,
-               p."status"::text                       AS pairing_status,
-               p."complete_reason_sub_status"::text   AS complete_reason
-             FROM "Pairing" p
-             WHERE p."momId" = ANY($1) AND p."deleted_at" = 0
-             ORDER BY p."momId", p."createdAt" DESC NULLS LAST`,
-            [momIds]
-          ).catch(err => { console.error('[child-welfare] pairing query failed:', err.message); return { rows: [] }; })
-        : Promise.resolve({ rows: [] }),
-
-      // Child: live latest welfare status from Trellis V1
       childIds.length > 0
         ? pool.query(
             `SELECT c."id", c."active_child_welfare_involvement"::text AS latest_welfare_status
-             FROM "Child" c
-             WHERE c."id" = ANY($1) AND c."deleted_at" = 0`,
+             FROM "Child" c WHERE c."id" = ANY($1) AND c."deleted_at" = 0`,
             [childIds]
           ).catch(err => { console.error('[child-welfare] child query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
     ]);
 
-    // Index lookup maps
-    const momMap       = Object.fromEntries(momsResult.rows.map(r => [r.id, r]));
+    const momMap      = Object.fromEntries(momsResult.rows.map(r => [r.id, r]));
     const affiliateMap = Object.fromEntries(affiliatesResult.rows.map(r => [r.id, r]));
-    const pairingMap   = Object.fromEntries(pairingsResult.rows.map(r => [r.mom_id, r]));
-    const childMap     = Object.fromEntries(childrenResult.rows.map(r => [r.id, r]));
+    const childMap    = Object.fromEntries(childrenResult.rows.map(r => [r.id, r]));
 
-    // Build response rows
+    // ── Step 5: build result rows ─────────────────────────────────────────────
     const result = snapshotRows.map(cs => {
-      const mom      = momMap[cs.mom_id]          || {};
-      const aff      = affiliateMap[cs.affiliate_id] || {};
-      const pairing  = pairingMap[cs.mom_id]      || {};
-      const child    = childMap[cs.child_id]       || {};
+      const mom     = momMap[cs.mom_id]           || {};
+      const aff     = affiliateMap[cs.affiliate_id] || {};
+      const child   = childMap[cs.child_id]       || {};
+      const pairing = qualifyingPairings[cs.mom_id] || {};
+      const isActive = pairing.pairing_status === 'paired';
+      const hasIntake = !!cs.active_child_welfare_involvement;
 
       return {
-        snapshot_id:            cs.id,
-        child_id:               cs.child_id,
-        mom_id:                 cs.mom_id,
-        affiliate_id:           cs.affiliate_id,
-        affiliate_name:         aff.name || '',
-        mom_name:               mom.first_name && mom.last_name
-                                  ? `${mom.first_name} ${mom.last_name}`
-                                  : '',
-        child_name:             cs.first_name ? cs.first_name.trim() : '',
-        birthdate:              cs.birthdate || '',
-        intake_date:            mom.created_at || '',
-        intake_welfare_status:  cs.active_child_welfare_involvement || '',
-        intake_goal:            cs.family_preservation_goal || '',
-        // Latest welfare status: live from Trellis V1 Child table; falls back to snapshot
-        latest_welfare_status:  child.latest_welfare_status || cs.active_child_welfare_involvement || '',
-        record_updated:         cs.child_updated_at || '',
-        updated_by:             cs.changed_by_name || '',
-        mom_status:             mom.status || '',
-        pairing_id:             pairing.pairing_id || '',
-        pairing_status:         pairing.pairing_status || '',
-        complete_reason:        pairing.complete_reason || '',
+        snapshot_id:           cs.id,
+        child_id:              cs.child_id,
+        mom_id:                cs.mom_id,
+        affiliate_id:          cs.affiliate_id,
+        affiliate_name:        aff.name || '',
+        mom_name:              mom.first_name && mom.last_name
+                                 ? `${mom.first_name} ${mom.last_name}`
+                                 : '',
+        child_name:            cs.first_name ? cs.first_name.trim() : '',
+        birthdate:             cs.birthdate || '',
+        intake_date:           mom.created_at || '',
+        intake_welfare_status: cs.active_child_welfare_involvement || '',
+        latest_welfare_status: child.latest_welfare_status || cs.active_child_welfare_involvement || '',
+        record_updated:        cs.child_updated_at || '',
+        updated_by:            cs.changed_by_name || '',
+        mom_status:            mom.status || '',
+        pairing_id:            pairing.pairing_id || '',
+        pairing_status:        pairing.pairing_status || '',
+        complete_reason:       pairing.complete_reason || '',
+        advocacy_type:         pairing.advocacy_type || '',
+        intake_missing:        isActive && !hasIntake,
       };
     });
 

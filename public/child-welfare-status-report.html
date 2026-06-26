@@ -185,6 +185,9 @@ tr:last-child td{border-bottom:none}
 .changed-cue{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--red);background:var(--red-lt);border:1px solid rgba(236,72,47,.25);border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}
 .missing{font-style:italic;color:var(--mid)}
 
+/* ── INTAKE MISSING BADGE ── */
+.intake-missing{display:inline-block;font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#8b2212;background:#fde8e5;border:1.5px solid rgba(236,72,47,.35);border-radius:5px;padding:2px 8px;white-space:nowrap}
+
 /* ── AGE PILL ── */
 .age-pill{display:inline-block;font-family:'Oswald',sans-serif;font-weight:400;font-size:10px;letter-spacing:.4px;background:var(--faint);color:var(--mid);border:1px solid var(--border);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 
@@ -293,7 +296,7 @@ tr:last-child td{border-bottom:none}
             <span class="rh-title">Review child welfare status</span>
             <div class="rh-info">
               <button class="rh-info-btn" aria-label="About this report">i</button>
-              <div class="rh-info-pop">Track status and program status come from the family's pairing record in Trellis. Latest welfare status is pulled live from the child's current Trellis profile. If intake or latest welfare status looks wrong, flag that row.</div>
+              <div class="rh-info-pop">This list includes two groups. Completed track: the record is final and feeds reporting - review now so it's correct. Active in a track: in-progress validation; review the intake status while the track is still running. For active families the latest status is still changing, so some impact derivations may be incomplete - that is expected, not an error.</div>
             </div>
           </div>
           <div class="rh-desc">Because this information has not been easily surfaced in Trellis V1, we want to ensure it is correct in our reporting for year-to-date information. Please use the table below to review whether the intake and latest welfare information is accurate to the best of your knowledge.</div>
@@ -580,6 +583,7 @@ function processRows(raw) {
       track_status:         trackStatus,
       program_status:       programStatus,
       intake_date:          fmtDate(r.intake_date),
+      intake_missing:        !!r.intake_missing,
       intake_welfare_status: r.intake_welfare_status || '',
       intake_welfare_label:  intakeLabel,
       intake_goal:           r.intake_goal || '',
@@ -813,9 +817,11 @@ function render() {
     var intakeDateCell = r.intake_date || '<span class="missing">-</span>';
 
     // welfare status (intake)
-    var welfareCell = r.intake_welfare_label
-      ? esc(r.intake_welfare_label)
-      : '<span class="missing">missing</span>';
+    var welfareCell = r.intake_missing
+      ? '<span class="intake-missing">Intake missing</span>'
+      : r.intake_welfare_label
+        ? esc(r.intake_welfare_label)
+        : '<span class="missing">missing</span>';
 
     // intake goal
     var goalCell = r.intake_goal_label

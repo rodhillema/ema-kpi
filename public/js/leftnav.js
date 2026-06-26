@@ -9,6 +9,7 @@
 
   var STORAGE_KEY = 'sln-collapsed';
   var CHAMPION_ADMIN_USERNAMES = ['rd.hill'];
+  var ADMIN_ROLES = ['administrator'];
 
   var NAV_ITEMS = [
     { group: null, items: [
@@ -20,12 +21,16 @@
         icon: '<svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg>' },
     ]},
     { group: 'Trellis Live', items: [
-      { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey', '/report/child-welfare-status'],
+      { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg>' },
       { href: '/#advocates', label: 'Our Advocates', match: ['/report/advocate-care'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },
       { href: '/#trellis-users', label: 'Trellis Users', match: ['/report/users'],
         icon: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg>' },
+    ]},
+    { group: 'Action Reports', adminOnly: true, items: [
+      { href: '/#action-reports', label: 'Child Welfare Status', match: ['/report/child-welfare-status'], adminOnly: true,
+        icon: '<svg viewBox="0 0 16 16"><path d="M2,2 L14,2 L14,14 L2,14 Z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/><circle cx="12" cy="12" r="2.5"/><line x1="11" y1="12" x2="13" y2="12"/><line x1="12" y1="11" x2="12" y2="13"/></svg>' },
     ]},
     { group: 'Affiliates & Admin', championOnly: true, items: [
       { href: '/admin/champions', label: 'Champion Management', match: ['/admin/champions'], championOnly: true,
@@ -37,7 +42,7 @@
     ]},
   ];
 
-  function buildNav(isChampionAdmin) {
+  function buildNav(isChampionAdmin, isAdmin) {
     var path = window.location.pathname.replace(/\/+$/, '') || '/';
 
     var html = ''
@@ -49,8 +54,9 @@
 
     NAV_ITEMS.forEach(function(section, idx) {
       if (section.championOnly && !isChampionAdmin) return;
+      if (section.adminOnly && !isAdmin) return;
       var visibleItems = section.items.filter(function(it) {
-        return !it.championOnly || isChampionAdmin;
+        return (!it.championOnly || isChampionAdmin) && (!it.adminOnly || isAdmin);
       });
       if (visibleItems.length === 0) return;
 
@@ -91,11 +97,11 @@
     applyCollapseState(next);
   }
 
-  function injectNav(isChampionAdmin) {
+  function injectNav(isChampionAdmin, isAdmin) {
     if (document.querySelector('.shared-leftnav')) return;
     var aside = document.createElement('aside');
     aside.className = 'shared-leftnav';
-    aside.innerHTML = buildNav(isChampionAdmin);
+    aside.innerHTML = buildNav(isChampionAdmin, isAdmin);
     document.body.insertBefore(aside, document.body.firstChild);
     document.body.classList.add('shared-leftnav-loaded');
 
@@ -116,7 +122,8 @@
         }
         var username = data.user.username || '';
         var isChampionAdmin = CHAMPION_ADMIN_USERNAMES.indexOf(username.toLowerCase()) !== -1;
-        injectNav(isChampionAdmin);
+        var isAdmin = ADMIN_ROLES.indexOf(data.user.role || '') !== -1 || !!data.user.isOrgWide;
+        injectNav(isChampionAdmin, isAdmin);
       })
       .catch(function() { injectNav(false); });
   }

@@ -11,20 +11,20 @@ const pool = require('../db');
 const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
 const { lookupZipCounty } = require('../lib/zip-to-county');
 
-// Q1 2026 reporting window
-const PERIOD_START = '2026-01-01';
-const PERIOD_END = '2026-03-31';
+// Q2 2026 reporting window
+// NOTE: PERIOD_END is currently set to today (2026-06-26) for early testing.
+// Update to '2026-06-30' after quarter closes and re-run generate-period-snapshot.js.
+const PERIOD_START = '2026-04-01';
+const PERIOD_END = '2026-06-26';
 // Grace window for late FWA / assessment entries after period close.
-// Accommodates situations where an assessment happens at or near the end of Q1
-// but isn't logged into Trellis until early Q2.
-const PERIOD_GRACE_END = '2026-04-30';
-const PERIOD_LABEL = 'Q1 2026';
+const PERIOD_GRACE_END = '2026-07-31';
+const PERIOD_LABEL = 'Q2 2026';
 // Snapshot key — matches the period_key column in ReportPeriodSnapshot.
-// Category C queries (mutable status fields) JOIN this table so Q1 values
+// Category C queries (mutable status fields) JOIN this table so Q2 values
 // are locked to what they were on PERIOD_END, regardless of later changes.
 // Run scripts/generate-period-snapshot.js once to populate; re-run after
 // any data correction.
-const PERIOD_KEY = '2026-Q1';
+const PERIOD_KEY = '2026-Q2';
 
 // Period-bounding SQL fragments — anchor "currently active" filters to the
 // reporting window so the same Q1 report is stable across refreshes.

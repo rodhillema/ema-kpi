@@ -167,10 +167,10 @@ thead tr th.col-impact{background:rgba(100,90,20,.65)}
 td.col-intake{background:var(--intake-tint)}
 td.col-latest{background:var(--latest-tint)}
 td.col-impact{background:var(--impact-tint)}
-tbody tr:nth-child(even) td{background:#faf9f7}
-tbody tr:nth-child(even) td.col-intake{background:#fdeee4}
-tbody tr:nth-child(even) td.col-latest{background:#e8f0e8}
-tbody tr:nth-child(even) td.col-impact{background:#f7f5e4}
+tbody tr.band-b td{background:#faf9f7}
+tbody tr.band-b td.col-intake{background:#fdeee4}
+tbody tr.band-b td.col-latest{background:#e8f0e8}
+tbody tr.band-b td.col-impact{background:#f7f5e4}
 .th-inner{display:flex;align-items:center;gap:4px}
 .th-sort{cursor:pointer;display:flex;align-items:center;gap:3px;flex:1;min-width:0;overflow:hidden}
 .th-sort > span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -342,7 +342,7 @@ tr:last-child td{border-bottom:none}
                   <div class="atd-text">Moms who completed a track this year but have no welfare status on record at intake — there is nothing to validate.</div>
                 </div>
                 <div class="atd-section">
-                  <div class="atd-label">Known limitation</div>
+                  <div class="atd-label" style="color:var(--red)">Known limitation</div>
                   <div class="atd-text">Welfare status fields in Trellis are not consistently kept up to date. This report surfaces them for manual review because automated accuracy cannot be assumed.</div>
                 </div>
               </div>
@@ -1055,7 +1055,11 @@ function render() {
   document.getElementById('emptyMsg').style.display = 'none';
 
   var html = '';
+  var bandParity = 0;
+  var lastMomId = null;
   filtered.forEach(function(r) {
+    if (r.mom_id !== lastMomId) { bandParity = bandParity === 0 ? 1 : 0; lastMomId = r.mom_id; }
+    var bandClass = bandParity === 1 ? 'band-b' : '';
     var flag = FLAGS[r.snapshot_id] || null;
 
     // age pill (inline with child name)
@@ -1122,7 +1126,7 @@ function render() {
       flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Flag</button>';
     }
 
-    html += '<tr>'
+    html += '<tr class="' + bandClass + '">'
       + '<td title="' + escAttr(r.mom_name) + '">' + esc(r.mom_name) + '</td>'
       + '<td title="' + escAttr(r.child_name) + '" style="white-space:nowrap">' + esc(r.child_name) + agePill + '</td>'
       + '<td style="overflow:visible">' + statusCell + '</td>'

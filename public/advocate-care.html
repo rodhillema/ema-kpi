@@ -596,9 +596,21 @@ TODAY.setHours(0, 0, 0, 0); // normalize to start of day
 // ── DATA ──────────────────────────────────────────────────────────────────────
 var ADVOCATES = [];
 var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
+function populateCoordChips() {
+  const coords=[...new Set(ADVOCATES.map(a=>a.coordinator).filter(Boolean))].sort();
+  const chips=document.getElementById("coord-chips");
+  chips.innerHTML="";
+  coords.forEach(c=>{
+    const lbl=document.createElement("label");
+    lbl.className="chip-opt";
+    lbl.innerHTML=`<input type="checkbox" value="${c}" onchange="render()"> ${c}`;
+    chips.appendChild(lbl);
+  });
+}
 function showAdvocates() {
   document.querySelector('.portal-view').classList.remove('adv-loading');
   updateNavScope();
+  populateCoordChips();
   render();
 }
 async function loadAdvocates() {
@@ -803,17 +815,6 @@ function deriveSub(a){
   return{sub,mismatch:false,pairingType:null};
 }
 
-// Populate coordinator checkboxes from data
-(function(){
-  const coords=[...new Set(ADVOCATES.map(a=>a.coordinator))].sort();
-  const chips=document.getElementById("coord-chips");
-  coords.forEach(c=>{
-    const lbl=document.createElement("label");
-    lbl.className="chip-opt";
-    lbl.innerHTML=`<input type="checkbox" value="${c}" onchange="render()"> ${c}`;
-    chips.appendChild(lbl);
-  });
-})();
 
 // ── CASCADING SUB-STATUS ─────────────────────────────────────────────────────
 function updateSubOptions(){

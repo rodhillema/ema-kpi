@@ -150,8 +150,13 @@ body.logged-in .portal-view{display:flex}
 .fpill button:hover{opacity:1}
 
 /* ── TABLE ── */
-.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:visible;position:relative}
-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow-x:auto;position:relative}
+table{width:100%;min-width:860px;border-collapse:collapse;font-size:12px;table-layout:auto}
+/* date filter popover */
+.date-range-row{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.date-range-row label{display:flex;flex-direction:column;gap:3px;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
+.date-range-row input[type=date]{font-family:'Lato',sans-serif;font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none;width:100%}
+.date-range-row input[type=date]:focus{border-color:var(--green)}
 thead tr th{background:var(--green);font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green-lt);padding:9px 8px;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.07);position:relative}
 thead tr th:last-child{border-right:none}
 /* Column group tints in header */
@@ -443,7 +448,13 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-status"></div>
                 </div>
               </th>
-              <th class="col-intake" style="min-width:90px"><div class="th-inner"><span class="th-sort" onclick="sortBy('intake_date')">Intake date <span class="arr" id="arr-intake_date">&#9650;</span></span></div></th>
+              <th class="col-intake" style="width:82px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('intake_date')">Intake date <span class="arr" id="arr-intake_date">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-date-intake_date" onclick="toggleDatePop('intake_date',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-date-intake_date" style="min-width:160px"></div>
+                </div>
+              </th>
               <th class="col-intake" style="min-width:130px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('intake_welfare_label')">Welfare status <span class="arr" id="arr-intake_welfare_label">&#9650;</span></span>
@@ -458,7 +469,13 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-latest_welfare"></div>
                 </div>
               </th>
-              <th class="col-latest" style="min-width:100px"><div class="th-inner"><span class="th-sort" onclick="sortBy('record_updated')">Record updated <span class="arr" id="arr-record_updated">&#9650;</span></span></div></th>
+              <th class="col-latest" style="width:82px">
+                <div class="th-inner">
+                  <span class="th-sort" onclick="sortBy('record_updated')">Record updated <span class="arr" id="arr-record_updated">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-date-record_updated" onclick="toggleDatePop('record_updated',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-date-record_updated" style="min-width:160px"></div>
+                </div>
+              </th>
               <th class="col-latest" style="min-width:110px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('updated_by')">Updated by <span class="arr" id="arr-updated_by">&#9650;</span></span>
@@ -592,6 +609,7 @@ var SEARCH = '';
 var FLAGGED_ONLY = false;
 var FILTERS = {};
 var COORD_FILTER = [];
+var DATE_FILTERS = { intake_date: {from:'',to:''}, record_updated: {from:'',to:''} };
 var UNSAVED_CHANGES = false;
 var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
 
@@ -642,6 +660,7 @@ function processRows(raw) {
       track_status:         trackStatus,
       program_status:       programStatus,
       intake_date:          fmtDate(r.intake_date),
+      intake_date_raw:      r.intake_date ? r.intake_date.slice(0,10) : '',
       intake_missing:        !!r.intake_missing,
       intake_welfare_status: r.intake_welfare_status || '',
       intake_welfare_label:  intakeLabel,
@@ -651,6 +670,7 @@ function processRows(raw) {
       latest_welfare_label:  latestLabel,
       welfare_changed:       r.intake_welfare_status && r.latest_welfare_status && r.intake_welfare_status !== r.latest_welfare_status,
       record_updated:        fmtDate(r.record_updated),
+      record_updated_raw:    r.record_updated ? r.record_updated.slice(0,10) : '',
       updated_by:            r.updated_by || '',
       coordinator_name:      r.coordinator_name || '',
       derived_impact:        derived
@@ -680,6 +700,7 @@ async function loadData() {
     buildPopovers();
     buildStatusPop();
     buildCoordPop();
+    buildDatePops();
     render();
   } catch(e) {
     console.error('[child-welfare] load error:', e);
@@ -771,6 +792,47 @@ function clearStatusFilter() {
   var pop = document.getElementById('pop-status');
   if (pop) pop.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
   document.getElementById('fi-status').classList.remove('on');
+  render();
+}
+
+/* ── DATE RANGE FILTERS ─────────────────────────────────────────── */
+var DATE_FILTER_LABELS = { intake_date:'Intake date', record_updated:'Record updated' };
+
+function buildDatePops() {
+  ['intake_date','record_updated'].forEach(function(key) {
+    var pop = document.getElementById('pop-date-'+key);
+    if (!pop) return;
+    pop.innerHTML = '<div class="pop-lbl">' + DATE_FILTER_LABELS[key] + '</div>'
+      + '<div class="date-range-row">'
+      + '<label>From<input type="date" id="df-'+key+'-from" onchange="applyDateFilter(\''+key+'\',\'from\',this.value)"></label>'
+      + '<label>To<input type="date" id="df-'+key+'-to" onchange="applyDateFilter(\''+key+'\',\'to\',this.value)"></label>'
+      + '</div>'
+      + '<button class="pop-clear" onclick="clearDateFilter(\''+key+'\')">Clear</button>';
+  });
+}
+
+function toggleDatePop(key, e) {
+  e.stopPropagation();
+  var pop = document.getElementById('pop-date-'+key);
+  var wasOpen = pop.classList.contains('open');
+  closeAllPops();
+  if (!wasOpen) pop.classList.add('open');
+}
+
+function applyDateFilter(key, type, val) {
+  DATE_FILTERS[key][type] = val;
+  var active = !!(DATE_FILTERS[key].from || DATE_FILTERS[key].to);
+  document.getElementById('fi-date-'+key).classList.toggle('on', active);
+  render();
+}
+
+function clearDateFilter(key) {
+  DATE_FILTERS[key] = {from:'',to:''};
+  var f = document.getElementById('df-'+key+'-from');
+  var t = document.getElementById('df-'+key+'-to');
+  if (f) f.value = '';
+  if (t) t.value = '';
+  document.getElementById('fi-date-'+key).classList.remove('on');
   render();
 }
 
@@ -878,6 +940,12 @@ function clearAll() {
   if (coordChips) coordChips.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
   var coordBtn = document.getElementById('coordBtn');
   if (coordBtn) { coordBtn.textContent = 'All coordinators'; coordBtn.classList.remove('active'); }
+  DATE_FILTERS = { intake_date:{from:'',to:''}, record_updated:{from:'',to:''} };
+  ['intake_date','record_updated'].forEach(function(key) {
+    var f = document.getElementById('df-'+key+'-from'); if (f) f.value = '';
+    var t = document.getElementById('df-'+key+'-to');   if (t) t.value = '';
+    var fi = document.getElementById('fi-date-'+key);   if (fi) fi.classList.remove('on');
+  });
   render();
 }
 
@@ -917,6 +985,12 @@ function getFiltered() {
       var coordVal = r.coordinator_name || '(unassigned)';
       if (COORD_FILTER.indexOf(coordVal) === -1) return false;
     }
+    var df = DATE_FILTERS.intake_date;
+    if (df.from && r.intake_date_raw && r.intake_date_raw < df.from) return false;
+    if (df.to   && r.intake_date_raw && r.intake_date_raw > df.to)   return false;
+    var dr = DATE_FILTERS.record_updated;
+    if (dr.from && r.record_updated_raw && r.record_updated_raw < dr.from) return false;
+    if (dr.to   && r.record_updated_raw && r.record_updated_raw > dr.to)   return false;
     if (FILTERS['program_status'] && FILTERS['program_status'].length) {
       if (FILTERS['program_status'].indexOf(r.program_status) === -1) return false;
     }
@@ -960,6 +1034,13 @@ function render() {
       pillsHtml += '<span class="fpill">' + esc(lbl) + ': ' + esc(v)
         + '<button onclick="removeFilterVal(\''+key+'\',\''+escAttr(v)+'\')" title="Remove">&times;</button></span>';
     });
+  });
+  ['intake_date','record_updated'].forEach(function(key) {
+    var df = DATE_FILTERS[key]; var lbl = DATE_FILTER_LABELS[key];
+    if (df.from) pillsHtml += '<span class="fpill">' + esc(lbl) + ' from: ' + esc(df.from)
+      + '<button onclick="applyDateFilter(\''+key+'\',\'from\',\'\');document.getElementById(\'df-'+key+'-from\').value=\'\'" title="Remove">&times;</button></span>';
+    if (df.to)   pillsHtml += '<span class="fpill">' + esc(lbl) + ' to: ' + esc(df.to)
+      + '<button onclick="applyDateFilter(\''+key+'\',\'to\',\'\');document.getElementById(\'df-'+key+'-to\').value=\'\'" title="Remove">&times;</button></span>';
   });
   pillsEl.innerHTML = pillsHtml;
 

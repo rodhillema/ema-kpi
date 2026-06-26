@@ -102,11 +102,15 @@ body.logged-in .portal-view{display:flex}
 .rh-aff-sel.scoped{border-color:var(--green);color:var(--green);font-weight:600}
 
 /* ── STEPS STRIP ── */
-.steps-strip{display:flex;gap:0;margin:14px 0 4px;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.steps-strip{display:flex;gap:0;margin:14px 0 0;background:var(--white);border:1px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden}
 .step{flex:1;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-right:1px solid var(--border)}
 .step:last-child{border-right:none}
 .step-num{font-family:'Shrikhand',cursive;font-size:22px;color:var(--red);line-height:1;flex-shrink:0}
 .step-text{font-size:12px;color:var(--mid);line-height:1.5;padding-top:3px}
+.step-text a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
+.step-text a:hover{color:var(--red-dk)}
+.step-text strong{color:var(--dark)}
+.session-caution{background:rgba(242,161,54,.10);border:1px solid rgba(242,161,54,.4);border-top:none;border-radius:0 0 8px 8px;padding:8px 14px;font-family:'Lato',sans-serif;font-size:11px;color:#6d3a00;line-height:1.5;margin:0 0 4px}
 
 /* ── TOOLBAR ── */
 .toolbar{display:flex;align-items:center;gap:10px;margin:12px 0 4px;flex-wrap:wrap}
@@ -345,17 +349,22 @@ tr:last-child td{border-bottom:none}
       <div class="steps-strip">
         <div class="step">
           <span class="step-num">1</span>
-          <span class="step-text">Review each child's intake and latest welfare status.</span>
+          <span class="step-text">Review the definitions. Open the <a href="https://www.notion.so/everymothersadvocate/Trellis-Child-Welfare-Involvement-Definitions-36decd674a6980729360d7131c18cdbc" target="_blank" rel="noopener">Trellis Child Welfare Involvement Definitions</a> so the statuses below are clear before you start.</span>
         </div>
         <div class="step">
           <span class="step-num">2</span>
-          <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be.</span>
+          <span class="step-text">Review each child's profile in the table below — intake and latest welfare status.</span>
         </div>
         <div class="step">
           <span class="step-num">3</span>
-          <span class="step-text">Export the list and send it to us - we make the correction in Trellis.</span>
+          <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be. <strong>Flagging is just for your review — it is not shared with us until you export.</strong></span>
+        </div>
+        <div class="step">
+          <span class="step-num">4</span>
+          <span class="step-text">Download the CSV and send it to us. We make the correction in Trellis.</span>
         </div>
       </div>
+      <div class="session-caution">&#9888; Your flags are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
 
       <!-- TOOLBAR -->
       <div class="toolbar">
@@ -556,7 +565,12 @@ var SEARCH = '';
 var FLAGGED_ONLY = false;
 var FILTERS = {};
 var COORD_FILTER = [];
+var UNSAVED_CHANGES = false;
 var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
+
+window.addEventListener('beforeunload', function(e) {
+  if (UNSAVED_CHANGES) { e.preventDefault(); e.returnValue = ''; }
+});
 
 /* ── AFFILIATES ─────────────────────────────────────────────────── */
 var AFFILIATES = [];
@@ -1029,17 +1043,19 @@ function removeFilterVal(key, val) {
 /* ── FLAG ACTIONS ───────────────────────────────────────────────── */
 function flagRow(sid) {
   FLAGS[sid] = { field:'', note:'' };
+  UNSAVED_CHANGES = true;
   renderFlagCell(sid);
 }
 function unflagRow(sid) {
   delete FLAGS[sid];
+  UNSAVED_CHANGES = Object.keys(FLAGS).length > 0;
   renderFlagCell(sid);
 }
 function setFlagField(sid, val) {
-  if (FLAGS[sid]) FLAGS[sid].field = val;
+  if (FLAGS[sid]) { FLAGS[sid].field = val; UNSAVED_CHANGES = true; }
 }
 function setFlagNote(sid, val) {
-  if (FLAGS[sid]) FLAGS[sid].note = val;
+  if (FLAGS[sid]) { FLAGS[sid].note = val; UNSAVED_CHANGES = true; }
 }
 
 function renderFlagCell(sid) {
@@ -1132,6 +1148,7 @@ function confirmExport() {
     csvRows.push(cols.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(','));
   });
 
+  UNSAVED_CHANGES = false;
   var blob = new Blob([csvRows.join('\n')], { type:'text/csv' });
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
@@ -1260,9 +1277,23 @@ function initResizableColumns() {
 
   table.style.tableLayout = 'fixed';
 
+  // Apply any saved widths to non-Flag columns
   ths.forEach(function(th, i) {
+    if (i === ths.length - 1) return;
     if (saved[i]) th.style.width = saved[i] + 'px';
-    // Last column (Flag) gets no resizer
+  });
+
+  // After the browser has laid out the table, lock every non-Flag column at its
+  // current pixel width so that shrinking one frees space only to the Flag column.
+  requestAnimationFrame(function() {
+    ths.forEach(function(th, i) {
+      if (i === ths.length - 1) return;
+      if (!th.style.width) th.style.width = th.offsetWidth + 'px';
+    });
+  });
+
+  // Add drag handles to all columns except Flag
+  ths.forEach(function(th, i) {
     if (i === ths.length - 1) return;
 
     var rz = document.createElement('div');
@@ -1278,7 +1309,7 @@ function initResizableColumns() {
       rz.classList.add('dragging');
 
       function onMove(e) {
-        var w = Math.max(60, startW + e.clientX - startX);
+        var w = Math.max(50, startW + e.clientX - startX);
         th.style.width = w + 'px';
       }
       function onUp() {

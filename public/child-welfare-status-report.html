@@ -383,13 +383,6 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-intake_welfare"></div>
                 </div>
               </th>
-              <th class="col-intake" style="min-width:140px">
-                <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('intake_goal_label')">Intake goal <span class="arr" id="arr-intake_goal_label">&#9650;</span></span>
-                  <div class="th-ficon" id="fi-intake_goal" onclick="togglePop('intake_goal',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
-                  <div class="pop" id="pop-intake_goal"></div>
-                </div>
-              </th>
               <th class="col-latest" style="min-width:140px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('latest_welfare_label')">Latest welfare status <span class="arr" id="arr-latest_welfare_label">&#9650;</span></span>
@@ -624,7 +617,6 @@ var FILTER_COLS = [
   { key:'track_status',        label:'Track status' },
   { key:'program_status',      label:'Program status' },
   { key:'intake_welfare',      label:'Welfare status',        valueKey:'intake_welfare_label',  fallback:'(missing)' },
-  { key:'intake_goal',         label:'Intake goal',           valueKey:'intake_goal_label',     fallback:'(missing)' },
   { key:'latest_welfare',      label:'Latest welfare status', valueKey:'latest_welfare_label',  fallback:'(missing)' },
   { key:'updated_by',          label:'Updated by',            fallback:'not recorded' }
 ];
@@ -858,7 +850,6 @@ function render() {
       + '<td>' + progBadge + '</td>'
       + '<td class="col-intake">' + intakeDateCell + '</td>'
       + '<td class="col-intake" title="' + escAttr(r.intake_welfare_label || '') + '">' + welfareCell + '</td>'
-      + '<td class="col-intake" title="' + escAttr(r.intake_goal_label || '') + '">' + goalCell + '</td>'
       + '<td class="col-latest">' + latestCell + '</td>'
       + '<td class="col-latest">' + updatedCell + '</td>'
       + '<td class="col-latest" title="' + escAttr(r.updated_by) + '">' + updatedByCell + '</td>'
@@ -957,7 +948,7 @@ function confirmExport() {
   var headers = [
     'snapshot_id','child_id','mom_id','affiliate','mom_name','child_name','age',
     'track_status','program_status','intake_date',
-    'intake_welfare_status','intake_goal','latest_welfare_status',
+    'intake_welfare_status','latest_welfare_status',
     'record_updated','updated_by',
     'flagged_for_correction','field_to_correct','note'
   ];
@@ -976,7 +967,6 @@ function confirmExport() {
       r.program_status,
       r.intake_date || '',
       r.intake_welfare_label || '',
-      r.intake_goal_label || '',
       r.latest_welfare_label || '',
       r.record_updated || '',
       r.updated_by || 'not recorded',

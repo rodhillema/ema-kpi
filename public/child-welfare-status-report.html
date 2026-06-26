@@ -595,7 +595,7 @@ async function loadData() {
     var url = '/api/child-welfare';
     var sel = document.getElementById('affiliateSlicer');
     if (sel && sel.value) url += '?affiliate_id=' + encodeURIComponent(sel.value);
-    var res = await fetch(url);
+    var res = await fetch(url, { credentials: 'same-origin' });
     if (!res.ok) {
       var err = await res.json().catch(function(){ return {}; });
       throw new Error(err.error || ('HTTP ' + res.status));

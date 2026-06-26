@@ -212,6 +212,20 @@ tr:last-child td{border-bottom:none}
 .footer-integrity{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5);text-decoration:none;transition:color .15s}
 .footer-integrity:hover{color:rgba(255,255,255,.85)}
 
+/* ── COL RESIZE ── */
+.col-resizer{position:absolute;right:0;top:0;width:6px;height:100%;cursor:col-resize;z-index:2;user-select:none}
+.col-resizer:hover,.col-resizer.dragging{background:rgba(255,255,255,.25)}
+
+/* ── STATUS CELL ── */
+.status-cell{display:flex;flex-direction:column;gap:3px}
+
+/* ── COORD FILTER ── */
+.coord-wrap{position:relative;display:flex;align-items:center;gap:7px}
+.coord-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.coord-btn.active{border-color:var(--green);color:var(--green);font-weight:600}
+.coord-pop{display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:500;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:200px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.coord-pop.open{display:flex;flex-direction:column;gap:0}
+
 /* ── AOR MODAL ── */
 .aor-overlay{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.45);align-items:center;justify-content:center}
 .aor-overlay.show{display:flex}
@@ -302,6 +316,15 @@ tr:last-child td{border-bottom:none}
           <div class="rh-desc">Because this information has not been easily surfaced in Trellis V1, we want to ensure it is correct in our reporting for year-to-date information. Please use the table below to review whether the intake and latest welfare information is accurate to the best of your knowledge.</div>
         </div>
         <div class="rh-right">
+          <div class="coord-wrap" id="coordWrap" style="display:none">
+            <span class="rh-aff-lbl">Coordinator</span>
+            <button class="coord-btn" id="coordBtn" onclick="toggleCoordPop(event)">All coordinators</button>
+            <div class="coord-pop" id="coordPop">
+              <div class="pop-lbl">Coordinator</div>
+              <div class="chips" id="coordChips"></div>
+              <button class="pop-clear" onclick="clearCoordFilter()">Clear</button>
+            </div>
+          </div>
           <div class="rh-aff-wrap" id="affWrap">
             <span class="rh-aff-lbl">Affiliate</span>
             <select class="rh-aff-sel" id="affiliateSlicer">
@@ -376,18 +399,11 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-child_name"></div>
                 </div>
               </th>
-              <th style="min-width:110px">
+              <th style="min-width:130px">
                 <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('track_status')">Track status <span class="arr" id="arr-track_status">&#9650;</span></span>
-                  <div class="th-ficon" id="fi-track_status" onclick="togglePop('track_status',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
-                  <div class="pop" id="pop-track_status"></div>
-                </div>
-              </th>
-              <th style="min-width:90px">
-                <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('program_status')">Program status <span class="arr" id="arr-program_status">&#9650;</span></span>
-                  <div class="th-ficon" id="fi-program_status" onclick="togglePop('program_status',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
-                  <div class="pop" id="pop-program_status"></div>
+                  <span class="th-sort" onclick="sortBy('program_status')">Status <span class="arr" id="arr-program_status">&#9650;</span></span>
+                  <div class="th-ficon" id="fi-status" onclick="toggleStatusPop(event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
+                  <div class="pop" id="pop-status"></div>
                 </div>
               </th>
               <th class="col-intake" style="min-width:90px"><div class="th-inner"><span class="th-sort" onclick="sortBy('intake_date')">Intake date <span class="arr" id="arr-intake_date">&#9650;</span></span></div></th>
@@ -538,6 +554,7 @@ var SORT_DIR = 1;
 var SEARCH = '';
 var FLAGGED_ONLY = false;
 var FILTERS = {};
+var COORD_FILTER = [];
 var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
 
 /* ── AFFILIATES ─────────────────────────────────────────────────── */
@@ -593,6 +610,7 @@ function processRows(raw) {
       welfare_changed:       r.intake_welfare_status && r.latest_welfare_status && r.intake_welfare_status !== r.latest_welfare_status,
       record_updated:        fmtDate(r.record_updated),
       updated_by:            r.updated_by || '',
+      coordinator_name:      r.coordinator_name || '',
       derived_impact:        derived
     };
   });
@@ -612,11 +630,14 @@ async function loadData() {
     var raw = await res.json();
     ROWS = processRows(raw);
     FILTERS = {};
+    COORD_FILTER = [];
     SEARCH = '';
     document.getElementById('searchInput').value = '';
     FLAGGED_ONLY = false;
     document.getElementById('flaggedBtn').classList.remove('on');
     buildPopovers();
+    buildStatusPop();
+    buildCoordPop();
     render();
   } catch(e) {
     console.error('[child-welfare] load error:', e);
@@ -670,6 +691,104 @@ function buildPopovers() {
   });
 }
 
+/* ── COMBINED STATUS POPOVER ────────────────────────────────────── */
+function buildStatusPop() {
+  var progCounts = {}, trackCounts = {};
+  ROWS.forEach(function(r) {
+    progCounts[r.program_status]  = (progCounts[r.program_status]  || 0) + 1;
+    trackCounts[r.track_status]   = (trackCounts[r.track_status]   || 0) + 1;
+  });
+  var html = '<div class="pop-lbl" style="margin-bottom:4px">Program status</div><div class="chips" style="margin-bottom:8px">';
+  Object.keys(progCounts).sort().forEach(function(v) {
+    html += '<label class="chip-opt"><input type="checkbox" data-group="program_status" onchange="onStatusChip(\'program_status\',\''+escAttr(v)+'\')">'
+          + '<span>'+esc(v)+'</span><span class="chip-count">'+progCounts[v]+'</span></label>';
+  });
+  html += '</div><div class="pop-lbl" style="margin-bottom:4px">Track status</div><div class="chips">';
+  Object.keys(trackCounts).sort().forEach(function(v) {
+    html += '<label class="chip-opt"><input type="checkbox" data-group="track_status" onchange="onStatusChip(\'track_status\',\''+escAttr(v)+'\')">'
+          + '<span>'+esc(v)+'</span><span class="chip-count">'+trackCounts[v]+'</span></label>';
+  });
+  html += '</div><button class="pop-clear" onclick="clearStatusFilter()">Clear</button>';
+  document.getElementById('pop-status').innerHTML = html;
+}
+
+function onStatusChip(group, val) {
+  if (!FILTERS[group]) FILTERS[group] = [];
+  var idx = FILTERS[group].indexOf(val);
+  if (idx === -1) FILTERS[group].push(val); else FILTERS[group].splice(idx, 1);
+  if (FILTERS[group].length === 0) delete FILTERS[group];
+  var active = !!(FILTERS['program_status'] && FILTERS['program_status'].length)
+             || !!(FILTERS['track_status']   && FILTERS['track_status'].length);
+  document.getElementById('fi-status').classList.toggle('on', active);
+  render();
+}
+
+function clearStatusFilter() {
+  delete FILTERS['program_status'];
+  delete FILTERS['track_status'];
+  var pop = document.getElementById('pop-status');
+  if (pop) pop.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  document.getElementById('fi-status').classList.remove('on');
+  render();
+}
+
+function toggleStatusPop(e) {
+  e.stopPropagation();
+  var pop = document.getElementById('pop-status');
+  var wasOpen = pop.classList.contains('open');
+  closeAllPops();
+  if (!wasOpen) pop.classList.add('open');
+}
+
+/* ── COORDINATOR FILTER ─────────────────────────────────────────── */
+function buildCoordPop() {
+  var counts = {};
+  ROWS.forEach(function(r) {
+    var v = r.coordinator_name || '(unassigned)';
+    counts[v] = (counts[v] || 0) + 1;
+  });
+  var wrap = document.getElementById('coordWrap');
+  if (Object.keys(counts).length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  var html = '';
+  Object.keys(counts).sort().forEach(function(v) {
+    html += '<label class="chip-opt"><input type="checkbox" onchange="onCoordChip(\''+escAttr(v)+'\')">'
+          + '<span>'+esc(v)+'</span><span class="chip-count">'+counts[v]+'</span></label>';
+  });
+  document.getElementById('coordChips').innerHTML = html;
+}
+
+function onCoordChip(val) {
+  var idx = COORD_FILTER.indexOf(val);
+  if (idx === -1) COORD_FILTER.push(val); else COORD_FILTER.splice(idx, 1);
+  var btn = document.getElementById('coordBtn');
+  if (COORD_FILTER.length === 0) {
+    btn.textContent = 'All coordinators';
+    btn.classList.remove('active');
+  } else {
+    btn.textContent = COORD_FILTER.length === 1 ? COORD_FILTER[0] : COORD_FILTER.length + ' coordinators';
+    btn.classList.add('active');
+  }
+  render();
+}
+
+function clearCoordFilter() {
+  COORD_FILTER = [];
+  document.getElementById('coordBtn').textContent = 'All coordinators';
+  document.getElementById('coordBtn').classList.remove('active');
+  document.getElementById('coordChips').querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  document.getElementById('coordPop').classList.remove('open');
+  render();
+}
+
+function toggleCoordPop(e) {
+  e.stopPropagation();
+  var pop = document.getElementById('coordPop');
+  var wasOpen = pop.classList.contains('open');
+  closeAllPops();
+  if (!wasOpen) pop.classList.add('open');
+}
+
 function togglePop(key, e) {
   e.stopPropagation();
   var pop = document.getElementById('pop-' + key);
@@ -679,6 +798,8 @@ function togglePop(key, e) {
 }
 function closeAllPops() {
   document.querySelectorAll('.pop.open').forEach(function(p){ p.classList.remove('open'); });
+  var cp = document.getElementById('coordPop');
+  if (cp) cp.classList.remove('open');
 }
 document.addEventListener('click', closeAllPops);
 
@@ -704,12 +825,17 @@ function updateFilterIcon(key) {
 }
 function clearAll() {
   FILTERS = {};
+  COORD_FILTER = [];
   SEARCH = '';
   FLAGGED_ONLY = false;
   document.getElementById('searchInput').value = '';
   document.getElementById('flaggedBtn').classList.remove('on');
   document.querySelectorAll('.th-ficon').forEach(function(fi){ fi.classList.remove('on'); });
   document.querySelectorAll('.pop input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  var coordChips = document.getElementById('coordChips');
+  if (coordChips) coordChips.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  var coordBtn = document.getElementById('coordBtn');
+  if (coordBtn) { coordBtn.textContent = 'All coordinators'; coordBtn.classList.remove('active'); }
   render();
 }
 
@@ -744,6 +870,16 @@ function getFiltered() {
     if (SEARCH) {
       var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
       if (hay.indexOf(SEARCH) === -1) return false;
+    }
+    if (COORD_FILTER.length > 0) {
+      var coordVal = r.coordinator_name || '(unassigned)';
+      if (COORD_FILTER.indexOf(coordVal) === -1) return false;
+    }
+    if (FILTERS['program_status'] && FILTERS['program_status'].length) {
+      if (FILTERS['program_status'].indexOf(r.program_status) === -1) return false;
+    }
+    if (FILTERS['track_status'] && FILTERS['track_status'].length) {
+      if (FILTERS['track_status'].indexOf(r.track_status) === -1) return false;
     }
     var ok = true;
     FILTER_COLS.forEach(function(fc) {
@@ -801,17 +937,16 @@ function render() {
     // age pill (inline with child name)
     var agePill = r.age !== null ? '<span class="age-pill">' + r.age + ' yrs</span>' : '';
 
-    // track badge
-    var trackBadge = r.track_status === 'Completed track'
-      ? '<span class="badge b-track-comp">Completed</span>'
-      : r.track_status === 'In a track'
-        ? '<span class="badge b-track-in">In a track</span>'
-        : '<span class="badge b-track-none">No active track</span>';
-
-    // program badge
+    // combined status cell (program on top, track below)
     var progBadge = r.program_status === 'Active'
       ? '<span class="badge b-active">Active</span>'
       : '<span class="badge b-inactive">Inactive</span>';
+    var trackBadge = r.track_status === 'Completed track'
+      ? '<span class="badge b-track-comp" style="font-size:9px">Completed</span>'
+      : r.track_status === 'In a track'
+        ? '<span class="badge b-track-in" style="font-size:9px">In a track</span>'
+        : '<span class="badge b-track-none" style="font-size:9px">No active track</span>';
+    var statusCell = '<div class="status-cell">' + progBadge + trackBadge + '</div>';
 
     // intake date
     var intakeDateCell = r.intake_date || '<span class="missing">-</span>';
@@ -866,8 +1001,7 @@ function render() {
     html += '<tr>'
       + '<td title="' + escAttr(r.mom_name) + '">' + esc(r.mom_name) + '</td>'
       + '<td title="' + escAttr(r.child_name) + '" style="white-space:nowrap">' + esc(r.child_name) + agePill + '</td>'
-      + '<td>' + trackBadge + '</td>'
-      + '<td>' + progBadge + '</td>'
+      + '<td style="overflow:visible">' + statusCell + '</td>'
       + '<td class="col-intake">' + intakeDateCell + '</td>'
       + '<td class="col-intake" title="' + escAttr(r.intake_welfare_label || '') + '">' + welfareCell + '</td>'
       + '<td class="col-latest">' + latestCell + '</td>'
@@ -1075,6 +1209,7 @@ async function init(loginData) {
     }
 
     await loadData();
+    initResizableColumns();
 
     // Build affiliate slicer from loaded data
     if (u.isOrgWide) {
@@ -1112,6 +1247,50 @@ function esc(s) {
 }
 function escAttr(s) {
   return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* ── RESIZABLE COLUMNS ──────────────────────────────────────────── */
+function initResizableColumns() {
+  var table  = document.getElementById('cwTable');
+  var ths    = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+  var STORAGE_KEY = 'cw-col-widths-v1';
+  var saved  = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
+
+  table.style.tableLayout = 'fixed';
+
+  ths.forEach(function(th, i) {
+    if (saved[i]) th.style.width = saved[i] + 'px';
+    // Last column (Flag) gets no resizer
+    if (i === ths.length - 1) return;
+
+    var rz = document.createElement('div');
+    rz.className = 'col-resizer';
+    th.style.position = 'relative';
+    th.appendChild(rz);
+
+    rz.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var startX = e.clientX;
+      var startW = th.offsetWidth;
+      rz.classList.add('dragging');
+
+      function onMove(e) {
+        var w = Math.max(60, startW + e.clientX - startX);
+        th.style.width = w + 'px';
+      }
+      function onUp() {
+        rz.classList.remove('dragging');
+        saved[i] = th.offsetWidth;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
 }
 
 // Boot

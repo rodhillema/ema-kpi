@@ -107,8 +107,11 @@ router.get('/', async (req, res) => {
     const [momsResult, affiliatesResult, childrenResult] = await Promise.all([
       momIds.length > 0
         ? pool.query(
-            `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at"
-             FROM "Mom" m WHERE m."id" = ANY($1)`,
+            `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at",
+                    u."firstName" AS coord_first, u."lastName" AS coord_last
+             FROM "Mom" m
+             LEFT JOIN "User" u ON u."id" = m."assigned_user_id" AND u."deleted_at" = 0
+             WHERE m."id" = ANY($1)`,
             [momIds]
           ).catch(err => { console.error('[child-welfare] mom query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
@@ -150,6 +153,9 @@ router.get('/', async (req, res) => {
         affiliate_name:        aff.name || '',
         mom_name:              mom.first_name && mom.last_name
                                  ? `${mom.first_name} ${mom.last_name}`
+                                 : '',
+        coordinator_name:      mom.coord_first
+                                 ? `${mom.coord_first} ${mom.coord_last || ''}`.trim()
                                  : '',
         child_name:            cs.first_name ? cs.first_name.trim() : '',
         birthdate:             cs.birthdate || '',

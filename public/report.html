@@ -1687,7 +1687,8 @@
    <div>
     <label>Period</label><br/>
     <select>
-     <option selected>Q2 2026 (Apr 1 to Jun 30)</option>
+     <option value="q1" selected>Q1 2026 (Jan 1 to Mar 31)</option>
+     <!-- Q2 option injected by JS for HQ admin only -->
      <!-- RD: Future quarters added here as static snapshots are generated -->
     </select>
    </div>
@@ -1743,7 +1744,7 @@
       KPI for visual interest), independent of performance status.
       ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Core KPIs &nbsp;&middot;&nbsp; Q2 2026</div>
+  <div class="section-label">Core KPIs &nbsp;&middot;&nbsp; <span class="period-label-inline">Q1 2026</span></div>
   <div class="kpi-grid">
 
    <!-- KPI 1 · Family Preservation Rate · accent identity = red -->
@@ -1864,7 +1865,7 @@
       Advocates yellow.
       ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Program Status &nbsp;&middot;&nbsp; Q2 2026</div>
+  <div class="section-label">Program Status &nbsp;&middot;&nbsp; <span class="period-label-inline">Q1 2026</span></div>
 
   <!-- ══ MOTHERS · accent identity = red ══ -->
   <div style="background:var(--white);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:12px;overflow:visible;margin:0 0 20px;position:relative;">
@@ -1910,7 +1911,7 @@
       </div>
      </div>
      <div>
-      <div class="es-section-label">Q2 Activity <span class="es-meta">records created or last updated Apr 1 to Jun 30</span></div>
+      <div class="es-section-label"><span class="period-quarter-inline">Q1</span> Activity <span class="es-meta">records created or last updated <span class="period-dates-inline">Jan 1 to Mar 31</span></span></div>
       <div class="entity-q1-stack">
        <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="mom-q1-referrals">31</span><span class="eqs-label">Referrals Received</span></div>
        <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="mom-q1-engaged">22</span><span class="eqs-label">Engaged in Program</span></div>
@@ -2025,7 +2026,7 @@
       </div>
      </div>
      <div>
-      <div class="es-section-label">Q2 Activity <span class="es-meta">records created or last updated Apr 1 to Jun 30</span></div>
+      <div class="es-section-label"><span class="period-quarter-inline">Q1</span> Activity <span class="es-meta">records created or last updated <span class="period-dates-inline">Jan 1 to Mar 31</span></span></div>
       <div class="entity-q1-stack">
        <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-applications">14</span><span class="eqs-label">Interest Form Received</span></div>
        <div class="entity-q1-stack-row"><span class="eqs-num" data-hydrate="adv-q1-trained">9</span><span class="eqs-label">Trained</span></div>
@@ -2068,7 +2069,7 @@
       interest; do not vary with data.
       ════════════════════════════════════════════════════════ -->
  <div class="section-group">
-  <div class="section-label">Referral Summary &nbsp;&middot;&nbsp; Q2 2026</div>
+  <div class="section-label">Referral Summary &nbsp;&middot;&nbsp; <span class="period-label-inline">Q1 2026</span></div>
 
   <!-- TOP ROW: paired headline (Total + Conversion Rate) -->
   <div class="two-col" style="margin-bottom:16px;">
@@ -2311,7 +2312,7 @@
 
 <!-- ── (1) HEADLINE: Tracks Completed + Completion Rate paired hero-cards ── -->
 <div class="section-group">
- <div class="section-label">Track Completions &nbsp;&middot;&nbsp; Q2 2026</div>
+ <div class="section-label">Track Completions &nbsp;&middot;&nbsp; <span class="period-label-inline">Q1 2026</span></div>
  <div class="two-col">
 
   <!-- LEFT: Tracks Completed count -->
@@ -2548,7 +2549,7 @@
 
 <!-- ── (4) BY TRACK: combined Closed+Completed chart + Learning Progress ── -->
 <div class="section-group">
- <div class="section-label">By Track &nbsp;&middot;&nbsp; Q2 2026
+ <div class="section-label">By Track &nbsp;&middot;&nbsp; <span class="period-label-inline">Q1 2026</span>
   <span class="anchor-note">Tracks closed during the period &nbsp;&middot;&nbsp; per-curriculum view</span>
  </div>
 
@@ -3295,9 +3296,11 @@
  document.getElementById('affiliateFilter').addEventListener('change', async function() {
   var val = this.value;
   var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
-  var url = '/api/report-data';
-  if (val === 'exclude-broward') { url += '?exclude_affiliate_id=' + BROWARD_ID; }
-  else if (val && val !== 'all') { url += '?affiliate_id=' + encodeURIComponent(val); }
+  var periodSel = document.getElementById('periodFilter');
+  var period = periodSel ? periodSel.value : 'q1';
+  var url = '/api/report-data?period=' + encodeURIComponent(period);
+  if (val === 'exclude-broward') { url += '&exclude_affiliate_id=' + BROWARD_ID; }
+  else if (val && val !== 'all') { url += '&affiliate_id=' + encodeURIComponent(val); }
   try {
    var res = await fetch(url);
    if (res.ok) {
@@ -3319,6 +3322,60 @@
   } catch (e) { /* fetch failed, non-fatal */ }
  });
 
+ /* ── Period slicer: inject Q2 option for HQ admin, handle change ── */
+ function setupPeriodSlicer(meta) {
+  if (!meta || !meta.is_org_wide) return;
+  var sel = document.querySelector('.rh-controls select[value="q1"], .rh-controls select');
+  if (!sel) return;
+  // Give the select an id if it doesn't have one
+  if (!sel.id) sel.id = 'periodFilter';
+  // Add Q2 option if not already present
+  if (!sel.querySelector('option[value="q2"]')) {
+   var opt = document.createElement('option');
+   opt.value = 'q2';
+   opt.textContent = 'Q2 2026 (Apr 1 to Jun 30)';
+   sel.appendChild(opt);
+  }
+  // Remove duplicate listener by replacing node
+  var newSel = sel.cloneNode(true);
+  sel.parentNode.replaceChild(newSel, sel);
+  newSel.addEventListener('change', async function() {
+   var period = this.value || 'q1';
+   var affSel = document.getElementById('affiliateFilter');
+   var affVal = affSel ? affSel.value : 'all';
+   var BROWARD_ID = '7fe66c83-4407-4a38-9ec8-a10b89461102';
+   var url = '/api/report-data?period=' + encodeURIComponent(period);
+   if (affVal === 'exclude-broward') url += '&exclude_affiliate_id=' + BROWARD_ID;
+   else if (affVal && affVal !== 'all') url += '&affiliate_id=' + encodeURIComponent(affVal);
+   try {
+    var res = await fetch(url);
+    if (res.ok) {
+     var data = await res.json();
+     window.__EMA_DATA__ = data;
+     renderDashboard(data);
+    }
+   } catch (e) { /* non-fatal */ }
+  });
+ }
+
+ /* ── Update all period label spans when data loads ── */
+ function updatePeriodLabels(meta) {
+  if (!meta) return;
+  // "Q1 2026" / "Q2 2026" in section headers
+  document.querySelectorAll('.period-label-inline').forEach(function(el) {
+   el.textContent = meta.period || 'Q1 2026';
+  });
+  // "Q1" / "Q2" standalone quarter label
+  document.querySelectorAll('.period-quarter-inline').forEach(function(el) {
+   el.textContent = (meta.period || 'Q1 2026').split(' ')[0];
+  });
+  // "Jan 1 to Mar 31" / "Apr 1 to Jun 30"
+  var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'Q2 2026': 'Apr 1 to Jun 30' };
+  document.querySelectorAll('.period-dates-inline').forEach(function(el) {
+   el.textContent = dateRanges[meta.period] || 'Jan 1 to Mar 31';
+  });
+ }
+
  /* ── Dashboard data rendering ────────────────────────────────── */
  function renderDashboard(data) {
   // Always ensure affiliate slicer is populated (without resetting selection)
@@ -3332,6 +3389,9 @@
   var fss = data.fss || {};
   var track = data.track_oversight || {};
   var meta = data.meta || {};
+
+  updatePeriodLabels(meta);
+  setupPeriodSlicer(meta);
 
   // ── Helper: safely set textContent of first match ──
   function setText(selector, value) {

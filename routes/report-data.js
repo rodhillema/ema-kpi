@@ -11,62 +11,29 @@ const pool = require('../db');
 const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
 const { lookupZipCounty } = require('../lib/zip-to-county');
 
-// Q2 2026 reporting window
-// NOTE: PERIOD_END is currently set to today (2026-06-26) for early testing.
+// Period definitions — Q1 is the default for all users.
+// Q2 is available to HQ admin only via ?period=q2 query param.
+// NOTE: Q2 PERIOD_END is set to 2026-06-26 for early testing.
 // Update to '2026-06-30' after quarter closes and re-run generate-period-snapshot.js.
-const PERIOD_START = '2026-04-01';
-const PERIOD_END = '2026-06-26';
-// Grace window for late FWA / assessment entries after period close.
-const PERIOD_GRACE_END = '2026-07-31';
-const PERIOD_LABEL = 'Q2 2026';
-// Snapshot key — matches the period_key column in ReportPeriodSnapshot.
-// Category C queries (mutable status fields) JOIN this table so Q2 values
-// are locked to what they were on PERIOD_END, regardless of later changes.
-// Run scripts/generate-period-snapshot.js once to populate; re-run after
-// any data correction.
-const PERIOD_KEY = '2026-Q2';
+const PERIODS = {
+  'q1': {
+    PERIOD_START:     '2026-01-01',
+    PERIOD_END:       '2026-03-31',
+    PERIOD_GRACE_END: '2026-04-30',
+    PERIOD_LABEL:     'Q1 2026',
+    PERIOD_KEY:       '2026-Q1',
+  },
+  'q2': {
+    PERIOD_START:     '2026-04-01',
+    PERIOD_END:       '2026-06-26',
+    PERIOD_GRACE_END: '2026-07-31',
+    PERIOD_LABEL:     'Q2 2026',
+    PERIOD_KEY:       '2026-Q2',
+  },
+};
 
-// Period-bounding SQL fragments — anchor "currently active" filters to the
-// reporting window so the same Q1 report is stable across refreshes.
-//
-// PERIOD_PAIRING_PERIOD_FRAGMENT: "this pairing was open at any point during
-// the period." Replaces `p.status='paired'` for period-anchored cohorts.
-const PERIOD_PAIRING_FRAGMENT = `
-  p."deleted_at" = 0
-  AND p."created_at" <= '${PERIOD_END} 23:59:59'
-  AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
-`;
-
-// PERIOD_MOM_FRAGMENT: "this mom showed up for the program at any point during
-// the period." Activity proxy — stable, observable, no AuditLog dependency.
-// Used for entity counts and downstream filters where the original code used
-// `m.status='active'` (current state, drifts on refresh).
-// 'm' must be the alias for "Mom" in the calling query.
-const PERIOD_MOM_FRAGMENT = `
-  m."deleted_at" = 0
-  AND m."created_at" <= '${PERIOD_END} 23:59:59'
-  AND (
-    EXISTS (
-      SELECT 1 FROM "Pairing" pp
-      WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
-        AND pp."created_at" <= '${PERIOD_END} 23:59:59'
-        AND (pp."completed_on" IS NULL OR pp."completed_on" > '${PERIOD_START}')
-    )
-    OR EXISTS (
-      SELECT 1 FROM "Pairing" pp
-      JOIN "Session" ss ON ss."pairing_id" = pp."id"
-      WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
-        AND ss."deleted_at" = 0
-        AND ss."status"::text = 'Held'
-        AND ss."date_start" >= '${PERIOD_START}'
-        AND ss."date_start" <= '${PERIOD_END} 23:59:59'
-    )
-    OR (
-      m."created_at" >= '${PERIOD_START}'
-      AND m."created_at" <= '${PERIOD_END} 23:59:59'
-    )
-  )
-`;
+// Period-bounding SQL fragments are defined inside the route handler
+// (after period selection) so they always reflect the active period dates.
 
 // Roles that see all affiliates
 // Only administrator is org-wide by default. Supervisor is affiliate-scoped.
@@ -179,6 +146,43 @@ router.get('/', async (req, res) => {
     // Determine affiliate filter
     // Champions with no affiliateId are org-wide (like admin)
     const isOrgWideRole = ORG_WIDE_ROLES.includes(role) || (role === 'champion' && !affiliateId) || ORG_WIDE_USERNAMES.includes((username || '').toLowerCase());
+
+    // Period selection: HQ admin can request Q2 via ?period=q2; everyone else gets Q1.
+    const requestedPeriod = (isOrgWideRole && req.query.period === 'q2') ? 'q2' : 'q1';
+    const { PERIOD_START, PERIOD_END, PERIOD_GRACE_END, PERIOD_LABEL, PERIOD_KEY } = PERIODS[requestedPeriod];
+
+    // Period-bounding SQL fragments — built here so they reflect the active period.
+    const PERIOD_PAIRING_FRAGMENT = `
+      p."deleted_at" = 0
+      AND p."created_at" <= '${PERIOD_END} 23:59:59'
+      AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
+    `;
+    const PERIOD_MOM_FRAGMENT = `
+      m."deleted_at" = 0
+      AND m."created_at" <= '${PERIOD_END} 23:59:59'
+      AND (
+        EXISTS (
+          SELECT 1 FROM "Pairing" pp
+          WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
+            AND pp."created_at" <= '${PERIOD_END} 23:59:59'
+            AND (pp."completed_on" IS NULL OR pp."completed_on" > '${PERIOD_START}')
+        )
+        OR EXISTS (
+          SELECT 1 FROM "Pairing" pp
+          JOIN "Session" ss ON ss."pairing_id" = pp."id"
+          WHERE pp."momId" = m."id" AND pp."deleted_at" = 0
+            AND ss."deleted_at" = 0
+            AND ss."status"::text = 'Held'
+            AND ss."date_start" >= '${PERIOD_START}'
+            AND ss."date_start" <= '${PERIOD_END} 23:59:59'
+        )
+        OR (
+          m."created_at" >= '${PERIOD_START}'
+          AND m."created_at" <= '${PERIOD_END} 23:59:59'
+        )
+      )
+    `;
+
     let affiliateFilter = affiliateId;
     const excludeAffiliateId = req.query.exclude_affiliate_id || null;
     if (isOrgWideRole && req.query.affiliate_id) {
@@ -2217,9 +2221,11 @@ router.get('/', async (req, res) => {
     res.json({
       meta: {
         period: PERIOD_LABEL,
+        period_key: PERIOD_KEY,
         period_start: PERIOD_START,
         period_end: PERIOD_END,
         role: role,
+        is_org_wide: isOrgWideRole,
         affiliate_id: isOrgWide ? null : affiliateFilter,
         affiliate_name: isOrgWide ? 'All Affiliates' : affiliateName,
         generated_at: new Date().toISOString(),

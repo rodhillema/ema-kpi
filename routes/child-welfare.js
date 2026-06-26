@@ -2,90 +2,139 @@
    Child Welfare Status Review — API
    GET /api/child-welfare
    HQ admin only (administrator role or org-wide whitelist).
-   One row per child from ChildSnapshot, joined to live Child,
-   Mom, Affiliate, and most-recent Pairing records.
+
+   Data sources:
+   - ChildSnapshot: loaded from data/child-snapshot.json
+     (Supabase export; not in Trellis V1 DB)
+   - Mom name, status, created_at: Trellis V1 Mom table
+   - Affiliate name: Trellis V1 Affiliate table
+   - Track status: Trellis V1 Pairing table
+   - Latest welfare status: ChildSnapshot only for now
+     (live Child record join is a future open item)
    ============================================================ */
 
-const express = require('express');
-const router  = express.Router();
-const pool    = require('../db');
+const express  = require('express');
+const router   = express.Router();
+const path     = require('path');
+const fs       = require('fs');
+const pool     = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
 router.use(requireAuth, requireRole);
 
+// Load snapshot data once at startup
+const SNAPSHOT_PATH = path.join(__dirname, '../data/child-snapshot.json');
+let SNAPSHOT_ROWS = [];
+try {
+  SNAPSHOT_ROWS = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, 'utf8'));
+  console.log(`[child-welfare] loaded ${SNAPSHOT_ROWS.length} ChildSnapshot rows from JSON`);
+} catch (err) {
+  console.error('[child-welfare] failed to load child-snapshot.json:', err.message);
+}
+
 router.get('/', async (req, res) => {
   const user = req.session.user;
 
-  // HQ admin only — administrator role or org-wide whitelisted users
+  // HQ admin only
   if (user.role !== 'administrator' && !user.isOrgWide) {
     return res.status(403).json({ error: 'Child Welfare Status Review is restricted to HQ administrators.' });
   }
 
   try {
-    const params  = [];
-    const addParam = (v) => { params.push(v); return `$${params.length}`; };
+    // Filter snapshot rows by affiliate if requested
+    const affFilter = req.query.affiliate_id || null;
+    const snapshotRows = affFilter
+      ? SNAPSHOT_ROWS.filter(r => r.affiliate_id === affFilter)
+      : SNAPSHOT_ROWS;
 
-    // Optional affiliate filter (admin UI slicer)
-    const affFilter = req.query.affiliate_id
-      ? `AND cs."affiliate_id" = ${addParam(req.query.affiliate_id)}`
-      : '';
+    if (snapshotRows.length === 0) {
+      return res.json([]);
+    }
 
-    const query = `
-      WITH latest_pairing AS (
-        -- Most-recent pairing per mom (active or completed)
-        SELECT DISTINCT ON (p."momId")
-          p."momId"                                   AS mom_id,
-          p."id"                                      AS pairing_id,
-          p."status"::text                            AS pairing_status,
-          p."complete_reason_sub_status"::text        AS complete_reason
-        FROM "Pairing" p
-        WHERE p."deleted_at" = 0
-          AND (p."status"::text = 'paired'
-            OR p."status"::text = 'pairing_complete'
-            OR p."complete_reason_sub_status" IS NOT NULL)
-        ORDER BY p."momId", p."createdAt" DESC NULLS LAST
-      )
-      SELECT
-        cs."id"                                       AS snapshot_id,
-        cs."child_id",
-        cs."mom_id",
-        cs."affiliate_id",
-        a."name"                                      AS affiliate_name,
-        m."first_name" || ' ' || m."last_name"       AS mom_name,
-        NULLIF(TRIM(cs."first_name"), '')             AS child_name,
-        cs."birthdate",
-        m."created_at"                                AS intake_date,
-        cs."active_child_welfare_involvement"         AS intake_welfare_status,
-        cs."family_preservation_goal"                 AS intake_goal,
-        c."active_child_welfare_involvement"          AS latest_welfare_status,
-        cs."child_updated_at"                         AS record_updated,
-        cs."changed_by_name"                          AS updated_by,
-        m."status"::text                              AS mom_status,
-        lp.complete_reason,
-        lp.pairing_status,
-        lp.pairing_id
-      FROM "ChildSnapshot" cs
-      JOIN "Mom" m
-        ON m."id" = cs."mom_id"
-       AND m."deleted_at" = 0
-      LEFT JOIN "Affiliate" a
-        ON a."id" = cs."affiliate_id"
-      LEFT JOIN "Child" c
-        ON c."id" = cs."child_id"
-      LEFT JOIN latest_pairing lp
-        ON lp.mom_id = cs."mom_id"
-      WHERE 1=1
-        ${affFilter}
-      ORDER BY
-        m."last_name"   ASC NULLS LAST,
-        m."first_name"  ASC NULLS LAST,
-        COALESCE(NULLIF(TRIM(cs."first_name"), ''), 'zzz') ASC
-    `;
+    // Collect unique mom_ids and affiliate_ids for Trellis V1 lookups
+    const momIds       = [...new Set(snapshotRows.map(r => r.mom_id).filter(Boolean))];
+    const affiliateIds = [...new Set(snapshotRows.map(r => r.affiliate_id).filter(Boolean))];
 
-    const { rows } = await pool.query(query, params);
-    res.json(rows);
+    // Parallel queries against Trellis V1
+    const [momsResult, affiliatesResult, pairingsResult] = await Promise.all([
+      // Mom: name, status, created_at (intake date)
+      momIds.length > 0
+        ? pool.query(
+            `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at"
+             FROM "Mom" m
+             WHERE m."id" = ANY($1) AND m."deleted_at" = 0`,
+            [momIds]
+          )
+        : Promise.resolve({ rows: [] }),
+
+      // Affiliate: name
+      affiliateIds.length > 0
+        ? pool.query(
+            `SELECT a."id", a."name" FROM "Affiliate" a WHERE a."id" = ANY($1)`,
+            [affiliateIds]
+          )
+        : Promise.resolve({ rows: [] }),
+
+      // Pairing: most-recent per mom for track status
+      momIds.length > 0
+        ? pool.query(
+            `SELECT DISTINCT ON (p."momId")
+               p."momId"                              AS mom_id,
+               p."id"                                 AS pairing_id,
+               p."status"::text                       AS pairing_status,
+               p."complete_reason_sub_status"::text   AS complete_reason
+             FROM "Pairing" p
+             WHERE p."momId" = ANY($1)
+               AND p."deleted_at" = 0
+               AND (p."status"::text = 'paired'
+                 OR p."status"::text = 'pairing_complete'
+                 OR p."complete_reason_sub_status" IS NOT NULL)
+             ORDER BY p."momId", p."createdAt" DESC NULLS LAST`,
+            [momIds]
+          )
+        : Promise.resolve({ rows: [] }),
+    ]);
+
+    // Index lookup maps
+    const momMap       = Object.fromEntries(momsResult.rows.map(r => [r.id, r]));
+    const affiliateMap = Object.fromEntries(affiliatesResult.rows.map(r => [r.id, r]));
+    const pairingMap   = Object.fromEntries(pairingsResult.rows.map(r => [r.mom_id, r]));
+
+    // Build response rows
+    const result = snapshotRows.map(cs => {
+      const mom      = momMap[cs.mom_id]      || {};
+      const aff      = affiliateMap[cs.affiliate_id] || {};
+      const pairing  = pairingMap[cs.mom_id]  || {};
+
+      return {
+        snapshot_id:            cs.id,
+        child_id:               cs.child_id,
+        mom_id:                 cs.mom_id,
+        affiliate_id:           cs.affiliate_id,
+        affiliate_name:         aff.name || '',
+        mom_name:               mom.first_name && mom.last_name
+                                  ? `${mom.first_name} ${mom.last_name}`
+                                  : '',
+        child_name:             cs.first_name ? cs.first_name.trim() : '',
+        birthdate:              cs.birthdate || '',
+        intake_date:            mom.created_at || '',
+        intake_welfare_status:  cs.active_child_welfare_involvement || '',
+        intake_goal:            cs.family_preservation_goal || '',
+        // Latest welfare status: using ChildSnapshot value for now
+        // (live Child record join is open item #2 — requires Supabase access)
+        latest_welfare_status:  cs.active_child_welfare_involvement || '',
+        record_updated:         cs.child_updated_at || '',
+        updated_by:             cs.changed_by_name || '',
+        mom_status:             mom.status || '',
+        pairing_id:             pairing.pairing_id || '',
+        pairing_status:         pairing.pairing_status || '',
+        complete_reason:        pairing.complete_reason || '',
+      };
+    });
+
+    res.json(result);
   } catch (err) {
-    console.error('[child-welfare] query error:', err.message, err.stack);
+    console.error('[child-welfare] error:', err.message, err.stack);
     res.status(500).json({ error: 'Failed to load child welfare data.' });
   }
 });

@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
         cs."mom_id",
         cs."affiliate_id",
         a."name"                                      AS affiliate_name,
-        m."firstName" || ' ' || m."lastName"         AS mom_name,
+        m."first_name" || ' ' || m."last_name"       AS mom_name,
         NULLIF(TRIM(cs."first_name"), '')             AS child_name,
         cs."birthdate",
         m."created_at"                                AS intake_date,
@@ -77,8 +77,8 @@ router.get('/', async (req, res) => {
       WHERE 1=1
         ${affFilter}
       ORDER BY
-        m."lastName"   ASC NULLS LAST,
-        m."firstName"  ASC NULLS LAST,
+        m."last_name"   ASC NULLS LAST,
+        m."first_name"  ASC NULLS LAST,
         COALESCE(NULLIF(TRIM(cs."first_name"), ''), 'zzz') ASC
     `;
 

@@ -26,7 +26,8 @@ router.use(requireAuth, requireRole);
 const SNAPSHOT_PATH = path.join(__dirname, '../data/child-snapshot.json');
 let SNAPSHOT_ROWS = [];
 try {
-  SNAPSHOT_ROWS = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, 'utf8'));
+  const raw = fs.readFileSync(SNAPSHOT_PATH, 'utf8').replace(/^﻿/, ''); // strip UTF-8 BOM
+  SNAPSHOT_ROWS = JSON.parse(raw);
   console.log(`[child-welfare] loaded ${SNAPSHOT_ROWS.length} ChildSnapshot rows from JSON`);
 } catch (err) {
   console.error('[child-welfare] failed to load child-snapshot.json:', err.message);

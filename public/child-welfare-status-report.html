@@ -174,7 +174,7 @@ tbody tr:nth-child(even) td.col-impact{background:#f7f5e4}
 .pop-clear{margin-top:8px;font-family:'Lato',sans-serif;font-size:12px;color:var(--mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;align-self:flex-start}
 .pop-clear:hover{color:var(--red)}
 /* Table cells */
-td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:normal;word-break:break-word}
 tr:last-child td{border-bottom:none}
 .badge{display:inline-block;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:20px;white-space:nowrap}
 .b-active{background:#d4ede4;color:#0d4a33}
@@ -221,7 +221,8 @@ tr:last-child td{border-bottom:none}
 
 /* ── COORD FILTER ── */
 .coord-wrap{position:relative;display:flex;align-items:center;gap:7px}
-.coord-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.coord-btn{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;letter-spacing:.4px;color:var(--dark);background:var(--white);border:1.5px solid var(--border);border-radius:6px;padding:5px 26px 5px 10px;cursor:pointer;transition:border-color .15s;white-space:normal;text-align:left;max-width:220px;position:relative;appearance:none}
+.coord-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--mid);pointer-events:none}
 .coord-btn.active{border-color:var(--green);color:var(--green);font-weight:600}
 .coord-pop{display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:500;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:200px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
 .coord-pop.open{display:flex;flex-direction:column;gap:0}
@@ -399,7 +400,7 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-child_name"></div>
                 </div>
               </th>
-              <th style="min-width:130px">
+              <th style="width:105px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('program_status')">Status <span class="arr" id="arr-program_status">&#9650;</span></span>
                   <div class="th-ficon" id="fi-status" onclick="toggleStatusPop(event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>

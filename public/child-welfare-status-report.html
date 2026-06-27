@@ -151,7 +151,11 @@ body.logged-in .portal-view{display:flex}
 
 /* ── STAT CARDS ── */
 .cw-stats{display:flex;gap:12px;margin:14px 0 4px;flex-wrap:wrap}
-.cw-stat{flex:1;min-width:140px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px}
+.cw-stat{flex:1;min-width:140px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.cw-stat:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.cw-stat.active{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
+.cw-stat-flag:hover{border-color:var(--red)}
+.cw-stat-flag.active{border-color:var(--red);box-shadow:0 0 0 2px var(--red)}
 .cw-stat-num{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);line-height:1}
 .cw-stat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--mid);margin-top:4px}
 .cw-stat-flag .cw-stat-num{color:var(--red)}
@@ -420,15 +424,15 @@ tr:last-child td{border-bottom:none}
 
       <!-- STAT CARDS -->
       <div class="cw-stats" id="cwStats" style="display:none">
-        <div class="cw-stat">
+        <div class="cw-stat" onclick="toggleStatFilter('no_change')" title="Click to filter to these rows">
           <div class="cw-stat-num" id="statNoChange">–</div>
           <div class="cw-stat-lbl">No change since intake</div>
         </div>
-        <div class="cw-stat">
+        <div class="cw-stat" onclick="toggleStatFilter('changed')" title="Click to filter to these rows">
           <div class="cw-stat-num" id="statChanged">–</div>
           <div class="cw-stat-lbl">Changed since intake</div>
         </div>
-        <div class="cw-stat cw-stat-flag">
+        <div class="cw-stat cw-stat-flag" onclick="toggleStatFilter('flagged')" title="Click to filter to flagged rows">
           <div class="cw-stat-num" id="statFlagged">0</div>
           <div class="cw-stat-lbl">Flagged as needing update</div>
         </div>
@@ -436,10 +440,6 @@ tr:last-child td{border-bottom:none}
 
       <!-- TOOLBAR -->
       <div class="toolbar">
-        <button class="flagged-btn" id="flaggedBtn" onclick="toggleFlaggedOnly()">
-          <svg viewBox="0 0 14 14"><path d="M2,2 L2,12"/><path d="M2,2 L9,2 L7,5 L9,8 L2,8"/></svg>
-          Flagged only
-        </button>
         <div class="toolbar-spacer"></div>
         <div class="srch">
           <svg viewBox="0 0 14 14"><circle cx="5.5" cy="5.5" r="4"/><line x1="9" y1="9" x2="13" y2="13"/></svg>
@@ -655,7 +655,7 @@ var FLAGS = {};
 var SORT_COL = 'mom_name';
 var SORT_DIR = 1;
 var SEARCH = '';
-var FLAGGED_ONLY = false;
+var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'flagged'
 var FILTERS = {};
 var COORD_FILTER = [];
 var DATE_FILTERS = { intake_date: {from:'',to:''}, record_updated: {from:'',to:''} };
@@ -1019,9 +1019,9 @@ function clearAll() {
   FILTERS = {};
   COORD_FILTER = [];
   SEARCH = '';
-  FLAGGED_ONLY = false;
+  STAT_FILTER = null;
   document.getElementById('searchInput').value = '';
-  document.getElementById('flaggedBtn').classList.remove('on');
+  document.querySelectorAll('.cw-stat').forEach(function(el){ el.classList.remove('active'); });
   document.querySelectorAll('.th-ficon').forEach(function(fi){ fi.classList.remove('on'); });
   document.querySelectorAll('.pop input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
   var coordChips = document.getElementById('coordChips');
@@ -1042,9 +1042,14 @@ function onSearch() {
   SEARCH = document.getElementById('searchInput').value.trim().toLowerCase();
   render();
 }
-function toggleFlaggedOnly() {
-  FLAGGED_ONLY = !FLAGGED_ONLY;
-  document.getElementById('flaggedBtn').classList.toggle('on', FLAGGED_ONLY);
+function toggleStatFilter(key) {
+  STAT_FILTER = (STAT_FILTER === key) ? null : key;
+  document.querySelectorAll('.cw-stat').forEach(function(el){ el.classList.remove('active'); });
+  if (STAT_FILTER) {
+    var map = { no_change: 'statNoChange', changed: 'statChanged', flagged: 'statFlagged' };
+    var el = document.getElementById(map[STAT_FILTER]);
+    if (el) el.closest('.cw-stat').classList.add('active');
+  }
   render();
 }
 
@@ -1064,7 +1069,9 @@ function sortBy(col) {
 /* ── FILTER + RENDER ────────────────────────────────────────────── */
 function getFiltered() {
   return ROWS.filter(function(r) {
-    if (FLAGGED_ONLY && !FLAGS[r.snapshot_id]) return false;
+    if (STAT_FILTER === 'flagged'   && !FLAGS[r.snapshot_id]) return false;
+    if (STAT_FILTER === 'no_change' && !(r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label)) return false;
+    if (STAT_FILTER === 'changed'   && !r.welfare_changed) return false;
     if (SEARCH) {
       var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
       if (hay.indexOf(SEARCH) === -1) return false;
@@ -1103,7 +1110,7 @@ function getFiltered() {
 
 function render() {
   var filtered = getFiltered();
-  var hasAnyFilter = SEARCH || FLAGGED_ONLY || Object.keys(FILTERS).length > 0;
+  var hasAnyFilter = SEARCH || STAT_FILTER || Object.keys(FILTERS).length > 0;
 
   // Active count
   document.getElementById('activeCount').textContent =

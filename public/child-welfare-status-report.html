@@ -413,14 +413,14 @@ tr:last-child td{border-bottom:none}
           </div>
           <div class="step">
             <span class="step-num">3</span>
-            <span class="step-text">Flag any row that is wrong, choose which field, and note what it should be. <strong>Flagging is just for your review — it is not shared with us until you export.</strong></span>
+            <span class="step-text">Mark any row for correction and note what the status should be. <strong>Corrections are saved only in this session — they are not shared until you export.</strong></span>
           </div>
           <div class="step">
             <span class="step-num">4</span>
             <span class="step-text">Download the CSV and send it to us. We make the correction in Trellis.</span>
           </div>
         </div>
-        <div class="session-caution">&#9888; Your flags are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
+        <div class="session-caution">&#9888; Your corrections are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
       </div>
 
       <!-- STAT CARDS -->
@@ -435,7 +435,7 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="cw-stat cw-stat-flag" onclick="toggleStatFilter('flagged')" title="Click to filter to flagged rows">
           <div class="cw-stat-num" id="statFlagged">0</div>
-          <div class="cw-stat-lbl">Flagged as needing update</div>
+          <div class="cw-stat-lbl">Marked for correction</div>
         </div>
       </div>
 
@@ -520,7 +520,7 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-updated_by"></div>
                 </div>
               </th>
-              <th style="min-width:200px">Flag for correction</th>
+              <th style="min-width:200px">Correction</th>
             </tr>
           </thead>
           <tbody id="cwTbody"></tbody>
@@ -540,8 +540,8 @@ tr:last-child td{border-bottom:none}
   <div class="leave-modal-overlay" id="leaveModal" style="display:none">
     <div class="leave-modal">
       <div class="leave-modal-icon">&#9873;</div>
-      <div class="leave-modal-title">You have unsaved flags</div>
-      <div class="leave-modal-body">Your flagged items have not been exported yet. If you leave now, your flags will be lost. Go back and download the CSV first, or leave without saving.</div>
+      <div class="leave-modal-title">You have unsaved corrections</div>
+      <div class="leave-modal-body">Your corrections have not been exported yet. If you leave now, they will be lost. Go back and download the CSV first, or leave without saving.</div>
       <div class="leave-modal-actions">
         <button class="leave-modal-go" id="leaveModalGo">Leave without saving</button>
         <button class="leave-modal-cancel" onclick="closeLeaveModal()">Go back and export</button>
@@ -1226,8 +1226,8 @@ function render() {
     if (flag) {
       flagCell = '<div class="flag-cell-expanded show">'
         + '<div class="flag-tag-row">'
-        + '<span class="flag-tag">Flagged</span>'
-        + '<button class="unflag-btn" onclick="unflagRow(\''+sid+'\')" title="Remove flag">&times;</button>'
+        + '<span class="flag-tag">Correction</span>'
+        + '<button class="unflag-btn" onclick="unflagRow(\''+sid+'\')" title="Remove correction">&times;</button>'
         + '</div>'
         + '<span class="flag-note-lbl">Correct intake status:</span>'
         + '<select class="flag-note" onchange="setFlagIntake(\''+sid+'\',this.value)">'
@@ -1241,7 +1241,7 @@ function render() {
         + '<div class="flag-note-desc" id="fdesc-latest-'+sid+'">' + welfareDesc(flag.latestNote) + '</div>'
         + '</div>';
     } else {
-      flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Flag</button>';
+      flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Mark for correction</button>';
     }
 
     html += '<tr class="' + bandClass + '">'
@@ -1316,8 +1316,8 @@ function renderFlagCell(sid) {
     var s = escAttr(sid);
     td.innerHTML = '<div class="flag-cell-expanded show">'
       + '<div class="flag-tag-row">'
-      + '<span class="flag-tag">Flagged</span>'
-      + '<button class="unflag-btn" onclick="unflagRow(\''+s+'\')" title="Remove flag">&times;</button>'
+      + '<span class="flag-tag">Correction</span>'
+      + '<button class="unflag-btn" onclick="unflagRow(\''+s+'\')" title="Remove correction">&times;</button>'
       + '</div>'
       + '<span class="flag-note-lbl">Correct intake status:</span>'
       + '<select class="flag-note" onchange="setFlagIntake(\''+s+'\',this.value)">'
@@ -1331,7 +1331,7 @@ function renderFlagCell(sid) {
       + '<div class="flag-note-desc" id="fdesc-latest-'+s+'">' + welfareDesc(flag.latestNote) + '</div>'
       + '</div>';
   } else {
-    td.innerHTML = '<button class="flag-btn" onclick="flagRow(\''+escAttr(sid)+'\')">Flag</button>';
+    td.innerHTML = '<button class="flag-btn" onclick="flagRow(\''+escAttr(sid)+'\')">Mark for correction</button>';
   }
 }
 
@@ -1365,7 +1365,7 @@ function confirmExport() {
     'track_status','program_status','intake_date',
     'intake_welfare_status','latest_welfare_status',
     'record_updated','updated_by',
-    'flagged_for_correction','correct_intake_status','correct_latest_status'
+    'marked_for_correction','correct_intake_status','correct_latest_status'
   ];
   var csvRows = [headers.join(',')];
   list.forEach(function(r) {

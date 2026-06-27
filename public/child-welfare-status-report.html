@@ -143,8 +143,8 @@ body.logged-in .portal-view{display:flex}
 .export-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
 
 /* ── FILTER ROW ── */
-.filter-row{display:flex;gap:10px;align-items:center;margin:4px 0 6px;flex-wrap:wrap;min-height:24px}
-.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
+.filter-row{display:flex;gap:10px;align-items:center;margin:8px 0 6px;flex-wrap:wrap;min-height:24px}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0;margin:0}
 .fpill{display:flex;align-items:center;gap:5px;font-family:'Oswald',sans-serif;font-weight:300;font-size:10px;text-transform:uppercase;letter-spacing:.6px;background:var(--yellow-lt);color:#6d3a00;border:1px solid rgba(242,161,54,.35);border-radius:20px;padding:3px 8px 3px 10px;white-space:nowrap}
 .fpill button{background:none;border:none;cursor:pointer;color:#6d3a00;font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.6}
 .fpill button:hover{opacity:1}
@@ -223,7 +223,7 @@ tr:last-child td{border-bottom:none}
 .unflag-btn:hover{color:var(--red)}
 .flag-picker{font-family:'Lato',sans-serif;font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none;width:100%}
 .flag-picker:focus{border-color:var(--green)}
-.flag-note{font-family:'Lato',sans-serif;font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);outline:none;width:100%;resize:none}
+.flag-note{width:100%;font-family:'Lato',sans-serif;font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);margin-top:3px;outline:none}
 .flag-note:focus{border-color:var(--green)}
 .flag-note-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
 
@@ -329,7 +329,7 @@ tr:last-child td{border-bottom:none}
       <div class="report-hdr">
         <div class="rh-left">
           <div class="rh-title-row">
-            <span class="rh-title">Review child welfare status</span>
+            <span class="rh-title">Child Welfare Status Review</span>
             <div class="rh-info">
               <button class="rh-info-btn" aria-label="About this report">i</button>
               <div class="rh-info-pop">
@@ -401,17 +401,15 @@ tr:last-child td{border-bottom:none}
 
       <!-- TOOLBAR -->
       <div class="toolbar">
-        <div class="srch">
-          <svg viewBox="0 0 14 14"><circle cx="5.5" cy="5.5" r="4"/><line x1="9" y1="9" x2="13" y2="13"/></svg>
-          <input type="text" id="searchInput" placeholder="Search mom or child name..." oninput="onSearch()">
-        </div>
         <button class="flagged-btn" id="flaggedBtn" onclick="toggleFlaggedOnly()">
           <svg viewBox="0 0 14 14"><path d="M2,2 L2,12"/><path d="M2,2 L9,2 L7,5 L9,8 L2,8"/></svg>
           Flagged only
         </button>
         <div class="toolbar-spacer"></div>
-        <span class="active-count" id="activeCount"></span>
-        <button class="clear-btn" id="clearBtn" onclick="clearAll()">Clear filters</button>
+        <div class="srch">
+          <svg viewBox="0 0 14 14"><circle cx="5.5" cy="5.5" r="4"/><line x1="9" y1="9" x2="13" y2="13"/></svg>
+          <input type="text" id="searchInput" placeholder="Search mom or child name..." oninput="onSearch()">
+        </div>
         <button class="export-btn" onclick="showAor()">
           <svg viewBox="0 0 14 14"><path d="M7,1 L7,9"/><polyline points="4,6 7,9 10,6"/><path d="M2,11 L12,11"/></svg>
           Export list
@@ -421,6 +419,8 @@ tr:last-child td{border-bottom:none}
       <!-- FILTER PILLS -->
       <div class="filter-row">
         <div class="filter-pills" id="filterPills"></div>
+        <span class="active-count" id="activeCount"></span>
+        <button class="clear-btn" id="clearBtn" onclick="clearAll()">&#x2715; Clear all filters</button>
       </div>
 
       <!-- TABLE -->
@@ -1122,8 +1122,18 @@ function render() {
         + '<option value="Latest welfare status"' + (flag.field==='Latest welfare status'?' selected':'') + '>Latest welfare status</option>'
         + '<option value="Both"' + (flag.field==='Both'?' selected':'') + '>Both</option>'
         + '</select>'
-        + '<span class="flag-note-lbl">What should it be?</span>'
-        + '<textarea class="flag-note" rows="2" placeholder="Describe the correct value..." onchange="setFlagNote(\''+sid+'\',this.value)" data-sid="'+sid+'">' + esc(flag.note || '') + '</textarea>'
+        + '<span class="flag-note-lbl">Correct status:</span>'
+        + '<select class="flag-note" onchange="setFlagNote(\''+sid+'\',this.value)" data-sid="'+sid+'">'
+        + '<option value="">Select correct status...</option>'
+        + '<option value="No Open Case: Custody Maintained"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
+        + '<option value="Supportive Services"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
+        + '<option value="Differential Response"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
+        + '<option value="Open Investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
+        + '<option value="Protective Services"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
+        + '<option value="Open Case: Foster Care Placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
+        + '<option value="Open Case: Kinship Placement"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
+        + '<option value="No Open Case: Child Permanently Removed"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
+        + '</select>'
         + '</div>';
     } else {
       flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Flag</button>';
@@ -1199,8 +1209,18 @@ function renderFlagCell(sid) {
       + '<option value="Latest welfare status">Latest welfare status</option>'
       + '<option value="Both">Both</option>'
       + '</select>'
-      + '<span class="flag-note-lbl">What should it be?</span>'
-      + '<textarea class="flag-note" rows="2" placeholder="Describe the correct value..." onchange="setFlagNote(\''+escAttr(sid)+'\',this.value)"></textarea>'
+      + '<span class="flag-note-lbl">Correct status:</span>'
+      + '<select class="flag-note" onchange="setFlagNote(\''+escAttr(sid)+'\',this.value)">'
+      + '<option value="">Select correct status...</option>'
+      + '<option value="No Open Case: Custody Maintained"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
+      + '<option value="Supportive Services"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
+      + '<option value="Differential Response"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
+      + '<option value="Open Investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
+      + '<option value="Protective Services"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
+      + '<option value="Open Case: Foster Care Placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
+      + '<option value="Open Case: Kinship Placement"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
+      + '<option value="No Open Case: Child Permanently Removed"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
+      + '</select>'
       + '</div>';
   } else {
     td.innerHTML = '<button class="flag-btn" onclick="flagRow(\''+escAttr(sid)+'\')">Flag</button>';

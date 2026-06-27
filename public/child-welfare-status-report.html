@@ -906,7 +906,10 @@ function closeAllPops() {
   var cp = document.getElementById('coordPop');
   if (cp) cp.classList.remove('open');
 }
-document.addEventListener('click', closeAllPops);
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.closest && (e.target.closest('.pop') || e.target.closest('.coord-pop'))) return;
+  closeAllPops();
+});
 
 function onChipChange(key, val) {
   if (!FILTERS[key]) FILTERS[key] = [];

@@ -27,8 +27,6 @@
         icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },
       { href: '/#trellis-users', label: 'Trellis Users', match: ['/report/users'],
         icon: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg>' },
-    ]},
-    { group: 'Action Reports', adminOnly: true, items: [
       { href: '/#action-reports', label: 'Child Welfare Status', match: ['/report/child-welfare-status'], adminOnly: true,
         icon: '<svg viewBox="0 0 16 16"><path d="M2,2 L14,2 L14,14 L2,14 Z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/><circle cx="12" cy="12" r="2.5"/><line x1="11" y1="12" x2="13" y2="12"/><line x1="12" y1="11" x2="12" y2="13"/></svg>' },
     ]},

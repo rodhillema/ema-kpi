@@ -440,7 +440,11 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="cw-stat cw-stat-intake" onclick="toggleStatFilter('open_intake')" title="Click to filter to these rows">
           <div class="cw-stat-num" id="statOpenIntake">–</div>
-          <div class="cw-stat-lbl">Open case at intake</div>
+          <div class="cw-stat-lbl">Active CPS at intake</div>
+        </div>
+        <div class="cw-stat cw-stat-intake" onclick="toggleStatFilter('review_due')" title="Click to filter to these rows">
+          <div class="cw-stat-num" id="statReviewDue">–</div>
+          <div class="cw-stat-lbl">Recommended review</div>
         </div>
         <div class="cw-stat cw-stat-flag" onclick="toggleStatFilter('flagged')" title="Click to filter to flagged rows">
           <div class="cw-stat-num" id="statFlagged">0</div>
@@ -693,7 +697,7 @@ var FLAGS = {};
 var SORT_COL = 'mom_name';
 var SORT_DIR = 1;
 var SEARCH = '';
-var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'open_intake' | 'flagged'
+var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'open_intake' | 'review_due' | 'flagged'
 var OPEN_INTAKE_STATUSES = ['25_supportive_services','20_differential_Response','15_open_investigation','10_protective_services','0_foster_care','5_kinship_placement'];
 var FILTERS = {};
 var COORD_FILTER = [];
@@ -733,10 +737,12 @@ function updateStats() {
   var noChange    = ROWS.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
   var changed     = ROWS.filter(function(r){ return !!r.welfare_changed; }).length;
   var openIntake  = ROWS.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
+  var reviewDue   = ROWS.filter(function(r){ return REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw); }).length;
   var flagged     = Object.keys(FLAGS).length;
   document.getElementById('statNoChange').textContent    = noChange;
   document.getElementById('statChanged').textContent     = changed;
   document.getElementById('statOpenIntake').textContent  = openIntake;
+  document.getElementById('statReviewDue').textContent   = reviewDue;
   document.getElementById('statFlagged').textContent     = flagged;
   var el = document.getElementById('cwStats');
   if (el) el.style.display = '';
@@ -1087,7 +1093,7 @@ function toggleStatFilter(key) {
   STAT_FILTER = (STAT_FILTER === key) ? null : key;
   document.querySelectorAll('.cw-stat').forEach(function(el){ el.classList.remove('active'); });
   if (STAT_FILTER) {
-    var map = { no_change: 'statNoChange', changed: 'statChanged', open_intake: 'statOpenIntake', flagged: 'statFlagged' };
+    var map = { no_change: 'statNoChange', changed: 'statChanged', open_intake: 'statOpenIntake', review_due: 'statReviewDue', flagged: 'statFlagged' };
     var el = document.getElementById(map[STAT_FILTER]);
     if (el) el.closest('.cw-stat').classList.add('active');
   }
@@ -1114,6 +1120,7 @@ function getFiltered() {
     if (STAT_FILTER === 'no_change'   && !(r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label)) return false;
     if (STAT_FILTER === 'changed'     && !r.welfare_changed) return false;
     if (STAT_FILTER === 'open_intake' && OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) === -1) return false;
+    if (STAT_FILTER === 'review_due'  && !(REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw))) return false;
     if (SEARCH) {
       var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
       if (hay.indexOf(SEARCH) === -1) return false;
@@ -1227,9 +1234,14 @@ function render() {
       ? esc(r.intake_goal_label)
       : '<span class="missing">missing</span>';
 
-    // latest welfare status + changed cue
+    // latest welfare status + changed cue + 90-day review alert
+    var over90 = REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw);
     var latestCell = r.latest_welfare_label
-      ? esc(r.latest_welfare_label) + (r.welfare_changed ? '<span class="changed-cue">changed</span>' : '')
+      ? '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">'
+          + esc(r.latest_welfare_label)
+          + (r.welfare_changed ? '<span class="changed-cue">changed</span>' : '')
+          + (over90 ? '<span class="over90-tag" title="Status open 90+ days — per EMA protocol, a review update may be due"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/><polyline points="6,3 6,6 8,8"/></svg>90+ days — review due</span>' : '')
+          + '</div>'
       : '<span class="missing">missing</span>';
 
     // record updated

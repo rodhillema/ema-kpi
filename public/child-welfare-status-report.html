@@ -149,6 +149,25 @@ body.logged-in .portal-view{display:flex}
 .fpill button{background:none;border:none;cursor:pointer;color:#6d3a00;font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.6}
 .fpill button:hover{opacity:1}
 
+/* ── STAT CARDS ── */
+.cw-stats{display:flex;gap:12px;margin:14px 0 4px;flex-wrap:wrap}
+.cw-stat{flex:1;min-width:140px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px}
+.cw-stat-num{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);line-height:1}
+.cw-stat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--mid);margin-top:4px}
+.cw-stat-flag .cw-stat-num{color:var(--red)}
+
+/* ── LEAVE MODAL ── */
+.leave-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center}
+.leave-modal{background:#fff;border-radius:12px;padding:32px 36px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.leave-modal-icon{font-size:28px;margin-bottom:10px}
+.leave-modal-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);margin-bottom:8px}
+.leave-modal-body{font-size:13px;color:var(--mid);line-height:1.6;margin-bottom:24px}
+.leave-modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.leave-modal-cancel{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--green);background:#fff;border:1.5px solid var(--green);border-radius:6px;padding:9px 16px;cursor:pointer;transition:all .15s}
+.leave-modal-cancel:hover{background:var(--green);color:#fff}
+.leave-modal-go{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#fff;background:var(--mid);border:none;border-radius:6px;padding:9px 16px;cursor:pointer;transition:background .15s}
+.leave-modal-go:hover{background:var(--dark)}
+
 /* ── TABLE ── */
 .table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow-x:auto;position:relative}
 table{width:100%;min-width:860px;border-collapse:collapse;font-size:12px;table-layout:auto}
@@ -399,6 +418,22 @@ tr:last-child td{border-bottom:none}
         <div class="session-caution">&#9888; Your flags are saved only in this session. Download the CSV before you close or refresh the page, or your review will be lost.</div>
       </div>
 
+      <!-- STAT CARDS -->
+      <div class="cw-stats" id="cwStats" style="display:none">
+        <div class="cw-stat">
+          <div class="cw-stat-num" id="statNoChange">–</div>
+          <div class="cw-stat-lbl">No change since intake</div>
+        </div>
+        <div class="cw-stat">
+          <div class="cw-stat-num" id="statChanged">–</div>
+          <div class="cw-stat-lbl">Changed since intake</div>
+        </div>
+        <div class="cw-stat cw-stat-flag">
+          <div class="cw-stat-num" id="statFlagged">0</div>
+          <div class="cw-stat-lbl">Flagged as needing update</div>
+        </div>
+      </div>
+
       <!-- TOOLBAR -->
       <div class="toolbar">
         <button class="flagged-btn" id="flaggedBtn" onclick="toggleFlaggedOnly()">
@@ -498,6 +533,19 @@ tr:last-child td{border-bottom:none}
   <div class="footer">
     <div class="footer-brand">ĒMA &middot; Every Mother's Advocate</div>
     <a href="/integrity" class="footer-integrity">Our approach to data integrity &#8594;</a>
+  </div>
+
+  <!-- LEAVE WARNING MODAL -->
+  <div class="leave-modal-overlay" id="leaveModal" style="display:none">
+    <div class="leave-modal">
+      <div class="leave-modal-icon">&#9873;</div>
+      <div class="leave-modal-title">You have unsaved flags</div>
+      <div class="leave-modal-body">Your flagged items have not been exported yet. If you leave now, your flags will be lost. Go back and download the CSV first, or leave without saving.</div>
+      <div class="leave-modal-actions">
+        <button class="leave-modal-go" id="leaveModalGo">Leave without saving</button>
+        <button class="leave-modal-cancel" onclick="closeLeaveModal()">Go back and export</button>
+      </div>
+    </div>
   </div>
 
   <!-- AOR MODAL -->
@@ -614,9 +662,44 @@ var DATE_FILTERS = { intake_date: {from:'',to:''}, record_updated: {from:'',to:'
 var UNSAVED_CHANGES = false;
 var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
 
+// Native dialog for real unloads (tab close, browser back, address bar)
 window.addEventListener('beforeunload', function(e) {
   if (UNSAVED_CHANGES) { e.preventDefault(); e.returnValue = ''; }
 });
+
+// Custom modal for in-app link navigation
+var _pendingNavUrl = null;
+function showLeaveModal(url) {
+  _pendingNavUrl = url;
+  document.getElementById('leaveModal').style.display = 'flex';
+  document.getElementById('leaveModalGo').onclick = function() {
+    UNSAVED_CHANGES = false;
+    window.location.href = _pendingNavUrl;
+  };
+}
+function closeLeaveModal() {
+  document.getElementById('leaveModal').style.display = 'none';
+  _pendingNavUrl = null;
+}
+document.addEventListener('click', function(e) {
+  if (!UNSAVED_CHANGES) return;
+  var a = e.target.closest && e.target.closest('a[href]');
+  if (!a || a.target === '_blank') return;
+  e.preventDefault();
+  showLeaveModal(a.href);
+}, true);
+
+// Stat card updater
+function updateStats() {
+  var noChange = ROWS.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
+  var changed  = ROWS.filter(function(r){ return !!r.welfare_changed; }).length;
+  var flagged  = Object.keys(FLAGS).length;
+  document.getElementById('statNoChange').textContent = noChange;
+  document.getElementById('statChanged').textContent  = changed;
+  document.getElementById('statFlagged').textContent  = flagged;
+  var el = document.getElementById('cwStats');
+  if (el) el.style.display = '';
+}
 
 /* ── AFFILIATES ─────────────────────────────────────────────────── */
 var AFFILIATES = [];
@@ -702,6 +785,7 @@ async function loadData() {
     buildStatusPop();
     buildCoordPop();
     buildDatePops();
+    updateStats();
     render();
   } catch(e) {
     console.error('[child-welfare] load error:', e);
@@ -1125,14 +1209,14 @@ function render() {
         + '<span class="flag-note-lbl">Correct status:</span>'
         + '<select class="flag-note" onchange="setFlagNote(\''+sid+'\',this.value)" data-sid="'+sid+'">'
         + '<option value="">Select correct status...</option>'
-        + '<option value="No Open Case: Custody Maintained"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
-        + '<option value="Supportive Services"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
-        + '<option value="Differential Response"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
-        + '<option value="Open Investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
-        + '<option value="Protective Services"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
-        + '<option value="Open Case: Foster Care Placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
-        + '<option value="Open Case: Kinship Placement"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
-        + '<option value="No Open Case: Child Permanently Removed"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
+        + '<option value="No Open Case: Custody Maintained" title="Child remains home and mother has full or partial custody"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
+        + '<option value="Supportive Services" title="Receiving voluntary preventive support"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
+        + '<option value="Differential Response" title="Alternative support; no formal investigation"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
+        + '<option value="Open Investigation" title="Active child welfare investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
+        + '<option value="Protective Services" title="Court-ordered or mandated services active"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
+        + '<option value="Open Case: Foster Care Placement" title="Child currently in out-of-home, foster care placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
+        + '<option value="Open Case: Kinship Placement" title="Child currently placed with relatives/non-relatives under state supervision"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
+        + '<option value="No Open Case: Child Permanently Removed" title="Parental rights have been terminated"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
         + '</select>'
         + '</div>';
     } else {
@@ -1171,11 +1255,13 @@ function flagRow(sid) {
   FLAGS[sid] = { field:'', note:'' };
   UNSAVED_CHANGES = true;
   renderFlagCell(sid);
+  updateStats();
 }
 function unflagRow(sid) {
   delete FLAGS[sid];
   UNSAVED_CHANGES = Object.keys(FLAGS).length > 0;
   renderFlagCell(sid);
+  updateStats();
 }
 function setFlagField(sid, val) {
   if (FLAGS[sid]) { FLAGS[sid].field = val; UNSAVED_CHANGES = true; }

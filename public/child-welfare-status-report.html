@@ -156,6 +156,9 @@ body.logged-in .portal-view{display:flex}
 .cw-stat.active{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
 .cw-stat-flag:hover{border-color:var(--red)}
 .cw-stat-flag.active{border-color:var(--red);box-shadow:0 0 0 2px var(--red)}
+.cw-stat-intake .cw-stat-num{color:#b05200}
+.cw-stat-intake:hover{border-color:#b05200}
+.cw-stat-intake.active{border-color:#b05200;box-shadow:0 0 0 2px #b05200}
 .cw-stat-num{font-family:'Shrikhand',cursive;font-size:28px;color:var(--green);line-height:1}
 .cw-stat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--mid);margin-top:4px}
 .cw-stat-flag .cw-stat-num{color:var(--red)}
@@ -250,6 +253,8 @@ tr:last-child td{border-bottom:none}
 .flag-note:focus{border-color:var(--green)}
 .flag-note-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
 .flag-note-desc{font-family:'Lato',sans-serif;font-size:10px;color:var(--mid);font-style:italic;min-height:13px;margin-top:1px;margin-bottom:4px}
+.over90-tag{display:inline-flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:#8a4500;background:#fff0d6;border:1px solid rgba(180,100,0,.28);border-radius:4px;padding:2px 6px;margin-top:4px;white-space:nowrap;cursor:default}
+.over90-tag svg{width:9px;height:9px;flex-shrink:0;fill:none;stroke:#8a4500;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── FOOTER ── */
 .footer{background:var(--green);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -433,6 +438,10 @@ tr:last-child td{border-bottom:none}
           <div class="cw-stat-num" id="statChanged">–</div>
           <div class="cw-stat-lbl">Changed since intake</div>
         </div>
+        <div class="cw-stat cw-stat-intake" onclick="toggleStatFilter('open_intake')" title="Click to filter to these rows">
+          <div class="cw-stat-num" id="statOpenIntake">–</div>
+          <div class="cw-stat-lbl">Open case at intake</div>
+        </div>
         <div class="cw-stat cw-stat-flag" onclick="toggleStatFilter('flagged')" title="Click to filter to flagged rows">
           <div class="cw-stat-num" id="statFlagged">0</div>
           <div class="cw-stat-lbl">Marked for correction</div>
@@ -605,6 +614,13 @@ var WELFARE_RANK = {
   '0_permanently_removed':   5
 };
 
+var REVIEW_90_DAY_STATUSES = ['25_supportive_services', '20_differential_Response', '15_open_investigation'];
+function isOver90Days(dateStr) {
+  if (!dateStr) return false;
+  var d = new Date(dateStr);
+  return !isNaN(d) && (Date.now() - d.getTime()) > 90 * 24 * 60 * 60 * 1000;
+}
+
 var WELFARE_OPTS = [
   ['No Open Case: Custody Maintained',       'Child remains home and mother has full or partial custody'],
   ['Supportive Services',                    'Receiving voluntary preventive support'],
@@ -677,7 +693,8 @@ var FLAGS = {};
 var SORT_COL = 'mom_name';
 var SORT_DIR = 1;
 var SEARCH = '';
-var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'flagged'
+var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'open_intake' | 'flagged'
+var OPEN_INTAKE_STATUSES = ['25_supportive_services','20_differential_Response','15_open_investigation','10_protective_services','0_foster_care','5_kinship_placement'];
 var FILTERS = {};
 var COORD_FILTER = [];
 var DATE_FILTERS = { intake_date: {from:'',to:''}, record_updated: {from:'',to:''} };
@@ -713,12 +730,14 @@ document.addEventListener('click', function(e) {
 
 // Stat card updater
 function updateStats() {
-  var noChange = ROWS.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
-  var changed  = ROWS.filter(function(r){ return !!r.welfare_changed; }).length;
-  var flagged  = Object.keys(FLAGS).length;
-  document.getElementById('statNoChange').textContent = noChange;
-  document.getElementById('statChanged').textContent  = changed;
-  document.getElementById('statFlagged').textContent  = flagged;
+  var noChange    = ROWS.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
+  var changed     = ROWS.filter(function(r){ return !!r.welfare_changed; }).length;
+  var openIntake  = ROWS.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
+  var flagged     = Object.keys(FLAGS).length;
+  document.getElementById('statNoChange').textContent    = noChange;
+  document.getElementById('statChanged').textContent     = changed;
+  document.getElementById('statOpenIntake').textContent  = openIntake;
+  document.getElementById('statFlagged').textContent     = flagged;
   var el = document.getElementById('cwStats');
   if (el) el.style.display = '';
 }
@@ -1068,7 +1087,7 @@ function toggleStatFilter(key) {
   STAT_FILTER = (STAT_FILTER === key) ? null : key;
   document.querySelectorAll('.cw-stat').forEach(function(el){ el.classList.remove('active'); });
   if (STAT_FILTER) {
-    var map = { no_change: 'statNoChange', changed: 'statChanged', flagged: 'statFlagged' };
+    var map = { no_change: 'statNoChange', changed: 'statChanged', open_intake: 'statOpenIntake', flagged: 'statFlagged' };
     var el = document.getElementById(map[STAT_FILTER]);
     if (el) el.closest('.cw-stat').classList.add('active');
   }
@@ -1091,9 +1110,10 @@ function sortBy(col) {
 /* ── FILTER + RENDER ────────────────────────────────────────────── */
 function getFiltered() {
   return ROWS.filter(function(r) {
-    if (STAT_FILTER === 'flagged'   && !FLAGS[r.snapshot_id]) return false;
-    if (STAT_FILTER === 'no_change' && !(r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label)) return false;
-    if (STAT_FILTER === 'changed'   && !r.welfare_changed) return false;
+    if (STAT_FILTER === 'flagged'     && !FLAGS[r.snapshot_id]) return false;
+    if (STAT_FILTER === 'no_change'   && !(r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label)) return false;
+    if (STAT_FILTER === 'changed'     && !r.welfare_changed) return false;
+    if (STAT_FILTER === 'open_intake' && OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) === -1) return false;
     if (SEARCH) {
       var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
       if (hay.indexOf(SEARCH) === -1) return false;

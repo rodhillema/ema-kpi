@@ -249,6 +249,7 @@ tr:last-child td{border-bottom:none}
 .flag-note{width:100%;font-family:'Lato',sans-serif;font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--dark);margin-top:3px;outline:none}
 .flag-note:focus{border-color:var(--green)}
 .flag-note-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
+.flag-note-desc{font-family:'Lato',sans-serif;font-size:10px;color:var(--mid);font-style:italic;min-height:13px;margin-top:1px;margin-bottom:4px}
 
 /* ── FOOTER ── */
 .footer{background:var(--green);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -603,6 +604,27 @@ var WELFARE_RANK = {
   '5_kinship_placement':     4,
   '0_permanently_removed':   5
 };
+
+var WELFARE_OPTS = [
+  ['No Open Case: Custody Maintained',       'Child remains home and mother has full or partial custody'],
+  ['Supportive Services',                    'Receiving voluntary preventive support'],
+  ['Differential Response',                  'Alternative support; no formal investigation'],
+  ['Open Investigation',                     'Active child welfare investigation'],
+  ['Protective Services',                    'Court-ordered or mandated services active'],
+  ['Open Case: Foster Care Placement',       'Child currently in out-of-home, foster care placement'],
+  ['Open Case: Kinship Placement',           'Child currently placed with relatives/non-relatives under state supervision'],
+  ['No Open Case: Child Permanently Removed','Parental rights have been terminated']
+];
+function welfareOptions(selected) {
+  return '<option value="">Select correct status...</option>'
+    + WELFARE_OPTS.map(function(o){
+        return '<option value="' + o[0] + '"' + (selected === o[0] ? ' selected' : '') + '>' + o[0] + '</option>';
+      }).join('');
+}
+function welfareDesc(val) {
+  var m = WELFARE_OPTS.filter(function(o){ return o[0] === val; });
+  return m.length ? m[0][1] : '';
+}
 
 /* ── DERIVATION ─────────────────────────────────────────────────── */
 function deriveImpact(intakeRaw, latestRaw) {
@@ -1207,24 +1229,16 @@ function render() {
         + '<span class="flag-tag">Flagged</span>'
         + '<button class="unflag-btn" onclick="unflagRow(\''+sid+'\')" title="Remove flag">&times;</button>'
         + '</div>'
-        + '<select class="flag-picker" onchange="setFlagField(\''+sid+'\',this.value)" data-sid="'+sid+'">'
-        + '<option value="">Which is wrong?</option>'
-        + '<option value="Intake welfare status"' + (flag.field==='Intake welfare status'?' selected':'') + '>Intake welfare status</option>'
-        + '<option value="Latest welfare status"' + (flag.field==='Latest welfare status'?' selected':'') + '>Latest welfare status</option>'
-        + '<option value="Both"' + (flag.field==='Both'?' selected':'') + '>Both</option>'
+        + '<span class="flag-note-lbl">Correct intake status:</span>'
+        + '<select class="flag-note" onchange="setFlagIntake(\''+sid+'\',this.value)">'
+        + welfareOptions(flag.intakeNote)
         + '</select>'
-        + '<span class="flag-note-lbl">Correct status:</span>'
-        + '<select class="flag-note" onchange="setFlagNote(\''+sid+'\',this.value)" data-sid="'+sid+'">'
-        + '<option value="">Select correct status...</option>'
-        + '<option value="No Open Case: Custody Maintained" title="Child remains home and mother has full or partial custody"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
-        + '<option value="Supportive Services" title="Receiving voluntary preventive support"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
-        + '<option value="Differential Response" title="Alternative support; no formal investigation"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
-        + '<option value="Open Investigation" title="Active child welfare investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
-        + '<option value="Protective Services" title="Court-ordered or mandated services active"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
-        + '<option value="Open Case: Foster Care Placement" title="Child currently in out-of-home, foster care placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
-        + '<option value="Open Case: Kinship Placement" title="Child currently placed with relatives/non-relatives under state supervision"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
-        + '<option value="No Open Case: Child Permanently Removed" title="Parental rights have been terminated"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
+        + '<div class="flag-note-desc" id="fdesc-intake-'+sid+'">' + welfareDesc(flag.intakeNote) + '</div>'
+        + '<span class="flag-note-lbl">Correct latest status:</span>'
+        + '<select class="flag-note" onchange="setFlagLatest(\''+sid+'\',this.value)">'
+        + welfareOptions(flag.latestNote)
         + '</select>'
+        + '<div class="flag-note-desc" id="fdesc-latest-'+sid+'">' + welfareDesc(flag.latestNote) + '</div>'
         + '</div>';
     } else {
       flagCell = '<button class="flag-btn" onclick="flagRow(\''+sid+'\')">Flag</button>';
@@ -1259,7 +1273,7 @@ function removeFilterVal(key, val) {
 
 /* ── FLAG ACTIONS ───────────────────────────────────────────────── */
 function flagRow(sid) {
-  FLAGS[sid] = { field:'', note:'' };
+  FLAGS[sid] = { intakeNote:'', latestNote:'' };
   UNSAVED_CHANGES = true;
   renderFlagCell(sid);
   updateStats();
@@ -1270,11 +1284,19 @@ function unflagRow(sid) {
   renderFlagCell(sid);
   updateStats();
 }
-function setFlagField(sid, val) {
-  if (FLAGS[sid]) { FLAGS[sid].field = val; UNSAVED_CHANGES = true; }
+function setFlagIntake(sid, val) {
+  if (!FLAGS[sid]) return;
+  FLAGS[sid].intakeNote = val;
+  UNSAVED_CHANGES = true;
+  var el = document.getElementById('fdesc-intake-' + sid);
+  if (el) el.textContent = welfareDesc(val);
 }
-function setFlagNote(sid, val) {
-  if (FLAGS[sid]) { FLAGS[sid].note = val; UNSAVED_CHANGES = true; }
+function setFlagLatest(sid, val) {
+  if (!FLAGS[sid]) return;
+  FLAGS[sid].latestNote = val;
+  UNSAVED_CHANGES = true;
+  var el = document.getElementById('fdesc-latest-' + sid);
+  if (el) el.textContent = welfareDesc(val);
 }
 
 function renderFlagCell(sid) {
@@ -1291,29 +1313,22 @@ function renderFlagCell(sid) {
   if (!td) return;
 
   if (flag) {
+    var s = escAttr(sid);
     td.innerHTML = '<div class="flag-cell-expanded show">'
       + '<div class="flag-tag-row">'
       + '<span class="flag-tag">Flagged</span>'
-      + '<button class="unflag-btn" onclick="unflagRow(\''+escAttr(sid)+'\')" title="Remove flag">&times;</button>'
+      + '<button class="unflag-btn" onclick="unflagRow(\''+s+'\')" title="Remove flag">&times;</button>'
       + '</div>'
-      + '<select class="flag-picker" onchange="setFlagField(\''+escAttr(sid)+'\',this.value)">'
-      + '<option value="">Which is wrong?</option>'
-      + '<option value="Intake welfare status">Intake welfare status</option>'
-      + '<option value="Latest welfare status">Latest welfare status</option>'
-      + '<option value="Both">Both</option>'
+      + '<span class="flag-note-lbl">Correct intake status:</span>'
+      + '<select class="flag-note" onchange="setFlagIntake(\''+s+'\',this.value)">'
+      + welfareOptions(flag.intakeNote)
       + '</select>'
-      + '<span class="flag-note-lbl">Correct status:</span>'
-      + '<select class="flag-note" onchange="setFlagNote(\''+escAttr(sid)+'\',this.value)">'
-      + '<option value="">Select correct status...</option>'
-      + '<option value="No Open Case: Custody Maintained"'+(flag.note==='No Open Case: Custody Maintained'?' selected':'')+'>No Open Case: Custody Maintained</option>'
-      + '<option value="Supportive Services"'+(flag.note==='Supportive Services'?' selected':'')+'>Supportive Services</option>'
-      + '<option value="Differential Response"'+(flag.note==='Differential Response'?' selected':'')+'>Differential Response</option>'
-      + '<option value="Open Investigation"'+(flag.note==='Open Investigation'?' selected':'')+'>Open Investigation</option>'
-      + '<option value="Protective Services"'+(flag.note==='Protective Services'?' selected':'')+'>Protective Services</option>'
-      + '<option value="Open Case: Foster Care Placement"'+(flag.note==='Open Case: Foster Care Placement'?' selected':'')+'>Open Case: Foster Care Placement</option>'
-      + '<option value="Open Case: Kinship Placement"'+(flag.note==='Open Case: Kinship Placement'?' selected':'')+'>Open Case: Kinship Placement</option>'
-      + '<option value="No Open Case: Child Permanently Removed"'+(flag.note==='No Open Case: Child Permanently Removed'?' selected':'')+'>No Open Case: Child Permanently Removed</option>'
+      + '<div class="flag-note-desc" id="fdesc-intake-'+s+'">' + welfareDesc(flag.intakeNote) + '</div>'
+      + '<span class="flag-note-lbl">Correct latest status:</span>'
+      + '<select class="flag-note" onchange="setFlagLatest(\''+s+'\',this.value)">'
+      + welfareOptions(flag.latestNote)
       + '</select>'
+      + '<div class="flag-note-desc" id="fdesc-latest-'+s+'">' + welfareDesc(flag.latestNote) + '</div>'
       + '</div>';
   } else {
     td.innerHTML = '<button class="flag-btn" onclick="flagRow(\''+escAttr(sid)+'\')">Flag</button>';
@@ -1350,7 +1365,7 @@ function confirmExport() {
     'track_status','program_status','intake_date',
     'intake_welfare_status','latest_welfare_status',
     'record_updated','updated_by',
-    'flagged_for_correction','field_to_correct','note'
+    'flagged_for_correction','correct_intake_status','correct_latest_status'
   ];
   var csvRows = [headers.join(',')];
   list.forEach(function(r) {
@@ -1371,8 +1386,8 @@ function confirmExport() {
       r.record_updated || '',
       r.updated_by || 'not recorded',
       flag ? 'YES' : 'NO',
-      flag ? (flag.field || '') : '',
-      flag ? (flag.note || '') : ''
+      flag ? (flag.intakeNote || '') : '',
+      flag ? (flag.latestNote || '') : ''
     ];
     csvRows.push(cols.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(','));
   });

@@ -1538,10 +1538,11 @@ async function init(loginData) {
     document.body.classList.add('logged-in');
     updateNav(u);
 
-    // HQ admin check — redirect non-admins
-    if (u.role !== 'administrator' && !u.isOrgWide) {
+    // Access check — coordinator, supervisor, administrator, or org-wide only
+    var CW_ALLOWED = ['administrator', 'supervisor', 'coordinator'];
+    if (CW_ALLOWED.indexOf(u.role) === -1 && !u.isOrgWide) {
       document.querySelector('.portal-view').innerHTML =
-        '<div style="padding:80px;text-align:center;font-family:Oswald,sans-serif;font-size:14px;color:#5A6A6A;">This report is currently available to ĒMA administrators only.</div>';
+        '<div style="padding:80px;text-align:center;font-family:Oswald,sans-serif;font-size:14px;color:#5A6A6A;">This report is not available for your role.</div>';
       return;
     }
 

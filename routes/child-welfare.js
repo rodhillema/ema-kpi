@@ -41,9 +41,9 @@ try {
 router.get('/', async (req, res) => {
   const user = req.session.user;
 
-  // HQ admin only
-  if (user.role !== 'administrator' && !user.isOrgWide) {
-    return res.status(403).json({ error: 'Child Welfare Status Review is restricted to HQ administrators.' });
+  const ALLOWED_CW_ROLES = ['administrator', 'supervisor', 'coordinator'];
+  if (!ALLOWED_CW_ROLES.includes(user.role) && !user.isOrgWide) {
+    return res.status(403).json({ error: 'Child Welfare Status Review is not available for your role.' });
   }
 
   try {
@@ -80,7 +80,10 @@ router.get('/', async (req, res) => {
     const qualifyingMomIds = new Set(Object.keys(qualifyingPairings));
 
     // ── Step 2: filter snapshot to qualifying moms + optional affiliate ───────
-    const affFilter = req.query.affiliate_id || null;
+    // Org-wide users can pass affiliate_id to scope; everyone else is locked to their own affiliate.
+    const affFilter = user.isOrgWide
+      ? (req.query.affiliate_id || null)
+      : (user.affiliateId || null);
     let snapshotRows = SNAPSHOT_ROWS.filter(r => qualifyingMomIds.has(r.mom_id));
     if (affFilter) {
       snapshotRows = snapshotRows.filter(r => r.affiliate_id === affFilter);

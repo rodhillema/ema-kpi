@@ -120,7 +120,7 @@
         }
         var username = data.user.username || '';
         var isChampionAdmin = CHAMPION_ADMIN_USERNAMES.indexOf(username.toLowerCase()) !== -1;
-        var isAdmin = ADMIN_ROLES.indexOf(data.user.role || '') !== -1 || !!data.user.isOrgWide;
+        var isAdmin = ['administrator', 'supervisor', 'coordinator'].indexOf(data.user.role || '') !== -1 || !!data.user.isOrgWide;
         injectNav(isChampionAdmin, isAdmin);
       })
       .catch(function() { injectNav(false); });

@@ -764,8 +764,8 @@ function applySession(u) {
   SESSION_ROLE = u.role || "coordinator";
   renderWhatsNew(SESSION_ROLE);
 
-  // Action Reports nav: visible to HQ admins only
-  var isAdmin = u.role === "administrator" || !!u.isOrgWide;
+  // Action Reports nav: visible to coordinator, supervisor, administrator, and org-wide users
+  var isAdmin = ['administrator', 'supervisor', 'coordinator'].indexOf(u.role || '') !== -1 || !!u.isOrgWide;
   document.querySelectorAll(".action-reports-section").forEach(function(el) {
     el.style.display = isAdmin ? "" : "none";
   });
@@ -797,8 +797,8 @@ var WN_ENTRIES = [
     badge: "new-report",
     accent: "cr",
     name: "Child Welfare Status Review",
-    desc: "Review and validate each child's intake and latest welfare status. HQ only during the current validation phase.",
-    roles: ["administrator"],
+    desc: "Review and validate each child's intake and latest welfare status.",
+    roles: ["administrator", "supervisor", "coordinator"],
     href: "/report/child-welfare-status"
   },
 ];

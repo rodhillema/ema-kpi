@@ -520,13 +520,6 @@ tr:last-child td{border-bottom:none}
                   <div class="pop" id="pop-latest_welfare"></div>
                 </div>
               </th>
-              <th class="col-latest" style="width:82px">
-                <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('record_updated')">Record updated <span class="arr" id="arr-record_updated">&#9650;</span></span>
-                  <div class="th-ficon" id="fi-date-record_updated" onclick="toggleDatePop('record_updated',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
-                  <div class="pop" id="pop-date-record_updated" style="min-width:160px"></div>
-                </div>
-              </th>
               <th class="col-latest" style="min-width:110px">
                 <div class="th-inner">
                   <span class="th-sort" onclick="sortBy('updated_by')">Updated by <span class="arr" id="arr-updated_by">&#9650;</span></span>
@@ -702,7 +695,7 @@ var STAT_FILTER = null; // null | 'no_change' | 'changed' | 'open_intake' | 'rev
 var OPEN_INTAKE_STATUSES = ['25_supportive_services','20_differential_Response','15_open_investigation','10_protective_services','0_foster_care','5_kinship_placement'];
 var FILTERS = {};
 var COORD_FILTER = [];
-var DATE_FILTERS = { intake_date: {from:'',to:''}, record_updated: {from:'',to:''} };
+var DATE_FILTERS = { intake_date: {from:'',to:''} };
 var UNSAVED_CHANGES = false;
 var CURRENT_USER = { role:'', id:'', name:'', affiliateId: null };
 
@@ -743,9 +736,6 @@ function updateStats() {
     var df = DATE_FILTERS.intake_date;
     if (df.from && r.intake_date_raw && r.intake_date_raw < df.from) return false;
     if (df.to   && r.intake_date_raw && r.intake_date_raw > df.to)   return false;
-    var dr = DATE_FILTERS.record_updated;
-    if (dr.from && r.record_updated_raw && r.record_updated_raw < dr.from) return false;
-    if (dr.to   && r.record_updated_raw && r.record_updated_raw > dr.to)   return false;
     if (FILTERS['program_status'] && FILTERS['program_status'].length && FILTERS['program_status'].indexOf(r.program_status) === -1) return false;
     if (FILTERS['track_status']   && FILTERS['track_status'].length   && FILTERS['track_status'].indexOf(r.track_status)   === -1) return false;
     var ok = true;
@@ -950,10 +940,10 @@ function clearStatusFilter() {
 }
 
 /* ── DATE RANGE FILTERS ─────────────────────────────────────────── */
-var DATE_FILTER_LABELS = { intake_date:'Intake date', record_updated:'Record updated' };
+var DATE_FILTER_LABELS = { intake_date:'Intake date' };
 
 function buildDatePops() {
-  ['intake_date','record_updated'].forEach(function(key) {
+  ['intake_date'].forEach(function(key) {
     var pop = document.getElementById('pop-date-'+key);
     if (!pop) return;
     pop.innerHTML = '<div class="pop-lbl">' + DATE_FILTER_LABELS[key] + '</div>'
@@ -1101,8 +1091,8 @@ function clearAll() {
   if (coordChips) coordChips.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
   var coordBtn = document.getElementById('coordBtn');
   if (coordBtn) { coordBtn.textContent = 'All coordinators'; coordBtn.classList.remove('active'); }
-  DATE_FILTERS = { intake_date:{from:'',to:''}, record_updated:{from:'',to:''} };
-  ['intake_date','record_updated'].forEach(function(key) {
+  DATE_FILTERS = { intake_date:{from:'',to:''} };
+  ['intake_date'].forEach(function(key) {
     var f = document.getElementById('df-'+key+'-from'); if (f) f.value = '';
     var t = document.getElementById('df-'+key+'-to');   if (t) t.value = '';
     var fi = document.getElementById('fi-date-'+key);   if (fi) fi.classList.remove('on');
@@ -1166,9 +1156,6 @@ function getFiltered() {
     var df = DATE_FILTERS.intake_date;
     if (df.from && r.intake_date_raw && r.intake_date_raw < df.from) return false;
     if (df.to   && r.intake_date_raw && r.intake_date_raw > df.to)   return false;
-    var dr = DATE_FILTERS.record_updated;
-    if (dr.from && r.record_updated_raw && r.record_updated_raw < dr.from) return false;
-    if (dr.to   && r.record_updated_raw && r.record_updated_raw > dr.to)   return false;
     if (FILTERS['program_status'] && FILTERS['program_status'].length) {
       if (FILTERS['program_status'].indexOf(r.program_status) === -1) return false;
     }
@@ -1184,7 +1171,7 @@ function getFiltered() {
     return ok;
   }).slice().sort(function(a, b) {
     // Use raw ISO dates for date columns so they sort correctly
-    var DATE_SORT_MAP = { record_updated: 'record_updated_raw', intake_date: 'intake_date_raw' };
+    var DATE_SORT_MAP = { intake_date: 'intake_date_raw' };
     var key = DATE_SORT_MAP[SORT_COL] || SORT_COL;
     var av = a[key], bv = b[key];
     if (av === null || av === undefined) av = '';
@@ -1230,7 +1217,7 @@ function render() {
         + '<button onclick="removeFilterVal(\''+key+'\',\''+escAttr(v)+'\')" title="Remove">&times;</button></span>';
     });
   });
-  ['intake_date','record_updated'].forEach(function(key) {
+  ['intake_date'].forEach(function(key) {
     var df = DATE_FILTERS[key]; var lbl = DATE_FILTER_LABELS[key];
     if (df.from) pillsHtml += '<span class="fpill">' + esc(lbl) + ' from: ' + esc(df.from)
       + '<button onclick="applyDateFilter(\''+key+'\',\'from\',\'\');document.getElementById(\'df-'+key+'-from\').value=\'\'" title="Remove">&times;</button></span>';
@@ -1296,9 +1283,6 @@ function render() {
           + '</div>'
       : '<span class="missing">missing</span>';
 
-    // record updated
-    var updatedCell = r.record_updated || '<span class="missing">-</span>';
-
     // updated by
     var updatedByCell = r.updated_by
       ? esc(r.updated_by)
@@ -1335,7 +1319,6 @@ function render() {
       + '<td class="col-intake">' + intakeDateCell + '</td>'
       + '<td class="col-intake" title="' + escAttr(r.intake_welfare_label || '') + '">' + welfareCell + '</td>'
       + '<td class="col-latest">' + latestCell + '</td>'
-      + '<td class="col-latest">' + updatedCell + '</td>'
       + '<td class="col-latest" title="' + escAttr(r.updated_by) + '">' + updatedByCell + '</td>'
       + '<td style="overflow:visible;white-space:normal;max-width:none">' + flagCell + '</td>'
       + '</tr>';
@@ -1448,7 +1431,7 @@ function confirmExport() {
     'snapshot_id','child_id','mom_id','affiliate','mom_name','child_name','age',
     'track_status','program_status','intake_date',
     'intake_welfare_status','latest_welfare_status',
-    'record_updated','updated_by',
+    'updated_by',
     'marked_for_correction','correct_intake_status','correct_latest_status'
   ];
   var csvRows = [headers.join(',')];
@@ -1467,7 +1450,6 @@ function confirmExport() {
       r.intake_date || '',
       r.intake_welfare_label || '',
       r.latest_welfare_label || '',
-      r.record_updated || '',
       r.updated_by || 'not recorded',
       flag ? 'YES' : 'NO',
       flag ? (flag.intakeNote || '') : '',

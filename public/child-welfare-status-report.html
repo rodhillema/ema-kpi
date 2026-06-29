@@ -984,11 +984,15 @@ function buildCoordPop() {
     counts[v] = (counts[v] || 0) + 1;
   });
   var wrap = document.getElementById('coordWrap');
+  var btn  = document.getElementById('coordBtn');
   if (Object.keys(counts).length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'flex';
+  // Reset button state to match COORD_FILTER (which loadData() already cleared)
+  if (btn) { btn.textContent = 'All coordinators'; btn.classList.remove('active'); }
   var html = '';
   Object.keys(counts).sort().forEach(function(v) {
-    html += '<label class="chip-opt"><input type="checkbox" onchange="onCoordChip(\''+escAttr(v)+'\')">'
+    var checked = COORD_FILTER.indexOf(v) !== -1 ? ' checked' : '';
+    html += '<label class="chip-opt"><input type="checkbox"' + checked + ' onchange="onCoordChip(\''+escAttr(v)+'\')">'
           + '<span>'+esc(v)+'</span><span class="chip-count">'+counts[v]+'</span></label>';
   });
   document.getElementById('coordChips').innerHTML = html;

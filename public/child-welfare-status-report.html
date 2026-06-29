@@ -735,10 +735,31 @@ document.addEventListener('click', function(e) {
 
 // Stat card updater
 function updateStats() {
-  var noChange    = ROWS.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
-  var changed     = ROWS.filter(function(r){ return !!r.welfare_changed; }).length;
-  var openIntake  = ROWS.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
-  var reviewDue   = ROWS.filter(function(r){ return REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw); }).length;
+  // Count from rows that pass all filters EXCEPT the stat filter itself,
+  // so cards always reflect the coordinator/affiliate/column context.
+  var base = ROWS.filter(function(r) {
+    if (SEARCH) { var hay = (r.mom_name + ' ' + r.child_name).toLowerCase(); if (hay.indexOf(SEARCH) === -1) return false; }
+    if (COORD_FILTER.length > 0) { var cv = r.coordinator_name || '(unassigned)'; if (COORD_FILTER.indexOf(cv) === -1) return false; }
+    var df = DATE_FILTERS.intake_date;
+    if (df.from && r.intake_date_raw && r.intake_date_raw < df.from) return false;
+    if (df.to   && r.intake_date_raw && r.intake_date_raw > df.to)   return false;
+    var dr = DATE_FILTERS.record_updated;
+    if (dr.from && r.record_updated_raw && r.record_updated_raw < dr.from) return false;
+    if (dr.to   && r.record_updated_raw && r.record_updated_raw > dr.to)   return false;
+    if (FILTERS['program_status'] && FILTERS['program_status'].length && FILTERS['program_status'].indexOf(r.program_status) === -1) return false;
+    if (FILTERS['track_status']   && FILTERS['track_status'].length   && FILTERS['track_status'].indexOf(r.track_status)   === -1) return false;
+    var ok = true;
+    FILTER_COLS.forEach(function(fc) {
+      if (!FILTERS[fc.key] || !FILTERS[fc.key].length) return;
+      var v = getDisplayVal(r, fc);
+      if (FILTERS[fc.key].indexOf(v) === -1) ok = false;
+    });
+    return ok;
+  });
+  var noChange    = base.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
+  var changed     = base.filter(function(r){ return !!r.welfare_changed; }).length;
+  var openIntake  = base.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
+  var reviewDue   = base.filter(function(r){ return REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw); }).length;
   var flagged     = Object.keys(FLAGS).length;
   document.getElementById('statNoChange').textContent    = noChange;
   document.getElementById('statChanged').textContent     = changed;
@@ -1086,7 +1107,15 @@ function clearAll() {
     var t = document.getElementById('df-'+key+'-to');   if (t) t.value = '';
     var fi = document.getElementById('fi-date-'+key);   if (fi) fi.classList.remove('on');
   });
-  render();
+  var affSel = document.getElementById('affiliateSlicer');
+  if (affSel && affSel.value) {
+    affSel.value = '';
+    affSel.classList.remove('scoped');
+    document.getElementById('navScope').textContent = 'All affiliates';
+    loadData(); // reloads data for all affiliates, then renders
+  } else {
+    render();
+  }
 }
 
 /* ── SEARCH / FLAG TOGGLE ───────────────────────────────────────── */
@@ -1164,7 +1193,11 @@ function getFiltered() {
 
 function render() {
   var filtered = getFiltered();
-  var hasAnyFilter = SEARCH || STAT_FILTER || Object.keys(FILTERS).length > 0;
+  var affSel = document.getElementById('affiliateSlicer');
+  var affVal = affSel ? affSel.value : '';
+  var affName = affSel && affVal ? (affSel.options[affSel.selectedIndex] || {}).text || affVal : '';
+  var hasAnyFilter = SEARCH || STAT_FILTER || Object.keys(FILTERS).length > 0
+    || COORD_FILTER.length > 0 || !!affVal;
 
   // Active count
   document.getElementById('activeCount').textContent =
@@ -1176,6 +1209,16 @@ function render() {
   // Filter pills
   var pillsEl = document.getElementById('filterPills');
   var pillsHtml = '';
+  // Affiliate pill
+  if (affVal && affName) {
+    pillsHtml += '<span class="fpill">Affiliate: ' + esc(affName)
+      + '<button onclick="var s=document.getElementById(\'affiliateSlicer\');s.value=\'\';s.classList.remove(\'scoped\');document.getElementById(\'navScope\').textContent=\'All affiliates\';loadData();" title="Remove">&times;</button></span>';
+  }
+  // Coordinator pills
+  COORD_FILTER.forEach(function(v) {
+    pillsHtml += '<span class="fpill">Coordinator: ' + esc(v)
+      + '<button onclick="onCoordChip(\''+escAttr(v)+'\')" title="Remove">&times;</button></span>';
+  });
   Object.keys(FILTERS).forEach(function(key) {
     var fc = FILTER_COLS.find(function(f){ return f.key === key; });
     var lbl = fc ? fc.label : key;
@@ -1192,6 +1235,7 @@ function render() {
       + '<button onclick="applyDateFilter(\''+key+'\',\'to\',\'\');document.getElementById(\'df-'+key+'-to\').value=\'\'" title="Remove">&times;</button></span>';
   });
   pillsEl.innerHTML = pillsHtml;
+  updateStats();
 
   // Table body
   var tbody = document.getElementById('cwTbody');

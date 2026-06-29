@@ -1183,7 +1183,10 @@ function getFiltered() {
     });
     return ok;
   }).slice().sort(function(a, b) {
-    var av = a[SORT_COL], bv = b[SORT_COL];
+    // Use raw ISO dates for date columns so they sort correctly
+    var DATE_SORT_MAP = { record_updated: 'record_updated_raw', intake_date: 'intake_date_raw' };
+    var key = DATE_SORT_MAP[SORT_COL] || SORT_COL;
+    var av = a[key], bv = b[key];
     if (av === null || av === undefined) av = '';
     if (bv === null || bv === undefined) bv = '';
     if (typeof av === 'number' && typeof bv === 'number') return SORT_DIR * (av - bv);

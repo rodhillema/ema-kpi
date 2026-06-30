@@ -1210,6 +1210,12 @@ function render() {
   // Filter pills
   var pillsEl = document.getElementById('filterPills');
   var pillsHtml = '';
+  // Stat card filter pill
+  var STAT_LABELS = { no_change: 'No change since intake', changed: 'Changed since intake', open_intake: 'Active CPS at intake', review_due: 'Recommended review', flagged: 'Marked for correction' };
+  if (STAT_FILTER) {
+    pillsHtml += '<span class="fpill">' + esc(STAT_LABELS[STAT_FILTER] || STAT_FILTER)
+      + '<button onclick="toggleStatFilter(null)" title="Remove">&times;</button></span>';
+  }
   // Affiliate pill
   if (affVal && affName) {
     pillsHtml += '<span class="fpill">Affiliate: ' + esc(affName)

@@ -178,7 +178,7 @@ router.get('/', async (req, res) => {
                                  : '',
         child_name:            cs.first_name ? cs.first_name.trim() : '',
         birthdate:             cs.birthdate || '',
-        intake_date:           (mom.created_at && mom.created_at < '2026-01-01' && fwaMap[cs.mom_id])
+        intake_date:           (mom.created_at && new Date(mom.created_at) < new Date('2026-01-01') && fwaMap[cs.mom_id])
                                  ? fwaMap[cs.mom_id]
                                  : (mom.created_at || ''),
         intake_welfare_status: cs.active_child_welfare_involvement || '',

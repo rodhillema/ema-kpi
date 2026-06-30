@@ -757,7 +757,7 @@ function updateStats() {
   var changed     = base.filter(function(r){ return !!r.welfare_changed; }).length;
   var openIntake  = base.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
   var reviewDue   = base.filter(function(r){ return isReviewDue(r); }).length;
-  var flagged     = Object.keys(FLAGS).length;
+  var flagged     = base.filter(function(r){ return !!FLAGS[r.snapshot_id]; }).length;
   document.getElementById('statNoChange').textContent    = noChange;
   document.getElementById('statChanged').textContent     = changed;
   document.getElementById('statOpenIntake').textContent  = openIntake;

@@ -77,6 +77,8 @@ body.logged-in .portal-view{display:flex}
 .nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
 .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
 .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+.nav-link{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.9);text-decoration:none;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:4px 10px;transition:all .15s}
+.nav-link:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.7)}
 
 /* ── LAYOUT ── */
 .layout{display:flex;flex:1;overflow:hidden;position:relative}
@@ -334,12 +336,6 @@ tr:last-child td{border-bottom:none}
       </a>
     </div>
     <div class="nav-right">
-      <div class="nav-sep"></div>
-      <div class="nav-scope">
-        <span class="nav-scope-lbl">Scope</span>
-        <span class="nav-scope-val" id="navScope">All affiliates</span>
-      </div>
-      <div class="nav-sep"></div>
       <div class="nav-user">
         <div class="nav-avatar" id="navAvatar">--</div>
         <div>
@@ -347,7 +343,15 @@ tr:last-child td{border-bottom:none}
           <div class="nav-role" id="navRole"></div>
         </div>
       </div>
+      <div class="nav-sep"></div>
+      <div class="nav-scope">
+        <span class="nav-scope-lbl">Viewing</span>
+        <span class="nav-scope-val" id="navScope">All affiliates</span>
+      </div>
+      <div class="nav-sep"></div>
       <button class="nav-signout" id="signoutBtn">Sign out</button>
+      <div class="nav-sep"></div>
+      <a href="https://trellis.ema.org/login" class="nav-link" target="_blank">Go to Trellis &#8594;</a>
     </div>
   </nav>
 

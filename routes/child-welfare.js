@@ -107,7 +107,7 @@ router.get('/', async (req, res) => {
     const affiliateIds = [...new Set(snapshotRows.map(r => r.affiliate_id).filter(Boolean))];
     const childIds    = [...new Set(snapshotRows.map(r => r.child_id).filter(Boolean))];
 
-    const [momsResult, affiliatesResult, childrenResult] = await Promise.all([
+    const [momsResult, affiliatesResult, childrenResult, fwaResult] = await Promise.all([
       momIds.length > 0
         ? pool.query(
             `SELECT m."id", m."first_name", m."last_name", m."status"::text AS status, m."created_at",
@@ -133,11 +133,27 @@ router.get('/', async (req, res) => {
             [childIds]
           ).catch(err => { console.error('[child-welfare] child query failed:', err.message); return { rows: [] }; })
         : Promise.resolve({ rows: [] }),
+
+      // First FWA date per mom — used as intake date for moms created before 2026
+      momIds.length > 0
+        ? pool.query(
+            `SELECT DISTINCT ON (wa."mom_id")
+               wa."mom_id" AS mom_id,
+               wa."completed_date" AS first_fwa_date
+             FROM "WellnessAssessment" wa
+             WHERE wa."deleted_at" = 0
+               AND wa."mom_id" = ANY($1)
+               AND wa."completed_date" IS NOT NULL
+             ORDER BY wa."mom_id", wa."completed_date" ASC`,
+            [momIds]
+          ).catch(err => { console.error('[child-welfare] fwa query failed:', err.message); return { rows: [] }; })
+        : Promise.resolve({ rows: [] }),
     ]);
 
     const momMap      = Object.fromEntries(momsResult.rows.map(r => [r.id, r]));
     const affiliateMap = Object.fromEntries(affiliatesResult.rows.map(r => [r.id, r]));
     const childMap    = Object.fromEntries(childrenResult.rows.map(r => [r.id, r]));
+    const fwaMap      = Object.fromEntries(fwaResult.rows.map(r => [r.mom_id, r.first_fwa_date]));
 
     // ── Step 5: build result rows ─────────────────────────────────────────────
     const result = snapshotRows.map(cs => {
@@ -162,7 +178,9 @@ router.get('/', async (req, res) => {
                                  : '',
         child_name:            cs.first_name ? cs.first_name.trim() : '',
         birthdate:             cs.birthdate || '',
-        intake_date:           mom.created_at || '',
+        intake_date:           (mom.created_at && mom.created_at < '2026-01-01' && fwaMap[cs.mom_id])
+                                 ? fwaMap[cs.mom_id]
+                                 : (mom.created_at || ''),
         intake_welfare_status: cs.active_child_welfare_involvement || '',
         latest_welfare_status: child.latest_welfare_status || cs.active_child_welfare_involvement || '',
         record_updated:        cs.child_updated_at || '',

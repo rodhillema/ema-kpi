@@ -501,7 +501,7 @@ tr:last-child td{border-bottom:none}
               </th>
               <th class="col-intake" style="width:82px">
                 <div class="th-inner">
-                  <span class="th-sort" onclick="sortBy('intake_date')">Intake date <span class="arr" id="arr-intake_date">&#9650;</span></span>
+                  <span class="th-sort" onclick="sortBy('intake_date')">Earliest record <span class="arr" id="arr-intake_date">&#9650;</span></span>
                   <div class="th-ficon" id="fi-date-intake_date" onclick="toggleDatePop('intake_date',event)"><svg viewBox="0 0 12 12"><path d="M1 2h10M3 6h6M5 10h2" stroke-linecap="round"/></svg></div>
                   <div class="pop" id="pop-date-intake_date" style="min-width:160px"></div>
                 </div>
@@ -617,6 +617,13 @@ function isOver90Days(dateStr) {
   if (!dateStr) return false;
   var d = new Date(dateStr);
   return !isNaN(d) && (Date.now() - d.getTime()) > 90 * 24 * 60 * 60 * 1000;
+}
+function isReviewDue(r) {
+  if (REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) === -1) return false;
+  // Status unchanged since intake — count from earliest record date
+  if (r.latest_welfare_status === r.intake_welfare_status) return isOver90Days(r.intake_date_raw);
+  // Status was updated to one of the review statuses later — count from last update
+  return isOver90Days(r.record_updated_raw);
 }
 
 var WELFARE_OPTS = [
@@ -749,7 +756,7 @@ function updateStats() {
   var noChange    = base.filter(function(r){ return r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label; }).length;
   var changed     = base.filter(function(r){ return !!r.welfare_changed; }).length;
   var openIntake  = base.filter(function(r){ return OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) !== -1; }).length;
-  var reviewDue   = base.filter(function(r){ return REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw); }).length;
+  var reviewDue   = base.filter(function(r){ return isReviewDue(r); }).length;
   var flagged     = Object.keys(FLAGS).length;
   document.getElementById('statNoChange').textContent    = noChange;
   document.getElementById('statChanged').textContent     = changed;
@@ -1144,7 +1151,7 @@ function getFiltered() {
     if (STAT_FILTER === 'no_change'   && !(r.intake_welfare_label && r.latest_welfare_label && r.intake_welfare_label === r.latest_welfare_label)) return false;
     if (STAT_FILTER === 'changed'     && !r.welfare_changed) return false;
     if (STAT_FILTER === 'open_intake' && OPEN_INTAKE_STATUSES.indexOf(r.intake_welfare_status) === -1) return false;
-    if (STAT_FILTER === 'review_due'  && !(REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw))) return false;
+    if (STAT_FILTER === 'review_due'  && !(isReviewDue(r))) return false;
     if (SEARCH) {
       var hay = (r.mom_name + ' ' + r.child_name).toLowerCase();
       if (hay.indexOf(SEARCH) === -1) return false;
@@ -1274,7 +1281,7 @@ function render() {
       : '<span class="missing">missing</span>';
 
     // latest welfare status + changed cue + 90-day review alert
-    var over90 = REVIEW_90_DAY_STATUSES.indexOf(r.latest_welfare_status) !== -1 && isOver90Days(r.record_updated_raw);
+    var over90 = isReviewDue(r);
     var latestCell = r.latest_welfare_label
       ? '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">'
           + esc(r.latest_welfare_label)

@@ -516,6 +516,11 @@
   .dashboard-loading .loading-overlay { display: block; }
   .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* Inline refresh overlay — shown during dropdown-triggered reloads */
+  .refresh-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(253,247,243,.55); z-index:200; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
+  .refresh-overlay.active { display:flex; }
+  .refresh-spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin 0.8s linear infinite; }
+  .refresh-label { font-family:'Oswald',sans-serif; font-size:12px; font-weight:400; letter-spacing:1.2px; text-transform:uppercase; color:var(--mid); }
 
   /* ── Zebra-striping on tables ─────────────────────────────── */
   .stalled-affiliate-table tbody tr:nth-child(even) td { background: #faf9f7; }
@@ -1708,6 +1713,12 @@
  Loading dashboard&hellip;
 </div>
 
+<!-- ── Refresh overlay — shown during dropdown-triggered reloads ── -->
+<div id="refreshOverlay" class="refresh-overlay">
+ <div class="refresh-spinner"></div>
+ <div class="refresh-label">Updating&hellip;</div>
+</div>
+
 <!-- TAB NAV -->
 <div class="tab-nav">
  <button class="tab-btn active" onclick="showTab('kpis', this)">KPIs &amp; Status</button>
@@ -1812,7 +1823,7 @@
      </div>
     </div>
     <div class="hc-label">Family Stability Score Improvement</div>
-    <div class="hc-context"><span data-hydrate="kpi2-num">37</span> of <span data-hydrate="kpi2-den">52</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">23</span> moms excluded</div>
+    <div class="hc-context"><span data-hydrate="kpi2-num">—</span> of <span data-hydrate="kpi2-den">—</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">—</span> moms excluded</div>
    </div>
 
    <!-- KPI 3 · Learning Progress · accent identity = yellow -->
@@ -3154,7 +3165,7 @@
   // RD: /api/report-data returns all dashboard data
   var dataRes = null;
   try {
-   dataRes = await fetch('/api/report-data');
+   dataRes = await fetch('/api/report-data?period=q2');
   } catch (e) { console.error('data fetch failed:', e); }
 
   // Process report data
@@ -3301,6 +3312,7 @@
   var url = '/api/report-data?period=' + encodeURIComponent(period);
   if (val === 'exclude-broward') { url += '&exclude_affiliate_id=' + BROWARD_ID; }
   else if (val && val !== 'all') { url += '&affiliate_id=' + encodeURIComponent(val); }
+  setRefreshing(true);
   try {
    var res = await fetch(url);
    if (res.ok) {
@@ -3319,8 +3331,16 @@
      }
     }
    }
-  } catch (e) { /* fetch failed, non-fatal */ }
+  } catch (e) { /* fetch failed, non-fatal */ } finally {
+   setRefreshing(false);
+  }
  });
+
+ /* ── Refresh overlay helper ──────────────────────────────────── */
+ function setRefreshing(on) {
+  var el = document.getElementById('refreshOverlay');
+  if (el) el.classList.toggle('active', on);
+ }
 
  /* ── Period slicer: inject Q2 option for HQ admin, handle change ── */
  function setupPeriodSlicer(meta) {
@@ -3350,6 +3370,7 @@
    var url = '/api/report-data?period=' + encodeURIComponent(period);
    if (affVal === 'exclude-broward') url += '&exclude_affiliate_id=' + BROWARD_ID;
    else if (affVal && affVal !== 'all') url += '&affiliate_id=' + encodeURIComponent(affVal);
+   setRefreshing(true);
    try {
     var res = await fetch(url);
     if (res.ok) {
@@ -3357,7 +3378,9 @@
      window.__EMA_DATA__ = data;
      renderDashboard(data);
     }
-   } catch (e) { /* non-fatal */ }
+   } catch (e) { /* non-fatal */ } finally {
+    setRefreshing(false);
+   }
   });
  }
 
@@ -3373,7 +3396,7 @@
    el.textContent = (meta.period || 'Q1 2026').split(' ')[0];
   });
   // "Jan 1 to Mar 31" / "Apr 1 to Jun 30"
-  var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'H1 2026 YTD': 'Jan 1 to Jun 30' };
+  var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'Q2 2026 YTD': 'Jan 1 to Jun 30' };
   document.querySelectorAll('.period-dates-inline').forEach(function(el) {
    el.textContent = dateRanges[meta.period] || 'Jan 1 to Mar 31';
   });

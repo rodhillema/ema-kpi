@@ -1889,13 +1889,13 @@
    <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
     <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-family:'Oswald',sans-serif;flex-shrink:0;">Mothers</div>
     <span data-hydrate="mom-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--red);line-height:1;letter-spacing:0.5px;">94</span>
-    <span style="font-size:12px;color:var(--mid);">active during Q1</span>
+    <span style="font-size:12px;color:var(--mid);">active during <span class="period-label-inline">Q1 2026</span></span>
    </div>
 
    <div style="padding:18px 26px 22px;border-top:1px solid #f0ece5;margin-top:6px;">
     <div class="entity-split">
      <div>
-      <div class="es-section-label">Active During Q1 <span class="es-meta">each mother counted once</span></div>
+      <div class="es-section-label">Active During <span class="period-label-inline">Q1 2026</span> <span class="es-meta">each mother counted once</span></div>
       <div class="donut-wrap" id="momActiveDonut">
      <svg class="donut-svg" viewBox="0 0 160 160">
       <g transform="rotate(-90 80 80)">
@@ -1949,7 +1949,7 @@
    <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
     <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-family:'Oswald',sans-serif;flex-shrink:0;">Children</div>
     <span data-hydrate="child-served-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--green);line-height:1;letter-spacing:0.5px;">142</span>
-    <span style="font-size:12px;color:var(--mid);">active during Q1</span>
+    <span style="font-size:12px;color:var(--mid);">active during <span class="period-label-inline">Q1 2026</span></span>
    </div>
 
    <div style="padding:0 26px 18px;border-top:1px solid #f0ece5;">
@@ -2000,7 +2000,7 @@
    <div style="padding:22px 26px 18px;display:flex;align-items:baseline;gap:14px;">
     <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--yellow);font-family:'Oswald',sans-serif;flex-shrink:0;">Advocates</div>
     <span data-hydrate="adv-active-total" style="font-size:44px;font-family:'Shrikhand',serif;color:var(--yellow);line-height:1;letter-spacing:0.5px;">57</span>
-    <span style="font-size:12px;color:var(--mid);">active during Q1</span>
+    <span style="font-size:12px;color:var(--mid);">active during <span class="period-label-inline">Q1 2026</span></span>
    </div>
 
    <div style="padding:18px 26px 22px;border-top:1px solid #f0ece5;margin-top:6px;">
@@ -3333,9 +3333,12 @@
   if (!sel.querySelector('option[value="q2"]')) {
    var opt = document.createElement('option');
    opt.value = 'q2';
-   opt.textContent = 'Q2 2026 (Apr 1 to Jun 30)';
+   opt.textContent = 'H1 2026 YTD (Jan 1 to Jun 30)';
    sel.appendChild(opt);
   }
+  // Sync dropdown to whichever period the API actually returned
+  var activePeriod = (meta.period_key === '2026-Q2') ? 'q2' : 'q1';
+  sel.value = activePeriod;
   // Remove duplicate listener by replacing node
   var newSel = sel.cloneNode(true);
   sel.parentNode.replaceChild(newSel, sel);
@@ -3370,7 +3373,7 @@
    el.textContent = (meta.period || 'Q1 2026').split(' ')[0];
   });
   // "Jan 1 to Mar 31" / "Apr 1 to Jun 30"
-  var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'Q2 2026': 'Apr 1 to Jun 30' };
+  var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'H1 2026 YTD': 'Jan 1 to Jun 30' };
   document.querySelectorAll('.period-dates-inline').forEach(function(el) {
    el.textContent = dateRanges[meta.period] || 'Jan 1 to Mar 31';
   });

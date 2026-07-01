@@ -3336,12 +3336,12 @@
    opt.textContent = 'Q2 2026 YTD (Jan 1 to Jun 30)';
    sel.appendChild(opt);
   }
-  // Sync dropdown to whichever period the API actually returned
-  var activePeriod = (meta.period_key === '2026-Q2') ? 'q2' : 'q1';
-  sel.value = activePeriod;
   // Remove duplicate listener by replacing node
   var newSel = sel.cloneNode(true);
   sel.parentNode.replaceChild(newSel, sel);
+  // Sync dropdown AFTER replacement so the live value property sticks
+  var activePeriod = (meta.period_key === '2026-Q2') ? 'q2' : 'q1';
+  newSel.value = activePeriod;
   newSel.addEventListener('change', async function() {
    var period = this.value || 'q1';
    var affSel = document.getElementById('affiliateFilter');

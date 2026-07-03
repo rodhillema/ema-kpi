@@ -936,35 +936,33 @@ router.get('/', async (req, res) => {
         ORDER BY total_closed DESC
       `, affParams),
 
-      // ─── Learning Progress by Track (V3 — Cristina 4/24 spec) ─────
+      // ─── Learning Progress by Track ─────────────────────────
       //
-      // Three data sources, three attribution rules:
-      //   NPP → AAPIScore table (5 constructs A–E, pre+post on SAME ROW)
-      //          Improvement: (A_post+B_post+C_post+D_post+E_post)
-      //                     > (A_pre + B_pre + C_pre + D_pre + E_pre)
-      //          Multi-enrollment: per pairing, pick most recent AAPIScore where
-      //          created_at < next NPP pairing start (unbounded if no next pairing).
-      //          Post scores legitimately entered after track close — do NOT bound by
-      //          pairing.completed_on.
-      //   EP  → AssessmentResult (Assessment.name LIKE 'Empowered Parenting%')
-      //   RR  → AssessmentResult (Assessment.name LIKE 'Resilience%')
-      //          Both use type='pre'/'post' + SUM(intResponse) per attempt.
-      //          AR has NO pairing_id column — attribution is temporal: each post
-      //          is paired with the most recent pre for the same mom + same track
-      //          dated earlier. Multi-enrollment on EP/RR may undercount pending
-      //          Cristina's confirmation of this approach.
-      //
-      // Denominator: pairs with both pre AND post on file (completion status IGNORED
-      // per Cristina — pairing.completed_on is NOT the anchor).
-      // Time anchor: post date (AAPIScore.created_at for NPP, AR.completedAt||created_at
-      // for EP/RR) falls in Q1 period. Reason: without a time anchor, KPI reflects all
-      // lifetime data, which doesn't match quarterly-report semantics. Post date = when
-      // progress was measured.
-      //
-      // Excludes PromiseServes Legacy: legacy_ps_id IS NULL on AAPIScore,
-      // Assessment.name NOT ILIKE '%Legacy%' on AR.
+      // Time anchor: pairing_complete + completed_on in period (same as top-line KPI 3).
+      // EP/RR: temporal attribution (no pairing_id on AssessmentResult) —
+      //   post = most recent post >= pairing.created_at for mom + track group
+      //   pre  = most recent pre before that post
+      // NPP: AAPIScore linked by mom_id within pairing window; no period filter on
+      //   AAPIScore — pairing.completed_on is the anchor.
       pool.query(`
         WITH
+        ep_rr_pairings AS (
+          SELECT p."id" AS pairing_id, p."momId", p."created_at" AS pairing_start,
+            CASE
+              WHEN t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%' THEN 'EP'
+              WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%' THEN 'RR'
+            END AS track_group
+          FROM "Pairing" p
+          JOIN "Track" t ON t."id" = p."trackId"
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND (t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%'
+                 OR t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%')
+            ${affWhere}
+        ),
         npp_pairings AS (
           SELECT p."id" AS pairing_id, p."momId",
             LEAD(p."created_at") OVER (PARTITION BY p."momId" ORDER BY p."created_at") AS next_pairing_start
@@ -972,42 +970,14 @@ router.get('/', async (req, res) => {
           JOIN "Track" t ON t."id" = p."trackId"
           JOIN "Mom" m ON m."id" = p."momId"
           WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
             AND (t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%')
             ${affWhere}
         ),
-        npp_scored AS (
-          SELECT * FROM (
-            SELECT
-              np.pairing_id,
-              (s."constructAPreAssessment"  + s."constructBPreAssessment"
-               + s."constructCPreAssessment" + s."constructDPreAssessment"
-               + s."constructEPreAssessment") AS pre_sum,
-              (s."constructAPostAssessment" + s."constructBPostAssessment"
-               + s."constructCPostAssessment" + s."constructDPostAssessment"
-               + s."constructEPostAssessment") AS post_sum,
-              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
-            FROM npp_pairings np
-            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
-            WHERE s."deleted_at" = 0
-              AND s."legacy_ps_id" IS NULL
-              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
-              -- Q1 anchor on updated_at (RD 4/25/26): captures AAPI rows where
-              -- the post was entered in Q1 even when the pre was filled earlier.
-              -- Filtering on created_at missed ~96% of NPP completions because
-              -- AAPIScore rows are typically created at intake (pre filled),
-              -- then updated months later when post is logged.
-              AND s."updated_at" >= '${PERIOD_START}'
-              AND s."updated_at" <= '${PERIOD_END} 23:59:59'
-              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
-              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
-              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
-              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
-              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
-          ) t WHERE rn = 1
-        ),
         ep_rr_ar AS (
           SELECT
-            ar."id" AS ar_id,
             ar."momId",
             ar."type"::text AS atype,
             COALESCE(ar."completedAt", ar."created_at") AS ar_date,
@@ -1031,20 +1001,48 @@ router.get('/', async (req, res) => {
         ),
         ep_rr_paired AS (
           SELECT
-            post.track_group,
+            erp.track_group,
             post.total_score AS post_sum,
             (SELECT pre.total_score FROM ep_rr_ar pre
-             WHERE pre."momId" = post."momId"
-               AND pre.track_group = post.track_group
+             WHERE pre."momId" = erp."momId"
+               AND pre.track_group = erp.track_group
                AND pre.atype = 'pre'
                AND pre.ar_date < post.ar_date
              ORDER BY pre.ar_date DESC
              LIMIT 1) AS pre_sum
-          FROM ep_rr_ar post
-          WHERE post.atype = 'post'
-            AND post.track_group IS NOT NULL
-            AND post.ar_date >= '${PERIOD_START}'
-            AND post.ar_date <= '${PERIOD_END} 23:59:59'
+          FROM ep_rr_pairings erp
+          JOIN LATERAL (
+            SELECT ar.total_score FROM ep_rr_ar ar
+            WHERE ar."momId" = erp."momId"
+              AND ar.track_group = erp.track_group
+              AND ar.atype = 'post'
+              AND ar.ar_date >= erp.pairing_start
+            ORDER BY ar.ar_date DESC
+            LIMIT 1
+          ) post ON TRUE
+        ),
+        npp_scored AS (
+          SELECT * FROM (
+            SELECT
+              np.pairing_id,
+              (s."constructAPreAssessment"  + s."constructBPreAssessment"
+               + s."constructCPreAssessment" + s."constructDPreAssessment"
+               + s."constructEPreAssessment") AS pre_sum,
+              (s."constructAPostAssessment" + s."constructBPostAssessment"
+               + s."constructCPostAssessment" + s."constructDPostAssessment"
+               + s."constructEPostAssessment") AS post_sum,
+              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
+            FROM npp_pairings np
+            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
+            WHERE s."deleted_at" = 0
+              AND s."legacy_ps_id" IS NULL
+              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
+              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
+              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
+              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
+              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
+              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
+          ) t WHERE rn = 1
         ),
         all_tracks AS (
           SELECT 'NPP' AS track_group,
@@ -1054,7 +1052,7 @@ router.get('/', async (req, res) => {
           FROM npp_scored
           UNION ALL
           SELECT track_group,
-            COUNT(*)::int AS total_completions,
+            (SELECT COUNT(*)::int FROM ep_rr_pairings erp2 WHERE erp2.track_group = ep_rr_paired.track_group) AS total_completions,
             COUNT(CASE WHEN pre_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
             SUM(CASE WHEN pre_sum IS NOT NULL AND post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
           FROM ep_rr_paired
@@ -1626,6 +1624,25 @@ router.get('/', async (req, res) => {
       // total across all 3 tracks for the top-line KPI 3 rate.
       pool.query(`
         WITH
+        -- EP/RR pairings completed in period (pairing_complete is the time anchor)
+        ep_rr_pairings AS (
+          SELECT p."id" AS pairing_id, p."momId", p."created_at" AS pairing_start,
+            CASE
+              WHEN t."title" ILIKE 'Empowered Parenting%' OR t."title" ILIKE 'Crianza empoderada%' THEN 'EP'
+              WHEN t."title" ILIKE 'Resilience%' OR t."title" ILIKE 'Hoja de ruta%' THEN 'RR'
+            END AS track_group
+          FROM "Pairing" p
+          JOIN "Track" t ON t."id" = p."trackId"
+          JOIN "Mom" m ON m."id" = p."momId"
+          WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
+            AND (t."title" ILIKE 'Empowered Parenting%' OR t."title" ILIKE 'Crianza empoderada%'
+                 OR t."title" ILIKE 'Resilience%' OR t."title" ILIKE 'Hoja de ruta%')
+            ${affWhere}
+        ),
+        -- NPP pairings completed in period
         npp_pairings AS (
           SELECT p."id" AS pairing_id, p."momId",
             LEAD(p."created_at") OVER (PARTITION BY p."momId" ORDER BY p."created_at") AS next_pairing_start
@@ -1633,42 +1650,15 @@ router.get('/', async (req, res) => {
           JOIN "Track" t ON t."id" = p."trackId"
           JOIN "Mom" m ON m."id" = p."momId"
           WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+            AND p."status"::text = 'pairing_complete'
+            AND p."completed_on" >= '${PERIOD_START}'
+            AND p."completed_on" <= '${PERIOD_END} 23:59:59'
             AND (t."title" ILIKE '%nurturing%' OR t."title" ILIKE '%crianza con%')
             ${affWhere}
         ),
-        npp_scored AS (
-          SELECT * FROM (
-            SELECT
-              np.pairing_id,
-              (s."constructAPreAssessment"  + s."constructBPreAssessment"
-               + s."constructCPreAssessment" + s."constructDPreAssessment"
-               + s."constructEPreAssessment") AS pre_sum,
-              (s."constructAPostAssessment" + s."constructBPostAssessment"
-               + s."constructCPostAssessment" + s."constructDPostAssessment"
-               + s."constructEPostAssessment") AS post_sum,
-              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
-            FROM npp_pairings np
-            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
-            WHERE s."deleted_at" = 0
-              AND s."legacy_ps_id" IS NULL
-              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
-              -- Q1 anchor on updated_at (RD 4/25/26): captures AAPI rows where
-              -- the post was entered in Q1 even when the pre was filled earlier.
-              -- Filtering on created_at missed ~96% of NPP completions because
-              -- AAPIScore rows are typically created at intake (pre filled),
-              -- then updated months later when post is logged.
-              AND s."updated_at" >= '${PERIOD_START}'
-              AND s."updated_at" <= '${PERIOD_END} 23:59:59'
-              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
-              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
-              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
-              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
-              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
-          ) t WHERE rn = 1
-        ),
+        -- All AssessmentResult rows for EP/RR (no period filter — pairing completion is the anchor)
         ep_rr_ar AS (
           SELECT
-            ar."id" AS ar_id,
             ar."momId",
             ar."type"::text AS atype,
             COALESCE(ar."completedAt", ar."created_at") AS ar_date,
@@ -1690,21 +1680,54 @@ router.get('/', async (req, res) => {
                  OR a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%')
             ${affWhere}
         ),
+        -- For each completed EP/RR pairing, find the most recent post >= pairing start,
+        -- then find the most recent pre before that post (temporal attribution — no pairing_id on AR)
         ep_rr_paired AS (
           SELECT
+            erp.pairing_id,
             post.total_score AS post_sum,
             (SELECT pre.total_score FROM ep_rr_ar pre
-             WHERE pre."momId" = post."momId"
-               AND pre.track_group = post.track_group
+             WHERE pre."momId" = erp."momId"
+               AND pre.track_group = erp.track_group
                AND pre.atype = 'pre'
                AND pre.ar_date < post.ar_date
              ORDER BY pre.ar_date DESC
              LIMIT 1) AS pre_sum
-          FROM ep_rr_ar post
-          WHERE post.atype = 'post'
-            AND post.track_group IS NOT NULL
-            AND post.ar_date >= '${PERIOD_START}'
-            AND post.ar_date <= '${PERIOD_END} 23:59:59'
+          FROM ep_rr_pairings erp
+          JOIN LATERAL (
+            SELECT ar.total_score FROM ep_rr_ar ar
+            WHERE ar."momId" = erp."momId"
+              AND ar.track_group = erp.track_group
+              AND ar.atype = 'post'
+              AND ar.ar_date >= erp.pairing_start
+            ORDER BY ar.ar_date DESC
+            LIMIT 1
+          ) post ON TRUE
+        ),
+        -- NPP scored: find AAPIScore within pairing window with all constructs filled
+        -- No updated_at period filter — pairing completion is the anchor
+        npp_scored AS (
+          SELECT * FROM (
+            SELECT
+              np.pairing_id,
+              (s."constructAPreAssessment"  + s."constructBPreAssessment"
+               + s."constructCPreAssessment" + s."constructDPreAssessment"
+               + s."constructEPreAssessment") AS pre_sum,
+              (s."constructAPostAssessment" + s."constructBPostAssessment"
+               + s."constructCPostAssessment" + s."constructDPostAssessment"
+               + s."constructEPostAssessment") AS post_sum,
+              ROW_NUMBER() OVER (PARTITION BY np.pairing_id ORDER BY s."created_at" DESC) AS rn
+            FROM npp_pairings np
+            JOIN "AAPIScore" s ON s."mom_id" = np."momId"
+            WHERE s."deleted_at" = 0
+              AND s."legacy_ps_id" IS NULL
+              AND (np.next_pairing_start IS NULL OR s."created_at" < np.next_pairing_start)
+              AND s."constructAPreAssessment"  IS NOT NULL AND s."constructAPostAssessment"  IS NOT NULL
+              AND s."constructBPreAssessment"  IS NOT NULL AND s."constructBPostAssessment"  IS NOT NULL
+              AND s."constructCPreAssessment"  IS NOT NULL AND s."constructCPostAssessment"  IS NOT NULL
+              AND s."constructDPreAssessment"  IS NOT NULL AND s."constructDPostAssessment"  IS NOT NULL
+              AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
+          ) t WHERE rn = 1
         ),
         combined AS (
           SELECT post_sum, pre_sum FROM npp_scored
@@ -1713,7 +1736,7 @@ router.get('/', async (req, res) => {
         )
         SELECT
           (SELECT COUNT(*)::int FROM npp_pairings)
-            + (SELECT COUNT(*)::int FROM ep_rr_paired) AS total_completions,
+            + (SELECT COUNT(*)::int FROM ep_rr_pairings) AS total_completions,
           COUNT(*)::int AS with_pre_post,
           SUM(CASE WHEN post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
         FROM combined

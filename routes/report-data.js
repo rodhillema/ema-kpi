@@ -31,8 +31,8 @@ function mapKpi1Goal(intakeStatus) {
   const s = (intakeStatus || '').trim().toLowerCase();
   if (s === '30_custody_maintained' || s === '25_supportive_services') return 'prevent_cps_involvement';
   if (s === '20_differential_response' || s === '15_open_investigation' || s === '10_protective_services') return 'prevent_foster_care_placement';
-  if (s === '5_kinship_placement') return 'prevent_permanent_removal';
-  if (s === '0_permanently_removed' || s === '0_foster_care') return 'not_eligible_program';
+  if (s === '5_kinship_placement' || s === '0_foster_care') return 'prevent_permanent_removal';
+  if (s === '0_permanently_removed') return 'not_eligible_program';
   return null;
 }
 
@@ -48,8 +48,10 @@ function mapKpi1Impact(goal, latestStatus) {
 
   if (goal === 'prevent_cps_involvement') {
     if (l === '30_custody_maintained' || l === '25_supportive_services') return 'prevented_from_cps_involvement';
+    // escalated into CPS territory but still prevented placement — family still preserved
+    if (l === '20_differential_response' || l === '15_open_investigation' || l === '10_protective_services') return 'prevented_from_foster_care_placement';
     if (l === '0_foster_care' || l === '5_kinship_placement') return 'temporary_removal';
-    return null; // escalated into CPS territory (20/15/10)
+    return null;
   }
 
   if (goal === 'prevent_foster_care_placement') {
@@ -60,7 +62,9 @@ function mapKpi1Impact(goal, latestStatus) {
     return null;
   }
 
-  if (goal === 'prevent_permanent_removal') return 'prevented_from_permanent_removal';
+  // prevent_permanent_removal (intake: 5_kinship_placement or 0_foster_care) —
+  // already in foster care before ÉMA; excluded entirely from KPI1 num and den
+  if (goal === 'prevent_permanent_removal') return null;
 
   return null;
 }
@@ -2077,7 +2081,7 @@ router.get('/', async (req, res) => {
         const goal   = mapKpi1Goal(intake);
         const impact = mapKpi1Impact(goal, latest);
 
-        if (!goal || goal === 'not_eligible_program') continue;
+        if (!goal || goal === 'not_eligible_program' || goal === 'prevent_permanent_removal') continue;
         momDen.add(row.mom_id);
         if (impact === 'prevented_from_cps_involvement') { momNum.add(row.mom_id); momCps.add(row.mom_id); }
         if (impact === 'prevented_from_foster_care_placement') { momNum.add(row.mom_id); momFc.add(row.mom_id); }

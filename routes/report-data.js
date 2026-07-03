@@ -11,19 +11,41 @@ const pool = require('../db');
 const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
 const { lookupZipCounty } = require('../lib/zip-to-county');
 
-// Locked overrides for Q2 — filled in from RD's verified CSV once received.
-// Set to null to use live-computed values; replace with object to lock the period.
-// Shape: { kpi1_num, kpi1_den, kpi1_cps_prevented, kpi1_foster_prevented,
-//          children_total, children_excluded }
+// ── Q2 KPI 1 locked overrides ────────────────────────────────────────────────
+// KPI 1 for Q2 is calculated manually from two data points per child:
+//   - intake_welfare_status  → from Supabase/CSV export (historical cleanup)
+//   - latest_welfare_status  → from Trellis child welfare report (period-end)
+//
+// Child welfare status was overwritten with no history in Trellis; this two-point
+// method is the agreed workaround for Q2. Impact is derived from trajectory.
+//
+// METHODOLOGY (confirmed):
+//   Denominator: DISTINCT moms where ≥1 child has intake IN:
+//     ('Custody maintained', 'Supportive Services', 'Differential Response',
+//      'Open Investigation', 'Protective Services')
+//   Numerator: subset of denominator where ≥1 such child also has latest = 'Custody maintained'
+//
+//   CPS-prevented split:  intake IN ('Custody maintained', 'Supportive Services')
+//                         AND latest = 'Custody maintained'
+//   FC-prevented split:   intake IN ('Differential Response', 'Open Investigation',
+//                         'Protective Services') AND latest = 'Custody maintained'
+//
+//   Excluded from denominator: intake IN ('Permanently removed', 'Kinship placement')
+//   Scope: org-wide (all affiliates)
+//   Flagged rows: use latest_welfare_status as-is, do not exclude
+//   Children with no welfare status on record: excluded from both num/den;
+//     surfaced separately as children_no_welfare_status
+//
+// INSTRUCTIONS: Fill in all six values from RD's CSV calculation, then set to object.
+// Set back to null to revert to live-computed values.
 const LOCKED_Q2_OVERRIDES = null;
-// Example (fill when CSV arrives):
 // const LOCKED_Q2_OVERRIDES = {
-//   kpi1_num: 0,              // moms preserved (numerator)
-//   kpi1_den: 0,              // moms with preservation goal (denominator)
-//   kpi1_cps_prevented: 0,    // distinct moms: child prevented from CPS
-//   kpi1_foster_prevented: 0, // distinct moms: child prevented from foster care
-//   children_total: 0,        // total children active during period
-//   children_excluded: 0,     // children excluded from KPI1
+//   kpi1_num: 0,                    // DISTINCT moms: ≥1 child trajectory → preserved
+//   kpi1_den: 0,                    // DISTINCT moms: ≥1 child with qualifying intake status
+//   kpi1_cps_prevented: 0,          // DISTINCT moms: intake IN (Custody maintained, Supportive Services) → Custody maintained
+//   kpi1_foster_prevented: 0,       // DISTINCT moms: intake IN (Differential Response, Open Investigation, Protective Services) → Custody maintained
+//   children_total: 0,              // total children rows in CSV (org-wide, Q2 period)
+//   children_no_welfare_status: 0,  // children active Q2 with NO welfare status on record — get from RD before shipping
 // };
 
 // Period definitions — Q1 is the default for all users.
@@ -2289,6 +2311,7 @@ router.get('/', async (req, res) => {
         // prevented_from_foster_care_placement). Dollar value is count × $38,850
         // computed client-side.
         children_prevented_cps_fc: kpi1Num,
+        children_no_welfare_status: q2Overrides ? (q2Overrides.children_no_welfare_status || 0) : null,
         // Q1 Activity strip aliases — Cristina's report reads these from snap.
         // Backing fields are the period-scoped advocate_q1_activity counts
         // (User-table-direct, anchored on created_at / updated_at per Q1 window).

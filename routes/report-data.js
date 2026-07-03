@@ -37,15 +37,31 @@ function mapKpi1Goal(intakeStatus) {
 }
 
 // ── KPI1 impact mapping: goal + latest welfare status → family_preservation_impact
+// Rule: if the child didn't escalate out of their intake safety tier, the goal was met.
+//   prevent_cps_involvement:    latest must stay at 30 or 25 (outside CPS territory)
+//   prevent_foster_care_placement: latest must stay at 10–30 (outside foster placement)
+//   prevent_permanent_removal:  latest is anything other than 0_permanently_removed
 function mapKpi1Impact(goal, latestStatus) {
   const l = (latestStatus || '').trim().toLowerCase();
   if (!goal || goal === 'not_eligible_program') return null;
   if (l === '0_permanently_removed') return 'permanent_removal';
-  if (goal === 'prevent_cps_involvement' && l === '30_custody_maintained') return 'prevented_from_cps_involvement';
-  if (goal === 'prevent_foster_care_placement' && l === '30_custody_maintained') return 'prevented_from_foster_care_placement';
-  if (goal === 'prevent_permanent_removal' && l !== '0_permanently_removed') return 'prevented_from_permanent_removal';
-  if ((goal === 'prevent_cps_involvement' || goal === 'prevent_foster_care_placement') &&
-      (l === '0_foster_care' || l === '5_kinship_placement')) return 'temporary_removal';
+
+  if (goal === 'prevent_cps_involvement') {
+    if (l === '30_custody_maintained' || l === '25_supportive_services') return 'prevented_from_cps_involvement';
+    if (l === '0_foster_care' || l === '5_kinship_placement') return 'temporary_removal';
+    return null; // escalated into CPS territory (20/15/10)
+  }
+
+  if (goal === 'prevent_foster_care_placement') {
+    if (l === '30_custody_maintained' || l === '25_supportive_services' ||
+        l === '20_differential_response' || l === '15_open_investigation' ||
+        l === '10_protective_services') return 'prevented_from_foster_care_placement';
+    if (l === '0_foster_care' || l === '5_kinship_placement') return 'temporary_removal';
+    return null;
+  }
+
+  if (goal === 'prevent_permanent_removal') return 'prevented_from_permanent_removal';
+
   return null;
 }
 

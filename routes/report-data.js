@@ -1007,12 +1007,12 @@ router.get('/', async (req, res) => {
              WHERE pre."momId" = erp."momId"
                AND pre.track_group = erp.track_group
                AND pre.atype = 'pre'
-               AND pre.ar_date < post.ar_date
+               AND pre.ar_date < post.post_date
              ORDER BY pre.ar_date DESC
              LIMIT 1) AS pre_sum
           FROM ep_rr_pairings erp
           JOIN LATERAL (
-            SELECT ar.total_score FROM ep_rr_ar ar
+            SELECT ar.total_score, ar.ar_date AS post_date FROM ep_rr_ar ar
             WHERE ar."momId" = erp."momId"
               AND ar.track_group = erp.track_group
               AND ar.atype = 'post'
@@ -1696,12 +1696,12 @@ router.get('/', async (req, res) => {
              WHERE pre."momId" = erp."momId"
                AND pre.track_group = erp.track_group
                AND pre.atype = 'pre'
-               AND pre.ar_date < post.ar_date
+               AND pre.ar_date < post.post_date
              ORDER BY pre.ar_date DESC
              LIMIT 1) AS pre_sum
           FROM ep_rr_pairings erp
           JOIN LATERAL (
-            SELECT ar.total_score FROM ep_rr_ar ar
+            SELECT ar.total_score, ar.ar_date AS post_date FROM ep_rr_ar ar
             WHERE ar."momId" = erp."momId"
               AND ar.track_group = erp.track_group
               AND ar.atype = 'post'

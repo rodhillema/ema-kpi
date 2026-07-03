@@ -6,10 +6,48 @@
    ============================================================ */
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 const pool = require('../db');
 const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
 const { lookupZipCounty } = require('../lib/zip-to-county');
+
+// ── Child snapshot — intake welfare status per child ──────────────────────────
+// Source: data/child-snapshot.json — updated by replacing file when RD sends new CSV.
+// Used for Q2 KPI1: provides intake_welfare_status (active_child_welfare_involvement
+// at time of snapshot) which is combined with the live Child field for latest status.
+let CHILD_SNAPSHOT = [];
+try {
+  const raw = fs.readFileSync(path.join(__dirname, '../data/child-snapshot.json'), 'utf8').replace(/^﻿/, '');
+  CHILD_SNAPSHOT = JSON.parse(raw);
+  console.log(`[report-data] loaded ${CHILD_SNAPSHOT.length} child snapshot rows`);
+} catch (err) {
+  console.error('[report-data] failed to load child-snapshot.json:', err.message);
+}
+
+// ── KPI1 goal mapping: intake welfare status → family_preservation_goal ───────
+function mapKpi1Goal(intakeStatus) {
+  const s = (intakeStatus || '').trim().toLowerCase();
+  if (s === '30_custody_maintained' || s === '25_supportive_services') return 'prevent_cps_involvement';
+  if (s === '20_differential_response' || s === '15_open_investigation' || s === '10_protective_services') return 'prevent_foster_care_placement';
+  if (s === '5_kinship_placement') return 'prevent_permanent_removal';
+  if (s === '0_permanently_removed' || s === '0_foster_care') return 'not_eligible_program';
+  return null;
+}
+
+// ── KPI1 impact mapping: goal + latest welfare status → family_preservation_impact
+function mapKpi1Impact(goal, latestStatus) {
+  const l = (latestStatus || '').trim().toLowerCase();
+  if (!goal || goal === 'not_eligible_program') return null;
+  if (l === '0_permanently_removed') return 'permanent_removal';
+  if (goal === 'prevent_cps_involvement' && l === '30_custody_maintained') return 'prevented_from_cps_involvement';
+  if (goal === 'prevent_foster_care_placement' && l === '30_custody_maintained') return 'prevented_from_foster_care_placement';
+  if (goal === 'prevent_permanent_removal' && l !== '0_permanently_removed') return 'prevented_from_permanent_removal';
+  if ((goal === 'prevent_cps_involvement' || goal === 'prevent_foster_care_placement') &&
+      (l === '0_foster_care' || l === '5_kinship_placement')) return 'temporary_removal';
+  return null;
+}
 
 // Period definitions — Q1 is the default for all users.
 // Q2 is available to HQ admin only via ?period=q2 query param.
@@ -1969,11 +2007,78 @@ router.get('/', async (req, res) => {
       affiliateName = affNameResult.rows[0]?.name || 'Unknown Affiliate';
     }
 
-    // KPI 1 rates — live-computed from Child.family_preservation_impact (populated by migration script)
-    const kpi1Num = kpi1.rows[0]?.numerator || 0;
-    const kpi1Den = kpi1.rows[0]?.denominator || 0;
-    const kpi1CpsPrevented = kpi1.rows[0]?.cps_prevented || 0;
-    const kpi1FosterPrevented = kpi1.rows[0]?.foster_prevented || 0;
+    // KPI 1 rates
+    // Q1: live SQL query against Child.family_preservation_impact (unchanged)
+    // Q2: computed from child-snapshot.json (intake) + live Child.active_child_welfare_involvement (latest)
+    let kpi1Num, kpi1Den, kpi1CpsPrevented, kpi1FosterPrevented;
+
+    if (requestedPeriod === 'q2' && CHILD_SNAPSHOT.length > 0) {
+      // Build intake map: child_id → active_child_welfare_involvement from snapshot
+      const intakeMap = {};
+      for (const row of CHILD_SNAPSHOT) {
+        if (row.child_id) intakeMap[row.child_id] = row.active_child_welfare_involvement || '';
+      }
+
+      // Query live latest welfare status for all children of qualifying moms.
+      // Build affiliate filter inline to avoid param-index collision with PERIOD_START/END.
+      const q2AffParams = [PERIOD_START, `${PERIOD_END} 23:59:59`];
+      let q2AffWhere = '';
+      if (excludeAffiliateId && isOrgWideRole) {
+        q2AffWhere = `AND m."affiliate_id" != $3`;
+        q2AffParams.push(excludeAffiliateId);
+      } else if (!isOrgWide) {
+        q2AffWhere = `AND m."affiliate_id" = $3`;
+        q2AffParams.push(affiliateFilter);
+      }
+
+      const childRows = await pool.query(
+        `SELECT c."id" AS child_id, c."mom_id",
+                c."active_child_welfare_involvement"::text AS latest_status
+         FROM "Child" c
+         WHERE c."deleted_at" = 0
+           AND c."mom_id" IN (
+             SELECT DISTINCT wa."mom_id"
+             FROM "WellnessAssessment" wa
+             JOIN "Mom" m ON m."id" = wa."mom_id"
+             WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
+               AND wa."cpi_total" IS NOT NULL
+               AND wa."updated_at" >= $1
+               AND wa."updated_at" <= $2
+               ${q2AffWhere}
+           )`,
+        q2AffParams
+      );
+
+      // Compute goal + impact per child, then aggregate to mom level
+      const momDen = new Set();   // moms with ≥1 eligible child
+      const momNum = new Set();   // moms with ≥1 preserved child
+      const momCps = new Set();   // moms: CPS prevented
+      const momFc  = new Set();   // moms: foster care prevented
+
+      for (const row of childRows.rows) {
+        const intake = intakeMap[row.child_id] || '';
+        const latest = row.latest_status || '';
+        const goal   = mapKpi1Goal(intake);
+        const impact = mapKpi1Impact(goal, latest);
+
+        if (!goal || goal === 'not_eligible_program') continue;
+        momDen.add(row.mom_id);
+        if (impact === 'prevented_from_cps_involvement') { momNum.add(row.mom_id); momCps.add(row.mom_id); }
+        if (impact === 'prevented_from_foster_care_placement') { momNum.add(row.mom_id); momFc.add(row.mom_id); }
+      }
+
+      kpi1Den           = momDen.size;
+      kpi1Num           = momNum.size;
+      kpi1CpsPrevented  = momCps.size;
+      kpi1FosterPrevented = momFc.size;
+    } else {
+      // Q1: use SQL query result
+      kpi1Num           = kpi1.rows[0]?.numerator || 0;
+      kpi1Den           = kpi1.rows[0]?.denominator || 0;
+      kpi1CpsPrevented  = kpi1.rows[0]?.cps_prevented || 0;
+      kpi1FosterPrevented = kpi1.rows[0]?.foster_prevented || 0;
+    }
+
     const kpi1Rate = kpi1Den > 0 ? Math.round(1000 * kpi1Num / kpi1Den) / 10 : null;
 
     // KPI 2 rates

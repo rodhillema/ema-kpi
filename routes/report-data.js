@@ -11,6 +11,21 @@ const pool = require('../db');
 const { COUNTY_FIPS, COUNTY_NAME_BY_FIPS } = require('../lib/county-fips');
 const { lookupZipCounty } = require('../lib/zip-to-county');
 
+// Locked overrides for Q2 — filled in from RD's verified CSV once received.
+// Set to null to use live-computed values; replace with object to lock the period.
+// Shape: { kpi1_num, kpi1_den, kpi1_cps_prevented, kpi1_foster_prevented,
+//          children_total, children_excluded }
+const LOCKED_Q2_OVERRIDES = null;
+// Example (fill when CSV arrives):
+// const LOCKED_Q2_OVERRIDES = {
+//   kpi1_num: 0,              // moms preserved (numerator)
+//   kpi1_den: 0,              // moms with preservation goal (denominator)
+//   kpi1_cps_prevented: 0,    // distinct moms: child prevented from CPS
+//   kpi1_foster_prevented: 0, // distinct moms: child prevented from foster care
+//   children_total: 0,        // total children active during period
+//   children_excluded: 0,     // children excluded from KPI1
+// };
+
 // Period definitions — Q1 is the default for all users.
 // Q2 is available to HQ admin only via ?period=q2 query param.
 // NOTE: Q2 PERIOD_END is set to 2026-06-26 for early testing.
@@ -1429,10 +1444,10 @@ router.get('/', async (req, res) => {
             ${affWhere}
         )
         SELECT
-          COUNT(c."id")::int AS denominator,
-          SUM(CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN 1 ELSE 0 END)::int AS numerator,
-          SUM(CASE WHEN c."family_preservation_impact" = 'prevented_from_cps_involvement' THEN 1 ELSE 0 END)::int AS cps_prevented,
-          SUM(CASE WHEN c."family_preservation_impact" = 'prevented_from_foster_care_placement' THEN 1 ELSE 0 END)::int AS foster_prevented
+          COUNT(DISTINCT c."mom_id")::int AS denominator,
+          COUNT(DISTINCT CASE WHEN c."family_preservation_impact" IN ('prevented_from_cps_involvement', 'prevented_from_foster_care_placement') THEN c."mom_id" END)::int AS numerator,
+          COUNT(DISTINCT CASE WHEN c."family_preservation_impact" = 'prevented_from_cps_involvement' THEN c."mom_id" END)::int AS cps_prevented,
+          COUNT(DISTINCT CASE WHEN c."family_preservation_impact" = 'prevented_from_foster_care_placement' THEN c."mom_id" END)::int AS foster_prevented
         FROM "Child" c
         JOIN moms_with_period_fwa f ON f."momId" = c."mom_id"
         WHERE c."deleted_at" = 0
@@ -1969,11 +1984,12 @@ router.get('/', async (req, res) => {
       affiliateName = affNameResult.rows[0]?.name || 'Unknown Affiliate';
     }
 
-    // KPI 1 rates
-    const kpi1Num = kpi1.rows[0]?.numerator || 0;
-    const kpi1Den = kpi1.rows[0]?.denominator || 0;
-    const kpi1CpsPrevented = kpi1.rows[0]?.cps_prevented || 0;
-    const kpi1FosterPrevented = kpi1.rows[0]?.foster_prevented || 0;
+    // KPI 1 rates — use locked CSV overrides for Q2 if available, else live-computed
+    const q2Overrides = (requestedPeriod === 'q2' && LOCKED_Q2_OVERRIDES) ? LOCKED_Q2_OVERRIDES : null;
+    const kpi1Num = q2Overrides ? q2Overrides.kpi1_num : (kpi1.rows[0]?.numerator || 0);
+    const kpi1Den = q2Overrides ? q2Overrides.kpi1_den : (kpi1.rows[0]?.denominator || 0);
+    const kpi1CpsPrevented = q2Overrides ? q2Overrides.kpi1_cps_prevented : (kpi1.rows[0]?.cps_prevented || 0);
+    const kpi1FosterPrevented = q2Overrides ? q2Overrides.kpi1_foster_prevented : (kpi1.rows[0]?.foster_prevented || 0);
     const kpi1Rate = kpi1Den > 0 ? Math.round(1000 * kpi1Num / kpi1Den) / 10 : null;
 
     // KPI 2 rates

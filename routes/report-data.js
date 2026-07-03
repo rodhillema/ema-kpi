@@ -1044,6 +1044,11 @@ router.get('/', async (req, res) => {
               AND s."constructEPreAssessment"  IS NOT NULL AND s."constructEPostAssessment"  IS NOT NULL
           ) t WHERE rn = 1
         ),
+        ep_rr_pairing_counts AS (
+          SELECT track_group, COUNT(*)::int AS total_completions
+          FROM ep_rr_pairings
+          GROUP BY track_group
+        ),
         all_tracks AS (
           SELECT 'NPP' AS track_group,
             (SELECT COUNT(*)::int FROM npp_pairings) AS total_completions,
@@ -1051,12 +1056,13 @@ router.get('/', async (req, res) => {
             SUM(CASE WHEN post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
           FROM npp_scored
           UNION ALL
-          SELECT track_group,
-            (SELECT COUNT(*)::int FROM ep_rr_pairings erp2 WHERE erp2.track_group = ep_rr_paired.track_group) AS total_completions,
-            COUNT(CASE WHEN pre_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
-            SUM(CASE WHEN pre_sum IS NOT NULL AND post_sum > pre_sum THEN 1 ELSE 0 END)::int AS improved
-          FROM ep_rr_paired
-          GROUP BY track_group
+          SELECT p.track_group,
+            COALESCE(c.total_completions, 0) AS total_completions,
+            COUNT(CASE WHEN p.pre_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
+            SUM(CASE WHEN p.pre_sum IS NOT NULL AND p.post_sum > p.pre_sum THEN 1 ELSE 0 END)::int AS improved
+          FROM ep_rr_paired p
+          LEFT JOIN ep_rr_pairing_counts c ON c.track_group = p.track_group
+          GROUP BY p.track_group, c.total_completions
         )
         SELECT track_group, total_completions, valid_pairs, improved
         FROM all_tracks

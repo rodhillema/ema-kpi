@@ -2632,7 +2632,7 @@
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>16%</strong></span>
       </td>
       <td class="lp-rate">
-       <span class="rate-cell" data-label="NPP learning progress" data-n="8" data-unit="of 10 with both assessments improved" data-color="#123939"
+       <span class="rate-cell" data-label="NPP learning progress" data-n="8" data-unit="of 10 who completed both assessments showed improvement" data-color="#123939"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>80%</strong></span>
        <span class="n-warn" style="cursor:help;margin-left:6px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>
       </td>
@@ -2644,7 +2644,7 @@
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>10%</strong></span>
       </td>
       <td class="lp-rate">
-       <span class="rate-cell" data-label="EP learning progress" data-n="3" data-unit="of 5 with both assessments improved" data-color="#ec482f"
+       <span class="rate-cell" data-label="EP learning progress" data-n="3" data-unit="of 5 who completed both assessments showed improvement" data-color="#ec482f"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>60%</strong></span>
        <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
       </td>
@@ -2656,7 +2656,7 @@
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>7%</strong></span>
       </td>
       <td class="lp-rate">
-       <span class="rate-cell" data-label="RR learning progress" data-n="2" data-unit="of 3 with both assessments improved" data-color="#f2a136"
+       <span class="rate-cell" data-label="RR learning progress" data-n="2" data-unit="of 3 who completed both assessments showed improvement" data-color="#f2a136"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>67%</strong></span>
        <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
       </td>
@@ -4189,7 +4189,7 @@
      lpHtml += '<tr data-track="' + curr.id + '">';
      lpHtml += '<td class="lp-curriculum"><strong>' + curr.id + '</strong> <span style="color:var(--mid);font-weight:400;">' + curr.name + '</span></td>';
      lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' completion" data-n="' + compN + '" data-unit="of ' + compDen + ' closed tracks completed" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + compPct + '</strong></span></td>';
-     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' learning progress" data-n="' + lpN + '" data-unit="of ' + lpDen + ' with both assessments improved" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + lpPct + '</strong></span>' + warnHtml + '</td>';
+     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' learning progress" data-n="' + lpN + '" data-unit="of ' + lpDen + ' who completed both assessments showed improvement" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + lpPct + '</strong></span>' + warnHtml + '</td>';
      lpHtml += '</tr>';
     });
     lpBody.innerHTML = lpHtml;

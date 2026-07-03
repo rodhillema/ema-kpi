@@ -1789,7 +1789,7 @@
      </div>
     </div>
     <div class="hc-label">Family Preservation Rate</div>
-    <div class="hc-context"><span data-hydrate="kpi1-num">28</span> of <span data-hydrate="kpi1-den">58</span> <span data-hydrate="kpi1-unit-preserved">eligible children preserved</span> &nbsp;&middot;&nbsp; <span data-hydrate="kpi1-excl">20</span> <span data-hydrate="kpi1-unit-excl">children excluded</span></div>
+    <div class="hc-context"><span data-hydrate="kpi1-num">28</span> of <span data-hydrate="kpi1-den">58</span> eligible children preserved &nbsp;&middot;&nbsp; <span data-hydrate="kpi1-excl">20</span> children excluded</div>
    </div>
 
    <!-- KPI 2 · Family Stability Score Improvement · accent identity = green -->
@@ -3598,9 +3598,6 @@
    if (k1.numerator != null)   setH1('kpi1-num', k1.numerator);
    if (k1.denominator != null) setH1('kpi1-den', k1.denominator);
    if (k1.excluded != null)    setH1('kpi1-excl', k1.excluded);
-   var isQ2 = (meta.period_key === '2026-Q2');
-   setH1('kpi1-unit-preserved', isQ2 ? 'eligible moms preserved' : 'eligible children preserved');
-   setH1('kpi1-unit-excl',      isQ2 ? 'moms excluded'           : 'children excluded');
    if (k2.rate != null) {
      setH1('kpi2-rate', Math.round(k2.rate) + '%');
    } else {

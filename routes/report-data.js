@@ -2069,11 +2069,11 @@ router.get('/', async (req, res) => {
         q2AffParams
       );
 
-      // Compute goal + impact per child, then aggregate to mom level
-      const momDen = new Set();   // moms with ≥1 eligible child
-      const momNum = new Set();   // moms with ≥1 preserved child
-      const momCps = new Set();   // moms: CPS prevented
-      const momFc  = new Set();   // moms: foster care prevented
+      // Compute goal + impact per child, count at child level
+      const childDen = new Set();   // eligible children
+      const childNum = new Set();   // preserved children
+      const childCps = new Set();   // CPS prevented
+      const childFc  = new Set();   // foster care prevented
 
       for (const row of childRows.rows) {
         const intake = intakeMap[row.child_id] || '';
@@ -2082,15 +2082,15 @@ router.get('/', async (req, res) => {
         const impact = mapKpi1Impact(goal, latest);
 
         if (!goal || goal === 'not_eligible_program' || goal === 'prevent_permanent_removal') continue;
-        momDen.add(row.mom_id);
-        if (impact === 'prevented_from_cps_involvement') { momNum.add(row.mom_id); momCps.add(row.mom_id); }
-        if (impact === 'prevented_from_foster_care_placement') { momNum.add(row.mom_id); momFc.add(row.mom_id); }
+        childDen.add(row.child_id);
+        if (impact === 'prevented_from_cps_involvement') { childNum.add(row.child_id); childCps.add(row.child_id); }
+        if (impact === 'prevented_from_foster_care_placement') { childNum.add(row.child_id); childFc.add(row.child_id); }
       }
 
-      kpi1Den           = momDen.size;
-      kpi1Num           = momNum.size;
-      kpi1CpsPrevented  = momCps.size;
-      kpi1FosterPrevented = momFc.size;
+      kpi1Den           = childDen.size;
+      kpi1Num           = childNum.size;
+      kpi1CpsPrevented  = childCps.size;
+      kpi1FosterPrevented = childFc.size;
     } else {
       // Q1: use SQL query result
       kpi1Num           = kpi1.rows[0]?.numerator || 0;

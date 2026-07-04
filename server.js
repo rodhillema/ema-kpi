@@ -43,6 +43,7 @@ app.use('/api/admin/export', require('./routes/admin-export'));
 app.use('/api/champion', require('./routes/champion-auth'));
 app.use('/api/track-journey', require('./routes/track-journey'));
 app.use('/api/child-welfare', require('./routes/child-welfare'));
+app.use('/api/kpi2-trial', requireAuth, require('./routes/kpi2-trial'));
 
 // Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.
 // Both pages POST { timestamp, recordCount, recordIds, filters } here on CSV export.
@@ -155,6 +156,12 @@ app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
 app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey.html')));
 app.get('/report/child-welfare-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'child-welfare-status-report.html')));
+app.get('/report/kpi2-trial', requireAuth, (req, res) => {
+  if ((req.session.user.username || '').toLowerCase() !== 'cristina.galloway') {
+    return res.status(403).send('Access denied');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'kpi2-trial.html'));
+});
 
 // Startup migrations — idempotent ALTER TABLE statements for new columns
 pool.query(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "availability" text`)

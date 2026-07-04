@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPI 2 Domain-Improvement Trial - EMA Impact Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #ec482f;
+      --red-dark: #c23018;
+      --red-light: #f9ece8;
+      --green: #123939;
+      --warn: #f2a136;
+      --warn-light: #fff8ee;
+      --dark: #2C2C2C;
+      --mid: #5A5A5A;
+      --light: #F4F6F8;
+      --border: #E0E0E0;
+      --bg: #fdf7f3;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
+
+    .hub-header {
+      background: var(--green);
+      color: var(--white);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hub-header h1 {
+      font-family: 'Shrikhand', serif;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+    }
+    .hub-header .back-link {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hub-header .back-link:hover { color: var(--white); }
+
+    .page-body { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    .page-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      color: var(--mid);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .trial-banner {
+      background: var(--warn-light);
+      border-left: 4px solid var(--warn);
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .trial-banner strong {
+      font-family: 'Oswald', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--dark);
+    }
+
+    #loading-state, #error-state { padding: 40px; text-align: center; color: var(--mid); }
+    #error-state { color: var(--red); }
+    #main-content { display: none; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 680px) { .summary-grid { grid-template-columns: 1fr; } }
+
+    .summary-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px;
+    }
+    .card-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--mid);
+      margin-bottom: 12px;
+    }
+    .card-label.strict { color: var(--green); }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--light);
+      font-size: 13px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--mid); }
+    .stat-value { font-weight: 700; color: var(--dark); }
+    .stat-value.highlight { color: var(--red); }
+
+    .gap-row {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: var(--light);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--mid);
+    }
+    .gap-row strong { color: var(--dark); }
+
+    .exclusions-row {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--mid);
+    }
+    .exclusions-row .exc-val { color: var(--dark); font-weight: 700; margin: 0 3px; }
+    .exc-label {
+      font-family: 'Oswald', sans-serif;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: var(--mid);
+      margin-right: 8px;
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-toggle {
+      display: flex;
+      background: var(--light);
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .filter-toggle button {
+      border: none;
+      background: transparent;
+      padding: 6px 16px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--mid);
+      cursor: pointer;
+    }
+    .filter-toggle button.active {
+      background: var(--green);
+      color: var(--white);
+    }
+    .btn-csv {
+      margin-left: auto;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      padding: 7px 16px;
+      border-radius: 4px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .btn-csv:hover { background: var(--red-dark); }
+
+    .sample-warn {
+      background: var(--warn-light);
+      border: 1px solid var(--warn);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--dark);
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--white); }
+    thead th {
+      background: var(--green);
+      color: var(--white);
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) { background: var(--light); }
+    tbody tr:hover { background: #e8eded; }
+    tbody td { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+    td.num { text-align: right; }
+    td.center { text-align: center; }
+
+    .tag-strict {
+      display: inline-block;
+      background: var(--green);
+      color: var(--white);
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .tag-wide {
+      display: inline-block;
+      background: var(--light);
+      color: var(--mid);
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    td.positive { color: #2a7a2a; font-weight: 700; }
+    td.negative { color: var(--red); font-weight: 700; }
+    td.neutral { color: var(--mid); }
+
+    .empty-state { padding: 32px; text-align: center; color: var(--mid); font-style: italic; }
+
+    .caveats {
+      margin-top: 28px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+    }
+    .caveats h3 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--mid);
+      margin-bottom: 10px;
+    }
+    .caveats ul { padding-left: 16px; }
+    .caveats li { font-size: 12px; color: var(--mid); line-height: 1.6; margin-bottom: 4px; }
+    .caveats li strong { color: var(--dark); }
+  </style>
+</head>
+<body>
+
+<div class="hub-header">
+  <h1>EMA Impact Hub</h1>
+  <a href="/report" class="back-link">Back to Dashboard</a>
+</div>
+
+<div class="page-body">
+  <div class="page-title">KPI 2 Domain-Improvement Trial</div>
+  <div class="page-subtitle">Domains increased vs. composite FSS movement - exploratory, not the published KPI 2</div>
+
+  <div class="trial-banner">
+    <strong>Trial only</strong> - This page tests a lenient signal ("at least one FSS domain improved")
+    against the composite FSS movement that KPI 2 actually reports. It is not the official KPI 2 figure
+    and is not linked from the main dashboard.
+  </div>
+
+  <div id="loading-state">Loading data...</div>
+  <div id="error-state" style="display:none"></div>
+
+  <div id="main-content">
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="card-label">Widened cohort (all eligible)</div>
+        <div class="stat-row">
+          <span class="stat-label">Moms with pre + post FWA</span>
+          <span class="stat-value" id="w-n">-</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Any domain improved</span>
+          <span class="stat-value highlight" id="w-any-domain">-</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">FSS composite improved</span>
+          <span class="stat-value" id="w-fss-improved">-</span>
+        </div>
+        <div class="gap-row" id="w-gap"></div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label strict">Strict KPI 2 cohort</div>
+        <div class="stat-row">
+          <span class="stat-label">Moms with pre + post FWA</span>
+          <span class="stat-value" id="s-n">-</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Any domain improved</span>
+          <span class="stat-value highlight" id="s-any-domain">-</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">FSS composite improved</span>
+          <span class="stat-value" id="s-fss-improved">-</span>
+        </div>
+        <div class="gap-row" id="s-gap"></div>
+      </div>
+    </div>
+
+    <div class="exclusions-row" id="exclusions-row"></div>
+
+    <div class="table-toolbar">
+      <div class="filter-toggle">
+        <button class="active" id="btn-all" onclick="setFilter('all')">All</button>
+        <button id="btn-strict" onclick="setFilter('strict')">Strict KPI 2 only</button>
+      </div>
+      <button class="btn-csv" onclick="downloadCSV()">Download CSV</button>
+    </div>
+
+    <div class="sample-warn" id="sample-warn"></div>
+
+    <div class="table-wrap">
+      <table id="mom-table">
+        <thead>
+          <tr>
+            <th>Mom ID</th>
+            <th>Cohort</th>
+            <th class="num">Pre FSS</th>
+            <th class="num">Post FSS</th>
+            <th class="num">FSS Delta</th>
+            <th class="num">Domains Up</th>
+            <th class="num">Domains Down</th>
+            <th class="num">Domains Same</th>
+            <th class="center">Any Domain +</th>
+            <th class="center">FSS Improved</th>
+            <th>Pre Date</th>
+            <th>Post Date</th>
+            <th class="num">Days</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="caveats">
+      <h3>Data integrity notes</h3>
+      <ul>
+        <li><strong>FWA timestamp caveat:</strong> A later FWA row is not proof of a full re-assessment. Any single field edit resets the submission timestamp, so improvement flags are provisional.</li>
+        <li><strong>Trial status:</strong> The "at least one domain improved" measure is exploratory only. The official KPI 2 requires composite FSS improvement (post &gt; pre total).</li>
+        <li><strong>Cohort anchor:</strong> This trial anchors the 91-180 day post window to each mom's derived intake date, not pairing start. The production KPI 2 uses pairing start. Cohorts may differ.</li>
+        <li><strong>Strict KPI 2 tag:</strong> Moms tagged strict = 1 are in a period-active pairing (Jan 1 - Jun 30 2026), not PS-migrated. Matches production cohort logic with PERIOD_END = 2026-06-30.</li>
+        <li><strong>Sample size:</strong> n &lt; 10 = too few to interpret; n &lt; 20 = interpret with caution; n &ge; 20 = reportable. Check the strict subset especially.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let allRows = [];
+  let currentFilter = 'all';
+
+  async function init() {
+    try {
+      const me = await fetch('/api/me').then(r => r.json());
+      if (!me.user) { window.location.href = '/'; return; }
+    } catch (e) { window.location.href = '/'; return; }
+
+    try {
+      const data = await fetch('/api/kpi2-trial').then(async r => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({ error: r.statusText }));
+          throw new Error(err.error || r.statusText);
+        }
+        return r.json();
+      });
+
+      allRows = data.rows || [];
+      renderSummary(allRows);
+      renderExclusions(data.exclusions);
+      renderTable(allRows);
+
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('main-content').style.display = '';
+    } catch (err) {
+      document.getElementById('loading-state').style.display = 'none';
+      const el = document.getElementById('error-state');
+      el.style.display = '';
+      el.textContent = 'Error loading data: ' + err.message;
+    }
+  }
+
+  function pct(num, den) {
+    if (!den) return 'n/a';
+    return Math.round(100 * num / den) + '%';
+  }
+
+  function renderSummary(rows) {
+    fill('w', rows);
+    fill('s', rows.filter(r => r.strict_kpi2 == 1));
+  }
+
+  function fill(prefix, subset) {
+    const n = subset.length;
+    const anyDomain = subset.filter(r => r.any_domain_improved == 1).length;
+    const fssImproved = subset.filter(r => r.fss_improved == 1).length;
+
+    document.getElementById(prefix + '-n').textContent = n;
+    document.getElementById(prefix + '-any-domain').textContent =
+      n < 10 ? 'n<10 - too few to interpret'
+             : anyDomain + ' of ' + n + ' (' + pct(anyDomain, n) + ')';
+    document.getElementById(prefix + '-fss-improved').textContent =
+      n < 10 ? 'n<10 - too few to interpret'
+             : fssImproved + ' of ' + n + ' (' + pct(fssImproved, n) + ')';
+
+    const gapEl = document.getElementById(prefix + '-gap');
+    if (n >= 10) {
+      const gap = anyDomain - fssImproved;
+      const sign = gap >= 0 ? '+' : '';
+      gapEl.innerHTML = '<strong>Gap (any-domain minus FSS rate):</strong> '
+        + sign + gap + ' moms (' + sign + pct(gap, n) + ' pp)';
+    } else {
+      gapEl.textContent = 'Gap not computed - sample too small';
+    }
+  }
+
+  function renderExclusions(exc) {
+    if (!exc) return;
+    const el = document.getElementById('exclusions-row');
+    el.innerHTML =
+      '<span class="exc-label">Excluded</span>'
+      + 'PS-migrated (no reliable intake date): <span class="exc-val">' + exc.ps_migrated_n + '</span>'
+      + ' &nbsp;|&nbsp; '
+      + 'Has intake date but no pre FWA: <span class="exc-val">' + exc.missing_pre_n + '</span>'
+      + ' &nbsp;|&nbsp; '
+      + 'Has pre FWA but no post in 91-180 window: <span class="exc-val">' + exc.missing_post_n + '</span>';
+  }
+
+  function setFilter(mode) {
+    currentFilter = mode;
+    document.getElementById('btn-all').classList.toggle('active', mode === 'all');
+    document.getElementById('btn-strict').classList.toggle('active', mode === 'strict');
+    const filtered = mode === 'strict' ? allRows.filter(r => r.strict_kpi2 == 1) : allRows;
+    renderTable(filtered);
+  }
+
+  function updateSampleWarn(rows) {
+    const el = document.getElementById('sample-warn');
+    if (rows.length < 10) {
+      el.style.display = '';
+      el.textContent = 'n = ' + rows.length + ' - sample too small to interpret.';
+    } else if (rows.length < 20) {
+      el.style.display = '';
+      el.textContent = 'n = ' + rows.length + ' - interpret with caution.';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function renderTable(rows) {
+    updateSampleWarn(rows);
+    const tbody = document.getElementById('table-body');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="13" class="empty-state">No moms match this filter.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const deltaClass = r.fss_delta > 0 ? 'positive' : r.fss_delta < 0 ? 'negative' : 'neutral';
+      const tag = r.strict_kpi2 == 1
+        ? '<span class="tag-strict">Strict</span>'
+        : '<span class="tag-wide">Widened</span>';
+      const shortId = String(r.mom_id).slice(-8);
+      return '<tr>'
+        + '<td title="' + r.mom_id + '">' + shortId + '</td>'
+        + '<td>' + tag + '</td>'
+        + '<td class="num">' + r.pre_fss + '</td>'
+        + '<td class="num">' + r.post_fss + '</td>'
+        + '<td class="num ' + deltaClass + '">' + (r.fss_delta > 0 ? '+' : '') + r.fss_delta + '</td>'
+        + '<td class="num">' + r.domains_increased + '</td>'
+        + '<td class="num">' + r.domains_decreased + '</td>'
+        + '<td class="num">' + r.domains_unchanged + '</td>'
+        + '<td class="center">' + (r.any_domain_improved == 1 ? 'Yes' : 'No') + '</td>'
+        + '<td class="center">' + (r.fss_improved == 1 ? 'Yes' : 'No') + '</td>'
+        + '<td>' + (r.pre_created_at || '') + '</td>'
+        + '<td>' + (r.post_updated_at || '') + '</td>'
+        + '<td class="num">' + r.days_between + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function downloadCSV() {
+    const rows = currentFilter === 'strict' ? allRows.filter(r => r.strict_kpi2 == 1) : allRows;
+    const cols = ['mom_id','strict_kpi2','pre_fss','post_fss','fss_delta',
+      'domains_increased','domains_decreased','domains_unchanged',
+      'any_domain_improved','fss_improved','pre_created_at','post_updated_at','days_between'];
+    const header = cols.join(',');
+    const body = rows.map(r => cols.map(c => {
+      const v = r[c];
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return (s.includes(',') || s.includes('"')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(',')).join('\n');
+    const blob = new Blob([header + '\n' + body], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kpi2_domain_improvement_trial.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  init();
+</script>
+</body>
+</html>

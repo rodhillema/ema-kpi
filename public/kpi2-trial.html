@@ -290,6 +290,7 @@
 
   <div id="loading-state" style="padding:40px;text-align:center;color:#5A5A5A;font-size:14px;">Loading data...</div>
   <div id="error-state" style="display:none;padding:20px;background:#f9ece8;border:2px solid #ec482f;border-radius:6px;margin:16px 0;font-size:13px;color:#2C2C2C;white-space:pre-wrap;word-break:break-all;"></div>
+  <div id="debug-state" style="padding:12px 16px;background:#f0f4f4;border:1px solid #ccc;border-radius:4px;margin:8px 0;font-size:12px;color:#444;font-family:monospace;">JS starting...</div>
 
   <div id="main-content">
 
@@ -381,14 +382,34 @@
   let allRows = [];
   let currentFilter = 'all';
 
+  function dbg(msg) {
+    const el = document.getElementById('debug-state');
+    if (el) el.textContent = msg;
+    console.log('[kpi2-trial]', msg);
+  }
+
   async function init() {
+    dbg('Checking session...');
+    let meData;
     try {
-      const me = await fetch('/api/me').then(r => r.json());
-      if (!me.user) { window.location.href = '/'; return; }
-    } catch (e) { window.location.href = '/'; return; }
+      const r = await fetch('/api/me');
+      dbg('Got /api/me response: HTTP ' + r.status);
+      meData = await r.json();
+    } catch (e) {
+      dbg('Failed to reach /api/me: ' + e.message);
+      return;
+    }
+
+    if (!meData.user) {
+      dbg('Not logged in (session missing). Please log in at the hub first, then return to this page.');
+      document.getElementById('loading-state').style.display = 'none';
+      return;
+    }
+    dbg('Authenticated as ' + meData.user.username + '. Fetching trial data...');
 
     try {
       const response = await fetch('/api/kpi2-trial');
+      dbg('Got /api/kpi2-trial response: HTTP ' + response.status);
       const raw = await response.text();
       if (!response.ok) {
         throw new Error('HTTP ' + response.status + '\n' + raw.slice(0, 500));
@@ -403,10 +424,12 @@
       renderTable(allRows);
 
       document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('debug-state').style.display = 'none';
       document.getElementById('main-content').style.display = '';
     } catch (err) {
       console.error('[kpi2-trial]', err);
       document.getElementById('loading-state').style.display = 'none';
+      dbg('Error - see red box below');
       const el = document.getElementById('error-state');
       el.style.display = '';
       el.textContent = 'Error loading data:\n' + err.message;

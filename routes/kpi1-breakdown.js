@@ -43,6 +43,32 @@ function mapGoal(intakeStatus) {
   return null;
 }
 
+// Map goal + latest welfare status → impact (matches report-data.js)
+function mapImpact(goal, latestStatus) {
+  const l = (latestStatus || '').trim().toLowerCase();
+  if (!goal || goal === 'not_eligible_program') return null;
+  if (l === '0_permanently_removed') return 'permanent_removal';
+
+  if (goal === 'prevent_cps_involvement') {
+    if (l === '30_custody_maintained' || l === '25_supportive_services') return 'prevented_from_cps_involvement';
+    if (l === '20_differential_response' || l === '15_open_investigation' || l === '10_protective_services') return 'prevented_from_foster_care_placement';
+    if (l === '0_foster_care' || l === '5_kinship_placement') return 'temporary_removal';
+    return null;
+  }
+
+  if (goal === 'prevent_foster_care_placement') {
+    if (l === '30_custody_maintained' || l === '25_supportive_services' ||
+        l === '20_differential_response' || l === '15_open_investigation' ||
+        l === '10_protective_services') return 'prevented_from_foster_care_placement';
+    if (l === '0_foster_care' || l === '5_kinship_placement') return 'temporary_removal';
+    return null;
+  }
+
+  if (goal === 'prevent_permanent_removal') return null;
+
+  return null;
+}
+
 // GET /api/kpi1-breakdown?period=q1|q2
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -59,26 +85,25 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid period — use q1 or q2' });
     }
 
-    // Fetch all children in eligible families (moms with a scored FWA in period)
+    // Fetch all children linked to moms with a completed pairing in period
     const result = await pool.query(`
-      WITH moms_with_period_fwa AS (
-        SELECT DISTINCT wa."mom_id" AS "momId"
-        FROM "WellnessAssessment" wa
-        JOIN "Mom" m ON m."id" = wa."mom_id"
-        WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
-          AND wa."cpi_total" IS NOT NULL
-          AND wa."updated_at" >= $1
-          AND wa."updated_at" <= $2
+      WITH moms_with_completed_pairing AS (
+        SELECT DISTINCT p."momId"
+        FROM "Pairing" p
+        JOIN "Mom" m ON m."id" = p."momId"
+        WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+          AND p."status"::text = 'pairing_complete'
+          AND p."completed_on" <= $1
       )
       SELECT
-        c."id"                          AS child_id,
+        c."id"                                AS child_id,
         c."mom_id",
-        c."family_preservation_impact"  AS impact
+        c."active_child_welfare_involvement"::text AS latest_status
       FROM "Child" c
-      JOIN moms_with_period_fwa f ON f."momId" = c."mom_id"
+      JOIN moms_with_completed_pairing f ON f."momId" = c."mom_id"
       WHERE c."deleted_at" = 0
       ORDER BY c."mom_id", c."id"
-    `, [PERIOD_START, PERIOD_END + ' 23:59:59']);
+    `, [PERIOD_END + ' 23:59:59']);
 
     const children = result.rows;
     const denominator = children.length;
@@ -102,7 +127,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     };
 
     for (const c of children) {
-      // Goal
+      // Goal from snapshot intake status
       const intakeStatus = CHILD_SNAPSHOT_MAP[c.child_id] || null;
       const goal = mapGoal(intakeStatus);
       if      (goal === 'prevent_cps_involvement')       goalCounts.prevent_cps_involvement++;
@@ -111,8 +136,8 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       else if (goal === 'not_eligible_program')          goalCounts.not_eligible_program++;
       else                                               goalCounts.not_recorded++;
 
-      // Impact
-      const impact = c.impact;
+      // Impact computed from snapshot intake + live latest status
+      const impact = mapImpact(goal, c.latest_status);
       if      (impact === 'prevented_from_cps_involvement')       impactCounts.prevented_from_cps_involvement++;
       else if (impact === 'prevented_from_foster_care_placement') impactCounts.prevented_from_foster_care_placement++;
       else if (impact === 'temporary_removal')                    impactCounts.temporary_removal++;

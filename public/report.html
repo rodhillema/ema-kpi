@@ -4373,6 +4373,9 @@
    if (el.classList.contains('dn-track')) return;
    var parent = el.parentElement;
    if (parent && parent.classList && parent.classList.contains('prop-bar')) return;
+   // Skip per-curriculum learning progress cells — they manage their own warnings
+   // with track-specific thresholds (< 10 crit, < 20 caution) via warnHtml.
+   if (el.closest('#learningProgressBody')) return;
    var n = parseInt(el.getAttribute('data-n'), 10);
    if (!isNaN(n) && n < N_THRESHOLD) {
     if (!el.querySelector('.n-warn')) {

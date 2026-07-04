@@ -386,7 +386,10 @@ body.champ-admin .champ-mgmt-section{display:flex}
         <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
         <span class="nav-text">Impact Reports</span>
       </div>
-
+      <div class="nav-item hq-only" data-view="view-hq-resources" onclick="sv(this)" style="display:none">
+        <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg></div>
+        <span class="nav-text">HQ Resources</span>
+      </div>
     </div>
 
     <div class="nav-div"></div>
@@ -480,6 +483,26 @@ body.champ-admin .champ-mgmt-section{display:flex}
           </div>
           <div class="rright"><span class="badge-soon">Coming Soon</span></div>
         </div>
+      </div>
+    </div>
+
+    <!-- HQ RESOURCES (administrator only) -->
+    <div class="section-view hq-only" id="view-hq-resources" style="display:none">
+      <div class="sec-eyebrow">HQ Only</div>
+      <div class="sec-title">HQ Resources</div>
+      <div class="sec-intro">Internal reports and data summaries for ĒMA HQ leadership. Not visible to affiliate staff.</div>
+      <div class="rlist">
+        <a class="rcard cr" href="/report/flagged-needs">
+          <div class="ricon r"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L14,5 L14,10 C14,13 8,15 8,15 C8,15 2,13 2,10 L2,5 Z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="5.5" r=".5" fill="currentColor" stroke="none"/></svg></div>
+          <div class="rbody">
+            <div class="rname">Flagged Needs Summary</div>
+            <div class="rdesc">Needs moms surfaced and how often they were met — by affiliate and need type. Available by quarter and YTD.</div>
+          </div>
+          <div class="rright">
+            <span class="badge-latest">Q1 · Q2 · YTD</span>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
       </div>
     </div>
 
@@ -768,6 +791,12 @@ function applySession(u) {
   var isAdmin = ['administrator', 'supervisor', 'coordinator'].indexOf(u.role || '') !== -1 || !!u.isOrgWide;
   document.querySelectorAll(".action-reports-section").forEach(function(el) {
     el.style.display = isAdmin ? "" : "none";
+  });
+
+  // HQ Resources: administrator only
+  var isHQ = u.role === 'administrator';
+  document.querySelectorAll(".hq-only").forEach(function(el) {
+    el.style.display = isHQ ? "" : "none";
   });
 
   applyHashNav();

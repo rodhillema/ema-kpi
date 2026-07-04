@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flagged Needs Summary · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fdf4e6;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;
+  --border:#E0E0E0;--bg:#fdf7f3;--white:#fff;
+}
+html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
+
+/* ── LOGIN ── */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--bg)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none!important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);margin-bottom:6px}
+.field input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:10px 13px;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s}
+.field input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(236,72,47,.1)}
+.field input::placeholder{color:#c8c8c8}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.login-btn:hover{background:var(--red-dk)}
+
+/* ── PORTAL ── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+
+/* ── NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo{height:30px;width:auto;display:block}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-hub a{color:rgba(255,255,255,.8);text-decoration:none;transition:color .15s}
+.nav-hub a:hover{color:var(--white)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── REPORT HEADER ── */
+.report-header{background:var(--green);padding:20px 40px 16px;color:var(--white)}
+.report-header-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.report-header h1{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);line-height:1.2}
+.rh-subtitle{font-size:13px;opacity:.75;margin-top:4px;font-family:'Lato',sans-serif}
+.rh-badge{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.25);margin-top:6px}
+
+/* Period tabs in header */
+.period-tabs{display:flex;gap:6px;align-items:center;margin-top:2px}
+.period-tab{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s}
+.period-tab:hover{color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.35)}
+.period-tab.active{color:var(--white);background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45)}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:32px 40px;max-width:860px;width:100%}
+
+/* Pending state */
+.pending-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 32px;text-align:center;margin-bottom:28px}
+.pending-icon{font-size:28px;margin-bottom:12px}
+.pending-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.5px;color:var(--dark);margin-bottom:6px}
+.pending-sub{font-size:13px;color:var(--mid);line-height:1.6;max-width:440px;margin:0 auto}
+
+/* Headline card */
+.headline{background:var(--green);color:var(--white);border-radius:12px;padding:24px 28px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
+.headline-left{flex:1;min-width:200px}
+.headline-eyebrow{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.65);margin-bottom:4px}
+.headline-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:.5px;margin-bottom:4px}
+.headline-note{font-size:12px;color:rgba(255,255,255,.7)}
+.headline-stats{display:flex;gap:28px;align-items:flex-end}
+.hstat{text-align:right}
+.hstat-num{font-family:'Shrikhand',cursive;font-weight:400;font-size:34px;line-height:1;color:var(--white);font-variant-numeric:tabular-nums}
+.hstat-num.big{font-size:46px;color:var(--yellow)}
+.hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.6);margin-top:5px}
+
+/* Section */
+.section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:0;margin-bottom:20px;overflow:hidden}
+.section-head{padding:14px 20px 12px;border-bottom:1px solid var(--border)}
+.section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);text-align:left;padding:10px 20px;border-bottom:1px solid var(--border);background:#fafaf8}
+th.right{text-align:right}
+td{padding:13px 20px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.right{text-align:right;font-variant-numeric:tabular-nums}
+.row-name{font-weight:700;color:var(--dark)}
+.row-note{font-size:11.5px;color:var(--light);font-style:italic;margin-top:3px}
+.pct{font-weight:700;font-size:14px;color:var(--dark)}
+.pct-sup{color:var(--light);font-style:italic}
+.pill{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;background:var(--yellow-lt);color:var(--yellow);margin-left:6px;vertical-align:middle}
+.lead-row td{background:var(--green-lt)}
+.lead-row .row-name{color:var(--green)}
+
+/* Footnote */
+.footnote{font-size:12px;color:var(--mid);line-height:1.65;padding:16px 20px;border-top:1px solid var(--border);background:#fafaf8}
+.footnote strong{color:var(--dark)}
+
+/* YTD note banner */
+.ytd-note{background:var(--yellow-lt);border:1px solid rgba(242,161,54,.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:#6a4a10;line-height:1.55}
+.ytd-note strong{color:#4a3208}
+</style>
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div class="login-view">
+  <div class="login-box">
+    <img class="login-logo" src="/email-logo.png" alt="ĒMA">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Sign in with your ĒMA account</div>
+    <div class="login-err" id="login-err">Incorrect username or password.</div>
+    <div class="field"><label>Username</label><input type="text" id="lu" autocomplete="username" placeholder="your.name"></div>
+    <div class="field"><label>Password</label><input type="password" id="lp" autocomplete="current-password" placeholder="••••••••"></div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- PORTAL VIEW -->
+<div class="portal-view">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="/"><img class="nav-logo" src="/email-logo.png" alt="ĒMA"></a>
+      <div class="nav-hub"><a href="/">Impact Hub</a></div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-scope" id="nav-scope" style="display:none">
+        <div class="nav-scope-lbl">Viewing</div>
+        <div class="nav-scope-val" id="nav-scope-val"></div>
+      </div>
+      <div class="nav-sep" id="nav-scope-sep" style="display:none"></div>
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar"></div>
+        <div>
+          <div class="nav-name" id="nav-name"></div>
+          <div class="nav-role" id="nav-role"></div>
+        </div>
+      </div>
+      <div class="nav-sep"></div>
+      <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- REPORT HEADER -->
+  <div class="report-header">
+    <div class="report-header-top">
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.55);margin-bottom:4px">HQ Resources · Investor Report Pulse</div>
+        <h1>Flagged Needs Summary</h1>
+        <div class="rh-subtitle">Needs moms surfaced and how often they were met — by affiliate and type.</div>
+        <div class="rh-badge">Trellis-native records · Directional pulse</div>
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('q1')">Q1 2026</button>
+        <button class="period-tab" onclick="setPeriod('q2')">Q2 2026</button>
+        <button class="period-tab" onclick="setPeriod('ytd')">YTD 2026</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Q1 2026 -->
+    <div id="panel-q1">
+
+      <div class="headline">
+        <div class="headline-left">
+          <div class="headline-eyebrow">National Total</div>
+          <div class="headline-title">All affiliates · all types</div>
+          <div class="headline-note">January 1 – March 31, 2026</div>
+        </div>
+        <div class="headline-stats">
+          <div class="hstat"><div class="hstat-num">275</div><div class="hstat-lbl">Flagged</div></div>
+          <div class="hstat"><div class="hstat-num">203</div><div class="hstat-lbl">Met</div></div>
+          <div class="hstat"><div class="hstat-num big">74%</div><div class="hstat-lbl">Met Rate</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><div class="section-label">By Affiliate</div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Affiliate</th>
+              <th class="right">Flagged</th>
+              <th class="right">Met</th>
+              <th class="right">% Met</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="lead-row">
+              <td>
+                <div class="row-name">ĒMA Broward</div>
+                <div class="row-note">93% of national volume — the network number is essentially Broward</div>
+              </td>
+              <td class="right">255</td>
+              <td class="right">193</td>
+              <td class="right pct">76%</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">AZ127 &amp; Hope Women's<span class="pill">Small n</span></div>
+                <div class="row-note">Below interpretation threshold (n &lt; 20)</div>
+              </td>
+              <td class="right">10</td>
+              <td class="right">4</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">Bravely Women's<span class="pill">Small n</span></div>
+                <div class="row-note">Below interpretation threshold (n &lt; 20)</div>
+              </td>
+              <td class="right">9</td>
+              <td class="right">5</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">CityLink Center<span class="pill">Small n</span></div>
+                <div class="row-note">Single record — not a meaningful rate</div>
+              </td>
+              <td class="right">1</td>
+              <td class="right">1</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="footnote">
+          <strong>Source:</strong> BenevolenceNeed table, Trellis Railway PostgreSQL.
+          <strong>Window:</strong> Jan 1 – Mar 31, 2026 (created_at).
+          <strong>Met:</strong> did_address_need_c = TRUE.
+          Trellis-native records only — PromiseServes-migrated history excluded.
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><div class="section-label">By Need Type</div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th class="right">Flagged</th>
+              <th class="right">Met</th>
+              <th class="right">% Met</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="row-name">Physical Goods</div></td>
+              <td class="right">187</td>
+              <td class="right">151</td>
+              <td class="right pct">81%</td>
+            </tr>
+            <tr>
+              <td><div class="row-name">Financial</div></td>
+              <td class="right">52</td>
+              <td class="right">37</td>
+              <td class="right pct">71%</td>
+            </tr>
+            <tr>
+              <td><div class="row-name">Other</div></td>
+              <td class="right">36</td>
+              <td class="right">15</td>
+              <td class="right pct">42%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /panel-q1 -->
+
+    <!-- Q2 2026 -->
+    <div id="panel-q2" style="display:none">
+      <div class="pending-card">
+        <div class="pending-icon">📋</div>
+        <div class="pending-title">Q2 Data Pending</div>
+        <div class="pending-sub">Q2 closed June 30, 2026. The data pull hasn't been run yet — check back soon or update this page once the numbers are ready.</div>
+      </div>
+    </div>
+
+    <!-- YTD 2026 -->
+    <div id="panel-ytd" style="display:none">
+
+      <div class="ytd-note">
+        <strong>YTD = Q1 only.</strong> Q2 data hasn't been added yet. This view will update once Q2 numbers are entered.
+      </div>
+
+      <div class="headline">
+        <div class="headline-left">
+          <div class="headline-eyebrow">YTD National Total</div>
+          <div class="headline-title">All affiliates · all types</div>
+          <div class="headline-note">January 1 – March 31, 2026 (Q1 only)</div>
+        </div>
+        <div class="headline-stats">
+          <div class="hstat"><div class="hstat-num">275</div><div class="hstat-lbl">Flagged</div></div>
+          <div class="hstat"><div class="hstat-num">203</div><div class="hstat-lbl">Met</div></div>
+          <div class="hstat"><div class="hstat-num big">74%</div><div class="hstat-lbl">Met Rate</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><div class="section-label">By Affiliate — YTD</div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Affiliate</th>
+              <th class="right">Flagged</th>
+              <th class="right">Met</th>
+              <th class="right">% Met</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="lead-row">
+              <td>
+                <div class="row-name">ĒMA Broward</div>
+                <div class="row-note">93% of national volume</div>
+              </td>
+              <td class="right">255</td>
+              <td class="right">193</td>
+              <td class="right pct">76%</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">AZ127 &amp; Hope Women's<span class="pill">Small n</span></div>
+              </td>
+              <td class="right">10</td>
+              <td class="right">4</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">Bravely Women's<span class="pill">Small n</span></div>
+              </td>
+              <td class="right">9</td>
+              <td class="right">5</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+            <tr>
+              <td>
+                <div class="row-name">CityLink Center<span class="pill">Small n</span></div>
+              </td>
+              <td class="right">1</td>
+              <td class="right">1</td>
+              <td class="right pct pct-sup">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><div class="section-label">By Need Type — YTD</div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th class="right">Flagged</th>
+              <th class="right">Met</th>
+              <th class="right">% Met</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="row-name">Physical Goods</div></td>
+              <td class="right">187</td>
+              <td class="right">151</td>
+              <td class="right pct">81%</td>
+            </tr>
+            <tr>
+              <td><div class="row-name">Financial</div></td>
+              <td class="right">52</td>
+              <td class="right">37</td>
+              <td class="right pct">71%</td>
+            </tr>
+            <tr>
+              <td><div class="row-name">Other</div></td>
+              <td class="right">36</td>
+              <td class="right">15</td>
+              <td class="right pct">42%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="footnote">
+          YTD reflects Q1 2026 only. Will update when Q2 data is entered.
+        </div>
+      </div>
+
+    </div><!-- /panel-ytd -->
+
+  </div><!-- /content -->
+</div><!-- /portal-view -->
+
+<script>
+var SESSION_KEY = 'ema_hub_session';
+
+function getSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'); }
+  catch(e) { return null; }
+}
+
+function doLogin() {
+  var u = document.getElementById('lu').value.trim().toLowerCase();
+  var p = document.getElementById('lp').value;
+  var err = document.getElementById('login-err');
+  err.classList.remove('show');
+  fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: u, password: p})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.success) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(d.user));
+      applySession(d.user);
+    } else {
+      err.classList.add('show');
+    }
+  })
+  .catch(function(){ err.classList.add('show'); });
+}
+
+function doSignOut() {
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  document.cookie = 'connect.sid=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+  window.location.href = '/';
+}
+
+function applySession(u) {
+  // HQ only
+  if (u.role !== 'administrator') {
+    window.location.href = '/';
+    return;
+  }
+  document.body.classList.remove('show-login');
+  document.body.classList.add('logged-in');
+  var av = document.getElementById('nav-avatar');
+  var nm = document.getElementById('nav-name');
+  var rl = document.getElementById('nav-role');
+  var sv = document.getElementById('nav-scope-val');
+  var sc = document.getElementById('nav-scope');
+  var ss = document.getElementById('nav-scope-sep');
+  var first = u.firstName || '';
+  var last  = u.lastName  || '';
+  if (av) av.textContent = ((first.charAt(0)||'')+(last.charAt(0)||'')).toUpperCase();
+  if (nm) nm.textContent = (first+' '+last).trim();
+  if (rl) rl.textContent = 'HQ Admin';
+  if (sv) sv.textContent = 'All Affiliates';
+  if (sc) sc.style.display = '';
+  if (ss) ss.style.display = '';
+}
+
+// Period tabs
+function setPeriod(p) {
+  ['q1','q2','ytd'].forEach(function(id){
+    document.getElementById('panel-'+id).style.display = id === p ? '' : 'none';
+  });
+  document.querySelectorAll('.period-tab').forEach(function(btn, i){
+    var ids = ['q1','q2','ytd'];
+    btn.classList.toggle('active', ids[i] === p);
+  });
+}
+
+// Init
+(function(){
+  var u = getSession();
+  if (u && u.role) {
+    applySession(u);
+  } else {
+    fetch('/api/session')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.user) {
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(d.user));
+          applySession(d.user);
+        } else {
+          document.body.classList.add('show-login');
+        }
+      })
+      .catch(function(){ document.body.classList.add('show-login'); });
+  }
+
+  document.getElementById('lp').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doLogin();
+  });
+})();
+</script>
+</body>
+</html>

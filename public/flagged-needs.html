@@ -50,8 +50,6 @@ body.logged-in .portal-view{display:flex}
 .nav-hub a{color:rgba(255,255,255,.8);text-decoration:none;transition:color .15s}
 .nav-hub a:hover{color:var(--white)}
 .nav-right{display:flex;align-items:center;gap:10px}
-.nav-link{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
-.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
 .nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
 .nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
 .nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
@@ -69,8 +67,6 @@ body.logged-in .portal-view{display:flex}
 .report-header h1{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);line-height:1.2}
 .rh-subtitle{font-size:13px;opacity:.75;margin-top:4px;font-family:'Lato',sans-serif}
 .rh-badge{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.25);margin-top:6px}
-
-/* Period tabs in header */
 .period-tabs{display:flex;gap:6px;align-items:center;margin-top:2px}
 .period-tab{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s}
 .period-tab:hover{color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.35)}
@@ -79,11 +75,11 @@ body.logged-in .portal-view{display:flex}
 /* ── CONTENT ── */
 .content{flex:1;padding:32px 40px;max-width:860px;width:100%}
 
-/* Pending state */
-.pending-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 32px;text-align:center;margin-bottom:28px}
-.pending-icon{font-size:28px;margin-bottom:12px}
-.pending-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.5px;color:var(--dark);margin-bottom:6px}
-.pending-sub{font-size:13px;color:var(--mid);line-height:1.6;max-width:440px;margin:0 auto}
+/* Loading / error */
+.state-msg{text-align:center;padding:60px 20px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--light)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-msg{background:var(--red-lt);border-left:3px solid var(--red);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--red-dk);margin-bottom:20px}
 
 /* Headline card */
 .headline{background:var(--green);color:var(--white);border-radius:12px;padding:24px 28px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
@@ -98,7 +94,7 @@ body.logged-in .portal-view{display:flex}
 .hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.6);margin-top:5px}
 
 /* Section */
-.section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:0;margin-bottom:20px;overflow:hidden}
+.section{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
 .section-head{padding:14px 20px 12px;border-bottom:1px solid var(--border)}
 .section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
 
@@ -111,8 +107,8 @@ tr:last-child td{border-bottom:none}
 td.right{text-align:right;font-variant-numeric:tabular-nums}
 .row-name{font-weight:700;color:var(--dark)}
 .row-note{font-size:11.5px;color:var(--light);font-style:italic;margin-top:3px}
-.pct{font-weight:700;font-size:14px;color:var(--dark)}
-.pct-sup{color:var(--light);font-style:italic}
+.pct{font-weight:700;font-size:14px}
+.pct-sup{color:var(--light);font-style:italic;font-weight:400}
 .pill{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;background:var(--yellow-lt);color:var(--yellow);margin-left:6px;vertical-align:middle}
 .lead-row td{background:var(--green-lt)}
 .lead-row .row-name{color:var(--green)}
@@ -121,14 +117,13 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
 .footnote{font-size:12px;color:var(--mid);line-height:1.65;padding:16px 20px;border-top:1px solid var(--border);background:#fafaf8}
 .footnote strong{color:var(--dark)}
 
-/* YTD note banner */
+/* YTD note */
 .ytd-note{background:var(--yellow-lt);border:1px solid rgba(242,161,54,.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:#6a4a10;line-height:1.55}
-.ytd-note strong{color:#4a3208}
 </style>
 </head>
 <body>
 
-<!-- LOGIN VIEW -->
+<!-- LOGIN -->
 <div class="login-view">
   <div class="login-box">
     <img class="login-logo" src="/email-logo.png" alt="ĒMA">
@@ -141,10 +136,9 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
   </div>
 </div>
 
-<!-- PORTAL VIEW -->
+<!-- PORTAL -->
 <div class="portal-view">
 
-  <!-- NAV -->
   <nav class="nav">
     <div class="nav-left">
       <a href="/"><img class="nav-logo" src="/email-logo.png" alt="ĒMA"></a>
@@ -153,7 +147,7 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
     <div class="nav-right">
       <div class="nav-scope" id="nav-scope" style="display:none">
         <div class="nav-scope-lbl">Viewing</div>
-        <div class="nav-scope-val" id="nav-scope-val"></div>
+        <div class="nav-scope-val">All Affiliates</div>
       </div>
       <div class="nav-sep" id="nav-scope-sep" style="display:none"></div>
       <div class="nav-user">
@@ -168,257 +162,44 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
     </div>
   </nav>
 
-  <!-- REPORT HEADER -->
   <div class="report-header">
     <div class="report-header-top">
       <div>
         <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.55);margin-bottom:4px">HQ Resources · Investor Report Pulse</div>
         <h1>Flagged Needs Summary</h1>
         <div class="rh-subtitle">Needs moms surfaced and how often they were met — by affiliate and type.</div>
-        <div class="rh-badge">Trellis-native records · Directional pulse</div>
+        <div class="rh-badge">Trellis-native records · Live from database</div>
       </div>
       <div class="period-tabs">
-        <button class="period-tab active" onclick="setPeriod('q1')">Q1 2026</button>
-        <button class="period-tab" onclick="setPeriod('q2')">Q2 2026</button>
-        <button class="period-tab" onclick="setPeriod('ytd')">YTD 2026</button>
+        <button class="period-tab active" onclick="loadPeriod('q1')">Q1 2026</button>
+        <button class="period-tab" onclick="loadPeriod('q2')">Q2 2026</button>
+        <button class="period-tab" onclick="loadPeriod('ytd')">YTD 2026</button>
       </div>
     </div>
   </div>
 
-  <!-- CONTENT -->
-  <div class="content">
+  <div class="content" id="content">
+    <div class="state-msg"><div class="spinner"></div>Loading…</div>
+  </div>
 
-    <!-- Q1 2026 -->
-    <div id="panel-q1">
-
-      <div class="headline">
-        <div class="headline-left">
-          <div class="headline-eyebrow">National Total</div>
-          <div class="headline-title">All affiliates · all types</div>
-          <div class="headline-note">January 1 – March 31, 2026</div>
-        </div>
-        <div class="headline-stats">
-          <div class="hstat"><div class="hstat-num">275</div><div class="hstat-lbl">Flagged</div></div>
-          <div class="hstat"><div class="hstat-num">203</div><div class="hstat-lbl">Met</div></div>
-          <div class="hstat"><div class="hstat-num big">74%</div><div class="hstat-lbl">Met Rate</div></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-head"><div class="section-label">By Affiliate</div></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Affiliate</th>
-              <th class="right">Flagged</th>
-              <th class="right">Met</th>
-              <th class="right">% Met</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="lead-row">
-              <td>
-                <div class="row-name">ĒMA Broward</div>
-                <div class="row-note">93% of national volume — the network number is essentially Broward</div>
-              </td>
-              <td class="right">255</td>
-              <td class="right">193</td>
-              <td class="right pct">76%</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">AZ127 &amp; Hope Women's<span class="pill">Small n</span></div>
-                <div class="row-note">Below interpretation threshold (n &lt; 20)</div>
-              </td>
-              <td class="right">10</td>
-              <td class="right">4</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">Bravely Women's<span class="pill">Small n</span></div>
-                <div class="row-note">Below interpretation threshold (n &lt; 20)</div>
-              </td>
-              <td class="right">9</td>
-              <td class="right">5</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">CityLink Center<span class="pill">Small n</span></div>
-                <div class="row-note">Single record — not a meaningful rate</div>
-              </td>
-              <td class="right">1</td>
-              <td class="right">1</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="footnote">
-          <strong>Source:</strong> BenevolenceNeed table, Trellis Railway PostgreSQL.
-          <strong>Window:</strong> Jan 1 – Mar 31, 2026 (created_at).
-          <strong>Met:</strong> did_address_need_c = TRUE.
-          Trellis-native records only — PromiseServes-migrated history excluded.
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-head"><div class="section-label">By Need Type</div></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th class="right">Flagged</th>
-              <th class="right">Met</th>
-              <th class="right">% Met</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><div class="row-name">Physical Goods</div></td>
-              <td class="right">187</td>
-              <td class="right">151</td>
-              <td class="right pct">81%</td>
-            </tr>
-            <tr>
-              <td><div class="row-name">Financial</div></td>
-              <td class="right">52</td>
-              <td class="right">37</td>
-              <td class="right pct">71%</td>
-            </tr>
-            <tr>
-              <td><div class="row-name">Other</div></td>
-              <td class="right">36</td>
-              <td class="right">15</td>
-              <td class="right pct">42%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div><!-- /panel-q1 -->
-
-    <!-- Q2 2026 -->
-    <div id="panel-q2" style="display:none">
-      <div class="pending-card">
-        <div class="pending-icon">📋</div>
-        <div class="pending-title">Q2 Data Pending</div>
-        <div class="pending-sub">Q2 closed June 30, 2026. The data pull hasn't been run yet — check back soon or update this page once the numbers are ready.</div>
-      </div>
-    </div>
-
-    <!-- YTD 2026 -->
-    <div id="panel-ytd" style="display:none">
-
-      <div class="ytd-note">
-        <strong>YTD = Q1 only.</strong> Q2 data hasn't been added yet. This view will update once Q2 numbers are entered.
-      </div>
-
-      <div class="headline">
-        <div class="headline-left">
-          <div class="headline-eyebrow">YTD National Total</div>
-          <div class="headline-title">All affiliates · all types</div>
-          <div class="headline-note">January 1 – March 31, 2026 (Q1 only)</div>
-        </div>
-        <div class="headline-stats">
-          <div class="hstat"><div class="hstat-num">275</div><div class="hstat-lbl">Flagged</div></div>
-          <div class="hstat"><div class="hstat-num">203</div><div class="hstat-lbl">Met</div></div>
-          <div class="hstat"><div class="hstat-num big">74%</div><div class="hstat-lbl">Met Rate</div></div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-head"><div class="section-label">By Affiliate — YTD</div></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Affiliate</th>
-              <th class="right">Flagged</th>
-              <th class="right">Met</th>
-              <th class="right">% Met</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="lead-row">
-              <td>
-                <div class="row-name">ĒMA Broward</div>
-                <div class="row-note">93% of national volume</div>
-              </td>
-              <td class="right">255</td>
-              <td class="right">193</td>
-              <td class="right pct">76%</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">AZ127 &amp; Hope Women's<span class="pill">Small n</span></div>
-              </td>
-              <td class="right">10</td>
-              <td class="right">4</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">Bravely Women's<span class="pill">Small n</span></div>
-              </td>
-              <td class="right">9</td>
-              <td class="right">5</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-            <tr>
-              <td>
-                <div class="row-name">CityLink Center<span class="pill">Small n</span></div>
-              </td>
-              <td class="right">1</td>
-              <td class="right">1</td>
-              <td class="right pct pct-sup">—</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-head"><div class="section-label">By Need Type — YTD</div></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th class="right">Flagged</th>
-              <th class="right">Met</th>
-              <th class="right">% Met</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><div class="row-name">Physical Goods</div></td>
-              <td class="right">187</td>
-              <td class="right">151</td>
-              <td class="right pct">81%</td>
-            </tr>
-            <tr>
-              <td><div class="row-name">Financial</div></td>
-              <td class="right">52</td>
-              <td class="right">37</td>
-              <td class="right pct">71%</td>
-            </tr>
-            <tr>
-              <td><div class="row-name">Other</div></td>
-              <td class="right">36</td>
-              <td class="right">15</td>
-              <td class="right pct">42%</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="footnote">
-          YTD reflects Q1 2026 only. Will update when Q2 data is entered.
-        </div>
-      </div>
-
-    </div><!-- /panel-ytd -->
-
-  </div><!-- /content -->
 </div><!-- /portal-view -->
 
 <script>
+var CURRENT_PERIOD = 'q1';
+var YEAR = 2026;
+
+// Friendly date ranges for display
+var PERIOD_LABELS = {
+  q1:  { title: 'All affiliates · all types', note: 'January 1 – March 31, 2026', eyebrow: 'National Total' },
+  q2:  { title: 'All affiliates · all types', note: 'April 1 – June 30, 2026',    eyebrow: 'National Total' },
+  ytd: { title: 'All affiliates · all types', note: 'January 1 – June 30, 2026',  eyebrow: 'YTD National Total' },
+};
+
+// Small-n threshold for suppressing rates
+var SMALL_N = 20;
+
+// ── AUTH ────────────────────────────────────────────────
+
 async function doLogin() {
   var u = document.getElementById('lu').value.trim().toLowerCase();
   var p = document.getElementById('lp').value;
@@ -446,42 +227,142 @@ async function doSignOut() {
 }
 
 function applySession(u) {
-  // HQ only
-  if (u.role !== 'administrator') {
-    window.location.href = '/';
-    return;
-  }
+  if (u.role !== 'administrator') { window.location.href = '/'; return; }
   document.body.classList.remove('show-login');
   document.body.classList.add('logged-in');
+  var first = u.firstName || '', last = u.lastName || '';
   var av = document.getElementById('nav-avatar');
   var nm = document.getElementById('nav-name');
   var rl = document.getElementById('nav-role');
-  var sv = document.getElementById('nav-scope-val');
-  var sc = document.getElementById('nav-scope');
-  var ss = document.getElementById('nav-scope-sep');
-  var first = u.firstName || '';
-  var last  = u.lastName  || '';
-  if (av) av.textContent = ((first.charAt(0)||'')+(last.charAt(0)||'')).toUpperCase();
+  if (av) av.textContent = ((first[0]||'')+(last[0]||'')).toUpperCase();
   if (nm) nm.textContent = (first+' '+last).trim();
   if (rl) rl.textContent = 'HQ Admin';
-  if (sv) sv.textContent = 'All Affiliates';
-  if (sc) sc.style.display = '';
-  if (ss) ss.style.display = '';
+  document.getElementById('nav-scope').style.display = '';
+  document.getElementById('nav-scope-sep').style.display = '';
+  loadPeriod('q1');
 }
 
-// Period tabs
-function setPeriod(p) {
-  ['q1','q2','ytd'].forEach(function(id){
-    document.getElementById('panel-'+id).style.display = id === p ? '' : 'none';
+// ── DATA ────────────────────────────────────────────────
+
+async function loadPeriod(period) {
+  CURRENT_PERIOD = period;
+
+  // Update tab active state
+  document.querySelectorAll('.period-tab').forEach(function(btn, i) {
+    btn.classList.toggle('active', ['q1','q2','ytd'][i] === period);
   });
-  document.querySelectorAll('.period-tab').forEach(function(btn, i){
-    var ids = ['q1','q2','ytd'];
-    btn.classList.toggle('active', ids[i] === p);
-  });
+
+  // Show spinner
+  document.getElementById('content').innerHTML =
+    '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
+
+  try {
+    var r = await fetch('/api/flagged-needs?period=' + period + '&year=' + YEAR);
+    if (!r.ok) { throw new Error('HTTP ' + r.status); }
+    var data = await r.json();
+    renderReport(data);
+  } catch(e) {
+    document.getElementById('content').innerHTML =
+      '<div class="err-msg">Could not load data — ' + e.message + '</div>';
+  }
 }
 
-// Boot
-(async function(){
+// ── RENDER ───────────────────────────────────────────────
+
+function pct(met, flagged) {
+  if (!flagged) return '—';
+  return Math.round(met / flagged * 100) + '%';
+}
+
+function renderReport(d) {
+  var lbl = PERIOD_LABELS[d.period] || PERIOD_LABELS.q1;
+  var totalFlagged = d.total.flagged;
+  var totalMet    = d.total.met;
+  var metRate     = totalFlagged ? Math.round(totalMet / totalFlagged * 100) : 0;
+
+  // YTD note if Q2 is zero
+  var ytdNote = '';
+  if (d.period === 'ytd') {
+    // Check if any Q2 data exists by seeing if endDate covers Q2
+    ytdNote = '<div class="ytd-note">YTD covers January 1 – June 30, 2026. Data is pulled live from Trellis.</div>';
+  }
+
+  // Headline
+  var headline = '<div class="headline">'
+    + '<div class="headline-left">'
+    + '<div class="headline-eyebrow">' + lbl.eyebrow + '</div>'
+    + '<div class="headline-title">' + lbl.title + '</div>'
+    + '<div class="headline-note">' + lbl.note + '</div>'
+    + '</div>'
+    + '<div class="headline-stats">'
+    + '<div class="hstat"><div class="hstat-num">' + totalFlagged + '</div><div class="hstat-lbl">Flagged</div></div>'
+    + '<div class="hstat"><div class="hstat-num">' + totalMet + '</div><div class="hstat-lbl">Met</div></div>'
+    + '<div class="hstat"><div class="hstat-num big">' + (totalFlagged ? metRate + '%' : '—') + '</div><div class="hstat-lbl">Met Rate</div></div>'
+    + '</div>'
+    + '</div>';
+
+  // By Affiliate table
+  var affRows = d.byAffiliate.map(function(a, i) {
+    var isLead = i === 0 && a.flagged > SMALL_N;
+    var smallN = a.flagged < SMALL_N;
+    var pctVal = smallN ? '<span class="pct-sup">—</span>' : '<span class="pct">' + pct(a.met, a.flagged) + '</span>';
+    var note   = smallN ? '<div class="row-note">Below interpretation threshold (n &lt; ' + SMALL_N + ')</div>' : '';
+    var pill   = smallN ? '<span class="pill">Small n</span>' : '';
+    return '<tr' + (isLead ? ' class="lead-row"' : '') + '>'
+      + '<td><div class="row-name">' + esc(a.affiliate) + pill + '</div>' + note + '</td>'
+      + '<td class="right">' + a.flagged + '</td>'
+      + '<td class="right">' + a.met + '</td>'
+      + '<td class="right">' + pctVal + '</td>'
+      + '</tr>';
+  }).join('');
+
+  var affTable = '<div class="section">'
+    + '<div class="section-head"><div class="section-label">By Affiliate</div></div>'
+    + '<table><thead><tr>'
+    + '<th>Affiliate</th><th class="right">Flagged</th><th class="right">Met</th><th class="right">% Met</th>'
+    + '</tr></thead><tbody>' + affRows + '</tbody></table>'
+    + '<div class="footnote">'
+    + '<strong>Source:</strong> BenevolenceNeed table, Trellis Railway PostgreSQL. '
+    + '<strong>Window:</strong> ' + lbl.note + ' (created_at). '
+    + '<strong>Met:</strong> did_address_need_c = TRUE. '
+    + 'Trellis-native records only — PromiseServes-migrated history excluded.'
+    + '</div>'
+    + '</div>';
+
+  // By Type table
+  var typeRows = d.byType.map(function(t) {
+    return '<tr>'
+      + '<td><div class="row-name">' + esc(t.type) + '</div></td>'
+      + '<td class="right">' + t.flagged + '</td>'
+      + '<td class="right">' + t.met + '</td>'
+      + '<td class="right"><span class="pct">' + pct(t.met, t.flagged) + '</span></td>'
+      + '</tr>';
+  }).join('');
+
+  var typeTable = '<div class="section">'
+    + '<div class="section-head"><div class="section-label">By Need Type</div></div>'
+    + '<table><thead><tr>'
+    + '<th>Type</th><th class="right">Flagged</th><th class="right">Met</th><th class="right">% Met</th>'
+    + '</tr></thead><tbody>' + typeRows + '</tbody></table>'
+    + '</div>';
+
+  // No data state
+  if (!totalFlagged) {
+    document.getElementById('content').innerHTML = ytdNote
+      + '<div class="state-msg">No records found for this period.</div>';
+    return;
+  }
+
+  document.getElementById('content').innerHTML = ytdNote + headline + affTable + typeTable;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── BOOT ────────────────────────────────────────────────
+
+(async function() {
   try {
     var r = await fetch('/api/me');
     if (r.ok) {
@@ -492,7 +373,7 @@ function setPeriod(p) {
   document.body.classList.add('show-login');
 })();
 
-document.getElementById('lp').addEventListener('keydown', function(e){
+document.getElementById('lp').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doLogin();
 });
 </script>

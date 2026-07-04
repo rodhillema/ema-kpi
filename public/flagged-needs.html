@@ -419,39 +419,29 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
 </div><!-- /portal-view -->
 
 <script>
-var SESSION_KEY = 'ema_hub_session';
-
-function getSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'); }
-  catch(e) { return null; }
-}
-
-function doLogin() {
+async function doLogin() {
   var u = document.getElementById('lu').value.trim().toLowerCase();
   var p = document.getElementById('lp').value;
   var err = document.getElementById('login-err');
   err.classList.remove('show');
-  fetch('/api/login', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({username: u, password: p})
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if (d.success) {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(d.user));
-      applySession(d.user);
-    } else {
-      err.classList.add('show');
+  try {
+    var r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: u, password: p})
+    });
+    if (!r.ok) { err.classList.add('show'); return; }
+    var mr = await fetch('/api/me');
+    if (mr.ok) {
+      var md = await mr.json();
+      if (md.user) { applySession(md.user); return; }
     }
-  })
-  .catch(function(){ err.classList.add('show'); });
+    err.classList.add('show');
+  } catch(e) { err.classList.add('show'); }
 }
 
-function doSignOut() {
-  sessionStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(SESSION_KEY);
-  document.cookie = 'connect.sid=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+async function doSignOut() {
+  try { await fetch('/api/logout', {method:'POST'}); } catch(e) {}
   window.location.href = '/';
 }
 
@@ -490,29 +480,21 @@ function setPeriod(p) {
   });
 }
 
-// Init
-(function(){
-  var u = getSession();
-  if (u && u.role) {
-    applySession(u);
-  } else {
-    fetch('/api/session')
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if (d.user) {
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify(d.user));
-          applySession(d.user);
-        } else {
-          document.body.classList.add('show-login');
-        }
-      })
-      .catch(function(){ document.body.classList.add('show-login'); });
-  }
-
-  document.getElementById('lp').addEventListener('keydown', function(e){
-    if (e.key === 'Enter') doLogin();
-  });
+// Boot
+(async function(){
+  try {
+    var r = await fetch('/api/me');
+    if (r.ok) {
+      var d = await r.json();
+      if (d.user) { applySession(d.user); return; }
+    }
+  } catch(e) {}
+  document.body.classList.add('show-login');
 })();
+
+document.getElementById('lp').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') doLogin();
+});
 </script>
 </body>
 </html>

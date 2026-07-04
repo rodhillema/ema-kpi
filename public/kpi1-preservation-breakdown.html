@@ -222,72 +222,15 @@
 </div>
 
 <script>
-// ---- Hydratable data. Replace counts with the Q2 YTD payload from RD. ----
-// Placeholder figures below are illustrative and clearly not live data.
-const DATA = {
-  target: 85,
-  dollarPerChild: 38850,
-  fwaWindow: "6-month",           // Q2 2026 uses the 6-month FWA currency window
-  denominator: 240,               // eligible children with a current FWA (cpi_total IS NOT NULL)
-  goal: [
-    { label:"Prevent CPS Involvement",       count:96, color:"var(--green)" },
-    { label:"Prevent Foster Care Placement", count:72, color:"var(--red)" },
-    { label:"Prevent Permanent Removal",      count:36, color:"var(--yellow)" },
-    { label:"Not Eligible for Program",       count:24, color:"var(--muted)" },
-    { label:"Not Recorded",                   count:12, color:"var(--border)", flag:true }
-  ],
-  impact: [
-    { label:"Prevented from CPS Involvement",       count:84, color:"var(--green)",  counts:true },
-    { label:"Prevented from Foster Care Placement", count:60, color:"var(--muted)",  counts:true },
-    { label:"Prevented from Permanent Removal",     count:20, color:"var(--yellow)", excluded:true },
-    { label:"Temporary Removal",                    count:12, color:"var(--peach)" },
-    { label:"Permanent Removal",                    count:8,  color:"var(--red)" },
-    { label:"Not Yet Recorded",                     count:56, color:"var(--border)", flag:true }
-  ]
-};
-
 const fmt = n => n.toLocaleString('en-US');
 const pct = (n,d) => d ? (n/d*100) : 0;
-const pctStr = (n,d) => (Math.round(pct(n,d)*10)/10).toFixed(1) + "%";
+const pctStr = (n,d) => (Math.round(pct(n,d)*10)/10).toFixed(1) + '%';
 
-const denom = DATA.denominator;
-const numerator = DATA.impact.filter(r => r.counts).reduce((s,r)=>s+r.count,0);
-const rate = pct(numerator, denom);
-
-// KPI rate + status pill (5-point rule, distance from 85 target)
-document.getElementById('rateNum').textContent = (Math.round(rate*10)/10) + "%";
-document.getElementById('rateFrac').innerHTML =
-  "<b>" + fmt(numerator) + "</b> of <b>" + fmt(denom) + "</b> eligible children preserved. " +
-  "Denominator is every child linked to a mom with a current wellbeing assessment " +
-  "(" + DATA.fwaWindow + " window, scored composite on file).";
-
-const dollar = numerator * DATA.dollarPerChild;
-document.getElementById('dollarNum').textContent = "$" + fmt(dollar);
-
-const gap = DATA.target - rate;
-const pill = document.getElementById('statusPill');
-if (gap <= 0) { pill.className = "status-pill status-green"; pill.textContent = Math.abs(Math.round(gap)) + " pts at or above target"; }
-else if (gap <= 5) { pill.className = "status-pill status-yellow"; pill.textContent = (Math.round(gap*10)/10) + " pts below target"; }
-else { pill.className = "status-pill status-red"; pill.textContent = (Math.round(gap*10)/10) + " pts below target"; }
-
-// Completeness banner: surface not-yet-recorded outcomes and null goals explicitly
-const notRecorded = (DATA.impact.find(r=>r.flag)||{count:0}).count;
-const goalNull = (DATA.goal.find(r=>r.flag)||{count:0}).count;
-document.getElementById('bannerText').innerHTML =
-  "Outcome is <b>not yet recorded for " + fmt(notRecorded) + " of " + fmt(denom) + " children (" +
-  pctStr(notRecorded, denom) + ")</b>. These children stay in the denominator and count as not-yet-preserved, " +
-  "which conservatively lowers the rate rather than dropping them silently. " +
-  "A preservation goal is missing for " + fmt(goalNull) + " children (" + pctStr(goalNull, denom) + "). " +
-  "FWA currency is based on submission timestamp plus a scored composite; a timestamp alone does not confirm a full re-assessment.";
-
-// Render a breakdown (prop bar + table) from rows summing to denom
-function renderBreakdown(rows, barId, tableId, showTags){
-  const bar = document.getElementById(barId);
-  const tbody = document.querySelector('#'+tableId+' tbody');
-  const total = rows.reduce((s,r)=>s+r.count,0);
-  rows.forEach(r=>{
-    const share = pct(r.count, total);
-    // prop-bar segment
+function renderBreakdown(rows, barId, tableId, showTags) {
+  const bar   = document.getElementById(barId);
+  const tbody = document.querySelector('#' + tableId + ' tbody');
+  const total = rows.reduce((s, r) => s + r.count, 0);
+  rows.forEach(r => {
     const seg = document.createElement('div');
     seg.className = 'pb-seg';
     seg.style.flexGrow = r.count;
@@ -296,36 +239,94 @@ function renderBreakdown(rows, barId, tableId, showTags){
     if (r.color === 'var(--border)') seg.style.border = '1px dashed #c9c2b4';
     const tip = document.createElement('div');
     tip.className = 'pb-tip';
-    tip.textContent = r.label + ': ' + fmt(r.count) + ' (' + pctStr(r.count,total) + ')';
+    tip.textContent = r.label + ': ' + fmt(r.count) + ' (' + pctStr(r.count, total) + ')';
     seg.appendChild(tip);
     bar.appendChild(seg);
-    // table row
     const tr = document.createElement('tr');
     let tag = '';
     if (showTags && r.counts)   tag = ' <span class="tag tag-num">Counts to KPI 1</span>';
     if (showTags && r.excluded) tag = ' <span class="tag tag-exc">Excluded from numerator</span>';
     if (r.flag)                 tag = ' <span class="tag tag-flag">Data gap</span>';
-    const dotBorder = (r.color==='var(--border)') ? 'border:1px dashed #c9c2b4;' : '';
+    const dotBorder = r.color === 'var(--border)' ? 'border:1px dashed #c9c2b4;' : '';
     tr.innerHTML =
-      '<td><span class="dot" style="background:'+r.color+';'+dotBorder+'"></span>'+r.label+tag+'</td>' +
-      '<td class="r"><span class="num">'+fmt(r.count)+'</span></td>' +
-      '<td class="r">'+pctStr(r.count,total)+'</td>';
+      '<td><span class="dot" style="background:' + r.color + ';' + dotBorder + '"></span>' + r.label + tag + '</td>' +
+      '<td class="r"><span class="num">' + fmt(r.count) + '</span></td>' +
+      '<td class="r">' + pctStr(r.count, total) + '</td>';
     tbody.appendChild(tr);
   });
-  // totals row
   const tr = document.createElement('tr');
   tr.className = 'brk-total';
-  tr.innerHTML = '<td>Total eligible children</td><td class="r"><span class="num">'+fmt(total)+'</span></td><td class="r">100%</td>';
+  tr.innerHTML = '<td>Total eligible children</td><td class="r"><span class="num">' + fmt(total) + '</span></td><td class="r">100%</td>';
   tbody.appendChild(tr);
 }
 
-renderBreakdown(DATA.goal,   'goalBar',   'goalTable',   false);
-renderBreakdown(DATA.impact, 'impactBar', 'impactTable', true);
+function hydrate(d) {
+  var denom     = d.denominator;
+  var numerator = d.numerator;
+  var rate      = pct(numerator, denom);
 
-document.getElementById('impactFoot').innerHTML =
-  "<b>Numerator = " + fmt(numerator) + "</b> (Prevented from CPS Involvement + Prevented from Foster Care Placement). " +
-  "Prevented from Permanent Removal (" + fmt((DATA.impact.find(r=>r.excluded)||{count:0}).count) +
-  ") is recorded and shown here but held out of the rate by design.";
+  document.getElementById('rateNum').textContent = (Math.round(rate * 10) / 10) + '%';
+  document.getElementById('rateFrac').innerHTML =
+    '<b>' + fmt(numerator) + '</b> of <b>' + fmt(denom) + '</b> eligible children preserved. ' +
+    'Denominator is every child linked to a mom with a current wellbeing assessment ' +
+    '(' + d.fwaWindow + ' window, scored composite on file).';
+  document.getElementById('dollarNum').textContent = '$' + fmt(numerator * d.dollarPerChild);
+
+  var gap  = d.target - rate;
+  var pill = document.getElementById('statusPill');
+  if (gap <= 0)      { pill.className = 'status-pill status-green';  pill.textContent = Math.abs(Math.round(gap)) + ' pts at or above target'; }
+  else if (gap <= 5) { pill.className = 'status-pill status-yellow'; pill.textContent = (Math.round(gap * 10) / 10) + ' pts below target'; }
+  else               { pill.className = 'status-pill status-red';    pill.textContent = (Math.round(gap * 10) / 10) + ' pts below target'; }
+
+  var g  = d.goal;
+  var im = d.impact;
+  var notRecorded = im.not_yet_recorded;
+  var goalNull    = g.not_recorded;
+  document.getElementById('bannerText').innerHTML =
+    'Outcome is <b>not yet recorded for ' + fmt(notRecorded) + ' of ' + fmt(denom) + ' children (' +
+    pctStr(notRecorded, denom) + ')</b>. These children stay in the denominator and count as not-yet-preserved, ' +
+    'which conservatively lowers the rate rather than dropping them silently. ' +
+    'A preservation goal is missing for ' + fmt(goalNull) + ' children (' + pctStr(goalNull, denom) + '). ' +
+    'FWA currency is based on submission timestamp plus a scored composite; a timestamp alone does not confirm a full re-assessment.';
+  if (notRecorded === 0 && goalNull === 0) document.getElementById('banner').style.display = 'none';
+
+  renderBreakdown([
+    { label: 'Prevent CPS Involvement',       count: g.prevent_cps_involvement,       color: 'var(--green)' },
+    { label: 'Prevent Foster Care Placement', count: g.prevent_foster_care_placement, color: 'var(--red)' },
+    { label: 'Prevent Permanent Removal',     count: g.prevent_permanent_removal,     color: 'var(--yellow)' },
+    { label: 'Not Eligible for Program',      count: g.not_eligible_program,          color: 'var(--muted)' },
+    { label: 'Not Recorded',                  count: g.not_recorded,                  color: 'var(--border)', flag: true },
+  ], 'goalBar', 'goalTable', false);
+
+  renderBreakdown([
+    { label: 'Prevented from CPS Involvement',       count: im.prevented_from_cps_involvement,       color: 'var(--green)', counts: true },
+    { label: 'Prevented from Foster Care Placement', count: im.prevented_from_foster_care_placement, color: 'var(--muted)', counts: true },
+    { label: 'Temporary Removal',                    count: im.temporary_removal,                    color: 'var(--peach)' },
+    { label: 'Permanent Removal',                    count: im.permanent_removal,                    color: 'var(--red)' },
+    { label: 'Not Yet Recorded',                     count: im.not_yet_recorded,                     color: 'var(--border)', flag: true },
+  ], 'impactBar', 'impactTable', true);
+
+  document.getElementById('impactFoot').innerHTML =
+    '<b>Numerator = ' + fmt(numerator) + '</b> (Prevented from CPS Involvement + Prevented from Foster Care Placement).';
+}
+
+var urlPeriod = (new URLSearchParams(window.location.search).get('period') || 'q2').toLowerCase();
+document.querySelectorAll('.pill-period').forEach(function(p) {
+  p.classList.toggle('active', p.textContent.trim().toLowerCase() === (urlPeriod === 'q1' ? 'q1' : 'ytd'));
+});
+
+fetch('/api/kpi1-breakdown?period=' + urlPeriod, { credentials: 'include' })
+  .then(function(r) {
+    if (r.status === 401 || r.status === 403) { window.location.href = '/'; return null; }
+    if (!r.ok) throw new Error('API error ' + r.status);
+    return r.json();
+  })
+  .then(function(data) { if (data) hydrate(data); })
+  .catch(function(err) {
+    console.error('[kpi1-breakdown]', err);
+    document.getElementById('rateNum').textContent = '—';
+    document.getElementById('rateFrac').textContent = 'Failed to load data. Please refresh or contact support.';
+  });
 </script>
 </body>
 </html>

@@ -2032,9 +2032,19 @@ router.get('/', async (req, res) => {
       // ─── Affiliate list (for admin slicer) ──────────────────
 
       isOrgWideRole ? pool.query(`
-        SELECT "id", "name" FROM "Affiliate"
-        WHERE "deleted_at" = 0
-        ORDER BY "name"
+        SELECT a."id", a."name"
+        FROM "Affiliate" a
+        WHERE a."deleted_at" = 0
+          AND EXISTS (
+            SELECT 1 FROM "Mom" m
+            JOIN "Pairing" p ON p."momId" = m."id"
+            WHERE m."affiliate_id" = a."id"
+              AND m."deleted_at" = 0
+              AND p."deleted_at" = 0
+              AND p."created_at" <= '${PERIOD_END} 23:59:59'
+              AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
+          )
+        ORDER BY a."name"
       `) : Promise.resolve({ rows: [] }),
 
       // Look up selected affiliate name (when admin/champion picks a different affiliate)

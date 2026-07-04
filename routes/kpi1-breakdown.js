@@ -85,25 +85,26 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid period — use q1 or q2' });
     }
 
-    // Fetch all children linked to moms with a completed pairing in period
+    // Fetch all children in eligible families (moms with a scored FWA in period)
     const result = await pool.query(`
-      WITH moms_with_completed_pairing AS (
-        SELECT DISTINCT p."momId"
-        FROM "Pairing" p
-        JOIN "Mom" m ON m."id" = p."momId"
-        WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
-          AND p."status"::text = 'pairing_complete'
-          AND p."completed_on" <= $1
+      WITH moms_with_period_fwa AS (
+        SELECT DISTINCT wa."mom_id" AS "momId"
+        FROM "WellnessAssessment" wa
+        JOIN "Mom" m ON m."id" = wa."mom_id"
+        WHERE wa."deleted_at" = 0 AND m."deleted_at" = 0
+          AND wa."cpi_total" IS NOT NULL
+          AND wa."updated_at" >= $1
+          AND wa."updated_at" <= $2
       )
       SELECT
         c."id"                                AS child_id,
         c."mom_id",
         c."active_child_welfare_involvement"::text AS latest_status
       FROM "Child" c
-      JOIN moms_with_completed_pairing f ON f."momId" = c."mom_id"
+      JOIN moms_with_period_fwa f ON f."momId" = c."mom_id"
       WHERE c."deleted_at" = 0
       ORDER BY c."mom_id", c."id"
-    `, [PERIOD_END + ' 23:59:59']);
+    `, [PERIOD_START, PERIOD_END + ' 23:59:59']);
 
     const children = result.rows;
     const denominator = children.length;

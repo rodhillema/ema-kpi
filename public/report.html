@@ -1844,6 +1844,11 @@
     </div>
     <div class="hc-label">Family Stability Score Improvement</div>
     <div class="hc-context"><span data-hydrate="kpi2-num">—</span> of <span data-hydrate="kpi2-den">—</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">—</span> moms excluded</div>
+    <div class="hc-context hc-fss-split" style="margin-top:4px;font-size:11.5px;color:var(--mid);">
+     Improved&nbsp;<strong data-hydrate="kpi2-improved">—</strong>
+     &nbsp;&nbsp;Stable&nbsp;<strong data-hydrate="kpi2-stable">—</strong>
+     &nbsp;&nbsp;Declined&nbsp;<strong data-hydrate="kpi2-declined">—</strong>
+    </div>
    </div>
 
    <!-- KPI 3 · Learning Progress · accent identity = yellow -->
@@ -3631,6 +3636,9 @@
      if (k2.numerator != null)   setH1('kpi2-num', k2.numerator);
      if (k2.denominator != null) setH1('kpi2-den', k2.denominator);
      if (k2.excluded != null)    setH1('kpi2-excl', k2.excluded);
+     if (k2.numerator != null)   setH1('kpi2-improved', k2.numerator);
+     if (k2.stable != null)      setH1('kpi2-stable', k2.stable);
+     if (k2.declined != null)    setH1('kpi2-declined', k2.declined);
    } else {
      // Pending state — replace context line with cohort_n explanation
      var k2NumEl = tab1.querySelector('[data-hydrate="kpi2-num"]');

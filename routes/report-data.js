@@ -1605,7 +1605,11 @@ router.get('/', async (req, res) => {
           GREATEST((SELECT COUNT(*)::int FROM active_pairings) - COUNT(*)::int, 0)     AS excluded_n,
           CASE WHEN COUNT(*) < 10 THEN NULL ELSE COUNT(*)::int END                    AS denominator,
           CASE WHEN COUNT(*) < 10 THEN NULL
-               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END    AS numerator
+               ELSE SUM(CASE WHEN post_fss > pre_fss THEN 1 ELSE 0 END)::int END    AS numerator,
+          CASE WHEN COUNT(*) < 10 THEN NULL
+               ELSE SUM(CASE WHEN post_fss = pre_fss THEN 1 ELSE 0 END)::int END    AS stable,
+          CASE WHEN COUNT(*) < 10 THEN NULL
+               ELSE SUM(CASE WHEN post_fss < pre_fss THEN 1 ELSE 0 END)::int END    AS declined
         FROM eligible
       `, affParams),
 
@@ -2145,6 +2149,8 @@ router.get('/', async (req, res) => {
     const kpi2Den = kpi2.rows[0]?.denominator ?? null;
     const kpi2CohortN = kpi2.rows[0]?.cohort_n || 0;
     const kpi2ExcludedN = kpi2.rows[0]?.excluded_n ?? 0;
+    const kpi2Stable = kpi2.rows[0]?.stable ?? null;
+    const kpi2Declined = kpi2.rows[0]?.declined ?? null;
     const kpi2Rate = kpi2Den > 0 ? Math.round(1000 * kpi2Num / kpi2Den) / 10 : null;
 
     // KPI 3 rates
@@ -2402,7 +2408,7 @@ router.get('/', async (req, res) => {
         membership_community: membershipCommunity.rows[0].count,
         sessions_in_period: sessionsInPeriod.rows,
         kpi1: { rate: kpi1Rate, numerator: kpi1Num, denominator: kpi1Den, cps_prevented: kpi1CpsPrevented, foster_prevented: kpi1FosterPrevented, dollar_impact: kpi1FosterPrevented * 38850, excluded: kpi1Excluded.rows[0]?.count || 0, target: 85 },
-        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, excluded: kpi2ExcludedN, status: kpi2Rate !== null ? 'ok' : 'pending', target: 70 },
+        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, excluded: kpi2ExcludedN, stable: kpi2Stable, declined: kpi2Declined, status: kpi2Rate !== null ? 'ok' : 'pending', target: 70 },
         kpi3: { rate: kpi3Rate, numerator: kpi3Improved, denominator: kpi3WithData, total_completions: kpi3Total, target: 70 },
       },
 

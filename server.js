@@ -158,6 +158,7 @@ app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey.html')));
 app.get('/report/child-welfare-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'child-welfare-status-report.html')));
 app.get('/report/flagged-needs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'flagged-needs.html')));
+app.get('/report/kpi1-preservation-breakdown', (req, res) => res.sendFile(path.join(__dirname, 'public', 'kpi1-preservation-breakdown.html')));
 app.get('/report/kpi2-trial', requireAuth, (req, res) => {
   if ((req.session.user.username || '').toLowerCase() !== 'cristina.galloway') {
     return res.status(403).send('Access denied');

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Preservation Breakdown - HQ Resource</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#ec482f; --red-light:#f9ece8; --red-dark:#c23018;
+    --green:#123939; --green-light:#ecefe1;
+    --yellow:#f2a136; --yellow-light:#fef3e8;
+    --muted:#5e7d7d; --peach:#f4a08a;
+    --dark:#2C2C2C; --mid:#5A5A5A; --border:#E0E0E0; --bg:#fdf7f3; --soft:#faf6ee;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--dark);font-family:'Lato',sans-serif;line-height:1.5}
+  .num{font-family:'Shrikhand',cursive;font-weight:400;font-style:normal}
+  .lbl{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px}
+
+  /* Top nav */
+  .nav{background:var(--red);color:#fff;display:flex;align-items:center;gap:22px;padding:0 26px;height:74px}
+  .logo{width:38px;height:38px;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Shrikhand',cursive;font-size:20px;font-weight:400}
+  .nav-title{font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:2px;font-size:15px}
+  .nav-sep{width:1px;height:34px;background:rgba(255,255,255,.35)}
+  .nav-user{display:flex;align-items:center;gap:12px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:14px}
+  .nav-user b{font-size:15px;display:block;line-height:1.1}
+  .nav-user span{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.2px;opacity:.85}
+  .nav-viewing span{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.2px;opacity:.8;display:block}
+  .nav-viewing b{font-size:14px}
+  .nav-link{font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:1.2px;font-size:13px;color:#fff;text-decoration:none}
+  .nav-btn{margin-left:auto;border:1.5px solid #fff;border-radius:6px;padding:11px 18px;font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:1.2px;font-size:13px;color:#fff;text-decoration:none}
+  .nav-right{display:flex;align-items:center;gap:22px;margin-left:auto}
+
+  /* Page */
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 26px 60px}
+  .crumb{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--mid);text-transform:uppercase;margin-bottom:20px}
+  .crumb a{color:var(--red);text-decoration:none}
+  .hq-only{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--mid);text-transform:uppercase;margin-bottom:6px}
+  h1.title{font-family:'Shrikhand',cursive;font-weight:400;font-style:normal;color:var(--green);font-size:40px;letter-spacing:.3px;line-height:1.05}
+  .intro{font-style:italic;color:var(--mid);font-size:14px;max-width:760px;margin:12px 0 4px}
+  .intro strong{font-style:normal;font-weight:700;color:var(--dark)}
+
+  /* Period pills */
+  .periods{display:flex;gap:8px;margin:22px 0 6px}
+  .pill-period{font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--mid);cursor:default}
+  .pill-period.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+  /* Section label */
+  .section-label{font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:2px;font-size:14px;color:var(--green);margin:38px 0 4px}
+  .anchor-note{font-style:italic;font-size:12.5px;color:var(--mid);margin-bottom:16px;max-width:760px}
+
+  /* Card */
+  .card{background:#fff;border:1px solid var(--border);border-top:4px solid var(--green);border-radius:12px;padding:24px 26px}
+  .card.red{border-top-color:var(--red)}
+  .card.yellow{border-top-color:var(--yellow)}
+
+  /* KPI hero */
+  .kpi-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .kpi-name{font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;font-size:14px;color:var(--red);display:flex;align-items:center;gap:10px}
+  .kpi-name svg{width:22px;height:22px}
+  .kpi-rate{display:flex;align-items:baseline;gap:14px;margin:14px 0 6px}
+  .kpi-rate .num{font-size:52px;color:var(--red);line-height:1}
+  .kpi-target{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.5px;color:var(--mid);text-transform:uppercase}
+  .status-pill{font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;letter-spacing:.8px;text-transform:uppercase;padding:7px 14px;border-radius:20px;white-space:nowrap}
+  .status-green{background:var(--green-light);color:var(--green)}
+  .status-yellow{background:var(--yellow-light);color:#a5610a}
+  .status-red{background:var(--red-light);color:var(--red-dark)}
+  .kpi-frac{font-size:14px;color:var(--mid)}
+  .kpi-frac b{color:var(--dark)}
+  .kpi-dollar{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .kpi-dollar .num{font-size:30px;color:var(--green)}
+  .kpi-dollar .dlabel{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--mid)}
+
+  /* info popover */
+  .info-wrap{position:relative;display:inline-block;margin-left:8px}
+  .info-icon{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--mid);color:var(--mid);font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .info-pop{position:absolute;top:26px;left:0;width:300px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 26px rgba(0,0,0,.14);padding:16px;z-index:20;display:none}
+  .info-wrap:hover .info-pop{display:block}
+  .info-block{margin-bottom:12px}
+  .info-block:last-child{margin-bottom:0}
+  .info-block .h{font-family:'Oswald',sans-serif;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);margin-bottom:3px}
+  .info-block.warn .h{color:var(--red)}
+  .info-block p{font-size:12.5px;color:var(--dark)}
+
+  /* completeness banner */
+  .banner{background:var(--yellow-light);border:1px solid #f2d39c;border-left:4px solid var(--yellow);border-radius:8px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;margin-top:16px}
+  .banner svg{width:22px;height:22px;flex-shrink:0;color:#a5610a;margin-top:1px}
+  .banner .bt{font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#a5610a;margin-bottom:3px}
+  .banner p{font-size:13px;color:var(--dark)}
+
+  /* prop bar */
+  .propbar{display:flex;gap:3px;margin:6px 0 20px}
+  .pb-seg{height:24px;border-radius:6px;position:relative;cursor:default;min-width:6px}
+  .pb-tip{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;font-family:'Lato',sans-serif;font-size:12px;padding:5px 9px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:10}
+  .pb-seg:hover .pb-tip{opacity:1}
+
+  /* legend / table */
+  .brk-table{width:100%;border-collapse:collapse;margin-top:4px}
+  .brk-table th{font-family:'Oswald',sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:1px;font-size:11px;color:var(--mid);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  .brk-table th.r,.brk-table td.r{text-align:right}
+  .brk-table td{padding:11px 10px;border-bottom:1px solid #f0ece5;font-size:14px;vertical-align:middle}
+  .brk-table tr:last-child td{border-bottom:none}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:9px;vertical-align:-1px}
+  .brk-table td .num{font-size:16px}
+  .tag{font-family:'Oswald',sans-serif;font-weight:600;font-size:10px;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:12px;margin-left:8px;white-space:nowrap}
+  .tag-num{background:var(--green-light);color:var(--green)}
+  .tag-exc{background:var(--red-light);color:var(--red-dark)}
+  .tag-flag{background:#eee;color:var(--mid)}
+  .brk-total td{border-top:2px solid var(--border);padding-top:12px;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--mid)}
+  .brk-total td .num{font-size:18px;color:var(--dark)}
+
+  .foot-note{font-size:12px;color:var(--mid);margin-top:14px;line-height:1.6}
+  .foot-note b{color:var(--dark)}
+
+  .page-foot{background:var(--red);color:#fff;padding:20px 26px;margin-top:50px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between}
+  .page-foot a{color:#fff;text-decoration:underline}
+  @media(max-width:720px){.nav{flex-wrap:wrap;height:auto;padding:14px 18px;gap:14px}.nav-right{gap:14px}h1.title{font-size:30px}}
+</style>
+</head>
+<body>
+
+<!-- Top nav (matches Impact Hub chrome) -->
+<div class="nav">
+  <div class="logo">ē</div>
+  <div class="nav-title">IMPACT HUB</div>
+  <div class="nav-sep"></div>
+  <div class="nav-user">
+    <div class="avatar">CG</div>
+    <div><b>Cristina Galloway</b><span>HQ ADMIN</span></div>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-viewing"><span>Viewing</span><b>All Affiliates</b></div>
+  <div class="nav-right">
+    <a class="nav-link" href="#">SIGN OUT</a>
+    <a class="nav-btn" href="#">GO TO TRELLIS &rarr;</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="crumb"><a href="#">&larr; HQ Resources</a></div>
+  <div class="hq-only">HQ Only</div>
+  <h1 class="title">Family Preservation Breakdown</h1>
+  <p class="intro">KPI 1 by <strong>family preservation goal</strong> and <strong>outcome</strong> for eligible children, year to date through Q2 2026. Shows what ĒMA set out to prevent and what has been recorded so far. Internal to ĒMA HQ leadership, not visible to affiliate staff.</p>
+
+  <div class="periods">
+    <div class="pill-period">Q1</div>
+    <div class="pill-period">Q2</div>
+    <div class="pill-period active">YTD</div>
+  </div>
+
+  <!-- KPI 1 rate -->
+  <div class="section-label">Preservation Rate</div>
+  <div class="anchor-note">Rate = children recorded as Prevented from CPS Involvement or Prevented from Foster Care Placement, divided by all eligible children. Prevented from Permanent Removal is deliberately excluded from the numerator until the validation pathway is in place.</div>
+
+  <div class="card red" id="kpiCard">
+    <div class="kpi-head">
+      <div class="kpi-name">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        KPI 1 - Family Preservation Rate
+        <span class="info-wrap"><span class="info-icon">i</span>
+          <span class="info-pop">
+            <div class="info-block"><div class="h">What Counts</div><p>Children whose recorded outcome is prevention of CPS involvement or prevention of foster care placement.</p></div>
+            <div class="info-block"><div class="h">Excluded</div><p>Prevention of permanent removal is held out of the numerator pending a validation pathway. Children in temporary or permanent removal are not counted as preserved.</p></div>
+            <div class="info-block warn"><div class="h">Known Limitation</div><p>Eligibility relies on a current wellbeing assessment. A recent submission timestamp alone does not confirm a full re-assessment was completed.</p></div>
+          </span>
+        </span>
+      </div>
+      <div class="status-pill" id="statusPill"></div>
+    </div>
+    <div class="kpi-rate">
+      <span class="num" id="rateNum"></span>
+      <span class="kpi-target">Target 85%</span>
+    </div>
+    <div class="kpi-frac" id="rateFrac"></div>
+    <div class="kpi-dollar">
+      <span class="num" id="dollarNum"></span>
+      <span class="dlabel">Estimated prevention value &middot; numerator &times; $38,850 per child &middot; estimate, not a confirmed figure</span>
+    </div>
+  </div>
+
+  <!-- Data completeness banner -->
+  <div class="banner" id="banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+      <div class="bt">Data Completeness</div>
+      <p id="bannerText"></p>
+    </div>
+  </div>
+
+  <!-- GOAL breakdown -->
+  <div class="section-label">By Family Preservation Goal</div>
+  <div class="anchor-note">What ĒMA identified as the preservation goal for each eligible child at assessment. Proportions are of the full eligible population.</div>
+  <div class="card">
+    <div class="propbar" id="goalBar"></div>
+    <table class="brk-table" id="goalTable">
+      <thead><tr><th>Goal</th><th class="r">Children</th><th class="r">Share</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- IMPACT breakdown -->
+  <div class="section-label">By Recorded Outcome</div>
+  <div class="anchor-note">The preservation outcome recorded so far for each eligible child. Only the two prevention outcomes tagged <strong>counts to KPI 1</strong> feed the numerator above.</div>
+  <div class="card red">
+    <div class="propbar" id="impactBar"></div>
+    <table class="brk-table" id="impactTable">
+      <thead><tr><th>Recorded outcome</th><th class="r">Children</th><th class="r">Share</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="foot-note" id="impactFoot"></div>
+  </div>
+
+</div>
+
+<div class="page-foot">
+  <span>ĒMA Impact Hub &middot; HQ Resource</span>
+  <span><a href="#">Our approach to data</a></span>
+</div>
+
+<script>
+// ---- Hydratable data. Replace counts with the Q2 YTD payload from RD. ----
+// Placeholder figures below are illustrative and clearly not live data.
+const DATA = {
+  target: 85,
+  dollarPerChild: 38850,
+  fwaWindow: "6-month",           // Q2 2026 uses the 6-month FWA currency window
+  denominator: 240,               // eligible children with a current FWA (cpi_total IS NOT NULL)
+  goal: [
+    { label:"Prevent CPS Involvement",       count:96, color:"var(--green)" },
+    { label:"Prevent Foster Care Placement", count:72, color:"var(--red)" },
+    { label:"Prevent Permanent Removal",      count:36, color:"var(--yellow)" },
+    { label:"Not Eligible for Program",       count:24, color:"var(--muted)" },
+    { label:"Not Recorded",                   count:12, color:"var(--border)", flag:true }
+  ],
+  impact: [
+    { label:"Prevented from CPS Involvement",       count:84, color:"var(--green)",  counts:true },
+    { label:"Prevented from Foster Care Placement", count:60, color:"var(--muted)",  counts:true },
+    { label:"Prevented from Permanent Removal",     count:20, color:"var(--yellow)", excluded:true },
+    { label:"Temporary Removal",                    count:12, color:"var(--peach)" },
+    { label:"Permanent Removal",                    count:8,  color:"var(--red)" },
+    { label:"Not Yet Recorded",                     count:56, color:"var(--border)", flag:true }
+  ]
+};
+
+const fmt = n => n.toLocaleString('en-US');
+const pct = (n,d) => d ? (n/d*100) : 0;
+const pctStr = (n,d) => (Math.round(pct(n,d)*10)/10).toFixed(1) + "%";
+
+const denom = DATA.denominator;
+const numerator = DATA.impact.filter(r => r.counts).reduce((s,r)=>s+r.count,0);
+const rate = pct(numerator, denom);
+
+// KPI rate + status pill (5-point rule, distance from 85 target)
+document.getElementById('rateNum').textContent = (Math.round(rate*10)/10) + "%";
+document.getElementById('rateFrac').innerHTML =
+  "<b>" + fmt(numerator) + "</b> of <b>" + fmt(denom) + "</b> eligible children preserved. " +
+  "Denominator is every child linked to a mom with a current wellbeing assessment " +
+  "(" + DATA.fwaWindow + " window, scored composite on file).";
+
+const dollar = numerator * DATA.dollarPerChild;
+document.getElementById('dollarNum').textContent = "$" + fmt(dollar);
+
+const gap = DATA.target - rate;
+const pill = document.getElementById('statusPill');
+if (gap <= 0) { pill.className = "status-pill status-green"; pill.textContent = Math.abs(Math.round(gap)) + " pts at or above target"; }
+else if (gap <= 5) { pill.className = "status-pill status-yellow"; pill.textContent = (Math.round(gap*10)/10) + " pts below target"; }
+else { pill.className = "status-pill status-red"; pill.textContent = (Math.round(gap*10)/10) + " pts below target"; }
+
+// Completeness banner: surface not-yet-recorded outcomes and null goals explicitly
+const notRecorded = (DATA.impact.find(r=>r.flag)||{count:0}).count;
+const goalNull = (DATA.goal.find(r=>r.flag)||{count:0}).count;
+document.getElementById('bannerText').innerHTML =
+  "Outcome is <b>not yet recorded for " + fmt(notRecorded) + " of " + fmt(denom) + " children (" +
+  pctStr(notRecorded, denom) + ")</b>. These children stay in the denominator and count as not-yet-preserved, " +
+  "which conservatively lowers the rate rather than dropping them silently. " +
+  "A preservation goal is missing for " + fmt(goalNull) + " children (" + pctStr(goalNull, denom) + "). " +
+  "FWA currency is based on submission timestamp plus a scored composite; a timestamp alone does not confirm a full re-assessment.";
+
+// Render a breakdown (prop bar + table) from rows summing to denom
+function renderBreakdown(rows, barId, tableId, showTags){
+  const bar = document.getElementById(barId);
+  const tbody = document.querySelector('#'+tableId+' tbody');
+  const total = rows.reduce((s,r)=>s+r.count,0);
+  rows.forEach(r=>{
+    const share = pct(r.count, total);
+    // prop-bar segment
+    const seg = document.createElement('div');
+    seg.className = 'pb-seg';
+    seg.style.flexGrow = r.count;
+    seg.style.flexBasis = '0';
+    seg.style.background = r.color;
+    if (r.color === 'var(--border)') seg.style.border = '1px dashed #c9c2b4';
+    const tip = document.createElement('div');
+    tip.className = 'pb-tip';
+    tip.textContent = r.label + ': ' + fmt(r.count) + ' (' + pctStr(r.count,total) + ')';
+    seg.appendChild(tip);
+    bar.appendChild(seg);
+    // table row
+    const tr = document.createElement('tr');
+    let tag = '';
+    if (showTags && r.counts)   tag = ' <span class="tag tag-num">Counts to KPI 1</span>';
+    if (showTags && r.excluded) tag = ' <span class="tag tag-exc">Excluded from numerator</span>';
+    if (r.flag)                 tag = ' <span class="tag tag-flag">Data gap</span>';
+    const dotBorder = (r.color==='var(--border)') ? 'border:1px dashed #c9c2b4;' : '';
+    tr.innerHTML =
+      '<td><span class="dot" style="background:'+r.color+';'+dotBorder+'"></span>'+r.label+tag+'</td>' +
+      '<td class="r"><span class="num">'+fmt(r.count)+'</span></td>' +
+      '<td class="r">'+pctStr(r.count,total)+'</td>';
+    tbody.appendChild(tr);
+  });
+  // totals row
+  const tr = document.createElement('tr');
+  tr.className = 'brk-total';
+  tr.innerHTML = '<td>Total eligible children</td><td class="r"><span class="num">'+fmt(total)+'</span></td><td class="r">100%</td>';
+  tbody.appendChild(tr);
+}
+
+renderBreakdown(DATA.goal,   'goalBar',   'goalTable',   false);
+renderBreakdown(DATA.impact, 'impactBar', 'impactTable', true);
+
+document.getElementById('impactFoot').innerHTML =
+  "<b>Numerator = " + fmt(numerator) + "</b> (Prevented from CPS Involvement + Prevented from Foster Care Placement). " +
+  "Prevented from Permanent Removal (" + fmt((DATA.impact.find(r=>r.excluded)||{count:0}).count) +
+  ") is recorded and shown here but held out of the rate by design.";
+</script>
+</body>
+</html>

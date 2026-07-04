@@ -1345,36 +1345,56 @@
   }
   #learningProgressBody .rate-cell:hover { background: var(--light-pink); }
 
-    /* Per-curriculum rates table: icon-only n-warn (overrides loud pill) */
-  #learningProgressBody .n-warn {
-    background: transparent;
-    padding: 0;
-    margin-left: 8px;
-    font-size: 0;          /* hide pill text label; only icon shows */
-    line-height: 1;
-    vertical-align: middle;
-    border-radius: 50%;
-    width: 18px; height: 18px;
+  /* Per-curriculum rates: FEW MOMS reliability pill */
+  .lp-few-moms {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    position: relative;
+    background: #e8e3dc;
+    color: #5c554d;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 9.5px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+    line-height: 1.4;
+    cursor: help;
+    border: none;
+    outline-offset: 2px;
   }
-  #learningProgressBody .n-warn::before {
-    content: "\26A0";       /* ⚠ */
-    font-size: 13px;
-    color: #b8791e;
-    line-height: 1;
-  }
-  #learningProgressBody .n-warn.crit::before { color: var(--red-dark); }
-  #learningProgressBody .n-warn:hover { background: rgba(0,0,0,0.04); }
-  /* Tip popover position adjustment for the small icon */
-  #learningProgressBody .n-warn .tip {
+  .lp-few-moms:focus-visible { outline: 2px solid #5c554d; }
+  .lp-few-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid #d8dcd0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    width: 220px;
     font-size: 11px;
-    text-transform: none;
-    letter-spacing: 0;
     font-family: 'Lato', sans-serif;
     font-weight: 400;
     color: var(--dark);
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.5;
+    white-space: normal;
+    z-index: 200;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    pointer-events: none;
+  }
+  .lp-few-moms:hover .lp-few-tip,
+  .lp-few-moms:focus .lp-few-tip { display: block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-few-tip { transition: none; }
   }
 
     /* Referral source rows: color stripe matches donut slice */
@@ -2630,11 +2650,12 @@
       <td class="lp-rate">
        <span class="rate-cell" data-label="NPP completion" data-n="11" data-unit="of 68 closed tracks completed" data-color="#123939"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>16%</strong></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
       <td class="lp-rate">
        <span class="rate-cell" data-label="NPP learning progress" data-n="8" data-unit="of 10 who completed both assessments showed improvement" data-color="#123939"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>80%</strong></span>
-       <span class="n-warn" style="cursor:help;margin-left:6px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
      </tr>
      <tr data-track="EP">
@@ -2642,11 +2663,12 @@
       <td class="lp-rate">
        <span class="rate-cell" data-label="EP completion" data-n="5" data-unit="of 48 closed tracks completed" data-color="#ec482f"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>10%</strong></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
       <td class="lp-rate">
        <span class="rate-cell" data-label="EP learning progress" data-n="3" data-unit="of 5 who completed both assessments showed improvement" data-color="#ec482f"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>60%</strong></span>
-       <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
      </tr>
      <tr data-track="RR">
@@ -2654,11 +2676,12 @@
       <td class="lp-rate">
        <span class="rate-cell" data-label="RR completion" data-n="2" data-unit="of 27 closed tracks completed" data-color="#f2a136"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>7%</strong></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
       <td class="lp-rate">
        <span class="rate-cell" data-label="RR learning progress" data-n="2" data-unit="of 3 who completed both assessments showed improvement" data-color="#f2a136"
              onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>67%</strong></span>
-       <span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>
+       <span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>
       </td>
      </tr>
     </tbody>
@@ -4171,25 +4194,23 @@
       compDen = c.closed || 0;
      }
      // Learning progress rate
-     var lpPct, lpN, lpDen, warnHtml = '';
+     var lpPct, lpN, lpDen, lpPillHtml = '', compPillHtml = '';
+     var FEW_PILL = '<span class="lp-few-moms" tabindex="0" role="note" aria-label="Few moms — read as direction">FEW MOMS<span class="lp-few-tip">Few moms finished this track with both assessments on file. With this few, one result either way moves the rate a lot, so read it as a direction, not a firm number.</span></span>';
      if (l.improved != null && l.valid_pairs > 0) {
       lpPct = Math.round(l.improved / l.valid_pairs * 100) + '%';
       lpN = l.improved;
       lpDen = l.valid_pairs;
-      if (l.valid_pairs < 10) {
-       warnHtml = '<span class="n-warn crit" style="cursor:help;margin-left:6px;">Too few to interpret<span class="tip">Below 10 moms with both assessments on file. With this few, one result in either direction changes the rate dramatically. Do not use this figure for comparison or trend yet.</span></span>';
-      } else if (l.valid_pairs < 20) {
-       warnHtml = '<span class="n-warn" style="cursor:help;margin-left:6px;">Interpret with caution<span class="tip">Below 20 moms with both assessments on file. The rate could shift noticeably as more moms complete the track. The direction is meaningful; the exact number may not yet be stable.</span></span>';
-      }
+      if (l.valid_pairs < 20) { lpPillHtml = FEW_PILL; }
      } else {
       lpPct = 'pending';
       lpN = 0;
       lpDen = 0;
      }
+     if (compN < 30) { compPillHtml = FEW_PILL; }
      lpHtml += '<tr data-track="' + curr.id + '">';
      lpHtml += '<td class="lp-curriculum"><strong>' + curr.id + '</strong> <span style="color:var(--mid);font-weight:400;">' + curr.name + '</span></td>';
-     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' completion" data-n="' + compN + '" data-unit="of ' + compDen + ' closed tracks completed" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + compPct + '</strong></span></td>';
-     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' learning progress" data-n="' + lpN + '" data-unit="of ' + lpDen + ' who completed both assessments showed improvement" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + lpPct + '</strong></span>' + warnHtml + '</td>';
+     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' completion" data-n="' + compN + '" data-unit="of ' + compDen + ' closed tracks completed" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + compPct + '</strong></span>' + compPillHtml + '</td>';
+     lpHtml += '<td class="lp-rate"><span class="rate-cell" data-label="' + curr.id + ' learning progress" data-n="' + lpN + '" data-unit="of ' + lpDen + ' who completed both assessments showed improvement" data-color="' + curr.color + '" onmouseenter="dnTipShow(event,this)" onmousemove="dnTipMove(event)" onmouseleave="dnTipHide()"><strong>' + lpPct + '</strong></span>' + lpPillHtml + '</td>';
      lpHtml += '</tr>';
     });
     lpBody.innerHTML = lpHtml;

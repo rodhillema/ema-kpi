@@ -151,16 +151,20 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     const denominator = goalCounts.prevent_cps_involvement + goalCounts.prevent_foster_care_placement;
     const excluded = totalCohort - denominator;
 
+    const fosterPrevented = impactCounts.prevented_from_foster_care_placement;
+
     res.json({
       period,
-      periodLabel:   PERIOD_LABEL,
-      fwaWindow:     FWA_WINDOW,
-      target:        85,
+      periodLabel:    PERIOD_LABEL,
+      fwaWindow:      FWA_WINDOW,
+      target:         85,
       dollarPerChild: 38850,
       totalCohort,
       denominator,
       numerator,
       excluded,
+      foster_prevented: fosterPrevented,
+      dollar_impact:    fosterPrevented * 38850,
       goal:   goalCounts,
       impact: impactCounts,
     });

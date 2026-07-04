@@ -268,7 +268,7 @@ function hydrate(d) {
     '<b>' + fmt(numerator) + '</b> of <b>' + fmt(denom) + '</b> eligible children preserved. ' +
     'Denominator is every child linked to a mom with a current wellbeing assessment ' +
     '(' + d.fwaWindow + ' window, scored composite on file).';
-  document.getElementById('dollarNum').textContent = '$' + fmt(numerator * d.dollarPerChild);
+  document.getElementById('dollarNum').textContent = '$' + fmt(d.dollar_impact);
 
   var gap  = d.target - rate;
   var pill = document.getElementById('statusPill');

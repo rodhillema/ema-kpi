@@ -31,17 +31,18 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
     const q = `
       SELECT
-        COALESCE(a.name, 'Unknown') AS affiliate_name,
-        COALESCE(bn.need_type_c, 'Other')  AS need_type,
-        COUNT(*)::int                       AS flagged,
-        SUM(CASE WHEN bn.did_address_need_c = TRUE THEN 1 ELSE 0 END)::int AS met
+        COALESCE(af.name, 'Unknown')      AS affiliate_name,
+        COALESCE(bn."type_c"::text, 'Other') AS need_type,
+        COUNT(*)::int                        AS flagged,
+        SUM(CASE WHEN bn."did_address_need_c" = TRUE THEN 1 ELSE 0 END)::int AS met
       FROM "BenevolenceNeed" bn
-      LEFT JOIN "Account" a ON a.id = bn.account_id
-      WHERE bn.created_at >= $1
-        AND bn.created_at <  $2
-        AND bn.origin_system IS DISTINCT FROM 'promise_serves'
-      GROUP BY a.name, bn.need_type_c
-      ORDER BY COUNT(*) DESC, a.name
+      JOIN "Mom" m ON m."id" = bn."momId"
+      LEFT JOIN "Affiliate" af ON af."id" = m."affiliate_id"
+      WHERE bn."created_at" >= $1
+        AND bn."created_at" <  $2
+        AND bn."deleted_at" = 0
+      GROUP BY af.name, bn."type_c"
+      ORDER BY COUNT(*) DESC, af.name
     `;
 
     const result = await pool.query(q, [startDate, endDate]);

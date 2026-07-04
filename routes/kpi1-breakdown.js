@@ -107,7 +107,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     `, [PERIOD_START, PERIOD_END + ' 23:59:59']);
 
     const children = result.rows;
-    const denominator = children.length;
+    const totalCohort = children.length; // all children in FWA cohort (for excluded count)
 
     // ── Goal breakdown (from snapshot intake status) ──────────────────────────
     const goalCounts = {
@@ -148,6 +148,8 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
     const numerator = impactCounts.prevented_from_cps_involvement +
                       impactCounts.prevented_from_foster_care_placement;
+    const denominator = goalCounts.prevent_cps_involvement + goalCounts.prevent_foster_care_placement;
+    const excluded = totalCohort - denominator;
 
     res.json({
       period,
@@ -155,8 +157,10 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       fwaWindow:     FWA_WINDOW,
       target:        85,
       dollarPerChild: 38850,
+      totalCohort,
       denominator,
       numerator,
+      excluded,
       goal:   goalCounts,
       impact: impactCounts,
     });

@@ -664,11 +664,13 @@ function showMoms(){
   document.querySelector('.portal-view').classList.remove('mom-loading');
   updateNavScope();buildCoordChips();render();
 }
+var BROWARD_ID='7fe66c83-4407-4a38-9ec8-a10b89461102';
 async function loadMoms(){
   try{
     var url='/api/mom-status';
     var sel=document.getElementById('affiliateSlicer');
-    if(sel&&sel.value)url+='?affiliate_id='+encodeURIComponent(sel.value);
+    if(sel&&sel.value==='exclude-broward')url+='?exclude_affiliate_id='+BROWARD_ID;
+    else if(sel&&sel.value)url+='?affiliate_id='+encodeURIComponent(sel.value);
     var res=await fetch(url);
     if(res.ok){MOMS=await res.json();}
     else{MOMS=[];console.error('mom-status fetch returned '+res.status);}
@@ -685,6 +687,11 @@ async function loadAffiliateSlicer(){
     var afs=await res.json();if(!afs.length)return;
     var sel=document.getElementById('affiliateSlicer');
     var wrap=document.getElementById('rhAffWrap');
+    // "All Affiliates except ĒMA Broward" option
+    var exOpt=document.createElement('option');
+    exOpt.value='exclude-broward';
+    exOpt.textContent='All Affiliates except ĒMA Broward';
+    sel.appendChild(exOpt);
     // Add affiliate options
     afs.forEach(function(a){
       var o=document.createElement('option');o.value=a.id;o.textContent=a.name;sel.appendChild(o);

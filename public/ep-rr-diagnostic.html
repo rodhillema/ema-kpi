@@ -312,22 +312,22 @@ function render(d) {
 
   // ── Scoring method reference ──
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;margin-bottom:14px">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">The three scoring methods tested in this report</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">The three ways we measure improvement in this report</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'
+    // Current / C — first
+    +'<div style="border-left:4px solid var(--red);padding:9px 12px;background:var(--red-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">Current KPI 3 &nbsp;·&nbsp; Total score</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Add up all of a mom\'s answers pre and post. If her total went up by any amount, she counts as improved. <strong>This is how KPI 3 is calculated today.</strong> A mom who answers 30 questions starting at a high score has a harder bar to clear than one starting low.</div>'
+    +'</div>'
     // Method A
-    +'<div style="border-left:3px solid var(--green);padding:9px 12px;background:var(--bg);border-radius:0 6px 6px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:4px">Method A &nbsp;·&nbsp; Domain-weighted average</div>'
-    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Score each topic area (domain) separately, then average those topic scores together. If Self-Regulation has 10 questions and Parental Connection has 4, each topic still counts equally. <span style="color:var(--mid)">Used in the Trellis Track Journey view.</span></div>'
+    +'<div style="border-left:4px solid var(--yellow);padding:9px 12px;background:var(--yellow-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:4px">Domain-weighted &nbsp;·&nbsp; Mean of means</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Average the answers within each topic area, then average those topic scores. If Self-Regulation has 10 questions and Parental Connection has 4, each topic still counts equally — the larger domain doesn\'t dominate. Used in the Trellis Track Journey view.</div>'
     +'</div>'
-    // Method B
-    +'<div style="border-left:3px solid var(--border);padding:9px 12px;background:var(--bg);border-radius:0 6px 6px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin-bottom:4px">Method B &nbsp;·&nbsp; Simple average</div>'
-    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Add all answers and divide by the number of questions. Straightforward mean — questions in larger topic areas carry more weight. Included here as a reference point between A and C.</div>'
-    +'</div>'
-    // Method C
-    +'<div style="border-left:3px solid var(--yellow);padding:9px 12px;background:var(--yellow-lt);border-radius:0 6px 6px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:4px">Method C &nbsp;·&nbsp; Flat total &nbsp;·&nbsp; <em>Current KPI 3</em></div>'
-    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Add up all of a mom\'s answers. If her post-program total is higher than her pre-program total, she counts as improved. <strong>This is how KPI 3 is calculated in the Impact Hub today.</strong></div>'
+    // Any domain
+    +'<div style="border-left:4px solid var(--green);padding:9px 12px;background:var(--green-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:4px">Any domain improved</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">A mom counts as improved if her average score went up in <em>at least one</em> topic area — even if others stayed the same or dipped. Sets the most achievable bar: partial improvement counts.</div>'
     +'</div>'
     +'</div>'
     +'</div>';
@@ -521,43 +521,75 @@ function render(d) {
   if(!(counts.with_pair>0)){
     html += '<div class="callout alert">No paired moms in this window. Phase 3 cannot be computed - this is a pure Phase 1 capture finding.</div>';
   } else {
+    // ── KPI rate summary ──
+    html += '<div class="subsection">KPI Rate by Method</div>';
+    html += '<div class="tbl-wrap"><table><thead><tr><th>Track</th><th>Method</th><th>Moms improved</th><th>Total paired</th><th>Rate</th><th>What this means</th></tr></thead><tbody>';
+    ['ep','rr'].forEach(function(track){
+      var rC=rates[track].C, rA=rates[track].A, rAny=rates[track].anyDomain;
+      html += '<tr style="border-top:2px solid var(--border)">'
+        +'<td rowspan="3" style="font-family:\'Oswald\',sans-serif;font-weight:600;font-size:13px;vertical-align:middle">'+track.toUpperCase()+'</td>'
+        +'<td><strong>Current KPI 3</strong><br><span style="font-size:10px;color:var(--mid)">total score up</span></td>'
+        +'<td>'+rC.num+'</td><td>'+rC.den+(rC.den<30?' <span class="warn-badge">small-n</span>':'')+'</td>'
+        +'<td style="font-size:14px;font-weight:700;color:'+(rC.den>0&&rC.num/rC.den>=0.7?'var(--green)':rC.den>0&&rC.num/rC.den>=0.4?'#8a6000':'var(--red)')+'">'+rateCell(rC.num,rC.den)+'</td>'
+        +'<td style="font-size:11px;color:var(--mid)">How KPI 3 is reported today</td></tr>';
+      html += '<tr>'
+        +'<td>Domain-weighted<br><span style="font-size:10px;color:var(--mid)">mean of domain means up</span></td>'
+        +'<td>'+rA.num+'</td><td>'+rA.den+(rA.den<30?' <span class="warn-badge">small-n</span>':'')+'</td>'
+        +'<td style="font-size:14px;font-weight:700;color:'+(rA.den>0&&rA.num/rA.den>=0.7?'var(--green)':rA.den>0&&rA.num/rA.den>=0.4?'#8a6000':'var(--red)')+'">'+rateCell(rA.num,rA.den)+'</td>'
+        +'<td style="font-size:11px;color:var(--mid)">Equal weight per topic area</td></tr>';
+      html += '<tr>'
+        +'<td>Any domain improved<br><span style="font-size:10px;color:var(--mid)">≥1 topic area up</span></td>'
+        +'<td>'+rAny.num+'</td><td>'+rAny.den+(rAny.den<30?' <span class="warn-badge">small-n</span>':'')+'</td>'
+        +'<td style="font-size:14px;font-weight:700;color:'+(rAny.den>0&&rAny.num/rAny.den>=0.7?'var(--green)':rAny.den>0&&rAny.num/rAny.den>=0.4?'#8a6000':'var(--red)')+'">'+rateCell(rAny.num,rAny.den)+'</td>'
+        +'<td style="font-size:11px;color:var(--mid)">Most achievable bar — partial improvement counts</td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // ── Agreement check ──
+    var flipCount = counts.flips_AvsC||0;
+    html += '<div class="callout '+(flipCount>0?'alert':'info')+'"><strong>Do the methods agree?</strong> '
+      +(flipCount===0
+        ? 'Yes — Current KPI 3 and Domain-weighted give the same improved/not-improved verdict for every mom in this sample. The formula is not changing anyone\'s outcome.'
+        : flipCount+' mom(s) get a different verdict depending on which method is used. The formula is deciding their outcome, not just their learning.')
+      +'</div>';
+
+    // ── Per-mom table ──
     ['EP','RR'].forEach(function(track){
       var moms=momResults.filter(function(m){return m.track_group===track;});
       if(!moms.length){html+='<p style="margin:8px 0;font-size:12px;color:var(--mid)"><strong>'+track+':</strong> No paired moms.</p>';return;}
-      html += '<div class="subsection">'+track+' Per-Mom Scores ('+moms.length+' paired mom'+(moms.length!==1?'s':'')+')'+smallN(moms.length)+'</div>';
-      html += '<div class="tbl-wrap"><table><thead><tr><th>Mom</th><th>Affiliate</th><th>Pre A</th><th>Post A</th><th>Impr A</th><th>Pre B</th><th>Post B</th><th>Impr B</th><th>Sum Pre</th><th>Sum Post</th><th>Impr C</th><th>A vs C?</th></tr></thead><tbody>';
+      html += '<div class="subsection">'+track+' — Per-Mom Detail ('+moms.length+' mom'+(moms.length!==1?'s':'')+')'+smallN(moms.length)+'</div>';
+      html += '<div class="tbl-wrap"><table><thead><tr>'
+        +'<th>Mom</th><th>Affiliate</th>'
+        +'<th colspan="2">Current KPI 3 (total)</th><th>Improved?</th>'
+        +'<th colspan="2">Domain-weighted</th><th>Improved?</th>'
+        +'<th>Any domain up?</th>'
+        +'<th>Methods agree?</th>'
+        +'</tr>'
+        +'<tr style="background:var(--bg)">'
+        +'<th></th><th></th>'
+        +'<th style="font-weight:400;font-size:10px">Pre total</th><th style="font-weight:400;font-size:10px">Post total</th><th></th>'
+        +'<th style="font-weight:400;font-size:10px">Pre avg</th><th style="font-weight:400;font-size:10px">Post avg</th><th></th>'
+        +'<th></th><th></th>'
+        +'</tr></thead><tbody>';
       moms.forEach(function(m){
-        html += '<tr><td>'+esc(m.first_name)+' '+esc(m.last_name)+'</td><td style="font-size:11px;">'+esc(m.affiliate||'')+'</td>'
-          +'<td>'+(m.pre_A!=null?m.pre_A:'-')+'</td><td>'+(m.post_A!=null?m.post_A:'-')+'</td>'
-          +'<td class="'+(m.improved_A===true?'ok':m.improved_A===false?'ambig':'')+'">'+(m.improved_A===true?'yes':m.improved_A===false?'<em>no</em>':'n/a')+'</td>'
-          +'<td>'+(m.pre_B!=null?m.pre_B:'-')+'</td><td>'+(m.post_B!=null?m.post_B:'-')+'</td>'
-          +'<td class="'+(m.improved_B===true?'ok':m.improved_B===false?'ambig':'')+'">'+(m.improved_B===true?'yes':m.improved_B===false?'<em>no</em>':'n/a')+'</td>'
-          +'<td>'+(m.pre_C!=null?m.pre_C:'-')+'</td><td>'+(m.post_C!=null?m.post_C:'-')+'</td>'
-          +'<td class="'+(m.improved_C?'ok':'ambig')+'">'+(m.improved_C?'yes':'<em>no</em>')+'</td>'
-          +'<td>'+(m.flip_AvsC?'<span class="tag tag-flip">FLIP</span>':'<span class="tag tag-same">same</span>')+'</td></tr>';
+        var agreeCell = m.flip_AvsC
+          ? '<span class="tag tag-flip">DISAGREE</span>'
+          : '<span class="tag tag-same">agree</span>';
+        html += '<tr>'
+          +'<td>'+esc(m.first_name)+' '+esc(m.last_name)+'</td>'
+          +'<td style="font-size:11px">'+esc(m.affiliate||'')+'</td>'
+          +'<td>'+(m.pre_C!=null?m.pre_C:'-')+'</td>'
+          +'<td>'+(m.post_C!=null?m.post_C:'-')+'</td>'
+          +'<td class="'+(m.improved_C?'ok':'ambig')+'">'+(m.improved_C?'yes':'no')+'</td>'
+          +'<td>'+(m.pre_A!=null?m.pre_A:'-')+'</td>'
+          +'<td>'+(m.post_A!=null?m.post_A:'-')+'</td>'
+          +'<td class="'+(m.improved_A===true?'ok':m.improved_A===false?'ambig':'')+'">'+(m.improved_A===true?'yes':m.improved_A===false?'no':'n/a')+'</td>'
+          +'<td class="'+(m.improved_anyDomain===true?'ok':m.improved_anyDomain===false?'ambig':'')+'">'+(m.improved_anyDomain===true?'yes':m.improved_anyDomain===false?'no':'n/a')+'</td>'
+          +'<td>'+agreeCell+'</td>'
+          +'</tr>';
       });
       html += '</tbody></table></div>';
     });
-    html += '<div class="subsection">KPI Rate per Method</div><div class="tbl-wrap"><table><thead><tr><th>Track</th><th>Method</th><th>Improved</th><th>Eligible</th><th>Rate</th><th>vs C</th></tr></thead><tbody>';
-    ['ep','rr'].forEach(function(track){
-      ['A','B','C'].forEach(function(method){
-        var r=rates[track][method],rC=rates[track]['C'];
-        var diff=method!=='C'&&r.den>0&&rC.den>0?(r.num/r.den-rC.num/rC.den>0.01?'higher than C':r.num/r.den-rC.num/rC.den<-0.01?'lower than C':'same as C'):'-';
-        html += '<tr><td>'+track.toUpperCase()+'</td><td><span class="tag tag-'+method+'">'+method+'</span></td><td>'+r.num+'</td><td>'+r.den+(r.den<30?' <span class="warn-badge">small-n</span>':'')+'</td><td>'+rateCell(r.num,r.den)+'</td><td>'+diff+'</td></tr>';
-      });
-    });
-    html += '</tbody></table></div>';
-    html += '<div class="callout '+(rrRobust?'info':'alert')+'"><strong>RR Robustness - The Key Question</strong>'+(rrMoms.length===0?'RR has no paired moms. The 0% rate is a pure capture finding.':rrRobust?'RR 0% survives all three methods. Aggregation method is NOT the cause of RR 0%.':'RR 0% does NOT survive all methods. At least one method shows improvement. Domain averaging may be suppressing real movement.')+'</div>';
-    html += '<div class="callout"><strong>Flip Summary</strong>'+(counts.flips_AvsC||0)+' mom(s) classify differently between Method A and Method C. '+((counts.flips_AvsC||0)===0?'No flips - aggregation method does not change who counts as improved in this sample.':'Flips exist - the choice of aggregation method changes the KPI numerator.')+'</div>';
-    html += '<div class="subsection">Sensitivity</div><div class="tbl-wrap"><table><thead><tr><th>Test</th><th>EP Rate</th><th>RR Rate</th><th>Note</th></tr></thead><tbody>';
-    html += '<tr><td>Post strictly &gt; Pre (current KPI 3)</td><td>'+rateCell(rates.ep.C.num,rates.ep.C.den)+'</td><td>'+rateCell(rates.rr.C.num,rates.rr.C.den)+'</td><td>Method C</td></tr>';
-    var epT=epMoms.filter(function(m){return m.post_B!=null&&m.pre_B!=null&&m.post_B-m.pre_B>0.5;}).length,epTd=epMoms.filter(function(m){return m.post_B!=null&&m.pre_B!=null;}).length;
-    var rrT=rrMoms.filter(function(m){return m.post_B!=null&&m.pre_B!=null&&m.post_B-m.pre_B>0.5;}).length,rrTd=rrMoms.filter(function(m){return m.post_B!=null&&m.pre_B!=null;}).length;
-    html += '<tr><td>Post - Pre &gt; 0.5 (non-trivial)</td><td>'+rateCell(epT,epTd)+'</td><td>'+rateCell(rrT,rrTd)+'</td><td>Filters trivial movement</td></tr>';
-    var epReg=epMoms.filter(function(m){return !m.improved_C&&m.pre_C!=null;}).length,epRd=epMoms.filter(function(m){return m.pre_C!=null;}).length;
-    var rrReg=rrMoms.filter(function(m){return !m.improved_C&&m.pre_C!=null;}).length,rrRd=rrMoms.filter(function(m){return m.pre_C!=null;}).length;
-    html += '<tr><td class="ambig">Apparent regressions (post &lt; pre)</td><td>'+rateCell(epReg,epRd)+'</td><td>'+rateCell(rrReg,rrRd)+'</td><td class="ambig">AMBIGUOUS, not failure. Honest self-assessment after learning.</td></tr>';
-    html += '</tbody></table></div>';
   }
   html += '</div></div>';
 

@@ -236,36 +236,48 @@ router.get('/', requireAdmin, async (req, res) => {
     }
 
     // ── Compute three methods per paired mom ─────────────
-    function score(arId, sumScoreRaw, avgScoreRaw) {
-      const domains  = domainByAr[arId] || [];
-      const methodA  = domains.length > 0
+    function score(arId, sumScoreRaw) {
+      const domains = domainByAr[arId] || [];
+      const methodA = domains.length > 0
         ? domains.reduce((s, d) => s + parseFloat(d.domain_mean), 0) / domains.length
         : null;
       return {
-        A: pf(methodA),
-        B: pf(avgScoreRaw),
-        C: parseFloat(sumScoreRaw) || 0,
+        C: parseFloat(sumScoreRaw) || 0,   // flat sum — current KPI 3
+        A: pf(methodA),                    // mean of domain means
       };
     }
 
     const momResults = pairedWithBoth.map(d => {
-      const pre  = score(d.pre.ar_id,  d.pre.sum_score,  d.pre.avg_score);
-      const post = score(d.post.ar_id, d.post.sum_score, d.post.avg_score);
-      const iA = pre.A != null && post.A != null ? post.A > pre.A : null;
-      const iB = pre.B != null && post.B != null ? post.B > pre.B : null;
+      const pre  = score(d.pre.ar_id,  d.pre.sum_score);
+      const post = score(d.post.ar_id, d.post.sum_score);
       const iC = post.C > pre.C;
-      const pcA = (pre.A && pre.A !== 0) ? pf(100 * (post.A - pre.A) / pre.A) : null;
-      const pcB = (pre.B && pre.B !== 0) ? pf(100 * (post.B - pre.B) / pre.B) : null;
+      const iA = pre.A != null && post.A != null ? post.A > pre.A : null;
+
+      // Any-domain: mom improved if ≥1 domain's average went up
+      const preDomains = domainByAr[d.pre.ar_id] || [];
+      const postDomains = domainByAr[d.post.ar_id] || [];
+      const preDomainMap = {};
+      preDomains.forEach(pd => { preDomainMap[pd.construct_name] = parseFloat(pd.domain_mean); });
+      const domainResults = postDomains.map(pd => ({
+        name: pd.construct_name,
+        pre_mean: preDomainMap[pd.construct_name] ?? null,
+        post_mean: parseFloat(pd.domain_mean),
+        improved: preDomainMap[pd.construct_name] != null
+          ? parseFloat(pd.domain_mean) > preDomainMap[pd.construct_name]
+          : null,
+      }));
+      const anyDomainImproved = domainResults.some(dr => dr.improved === true) ? true
+        : domainResults.every(dr => dr.improved === null) ? null : false;
+
       return {
         mom_id: d.mom_id, first_name: d.first_name, last_name: d.last_name,
         track_group: d.track_group, affiliate: d.affiliate_name,
         pre_answered: d.pre.answered_count, post_answered: d.post.answered_count,
-        pre_A: pre.A,  post_A: post.A,  improved_A: iA,
-        pre_B: pre.B,  post_B: post.B,  improved_B: iB,
         pre_C: pre.C,  post_C: post.C,  improved_C: iC,
-        pct_change_A: pcA, pct_change_B: pcB,
+        pre_A: pre.A,  post_A: post.A,  improved_A: iA,
+        improved_anyDomain: anyDomainImproved,
+        domain_results: domainResults,
         flip_AvsC: iA != null && iA !== iC,
-        flip_BvsC: iB != null && iB !== iC,
       };
     });
 
@@ -386,8 +398,8 @@ router.get('/', requireAdmin, async (req, res) => {
       teishaDomains,
       affiliateFunnel,
       rates: {
-        ep: { A: kpiRate(epMoms,'A'), B: kpiRate(epMoms,'B'), C: kpiRate(epMoms,'C') },
-        rr: { A: kpiRate(rrMoms,'A'), B: kpiRate(rrMoms,'B'), C: kpiRate(rrMoms,'C') },
+        ep: { C: kpiRate(epMoms,'C'), A: kpiRate(epMoms,'A'), anyDomain: kpiRate(epMoms,'anyDomain') },
+        rr: { C: kpiRate(rrMoms,'C'), A: kpiRate(rrMoms,'A'), anyDomain: kpiRate(rrMoms,'anyDomain') },
       },
       counts: {
         total_completions: pairedData.length,
@@ -399,7 +411,6 @@ router.get('/', requireAdmin, async (req, res) => {
         post_only_orphans: Object.values(arByMom).filter(ars => !ars.some(a=>a.atype==='pre') && ars.some(a=>a.atype==='post')).length,
         legacy_count: templateResult.rows.filter(r=>r.track_group==='Legacy').reduce((s,r)=>s+r.result_count,0),
         flips_AvsC: momResults.filter(m => m.flip_AvsC).length,
-        flips_BvsC: momResults.filter(m => m.flip_BvsC).length,
       },
     });
 

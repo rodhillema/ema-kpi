@@ -260,6 +260,42 @@ router.get('/', requireAdmin, async (req, res) => {
       }
     }
 
+    // ── Per-question pre/post for anyDomain (RR) — must run before momResults ──
+    const anyQImprovedByMom = {};
+    const rawQRows = [];
+    if (pairedArIds.length > 0) {
+      const phq = pairedArIds.map((_, i) => `$${i+1}`).join(',');
+      const { rows: qrEarly } = await pool.query(`
+        SELECT arqr."assessmentResultId" AS ar_id,
+               arqr."assessmentQuestionId" AS q_id,
+               arqr."intResponse"
+        FROM "AssessmentResultQuestionResponse" arqr
+        WHERE arqr."assessmentResultId" IN (${phq})
+          AND arqr."deleted_at" = 0
+          AND arqr."intResponse" IS NOT NULL
+      `, pairedArIds);
+      rawQRows.push(...qrEarly);
+
+      const arSideEarly = {};
+      for (const d of pairedWithBoth) {
+        arSideEarly[d.pre.ar_id]  = { side: 'pre',  mom: d.mom_id };
+        arSideEarly[d.post.ar_id] = { side: 'post', mom: d.mom_id };
+      }
+      const byMomQEarly = {};
+      for (const r of qrEarly) {
+        const info = arSideEarly[r.ar_id];
+        if (!info) continue;
+        const key = `${info.mom}|${r.q_id}`;
+        if (!byMomQEarly[key]) byMomQEarly[key] = { pre: null, post: null, mom: info.mom };
+        byMomQEarly[key][info.side] = r.intResponse;
+      }
+      for (const entry of Object.values(byMomQEarly)) {
+        if (entry.pre == null || entry.post == null) continue;
+        if (anyQImprovedByMom[entry.mom] === undefined) anyQImprovedByMom[entry.mom] = false;
+        if (entry.post > entry.pre) anyQImprovedByMom[entry.mom] = true;
+      }
+    }
+
     // ── Compute three methods per paired mom ─────────────
     function score(arId, sumScoreRaw) {
       const domains = domainByAr[arId] || [];
@@ -321,39 +357,26 @@ router.get('/', requireAdmin, async (req, res) => {
       };
     });
 
-    // ── Per-question pre/post (shared by item movement + anyDomain for RR) ──
-    // Fetched once; used below for both anyQImprovedByMom and itemMovement.
+    // ── Item movement (paired cohort per question) ───────
+    // Reuses rawQRows fetched above — no second DB query needed.
     let itemMovement = {};
-    const anyQImprovedByMom = {}; // momId → true|false (any single question improved)
-    if (pairedArIds.length > 0) {
-      const ph2 = pairedArIds.map((_, i) => `$${i+1}`).join(',');
-      const { rows: qr } = await pool.query(`
-        SELECT arqr."assessmentResultId" AS ar_id,
-               arqr."assessmentQuestionId" AS q_id,
-               arqr."intResponse"
-        FROM "AssessmentResultQuestionResponse" arqr
-        WHERE arqr."assessmentResultId" IN (${ph2})
-          AND arqr."deleted_at" = 0
-          AND arqr."intResponse" IS NOT NULL
-      `, pairedArIds);
-
+    if (rawQRows.length > 0) {
       const arSide = {};
       for (const d of pairedWithBoth) {
-        arSide[d.pre.ar_id]  = { side: 'pre',  mom: d.mom_id, partner: d.post.ar_id };
-        arSide[d.post.ar_id] = { side: 'post', mom: d.mom_id, partner: d.pre.ar_id  };
+        arSide[d.pre.ar_id]  = { side: 'pre',  mom: d.mom_id };
+        arSide[d.post.ar_id] = { side: 'post', mom: d.mom_id };
       }
       const byMomQ = {};
-      for (const r of qr) {
+      for (const r of rawQRows) {
         const info = arSide[r.ar_id];
         if (!info) continue;
         const key = `${info.mom}|${r.q_id}`;
-        if (!byMomQ[key]) byMomQ[key] = { q_id: r.q_id, mom: info.mom };
+        if (!byMomQ[key]) byMomQ[key] = { q_id: r.q_id };
         byMomQ[key][info.side] = r.intResponse;
       }
       for (const entry of Object.values(byMomQ)) {
         if (entry.pre == null || entry.post == null) continue;
         const q = entry.q_id;
-        // item movement aggregates
         if (!itemMovement[q]) itemMovement[q] = { n: 0, increased: 0, same: 0, decreased: 0, pre_sum: 0, post_sum: 0 };
         itemMovement[q].n++;
         itemMovement[q].pre_sum  += entry.pre;
@@ -361,9 +384,6 @@ router.get('/', requireAdmin, async (req, res) => {
         if (entry.post > entry.pre)      itemMovement[q].increased++;
         else if (entry.post < entry.pre) itemMovement[q].decreased++;
         else                             itemMovement[q].same++;
-        // per-mom any-question-improved (used for RR anyDomain)
-        if (anyQImprovedByMom[entry.mom] === undefined) anyQImprovedByMom[entry.mom] = false;
-        if (entry.post > entry.pre) anyQImprovedByMom[entry.mom] = true;
       }
     }
 

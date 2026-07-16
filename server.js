@@ -66,6 +66,100 @@ app.post('/api/export-audit', requireAuth, express.json(), (req, res) => {
   }
 });
 
+// EP/RR domain linkage probe — administrator only, temporary
+// Diagnoses why some paired moms are missing from domain-weighted scoring
+app.get('/api/admin/domain-linkage-probe', requireAuth, async (req, res) => {
+  if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
+  try {
+    const DATA_START = '2025-12-01';
+    const DATA_END   = '2026-07-31';
+
+    // Step 1: get all paired ar_ids (same logic as diagnostic route)
+    const { rows: arRows } = await pool.query(`
+      SELECT ar."id" AS ar_id, ar."momId" AS mom_id, ar."type"::text AS atype,
+             a."name" AS template_name,
+             COUNT(arqr."id")::int AS response_count,
+             SUM(CASE WHEN arqr."intResponse" IS NOT NULL THEN 1 ELSE 0 END)::int AS answered_count
+      FROM "AssessmentResult" ar
+      JOIN "Assessment" a ON a."id" = ar."assessmentId"
+      JOIN "Mom" m ON m."id" = ar."momId"
+      LEFT JOIN "AssessmentResultQuestionResponse" arqr ON arqr."assessmentResultId" = ar."id" AND arqr."deleted_at" = 0
+      WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+        AND a."name" NOT ILIKE '%Legacy%'
+        AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Resilience%'
+          OR a."name" ILIKE 'Crianza empoderada%' OR a."name" ILIKE 'Hoja de ruta%')
+        AND COALESCE(ar."completedAt", ar."created_at") >= '${DATA_START}'
+        AND COALESCE(ar."completedAt", ar."created_at") <= '${DATA_END} 23:59:59'
+      GROUP BY ar."id", ar."momId", ar."type", a."name"
+    `);
+
+    // Step 2: for each ar_id, check if any of its questions have a construct assigned
+    const arIds = arRows.map(r => r.ar_id);
+    let domainCoverage = {};
+    if (arIds.length > 0) {
+      const ph = arIds.map((_, i) => `$${i+1}`).join(',');
+      const { rows: dcRows } = await pool.query(`
+        SELECT arqr."assessmentResultId" AS ar_id,
+               COUNT(aq."id")::int AS total_questions,
+               COUNT(aq."assessmentConstructId")::int AS questions_with_construct,
+               COUNT(DISTINCT ac."name") AS distinct_constructs
+        FROM "AssessmentResultQuestionResponse" arqr
+        JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId" AND aq."deleted_at" = 0
+        LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId" AND ac."deleted_at" = 0
+        WHERE arqr."assessmentResultId" IN (${ph})
+          AND arqr."deleted_at" = 0
+          AND arqr."intResponse" IS NOT NULL
+        GROUP BY arqr."assessmentResultId"
+      `, arIds);
+      dcRows.forEach(r => { domainCoverage[r.ar_id] = r; });
+    }
+
+    // Step 3: check what constructs exist on the assessment templates themselves
+    const { rows: templateConstructs } = await pool.query(`
+      SELECT a."name" AS template_name,
+             COUNT(aq."id")::int AS total_questions,
+             COUNT(aq."assessmentConstructId")::int AS questions_with_construct,
+             COUNT(DISTINCT ac."name") AS distinct_constructs,
+             array_agg(DISTINCT ac."name") FILTER (WHERE ac."name" IS NOT NULL) AS construct_names
+      FROM "Assessment" a
+      JOIN "AssessmentQuestion" aq ON aq."assessmentId" = a."id" AND aq."deleted_at" = 0
+      LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId" AND ac."deleted_at" = 0
+      WHERE a."name" NOT ILIKE '%Legacy%'
+        AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Resilience%'
+          OR a."name" ILIKE 'Crianza empoderada%' OR a."name" ILIKE 'Hoja de ruta%')
+        AND aq."deleted_at" = 0
+      GROUP BY a."id", a."name"
+      ORDER BY a."name"
+    `);
+
+    const report = arRows.map(r => ({
+      ar_id: r.ar_id,
+      mom_id: r.mom_id,
+      template: r.template_name,
+      type: r.atype,
+      response_count: r.response_count,
+      answered_count: r.answered_count,
+      has_responses: r.answered_count > 0,
+      domain_coverage: domainCoverage[r.ar_id] || null,
+      has_domain_data: !!domainCoverage[r.ar_id],
+      questions_with_construct: domainCoverage[r.ar_id]?.questions_with_construct || 0,
+    }));
+
+    const noResponses   = report.filter(r => !r.has_responses).length;
+    const noConstructs  = report.filter(r => r.has_responses && !r.has_domain_data).length;
+    const hasConstructs = report.filter(r => r.has_domain_data).length;
+
+    res.json({
+      summary: { total_ar: report.length, no_responses: noResponses, has_responses_no_constructs: noConstructs, has_domain_data: hasConstructs },
+      template_construct_coverage: templateConstructs,
+      assessment_results: report,
+    });
+  } catch (err) {
+    console.error('domain-linkage-probe error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // BenevolenceNeed column probe — administrator only, temporary
 app.get('/api/admin/benevolence-need-probe', requireAuth, async (req, res) => {
   if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });

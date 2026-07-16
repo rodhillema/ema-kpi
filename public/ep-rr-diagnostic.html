@@ -523,6 +523,20 @@ function render(d) {
   } else {
     // ── KPI rate summary ──
     html += '<div class="subsection">KPI Rate by Method</div>';
+
+    // Check if denominators differ (domain data gap)
+    var epDomainGap = (rates.ep.C.den||0) - (rates.ep.A.den||0);
+    var rrDomainGap = (rates.rr.C.den||0) - (rates.rr.A.den||0);
+    if(epDomainGap > 0 || rrDomainGap > 0) {
+      html += '<div class="callout alert"><strong>Why the denominators differ:</strong> '
+        +'"Current KPI 3" can score every paired mom because it just adds up raw answers. '
+        +'"Domain-weighted" and "Any domain improved" require responses to be linked to topic areas (domains) in Trellis. '
+        +(epDomainGap>0?'EP: '+epDomainGap+' of '+(rates.ep.C.den||0)+' paired moms are missing domain linkages. ':'')
+        +(rrDomainGap>0?'RR: '+rrDomainGap+' of '+(rates.rr.C.den||0)+' paired moms are missing domain linkages. ':'')
+        +'<strong>The domain-based methods are only computed for moms who have complete data — their rates are not directly comparable to the Current KPI 3 rate.</strong> '
+        +'This is a data structure issue in Trellis, not a scoring choice.</div>';
+    }
+
     html += '<div class="tbl-wrap"><table><thead><tr><th>Track</th><th>Method</th><th>Moms improved</th><th>Total paired</th><th>Rate</th><th>What this means</th></tr></thead><tbody>';
     ['ep','rr'].forEach(function(track){
       var rC=rates[track].C, rA=rates[track].A, rAny=rates[track].anyDomain;

@@ -66,6 +66,20 @@ app.post('/api/export-audit', requireAuth, express.json(), (req, res) => {
   }
 });
 
+// BenevolenceNeed column probe — administrator only, temporary
+app.get('/api/admin/benevolence-need-probe', requireAuth, async (req, res) => {
+  if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
+  try {
+    const [cols, sample] = await Promise.all([
+      pool.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'BenevolenceNeed' ORDER BY ordinal_position`),
+      pool.query(`SELECT * FROM "BenevolenceNeed" WHERE "deleted_at" = 0 LIMIT 3`),
+    ]);
+    res.json({ columns: cols.rows, sample: sample.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // AuditLog shape diagnostic — administrator only, read-only, temporary
 app.get('/api/admin/audit-log-probe', requireAuth, async (req, res) => {
   if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });

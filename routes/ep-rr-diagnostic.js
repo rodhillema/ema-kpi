@@ -11,8 +11,8 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../db');
 
-const DATA_START = '2025-12-01';
-const DATA_END   = '2026-07-31'; // rolling window - not period-anchored
+const DATA_START = '2026-01-01';
+const DATA_END   = '2026-06-30'; // Q2 YTD — matches quarterly KPI reporting window
 
 const pf = (v, d = 2) => v == null ? null : parseFloat(parseFloat(v).toFixed(d));
 
@@ -76,7 +76,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
       // ── Completed EP/RR pairings in window ────────────
       pool.query(`
-        SELECT
+        SELECT DISTINCT ON (track_group, mom_id)
           p."id" AS pairing_id,
           p."momId" AS mom_id,
           p."created_at" AS pairing_start,
@@ -101,7 +101,7 @@ router.get('/', requireAdmin, async (req, res) => {
             t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%'
             OR t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%'
           )
-        ORDER BY track_group, m."last_name", m."first_name"
+        ORDER BY track_group, mom_id, p."completed_on" DESC
       `),
 
       // ── All EP/RR assessment results in window ─────────

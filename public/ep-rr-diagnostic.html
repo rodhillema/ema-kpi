@@ -298,91 +298,109 @@ function render(d) {
 
   var html = '';
 
-  // Scope note
-  html += '<div class="scope-note"><strong>Scope:</strong> All current-Trellis EP/RR data from '+esc(meta.data_start)+' through today. <strong>NOT period-anchored.</strong> Legacy templates excluded but counted. NPP and AAPI excluded. Generated '+genDate+'.</div>';
-
-  // ── How-to-read legend ──
-  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">How to read this report</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:10px">'
-    // Method C
-    +'<div style="border-left:3px solid var(--green-lt);padding:8px 10px;background:var(--bg);border-radius:0 4px 4px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:3px">Method C &nbsp;·&nbsp; Current KPI 3</div>'
-    +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">Add up all of a mom\'s answers (pre-test). Add them up again (post-test). If the post total is higher, she counts as <em>improved</em>. This is how KPI 3 is calculated today.</div>'
+  // ── Overview ──
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:8px">What this report does</div>'
+    +'<p style="font-size:13px;line-height:1.6;color:var(--dark);margin-bottom:8px">KPI 3 measures learning progress for moms in our Empowered Parenting (EP) and Roadmap to Resilience (RR) programs. A mom "counts" as improved if her post-program assessment score is higher than her pre-program score. This report investigates <strong>three possible reasons KPI 3 is low</strong> — in the order they should be addressed.</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">'
+    +'<div style="background:var(--red-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--red);display:block;margin-bottom:3px">① Data Capture</strong>Do we have both a pre-test and post-test on file for each mom who completed the program?</div>'
+    +'<div style="background:var(--yellow-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:#8a6000;display:block;margin-bottom:3px">② Scoring Method</strong>Does the way we calculate the score affect who counts as improved — and would a different method give a different result?</div>'
+    +'<div style="background:var(--green-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--green);display:block;margin-bottom:3px">③ Assessment Design</strong>Are the questions themselves able to detect improvement, or do they start too high for most moms to go higher?</div>'
     +'</div>'
+    +'<div style="font-size:11px;color:var(--light);margin-top:10px">Data window: '+esc(meta.data_start)+' through today &nbsp;·&nbsp; Legacy templates excluded &nbsp;·&nbsp; NPP and AAPI excluded &nbsp;·&nbsp; Generated '+genDate+'</div>'
+    +'</div>';
+
+  // ── Scoring method reference ──
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;margin-bottom:14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">The three scoring methods tested in this report</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'
     // Method A
-    +'<div style="border-left:3px solid var(--yellow);padding:8px 10px;background:var(--bg);border-radius:0 4px 4px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:3px">Method A &nbsp;·&nbsp; Domain-weighted</div>'
-    +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">Average the answers within each topic area (domain), then average those domain averages. Gives equal weight to each topic regardless of how many questions it contains. Used in the Track Journey view.</div>'
+    +'<div style="border-left:3px solid var(--green);padding:9px 12px;background:var(--bg);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:4px">Method A &nbsp;·&nbsp; Domain-weighted average</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Score each topic area (domain) separately, then average those topic scores together. If Self-Regulation has 10 questions and Parental Connection has 4, each topic still counts equally. <span style="color:var(--mid)">Used in the Trellis Track Journey view.</span></div>'
     +'</div>'
     // Method B
-    +'<div style="border-left:3px solid var(--border);padding:8px 10px;background:var(--bg);border-radius:0 4px 4px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin-bottom:3px">Method B &nbsp;·&nbsp; Flat average</div>'
-    +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">Simple average of all answers — same direction as Method C but on a 1–5 scale. Included as a sanity check between the other two.</div>'
+    +'<div style="border-left:3px solid var(--border);padding:9px 12px;background:var(--bg);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin-bottom:4px">Method B &nbsp;·&nbsp; Simple average</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Add all answers and divide by the number of questions. Straightforward mean — questions in larger topic areas carry more weight. Included here as a reference point between A and C.</div>'
     +'</div>'
+    // Method C
+    +'<div style="border-left:3px solid var(--yellow);padding:9px 12px;background:var(--yellow-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:4px">Method C &nbsp;·&nbsp; Flat total &nbsp;·&nbsp; <em>Current KPI 3</em></div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Add up all of a mom\'s answers. If her post-program total is higher than her pre-program total, she counts as improved. <strong>This is how KPI 3 is calculated in the Impact Hub today.</strong></div>'
     +'</div>'
-    +'<div style="font-size:12px;color:var(--mid);line-height:1.5;border-top:1px solid var(--border);padding-top:8px">'
-    +'<strong>Why it matters:</strong> If Methods A and C disagree on whether a mom improved, the math — not her actual learning — may be deciding her KPI outcome. This report tests whether switching methods would change our numbers.'
     +'</div>'
     +'</div>';
 
-  // ── Synthesis ──
-  var epRate = rates.ep.C.den>0 ? Math.round(100*rates.ep.C.num/rates.ep.C.den) : null;
-  var rrRate = rates.rr.C.den>0 ? Math.round(100*rates.rr.C.num/rates.rr.C.den) : null;
-  html += '<div class="synthesis">'
-    +'<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">'
-    +'<span style="font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5)">Synthesis</span>'
-    +'<span style="font-family:\'Oswald\',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--yellow)">What Is Causing EP/RR KPI 3 to Underperform?</span>'
-    +'</div>'
-    +'<div class="verdict-grid">'
+  // ── Findings summary ──
+  var f1flag = captureIsAnswer;
+  var f2flag = (counts.flips_AvsC||0)>0 || (!rrRobust && rrMoms.length>0);
+  var f3flag = highCeilItems.length>0;
+  html += '<div style="background:var(--green);border-radius:10px;padding:18px 20px;margin-bottom:14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:4px">Findings Summary</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--yellow);margin-bottom:14px">What Is Causing KPI 3 to Underperform?</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">'
 
-    // H1 — Capture
-    +'<div class="verdict-card '+(captureIsAnswer?'flag':'')+'">'
-    +'<div class="vlabel">Finding 1 &nbsp;·&nbsp; Are we capturing enough data?</div>'
-    +'Out of '+(counts.total_completions||0)+' EP+RR program completions, only <strong>'+(counts.with_pair||0)+'</strong> ('+(counts.total_completions?Math.round(100*(counts.with_pair||0)/counts.total_completions):0)+'%) have both a pre-test and a post-test on file. '
-    +(captureIsAnswer
-      ? '<strong style="color:#ff9f8e">This is the primary problem.</strong> KPI 3 can only count a mom as improved if she has both tests. Until more completions have both, any instrument analysis is based on too small a sample to be conclusive.'
-      : 'The pairing rate is sufficient to analyze the instrument. The low KPI rate is not primarily a data-capture problem — it reflects how the assessments perform.')
+    // Finding 1
+    +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f1flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f1flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">① Data Capture</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">'
+    +(f1flag ? 'YES — this is the primary problem.' : 'Not the primary problem.')
+    +'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
+    +(counts.with_pair||0)+' of '+(counts.total_completions||0)+' completions ('+(counts.total_completions?Math.round(100*(counts.with_pair||0)/counts.total_completions):0)+'%) have both a pre-test and post-test. '
+    +(f1flag ? 'KPI 3 cannot count a mom as improved without both. The low rate is primarily a missing data problem, not an assessment problem.' : 'Enough pairs exist to analyze the assessment itself.')
+    +'</div>'
+    +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
+    +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
+    +(f1flag ? 'Fix the workflow so every program completion triggers both tests. See Section 1 for the affiliate-by-affiliate breakdown of where the gaps are.' : 'Monitor capture rate as volume grows. Review Section 1 for any affiliates with low pairing rates.')
+    +'</div>'
     +'</div>'
 
-    // H2 — Scoring method
-    +'<div class="verdict-card '+((counts.flips_AvsC||0)>0?'flag':'')+'">'
-    +'<div class="vlabel">Finding 2 &nbsp;·&nbsp; Does the math method change who counts as improved?</div>'
-    +((counts.rr_pair||0)===0
-      ? 'There are no RR moms with both tests yet, so the 0% RR rate is entirely a data-capture gap — not a math problem. '
-      : '')
+    // Finding 2
+    +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f2flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f2flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">② Scoring Method</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">'
+    +((counts.rr_pair||0)===0 ? 'RR: untestable — no pairs yet.' : f2flag ? 'YES — method affects the outcome.' : 'No — all methods agree.')
+    +'</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
     +(counts.with_pair>0
       ? ((counts.flips_AvsC||0)===0
-          ? 'Method A (domain-weighted) and Method C (flat sum, current KPI 3) give the <strong>same improved/not-improved verdict for every mom</strong> in this sample. Switching calculation methods would not change the KPI rate. '
-          : '<strong style="color:#ff9f8e">'+(counts.flips_AvsC)+' mom(s) get a different verdict depending on which method is used.</strong> That means the formula — not learning — is deciding whether they count. ')
-        + (rrMoms.length>0
-          ? (rrRobust
-            ? 'RR scores 0% under all three methods — the aggregation formula is not the cause of the 0% rate.'
-            : 'RR 0% does <em>not</em> hold under all methods — domain averaging may be suppressing real movement that a sum-based method would count.')
-          : '')
-      : 'Not enough paired data yet to test this.')
+          ? 'Method A and Method C give the same improved/not-improved result for every mom in this window. The formula is not the cause of the low rate.'
+          : (counts.flips_AvsC)+' mom(s) would be counted differently depending on which method is used — the formula is affecting who counts as improved.')
+      : 'Not enough paired moms yet to test this.')
+    +(rrMoms.length>0 ? ' RR: '+(rrRobust?'0% holds under all three methods.':'0% does not hold under all methods — see Section 3 for details.') : '')
+    +'</div>'
+    +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
+    +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
+    +(f2flag ? 'Review Section 3 to see which moms are affected and decide whether to adjust the scoring formula.' : 'No formula change needed. Focus on data capture and assessment design.')
+    +'</div>'
     +'</div>'
 
-    // H3 — Ceiling
-    +'<div class="verdict-card '+(highCeilItems.length>0?'flag':'')+'">'
-    +'<div class="vlabel">Finding 3 &nbsp;·&nbsp; Are questions too easy to show improvement?</div>'
-    +(highCeilItems.length>0
-      ? '<strong style="color:#ff9f8e">'+highCeilItems.length+' question(s) have a ceiling problem.</strong> More than 40% of moms already answered the maximum (5 = Strongly Agree) on the pre-test. Those moms cannot score higher on the post-test — so even if they learned, those questions can\'t register it. See Phase 2 for the full list.'
-      : 'No severe ceiling effects found — most questions have room for moms to improve their scores between pre- and post-test.')
-    +((counts.with_pair||0)<5?' <em>Note: fewer than 5 paired moms — treat as directional only.</em>':'')
+    // Finding 3
+    +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f3flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f3flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">③ Assessment Design</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">'
+    +(f3flag ? highCeilItems.length+' question(s) have a ceiling problem.' : 'No severe ceiling problems found.')
     +'</div>'
-
-    // Construct validity
-    +'<div class="verdict-card">'
-    +'<div class="vlabel">Finding 4 &nbsp;·&nbsp; Does the instrument cover the right learning areas?</div>'
-    +questions.filter(function(q){return q.template_type==='pre';}).length+' questions have been mapped to ĒMA\'s 4 learning markers (proposed, keyword-based). Phase 2 shows the full breakdown for the training and content team to confirm or correct — we need human review before acting on this.'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
+    +(f3flag
+      ? 'More than 40% of moms answered 5 (Strongly Agree) on the pre-test for these questions. A mom who starts at the maximum cannot score higher — so those questions can never show improvement, no matter how much she learns.'
+      : 'Most questions leave room for moms to score higher after the program. The ceiling is not mechanically blocking improvement in this window.')
+    +((counts.with_pair||0)<5 ? ' <em>Caution: fewer than 5 paired moms — treat as directional.</em>' : '')
+    +'</div>'
+    +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
+    +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
+    +(f3flag ? 'Review the flagged questions in Section 2. The training team should determine whether these questions should be reworded, reframed, or replaced.' : 'No immediate assessment redesign needed. Revisit once capture volume grows.')
+    +'</div>'
     +'</div>'
 
     +'</div></div>';
 
   // ── Phase 0 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Phase 0</span><span class="section-title">Schema + Scoring Code Baseline</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>Current KPI 3 Method (report-data.js)</strong>SUM(intResponse) pre vs post (Method C / flat sum). Track Journey uses AVG per domain then mean of means (Method A). These can show different directions for the same mom.</div>';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 0 &nbsp;·&nbsp; Verification</span><span class="section-title">Scoring Code Baseline</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section does:</strong> Confirms that the three scoring methods above produce the numbers we expect, using a known case (Teisha Shepherd) as a reference. This is a sanity check — not a finding.</div>';
+  html += '<div class="callout"><strong>KPI 3 today (report-data.js):</strong> Flat total (Method C) — adds up all answers, pre vs post. The Track Journey view in Trellis uses Method A (domain-weighted). These two methods can give a different result for the same mom.</div>';
   if(teishaRows.length>0){
     html += '<div class="subsection">Teisha Shepherd RR Pre Validation (Target: 3.8)</div><div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Date</th><th>Answered</th><th>Flat Avg (B)</th><th>Domain Mean of Means (A)</th></tr></thead><tbody>';
     teishaRows.forEach(function(r){
@@ -400,8 +418,9 @@ function render(d) {
   html += '</div></div>';
 
   // ── Phase 1 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Phase 1 - Hypothesis 1</span><span class="section-title">Access / Capture Funnel</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>Legacy templates excluded</strong>'+(legacyTemplates.length?legacyTemplates.map(function(t){return '"'+esc(t.name)+'" ('+t.result_count+' results)';}).join('; '):'None found.')+' Total legacy results set aside: <strong>'+(counts.legacy_count||0)+'</strong>.</div>';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 1 &nbsp;·&nbsp; Finding ①</span><span class="section-title">Data Capture — Do We Have Both Tests on File?</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section shows:</strong> For every mom who completed an EP or RR program, did we capture a pre-test score AND a post-test score? KPI 3 requires both. If either is missing, that mom cannot be counted — even if she improved.</div>';
+  html += '<div class="callout"><strong>Legacy templates excluded</strong>'+(legacyTemplates.length?legacyTemplates.map(function(t){return '"'+esc(t.name)+'" ('+t.result_count+' results)';}).join('; '):'None found.')+' Total legacy results set aside: <strong>'+(counts.legacy_count||0)+'</strong>.</div>';
   if(currentTemplates.length){
     html += '<div class="subsection">Template Inventory</div><div class="tbl-wrap"><table><thead><tr><th>Template</th><th>Track</th><th>Results</th><th>Pre</th><th>Post</th><th>Note</th></tr></thead><tbody>';
     currentTemplates.forEach(function(t){
@@ -431,11 +450,15 @@ function render(d) {
     });
     html += '</tbody></table></div>';
   }
-  html += '<div class="callout '+(captureIsAnswer?'alert':'info')+'"><strong>Phase 1 Headline</strong>'+(captureIsAnswer?'The paired pre+post denominator is too small for statistically meaningful instrument analysis. KPI 3 for EP/RR is primarily a capture and workflow story.':'Denominator sufficient to proceed. Phases 2-4 draw from '+(counts.with_pair||0)+' paired moms.')+'</div>';
+  html += '<div class="callout '+(captureIsAnswer?'alert':'info')+'" style="margin-top:14px"><strong>Takeaway from this section: </strong>'
+    +(captureIsAnswer
+      ? 'The missing data is the primary reason KPI 3 is low — not how the assessment is designed or scored. Until every program completion reliably triggers both a pre-test and a post-test, the KPI denominator will stay too small to be meaningful. The affiliate table above shows exactly where the gaps are. Fix the workflow first.'
+      : 'Data capture is not the primary problem. Most completions have both tests, giving enough paired moms to analyze the assessment design and scoring method in the sections below.')
+    +'</div>';
   html += '</div></div>';
 
   // ── Phase 2 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Phase 2 - Hypothesis 3</span><span class="section-title">Question Inventory + Marker Map</span></div><div class="section-body">';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 2 &nbsp;·&nbsp; Finding ③</span><span class="section-title">Assessment Design — Can the Questions Actually Detect Improvement?</span></div><div class="section-body">';
   html += '<div class="callout info"><strong>Scale: 1 = Strongly Disagree &nbsp;·&nbsp; 2 = Disagree &nbsp;·&nbsp; 3 = Neutral &nbsp;·&nbsp; 4 = Agree &nbsp;·&nbsp; 5 = Strongly Agree</strong>Ceiling effect: a mom who answers 5 (Strongly Agree) on the pre-test cannot score higher on the post-test — that question cannot contribute to KPI improvement regardless of how much she actually learned.</div>';
   html += '<div class="callout alert"><strong>For the training and content team - not authoritative</strong>Proposed Marker column uses keyword matching. Must be confirmed, corrected, or reclassified by the training and content team before any action is taken.</div>';
   html += '<p class="proposed-note">ĒMA learning markers: (1) Identify and Recognize; (2) Reflect and Understand; (3) Apply and Practice; (4) Evaluate and Prioritize.</p>';
@@ -456,8 +479,8 @@ function render(d) {
   html += '</div></div>';
 
   // ── Phase 3 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Phase 3 - PRIMARY TEST - Hypothesis 2</span><span class="section-title">Scoring Method + Domain Aggregation</span></div><div class="section-body">';
-  html += '<div class="callout"><strong>Three methods</strong><span class="tag tag-A">A</span> Domain-averaged: mean of domain means, equal weight per domain. <span class="tag tag-B">B</span> Flat average. <span class="tag tag-C">C (current KPI 3)</span> Flat sum compared pre vs post.</div>';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 3 &nbsp;·&nbsp; Finding ②</span><span class="section-title">Scoring Method — Does the Formula Change Who Counts as Improved?</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section shows:</strong> Each mom who has both a pre-test and post-test is scored three ways (A, B, C). If A and C disagree on whether she improved, the formula — not her learning — is deciding her outcome. The table flags any mom where the methods conflict.</div>';
   if(!(counts.with_pair>0)){
     html += '<div class="callout alert">No paired moms in this window. Phase 3 cannot be computed - this is a pure Phase 1 capture finding.</div>';
   } else {
@@ -502,8 +525,9 @@ function render(d) {
   html += '</div></div>';
 
   // ── Phase 4 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Phase 4</span><span class="section-title">Item Psychometrics</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>Two pools</strong>Pre-pool: all non-legacy current-Trellis pre assessments in window. Paired cohort: '+(counts.with_pair||0)+' moms with matched pre+post.'+((counts.with_pair||0)<5?' <span class="warn-badge">Very small - provisional.</span>':'')+'</div>';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 4 &nbsp;·&nbsp; Detail</span><span class="section-title">Question-by-Question Performance</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section shows:</strong> Each question\'s score distribution before the program (pre-pool), and — for moms with both tests — how scores moved between pre and post. Use this to identify which specific questions are helping or hurting the KPI, and to inform future assessment revisions.</div>';
+  html += '<div class="callout"><strong>Two data pools:</strong> <em>Pre-pool</em> = all moms who took a pre-test in this window (larger group, shows baseline). <em>Paired cohort</em> = '+(counts.with_pair||0)+' moms with both pre and post (smaller group, shows actual movement).'+((counts.with_pair||0)<5?' <span class="warn-badge">Very small — treat as directional only.</span>':'')+'</div>';
   ['EP','RR'].forEach(function(track){
     var qs=questions.filter(function(q){return q.track_group===track&&q.template_type==='pre';});
     if(!qs.length){html+='<div class="subsection">'+track+' - No questions</div>';return;}

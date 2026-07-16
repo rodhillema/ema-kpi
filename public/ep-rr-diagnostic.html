@@ -404,7 +404,9 @@ function render(d) {
   if(currentTemplates.length){
     html += '<div class="subsection">Template Inventory</div><div class="tbl-wrap"><table><thead><tr><th>Template</th><th>Track</th><th>Results</th><th>Pre</th><th>Post</th><th>Note</th></tr></thead><tbody>';
     currentTemplates.forEach(function(t){
-      html += '<tr><td>'+esc(t.name)+'</td><td>'+esc(t.track_group)+'</td><td>'+t.result_count+'</td><td>'+t.pre_count+'</td><td>'+t.post_count+'</td><td>'+(t.post_count===0?'<span class="flag-text">No posts - workflow issue</span>':'')+'</td></tr>';
+      var isPostTemplate = /post/i.test(t.name);
+      var noteCell = (isPostTemplate && t.post_count===0) ? '<span class="flag-text">No results — workflow issue</span>' : '';
+      html += '<tr><td>'+esc(t.name)+'</td><td>'+esc(t.track_group)+'</td><td>'+t.result_count+'</td><td>'+t.pre_count+'</td><td>'+t.post_count+'</td><td>'+noteCell+'</td></tr>';
     });
     html += '</tbody></table></div>';
   }

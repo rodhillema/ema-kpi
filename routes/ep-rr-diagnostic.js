@@ -24,19 +24,27 @@ function requireAdmin(req, res, next) {
 router.get('/', requireAdmin, async (req, res) => {
   try {
 
-    // ── Phase 0: Schema introspection ──────────────────────
-    const [schemaResult, templateResult, pairingResult, arResult] = await Promise.all([
+    // ── Phase 0: Schema introspection FIRST ────────────────
+    // Run schema before main queries so we can detect actual column names.
+    const schemaResult = await pool.query(`
+      SELECT table_name, column_name, data_type
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name IN (
+          'Assessment','AssessmentResult','AssessmentResultQuestionResponse',
+          'AssessmentQuestion','AssessmentConstruct'
+        )
+      ORDER BY table_name, ordinal_position
+    `);
 
-      pool.query(`
-        SELECT table_name, column_name, data_type
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name IN (
-            'Assessment','AssessmentResult','AssessmentResultQuestionResponse',
-            'AssessmentQuestion','AssessmentConstruct'
-          )
-        ORDER BY table_name, ordinal_position
-      `),
+    // Detect question text column name from live schema
+    const aqCols = schemaResult.rows
+      .filter(r => r.table_name === 'AssessmentQuestion')
+      .map(r => r.column_name);
+    const labelCol = ['label','text','title','question','prompt','content','name']
+      .find(c => aqCols.includes(c)) || null;
+
+    const [templateResult, pairingResult, arResult] = await Promise.all([
 
       // ── Template inventory ─────────────────────────────
       pool.query(`
@@ -141,7 +149,7 @@ router.get('/', requireAdmin, async (req, res) => {
         CASE WHEN a."name" ILIKE '%post%' THEN 'post' ELSE 'pre' END AS template_type,
         aq."id"    AS question_id,
         aq."order" AS q_order,
-        aq."label" AS question_label,
+        ${labelCol ? `aq."${labelCol}"` : 'NULL'} AS question_label,
         ac."id"    AS construct_id,
         ac."name"  AS construct_name,
         ac."order" AS construct_order,
@@ -171,7 +179,7 @@ router.get('/', requireAdmin, async (req, res) => {
           a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'
           OR a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%'
         )
-      GROUP BY a."name", aq."id", aq."order", aq."label", ac."id", ac."name", ac."order"
+      GROUP BY a."name", aq."id", aq."order", ${labelCol ? `aq."${labelCol}"` : 'aq."id"'}, ac."id", ac."name", ac."order"
       ORDER BY track_group, template_type, COALESCE(ac."order", 999), aq."order"
     `);
 
@@ -363,7 +371,7 @@ router.get('/', requireAdmin, async (req, res) => {
     const rrMoms = momResults.filter(m => m.track_group === 'RR');
 
     res.json({
-      meta: { data_start: DATA_START, data_end: DATA_END, generated: new Date().toISOString() },
+      meta: { data_start: DATA_START, data_end: DATA_END, generated: new Date().toISOString(), label_col: labelCol },
       schema:    schemaResult.rows,
       templates: templateResult.rows,
       pairedData: pairedData.map(d => ({
@@ -397,7 +405,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
   } catch (err) {
     console.error('[ep-rr-diagnostic] error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, detail: err.detail || null, hint: err.hint || null });
   }
 });
 

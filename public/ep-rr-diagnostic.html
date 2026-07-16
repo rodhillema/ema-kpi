@@ -260,7 +260,11 @@ function proposeMarker(label){
 async function loadDiagnostic() {
   try {
     var r = await fetch('/api/ep-rr-diagnostic');
-    if (!r.ok) throw new Error(r.status+' '+r.statusText);
+    if (!r.ok) {
+      var body = {};
+      try { body = await r.json(); } catch(e) {}
+      throw new Error((body.error||r.statusText)+(body.detail?' | '+body.detail:'')+(body.hint?' | Hint: '+body.hint:''));
+    }
     var data = await r.json();
     document.getElementById('state').style.display = 'none';
     var el = document.getElementById('report');

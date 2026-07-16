@@ -263,12 +263,15 @@ router.get('/', requireAdmin, async (req, res) => {
     // ── Compute three methods per paired mom ─────────────
     function score(arId, sumScoreRaw) {
       const domains = domainByAr[arId] || [];
-      const methodA = domains.length > 0
-        ? domains.reduce((s, d) => s + parseFloat(d.domain_mean), 0) / domains.length
+      // For EP: mean of named domain means. For RR: single 'No Domain' entry = flat average.
+      // Either way, if domains exist, average their means.
+      const scorableDomains = domains.filter(d => d.q_count > 0);
+      const methodA = scorableDomains.length > 0
+        ? scorableDomains.reduce((s, d) => s + parseFloat(d.domain_mean), 0) / scorableDomains.length
         : null;
       return {
         C: parseFloat(sumScoreRaw) || 0,   // flat sum — current KPI 3
-        A: pf(methodA),                    // mean of domain means
+        A: pf(methodA),                    // mean of domain means (or flat avg for RR)
       };
     }
 
@@ -278,21 +281,33 @@ router.get('/', requireAdmin, async (req, res) => {
       const iC = post.C > pre.C;
       const iA = pre.A != null && post.A != null ? post.A > pre.A : null;
 
-      // Any-domain: mom improved if ≥1 domain's average went up
+      // Any-domain: for tracks with real domain structure (EP), compare domain means.
+      // For tracks with no domains (RR), treat each question as its own domain —
+      // mom counts as improved if any single question score went up.
       const preDomains = domainByAr[d.pre.ar_id] || [];
       const postDomains = domainByAr[d.post.ar_id] || [];
+      const hasRealDomains = postDomains.some(pd => pd.construct_name !== 'No Domain');
       const preDomainMap = {};
       preDomains.forEach(pd => { preDomainMap[pd.construct_name] = parseFloat(pd.domain_mean); });
-      const domainResults = postDomains.map(pd => ({
-        name: pd.construct_name,
-        pre_mean: preDomainMap[pd.construct_name] ?? null,
-        post_mean: parseFloat(pd.domain_mean),
-        improved: preDomainMap[pd.construct_name] != null
-          ? parseFloat(pd.domain_mean) > preDomainMap[pd.construct_name]
-          : null,
-      }));
-      const anyDomainImproved = domainResults.some(dr => dr.improved === true) ? true
-        : domainResults.every(dr => dr.improved === null) ? null : false;
+      const domainResults = postDomains
+        .filter(pd => pd.construct_name !== 'No Domain')
+        .map(pd => ({
+          name: pd.construct_name,
+          pre_mean: preDomainMap[pd.construct_name] ?? null,
+          post_mean: parseFloat(pd.domain_mean),
+          improved: preDomainMap[pd.construct_name] != null
+            ? parseFloat(pd.domain_mean) > preDomainMap[pd.construct_name]
+            : null,
+        }));
+      let anyDomainImproved;
+      if (hasRealDomains) {
+        anyDomainImproved = domainResults.some(dr => dr.improved === true) ? true
+          : domainResults.every(dr => dr.improved === null) ? null : false;
+      } else {
+        // No domain structure — use per-question comparison
+        const qData = anyQImprovedByMom[d.mom_id];
+        anyDomainImproved = qData === undefined ? null : qData;
+      }
 
       return {
         mom_id: d.mom_id, first_name: d.first_name, last_name: d.last_name,
@@ -306,8 +321,10 @@ router.get('/', requireAdmin, async (req, res) => {
       };
     });
 
-    // ── Item movement (paired cohort per question) ───────
+    // ── Per-question pre/post (shared by item movement + anyDomain for RR) ──
+    // Fetched once; used below for both anyQImprovedByMom and itemMovement.
     let itemMovement = {};
+    const anyQImprovedByMom = {}; // momId → true|false (any single question improved)
     if (pairedArIds.length > 0) {
       const ph2 = pairedArIds.map((_, i) => `$${i+1}`).join(',');
       const { rows: qr } = await pool.query(`
@@ -330,12 +347,13 @@ router.get('/', requireAdmin, async (req, res) => {
         const info = arSide[r.ar_id];
         if (!info) continue;
         const key = `${info.mom}|${r.q_id}`;
-        if (!byMomQ[key]) byMomQ[key] = { q_id: r.q_id };
+        if (!byMomQ[key]) byMomQ[key] = { q_id: r.q_id, mom: info.mom };
         byMomQ[key][info.side] = r.intResponse;
       }
       for (const entry of Object.values(byMomQ)) {
         if (entry.pre == null || entry.post == null) continue;
         const q = entry.q_id;
+        // item movement aggregates
         if (!itemMovement[q]) itemMovement[q] = { n: 0, increased: 0, same: 0, decreased: 0, pre_sum: 0, post_sum: 0 };
         itemMovement[q].n++;
         itemMovement[q].pre_sum  += entry.pre;
@@ -343,6 +361,9 @@ router.get('/', requireAdmin, async (req, res) => {
         if (entry.post > entry.pre)      itemMovement[q].increased++;
         else if (entry.post < entry.pre) itemMovement[q].decreased++;
         else                             itemMovement[q].same++;
+        // per-mom any-question-improved (used for RR anyDomain)
+        if (anyQImprovedByMom[entry.mom] === undefined) anyQImprovedByMom[entry.mom] = false;
+        if (entry.post > entry.pre) anyQImprovedByMom[entry.mom] = true;
       }
     }
 

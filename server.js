@@ -240,11 +240,12 @@ app.get('/api/admin/rr-post-probe', requireAuth, async (req, res) => {
 app.get('/api/admin/benevolence-need-probe', requireAuth, async (req, res) => {
   if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
   try {
-    const [cols, sample] = await Promise.all([
-      pool.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'BenevolenceNeed' ORDER BY ordinal_position`),
-      pool.query(`SELECT * FROM "BenevolenceNeed" WHERE "deleted_at" = 0 LIMIT 3`),
+    const [msgPerm, noNotes, sampleNotes] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS has_msg_perm FROM "BenevolenceNeed" WHERE "deleted_at" = 0 AND "created_at" >= '2026-01-01' AND "notes_c" ILIKE '%msg_permissions%'`),
+      pool.query(`SELECT COUNT(*)::int AS null_notes FROM "BenevolenceNeed" WHERE "deleted_at" = 0 AND "created_at" >= '2026-01-01' AND ("notes_c" IS NULL OR "notes_c" = '')`),
+      pool.query(`SELECT LEFT("notes_c", 300) AS notes_snippet FROM "BenevolenceNeed" WHERE "deleted_at" = 0 AND "created_at" >= '2026-01-01' AND "notes_c" IS NOT NULL AND "notes_c" != '' LIMIT 5`),
     ]);
-    res.json({ columns: cols.rows, sample: sample.rows });
+    res.json({ has_msg_perm: msgPerm.rows[0], null_notes: noNotes.rows[0], sample_notes: sampleNotes.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

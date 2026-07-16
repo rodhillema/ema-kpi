@@ -451,7 +451,7 @@ function insightBar(d) {
     var mr = Math.round(tm/tf*100);
     if (mr >= 80) lines.push('<strong>Strong fulfillment:</strong> '+mr+'% of needs met this period.');
     else if (mr >= 65) lines.push('<strong>Solid fulfillment:</strong> '+mr+'% met — room to close the remaining gap.');
-    else lines.push('<strong>Fulfillment opportunity:</strong> '+mr+'% met. Worth reviewing what's keeping needs open.');
+    else lines.push('<strong>Fulfillment opportunity:</strong> '+mr+'% met. Worth reviewing what is keeping needs open.');
   }
   if (d.urgency.urgent.flagged > 0) {
     var uMet = Math.round(d.urgency.urgent.met/d.urgency.urgent.flagged*100);

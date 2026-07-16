@@ -16,17 +16,18 @@
   --yellow:#f2a136;--yellow-lt:#fdf4e6;
   --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--lighter:#c0c0c0;
   --border:#E0E0E0;--border-lt:#f0ece8;--bg:#fdf7f3;--white:#fff;
-  --nav-w:210px;
+  --nav-w:220px;
 }
 html,body{height:100%}
-body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);overflow:hidden}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark)}
+body:not(.show-login):not(.logged-in){visibility:hidden}
 
 /* ── LOGIN ── */
 .login-view{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:999}
 body.show-login .login-view{display:flex}
 body.logged-in .login-view{display:none!important}
 .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
-.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px;filter:brightness(0) saturate(100%) invert(34%) sepia(76%) saturate(2800%) hue-rotate(340deg) brightness(102%)}
 .login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
 .login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
 .login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
@@ -40,16 +41,14 @@ body.logged-in .login-view{display:none!important}
 .login-btn:hover{background:var(--red-dk)}
 
 /* ── PORTAL SHELL ── */
-.portal-view{display:none;flex-direction:column;height:100vh}
+.portal-view{display:none;flex-direction:column;height:100vh;overflow:hidden}
 body.logged-in .portal-view{display:flex}
 
 /* ── TOP NAV ── */
-.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
 .nav-left{display:flex;align-items:center;gap:14px}
-.nav-logo{height:28px;width:auto;display:block}
+.nav-logo{height:30px;width:auto;display:block}
 .nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
-.nav-hub a{color:rgba(255,255,255,.8);text-decoration:none;transition:color .15s}
-.nav-hub a:hover{color:var(--white)}
 .nav-right{display:flex;align-items:center;gap:10px}
 .nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
 .nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
@@ -62,139 +61,117 @@ body.logged-in .portal-view{display:flex}
 .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
 .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
 
-/* ── REPORT HEADER (green bar) ── */
-.report-header{background:var(--green);padding:16px 24px 14px;color:var(--white);flex-shrink:0}
-.rh-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
-.rh-eyebrow{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:3px}
-.rh-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--white);line-height:1.1}
-.rh-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px}
-.rh-right{display:flex;align-items:center;gap:10px}
-.rh-badge{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:3px 9px;border-radius:4px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2)}
-
-/* Period dropdown */
-.period-wrap{display:flex;flex-direction:column;gap:4px}
-.period-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.5)}
-.period-select{
-  appearance:none;-webkit-appearance:none;
-  background-color:rgba(255,255,255,.1);
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.7' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-  background-repeat:no-repeat;background-position:right 12px center;
-  border:1px solid rgba(255,255,255,.22);border-radius:7px;
-  color:var(--white);padding:7px 32px 7px 12px;
-  font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;letter-spacing:.4px;
-  cursor:pointer;min-width:140px;transition:background-color .15s,border-color .15s
-}
-.period-select:hover{background-color:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36)}
-.period-select:focus{outline:none;border-color:rgba(255,255,255,.5)}
-.period-select option{background:var(--green);color:white}
-
-/* ── BODY SHELL ── */
-.body-shell{display:flex;flex:1;overflow:hidden}
+/* ── SHELL ── */
+.shell{display:flex;flex:1;overflow:hidden}
 
 /* ── LEFT NAV ── */
 .leftnav{width:var(--nav-w);min-width:var(--nav-w);background:var(--white);border-right:1px solid var(--border-lt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
 .leftnav::-webkit-scrollbar{width:3px}
 .leftnav::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-
-.ln-back{display:flex;align-items:center;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--border-lt);text-decoration:none;color:var(--mid);transition:color .12s}
-.ln-back:hover{color:var(--dark)}
-.ln-back svg{width:13px;height:13px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ln-back-text{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:1px}
-
 .nav-group{padding:14px 0 6px}
 .nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mid);padding:0 16px 7px;display:block}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s;text-decoration:none}
 .nav-item:hover{background:#f7f2ee}
 .nav-item.active{background:#fef0ed;border-left-color:var(--red)}
 .nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .nav-icon svg{width:14px;height:14px;fill:none;stroke:var(--light);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s}
-.nav-item:hover .nav-icon svg{stroke:var(--mid)}
-.nav-item.active .nav-icon svg{stroke:var(--red)}
+.nav-item:hover .nav-icon svg,.nav-item.active .nav-icon svg{stroke:var(--red)}
 .nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--dark);flex:1}
 .nav-item.active .nav-text{color:var(--red);font-weight:600}
 .nav-div{height:1px;background:var(--border-lt);margin:4px 0}
 
 /* ── RIGHT PANEL ── */
-.rightpanel{flex:1;overflow-y:auto;padding:28px 32px}
+.rightpanel{flex:1;overflow-y:auto}
 .rightpanel::-webkit-scrollbar{width:5px}
 .rightpanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-/* ── SECTIONS ── */
-.section-panel{display:none}
-.section-panel.active{display:block}
+/* ── REPORT HEADER ── */
+.report-header{background:var(--green);padding:20px 36px 18px;color:var(--white)}
+.rh-inner{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.rh-eyebrow{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.rh-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--white);line-height:1.1;margin-bottom:3px}
+.rh-sub{font-size:13px;color:rgba(255,255,255,.65)}
+.rh-right{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
+.period-wrap{display:flex;flex-direction:column;gap:4px}
+.period-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.5)}
+.period-select{appearance:none;-webkit-appearance:none;background-color:rgba(255,255,255,.1);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.7' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;border:1px solid rgba(255,255,255,.22);border-radius:7px;color:var(--white);padding:7px 34px 7px 12px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;letter-spacing:.4px;cursor:pointer;min-width:150px;transition:background-color .15s,border-color .15s}
+.period-select:hover{background-color:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36)}
+.period-select:focus{outline:none}
+.period-select option{background:var(--green);color:white}
 
-/* ── LOADING / ERROR ── */
+/* ── REPORT BODY ── */
+.report-body{padding:28px 36px;max-width:900px}
+
+/* Loading / error */
 .state-msg{text-align:center;padding:60px 20px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--light)}
 .spinner{width:30px;height:30px;border:2.5px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err-msg{background:var(--red-lt);border-left:3px solid var(--red);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--red-dk);margin-bottom:20px}
 
-/* ── HEADLINE CARD ── */
+/* Headline */
 .headline{background:var(--green);color:var(--white);border-radius:12px;padding:22px 26px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px}
-.headline-left{flex:1;min-width:180px}
-.hl-eyebrow{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.6);margin-bottom:4px}
-.hl-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.4px;margin-bottom:3px}
-.hl-note{font-size:12px;color:rgba(255,255,255,.65)}
-.hl-stats{display:flex;gap:24px;align-items:flex-end}
+.hl-left{flex:1}
+.hl-eyebrow{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.55);margin-bottom:4px}
+.hl-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.4px}
+.hl-note{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
+.hl-stats{display:flex;gap:28px;align-items:flex-end}
 .hstat{text-align:right}
-.hstat-num{font-family:'Shrikhand',cursive;font-size:32px;line-height:1;color:var(--white);font-variant-numeric:tabular-nums}
+.hstat-num{font-family:'Shrikhand',cursive;font-size:32px;line-height:1;color:var(--white)}
 .hstat-num.big{font-size:44px;color:var(--yellow)}
-.hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:4px}
+.hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-top:4px}
 
-/* ── STAT GRID (summary cards) ── */
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
-.stat-card-num{font-family:'Shrikhand',cursive;font-size:28px;color:var(--dark);line-height:1;margin-bottom:4px}
-.stat-card-num.green{color:var(--green)}
-.stat-card-num.yellow{color:var(--yellow)}
-.stat-card-num.red{color:var(--red)}
-.stat-card-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--light)}
-.stat-card-note{font-size:11px;color:var(--light);margin-top:4px;line-height:1.4}
+/* Insight */
+.insight{background:var(--green-lt);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:11px 15px;margin-bottom:24px;font-size:13px;color:var(--dark);line-height:1.6}
+.insight strong{color:var(--green)}
 
-/* ── DATA TABLE SECTIONS ── */
-.data-section{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
-.data-section-head{padding:13px 20px 11px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
-.data-section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
-.data-section-sub{font-size:11.5px;color:var(--light);font-style:italic}
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat-num{font-family:'Shrikhand',cursive;font-size:26px;line-height:1;margin-bottom:3px}
+.stat-num.green{color:var(--green)}
+.stat-num.yellow{color:var(--yellow)}
+.stat-num.red{color:var(--red-dk)}
+.stat-lbl{font-family:'Oswald',sans-serif;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--light)}
+.stat-note{font-size:11px;color:var(--lighter);margin-top:3px}
 
+/* Data section */
+.sec{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.sec-head{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
+.sec-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
+.sec-sub{font-size:12px;color:var(--light);font-style:italic}
+
+/* Table */
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);text-align:left;padding:10px 20px;border-bottom:1px solid var(--border);background:#fafaf8}
-th.right{text-align:right}
+th.r{text-align:right}
 td{padding:12px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-td.right{text-align:right;font-variant-numeric:tabular-nums}
-.row-name{font-weight:700;color:var(--dark)}
-.row-note{font-size:11.5px;color:var(--light);font-style:italic;margin-top:2px}
-.pct{font-weight:700;font-size:14px}
-.pct-sup{color:var(--light);font-weight:400}
+td.r{text-align:right;font-variant-numeric:tabular-nums}
+.rname{font-weight:700}
+.rnote{font-size:11.5px;color:var(--light);font-style:italic;margin-top:2px}
 .pill{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;background:var(--yellow-lt);color:var(--yellow);margin-left:6px;vertical-align:middle}
-.lead-row td{background:var(--green-lt)}
-.lead-row .row-name{color:var(--green)}
+.lead td{background:var(--green-lt)}
+.lead .rname{color:var(--green)}
 
-/* Bar fill */
+/* Bar */
 .bar-wrap{display:flex;align-items:center;gap:8px}
-.bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px}
-.bar-fill{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+.bar-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:80px}
+.bar-fill{height:100%;border-radius:3px;background:var(--green)}
 .bar-pct{font-weight:700;font-size:13px;min-width:38px;text-align:right}
 
-/* Two-row comparison */
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 20px}
-.compare-cell{background:var(--bg);border-radius:8px;padding:14px 16px}
-.compare-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:6px}
-.compare-num{font-family:'Shrikhand',cursive;font-size:26px;color:var(--dark);line-height:1;margin-bottom:2px}
-.compare-sub{font-size:11.5px;color:var(--light)}
+/* Compare row (2-up) */
+.compare-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 20px}
+.cmp{background:var(--bg);border-radius:8px;padding:14px 16px}
+.cmp-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:6px}
+.cmp-num{font-family:'Shrikhand',cursive;font-size:24px;line-height:1;color:var(--dark);margin-bottom:3px}
+.cmp-sub{font-size:12px;color:var(--light)}
 
 /* Footnote */
-.footnote{font-size:11.5px;color:var(--mid);line-height:1.65;padding:12px 20px;border-top:1px solid var(--border);background:#fafaf8}
-.footnote strong{color:var(--dark)}
+.fn{font-size:11.5px;color:var(--mid);line-height:1.6;padding:11px 20px;border-top:1px solid var(--border);background:#fafaf8}
+.fn strong{color:var(--dark)}
 
-/* Section intro text */
-.sec-intro{font-size:13px;color:var(--mid);line-height:1.65;margin-bottom:20px;max-width:640px}
-.sec-intro strong{color:var(--dark)}
-
-/* Insight callout */
-.insight{background:var(--green-lt);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--dark);line-height:1.6}
-.insight strong{color:var(--green)}
+/* Section divider label */
+.divider-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--lighter);margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border-lt)}
 </style>
 </head>
 <body>
@@ -219,7 +196,7 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
   <nav class="nav">
     <div class="nav-left">
       <a href="/"><img class="nav-logo" src="/email-logo.png" alt="ĒMA"></a>
-      <div class="nav-hub"><a href="/">Impact Hub</a></div>
+      <div class="nav-hub">Impact Hub</div>
     </div>
     <div class="nav-right">
       <div class="nav-scope" id="nav-scope" style="display:none">
@@ -239,78 +216,95 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
     </div>
   </nav>
 
-  <!-- REPORT HEADER -->
-  <div class="report-header">
-    <div class="rh-inner">
-      <div>
-        <div class="rh-eyebrow">HQ Resources · Investor Report Pulse</div>
-        <div class="rh-title">Flagged Needs Summary</div>
-        <div class="rh-sub">Needs moms surfaced and how often they were met — by affiliate and type.</div>
-      </div>
-      <div class="rh-right">
-        <span class="rh-badge">Live from Trellis</span>
-        <div class="period-wrap">
-          <div class="period-lbl">Time period</div>
-          <select class="period-select" id="period-select" onchange="loadPeriod(this.value)">
-            <option value="ytd" selected>YTD 2026</option>
-            <option value="q1">Q1 2026 (Jan–Mar)</option>
-            <option value="q2">Q2 2026 (Apr–Jun)</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="shell">
 
-  <!-- BODY -->
-  <div class="body-shell">
-
-    <!-- LEFT NAV -->
+    <!-- LEFT NAV — same as hub -->
     <aside class="leftnav">
-      <a class="ln-back" href="/#hq-resources">
-        <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
-        <span class="ln-back-text">HQ Resources</span>
-      </a>
+      <div class="nav-group" style="padding-bottom:2px">
+        <a href="/" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M2,8 L8,2 L14,8"/><polyline points="4,8 4,14 12,14 12,8"/></svg></div>
+          <span class="nav-text">Home</span>
+        </a>
+      </div>
+
+      <div class="nav-div"></div>
 
       <div class="nav-group">
-        <span class="nav-group-label">Report Sections</span>
-        <div class="nav-item active" onclick="showSection('overview',this)">
+        <span class="nav-group-label">How We're Doing</span>
+        <a href="/#impact" class="nav-item" style="text-decoration:none">
           <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
-          <span class="nav-text">Overview</span>
-        </div>
-        <div class="nav-item" onclick="showSection('affiliates',this)">
-          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/></svg></div>
-          <span class="nav-text">By Affiliate</span>
-        </div>
-        <div class="nav-item" onclick="showSection('types',this)">
-          <div class="nav-icon"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg></div>
-          <span class="nav-text">By Need Type</span>
-        </div>
-        <div class="nav-item" onclick="showSection('urgency',this)">
-          <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M8,2 L14,5 L14,10 C14,13 8,15 8,15 C8,15 2,13 2,10 L2,5 Z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="5.5" r=".5" fill="currentColor" stroke="none"/></svg></div>
-          <span class="nav-text">Urgency</span>
-        </div>
-        <div class="nav-item" onclick="showSection('delivery',this)">
-          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10,10"/></svg></div>
-          <span class="nav-text">Time to Fulfill</span>
-        </div>
-        <div class="nav-item" onclick="showSection('scope',this)">
-          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="6" cy="6" r="3.5"/><path d="M10.5,6 C10.5,8.5 8.5,10.5 6,10.5"/><circle cx="11" cy="11" r="2.5"/></svg></div>
-          <span class="nav-text">Group vs Individual</span>
-        </div>
+          <span class="nav-text">Impact Reports</span>
+        </a>
+        <a href="/#hq-resources" class="nav-item active" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg></div>
+          <span class="nav-text">HQ Resources</span>
+        </a>
+      </div>
+
+      <div class="nav-div"></div>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Trellis Live</span>
+        <a href="/report/mom-status" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg></div>
+          <span class="nav-text">Our Moms</span>
+        </a>
+        <a href="/report/advocate-care" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg></div>
+          <span class="nav-text">Our Advocates</span>
+        </a>
+        <a href="/report/users" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg></div>
+          <span class="nav-text">Trellis Users</span>
+        </a>
+      </div>
+
+      <div class="nav-div"></div>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Affiliates &amp; Admin</span>
+        <a href="/admin/champions" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L10,6 L14,6.5 L11,9.5 L12,14 L8,11.5 L4,14 L5,9.5 L2,6.5 L6,6 Z"/></svg></div>
+          <span class="nav-text">Champion Management</span>
+        </a>
       </div>
     </aside>
 
     <!-- RIGHT PANEL -->
-    <div class="rightpanel" id="rightpanel">
-      <div class="state-msg"><div class="spinner"></div>Loading…</div>
-    </div>
+    <div class="rightpanel">
 
-  </div><!-- /body-shell -->
+      <!-- REPORT HEADER -->
+      <div class="report-header">
+        <div class="rh-inner">
+          <div>
+            <div class="rh-eyebrow">HQ Resources · Investor Report Pulse</div>
+            <div class="rh-title">Flagged Needs Summary</div>
+            <div class="rh-sub">Needs moms surfaced and how often they were met — by affiliate, type, urgency, and delivery time.</div>
+          </div>
+          <div class="rh-right">
+            <div class="period-wrap">
+              <div class="period-lbl">Time period</div>
+              <select class="period-select" id="period-select" onchange="loadPeriod(this.value)">
+                <option value="ytd" selected>YTD 2026</option>
+                <option value="q1">Q1 2026 (Jan – Mar)</option>
+                <option value="q2">Q2 2026 (Apr – Jun)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT BODY -->
+      <div class="report-body" id="report-body">
+        <div class="state-msg"><div class="spinner"></div>Loading…</div>
+      </div>
+
+    </div><!-- /rightpanel -->
+  </div><!-- /shell -->
 </div><!-- /portal-view -->
 
 <script>
 var DATA = null;
-var ACTIVE_SECTION = 'overview';
 var YEAR = 2026;
 var SMALL_N = 20;
 
@@ -320,7 +314,7 @@ var PERIOD_NOTES = {
   q2:  'April 1 – June 30, 2026',
 };
 
-// ── AUTH ────────────────────────────────────────────
+// ── AUTH ─────────────────────────────────────────────────
 
 async function doLogin() {
   var u = document.getElementById('lu').value.trim().toLowerCase();
@@ -338,132 +332,163 @@ async function doLogin() {
 
 async function doSignOut() {
   try { await fetch('/api/logout',{method:'POST'}); } catch(e) {}
-  window.location.href='/';
+  window.location.href = '/';
 }
 
 function applySession(u) {
-  if (u.role !== 'administrator') { window.location.href='/'; return; }
+  if (u.role !== 'administrator') { window.location.href = '/'; return; }
   document.body.classList.remove('show-login');
   document.body.classList.add('logged-in');
-  var first=u.firstName||'',last=u.lastName||'';
-  var av=document.getElementById('nav-avatar'),nm=document.getElementById('nav-name'),rl=document.getElementById('nav-role');
-  if(av) av.textContent=((first[0]||'')+(last[0]||'')).toUpperCase();
-  if(nm) nm.textContent=(first+' '+last).trim();
-  if(rl) rl.textContent='HQ Admin';
-  document.getElementById('nav-scope').style.display='';
-  document.getElementById('nav-scope-sep').style.display='';
+  var first = u.firstName||'', last = u.lastName||'';
+  document.getElementById('nav-avatar').textContent = ((first[0]||'')+(last[0]||'')).toUpperCase();
+  document.getElementById('nav-name').textContent   = (first+' '+last).trim();
+  document.getElementById('nav-role').textContent   = 'HQ Admin';
+  document.getElementById('nav-scope').style.display    = '';
+  document.getElementById('nav-scope-sep').style.display = '';
   loadPeriod('ytd');
 }
 
-// ── DATA ────────────────────────────────────────────
+// ── DATA ─────────────────────────────────────────────────
 
 async function loadPeriod(period) {
   document.getElementById('period-select').value = period;
-  setLoading();
+  document.getElementById('report-body').innerHTML = '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
   try {
     var r = await fetch('/api/flagged-needs?period='+period+'&year='+YEAR);
-    if (!r.ok) { var e=await r.json(); throw new Error(e.error||'HTTP '+r.status); }
+    if (!r.ok) { var e = await r.json(); throw new Error(e.error||'HTTP '+r.status); }
     DATA = await r.json();
-    renderSection(ACTIVE_SECTION);
+    render();
   } catch(e) {
-    document.getElementById('rightpanel').innerHTML = '<div class="err-msg">Could not load data — '+esc(e.message)+'</div>';
+    document.getElementById('report-body').innerHTML = '<div class="err-msg">Could not load data — '+esc(e.message)+'</div>';
   }
 }
 
-function setLoading() {
-  document.getElementById('rightpanel').innerHTML = '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
-}
+// ── RENDER ───────────────────────────────────────────────
 
-// ── NAV ─────────────────────────────────────────────
+function render() {
+  var d = DATA;
+  var tf = d.total.flagged, tm = d.total.met, to = d.total.open;
+  var mr = tf ? Math.round(tm/tf*100) : 0;
+  var note = PERIOD_NOTES[d.period] || '';
 
-function showSection(id, el) {
-  ACTIVE_SECTION = id;
-  document.querySelectorAll('.leftnav .nav-item').forEach(function(n){ n.classList.remove('active'); });
-  el.classList.add('active');
-  if (DATA) renderSection(id);
-  document.getElementById('rightpanel').scrollTop = 0;
-}
-
-function renderSection(id) {
   var html = '';
-  if (id === 'overview')   html = renderOverview();
-  if (id === 'affiliates') html = renderAffiliates();
-  if (id === 'types')      html = renderTypes();
-  if (id === 'urgency')    html = renderUrgency();
-  if (id === 'delivery')   html = renderDelivery();
-  if (id === 'scope')      html = renderScope();
-  document.getElementById('rightpanel').innerHTML = html || '<div class="state-msg">No data.</div>';
+
+  // ── Headline card
+  html += '<div class="headline">'
+    + '<div class="hl-left">'
+    +   '<div class="hl-eyebrow">National Total · All affiliates</div>'
+    +   '<div class="hl-title">'+esc(note)+'</div>'
+    +   '<div class="hl-note">Trellis-native records · live from database</div>'
+    + '</div>'
+    + '<div class="hl-stats">'
+    +   hstat(tf,'Flagged')
+    +   hstat(tm,'Met')
+    +   hstat(to,'Open')
+    +   hstatBig(tf ? mr+'%' : '—','Met Rate')
+    + '</div>'
+    + '</div>';
+
+  // ── Stat strip
+  var urgFlagged = d.urgency.urgent.flagged;
+  var avgDays    = d.delivery.avgDays;
+  var grpFlagged = d.group.group.flagged;
+  html += '<div class="stat-row">'
+    + statCard(urgFlagged, 'yellow', 'Urgent Needs', tf ? Math.round(urgFlagged/tf*100)+'% of total' : '')
+    + statCard(avgDays !== null ? avgDays+'d' : '—', '', 'Avg Days to Fulfill', avgDays !== null ? 'median '+d.delivery.medianDays+'d' : 'no dates recorded')
+    + statCard(grpFlagged, '', 'Group Needs', tf ? Math.round(grpFlagged/tf*100)+'% of total' : '')
+    + statCard(d.delivery.measuredCount||0, 'green', 'With Fulfill Date', 'fulfillment timing tracked')
+    + '</div>';
+
+  // ── Insight
+  html += buildInsight(d);
+
+  // ── By Affiliate
+  html += '<div class="divider-label">By Affiliate</div>';
+  html += '<div class="sec">'
+    + '<div class="sec-head"><div class="sec-label">Affiliate Breakdown</div><div class="sec-sub">Affiliates with fewer than '+SMALL_N+' records have rate suppressed</div></div>'
+    + '<table><thead><tr><th>Affiliate</th><th class="r">Flagged</th><th class="r">Met</th><th class="r">Open</th><th>% Met</th></tr></thead><tbody>'
+    + d.byAffiliate.map(function(a, i) {
+        var lead  = i === 0 && a.flagged >= SMALL_N;
+        var small = a.flagged < SMALL_N;
+        return '<tr'+(lead?' class="lead"':'')+'>'
+          +'<td><div class="rname">'+esc(a.affiliate)+(small?'<span class="pill">Small n</span>':'')+'</div></td>'
+          +'<td class="r">'+a.flagged+'</td>'
+          +'<td class="r">'+a.met+'</td>'
+          +'<td class="r">'+(a.flagged-a.met)+'</td>'
+          +'<td>'+(small?'<span style="color:var(--light)">—</span>':bar(a.met,a.flagged))+'</td>'
+          +'</tr>';
+      }).join('')
+    + '</tbody></table>'
+    + '<div class="fn"><strong>Source:</strong> BenevolenceNeed → Mom → Affiliate. <strong>Window:</strong> '+esc(note)+'. <strong>Met:</strong> did_address_need_c = TRUE. Trellis-native records only.</div>'
+    + '</div>';
+
+  // ── By Need Type
+  html += '<div class="divider-label">By Need Type</div>';
+  html += '<div class="sec">'
+    + '<div class="sec-head"><div class="sec-label">Need Type Breakdown</div></div>'
+    + '<table><thead><tr><th>Type</th><th class="r">Flagged</th><th class="r">Met</th><th class="r">Open</th><th>% Met</th></tr></thead><tbody>'
+    + d.byType.map(function(t) {
+        return '<tr>'
+          +'<td><div class="rname">'+esc(t.type)+'</div></td>'
+          +'<td class="r">'+t.flagged+'</td>'
+          +'<td class="r">'+t.met+'</td>'
+          +'<td class="r">'+(t.flagged-t.met)+'</td>'
+          +'<td>'+bar(t.met,t.flagged)+'</td>'
+          +'</tr>';
+      }).join('')
+    + '</tbody></table>'
+    + '</div>';
+
+  // ── Urgency + Delivery side by side
+  html += '<div class="divider-label">Urgency &amp; Delivery</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'
+
+    // Urgency
+    + '<div class="sec">'
+    +   '<div class="sec-head"><div class="sec-label">Urgent vs Routine</div></div>'
+    +   '<div class="compare-2">'
+    +     cmp('Urgent', urgFlagged+' flagged', pct(d.urgency.urgent.met, urgFlagged)+' met', d.urgency.urgent.met+' fulfilled')
+    +     cmp('Routine', d.urgency.routine.flagged+' flagged', pct(d.urgency.routine.met, d.urgency.routine.flagged)+' met', d.urgency.routine.met+' fulfilled')
+    +   '</div>'
+    + '</div>'
+
+    // Delivery
+    + '<div class="sec">'
+    +   '<div class="sec-head"><div class="sec-label">Time to Fulfill</div><div class="sec-sub">created_at → provided or resolved date</div></div>'
+    +   '<div class="compare-2">'
+    +     cmp('Avg Days', avgDays !== null ? avgDays+'d' : '—', avgDays !== null ? 'from flag to fulfillment' : 'no dates recorded', '')
+    +     cmp('Median Days', d.delivery.medianDays !== null ? d.delivery.medianDays+'d' : '—', d.delivery.measuredCount+' records with date', '')
+    +   '</div>'
+    + '</div>'
+
+    + '</div>';
+
+  // ── Group vs Individual
+  html += '<div class="divider-label">Scope</div>';
+  html += '<div class="sec">'
+    + '<div class="sec-head"><div class="sec-label">Group vs Individual Needs</div><div class="sec-sub">Group needs are tied to an advocacy group rather than a single mom</div></div>'
+    + '<div class="compare-2">'
+    +   cmp('Individual', d.group.individual.flagged+' flagged', pct(d.group.individual.met, d.group.individual.flagged)+' met', d.group.individual.met+' fulfilled')
+    +   cmp('Group', d.group.group.flagged+' flagged', pct(d.group.group.met, d.group.group.flagged)+' met', d.group.group.met+' fulfilled')
+    + '</div>'
+    + '</div>';
+
+  document.getElementById('report-body').innerHTML = html;
 }
 
-// ── HELPERS ─────────────────────────────────────────
+// ── HELPERS ──────────────────────────────────────────────
 
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function pct(met, flagged) {
   if (!flagged) return '—';
-  return Math.round(met / flagged * 100) + '%';
+  return Math.round(met/flagged*100)+'%';
 }
 
 function bar(met, flagged) {
-  if (!flagged) return '<span class="pct-sup">—</span>';
-  var p = Math.round(met / flagged * 100);
+  if (!flagged) return '<span style="color:var(--light)">—</span>';
+  var p = Math.round(met/flagged*100);
   return '<div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:'+p+'%"></div></div><span class="bar-pct">'+p+'%</span></div>';
-}
-
-function periodNote() { return PERIOD_NOTES[DATA.period] || ''; }
-
-// ── SECTIONS ────────────────────────────────────────
-
-function renderOverview() {
-  var d = DATA;
-  var tf = d.total.flagged, tm = d.total.met, to = d.total.open;
-  var metRate = tf ? Math.round(tm/tf*100) : 0;
-  var urgPct  = tf ? Math.round(d.urgency.urgent.flagged/tf*100) : 0;
-
-  return ''
-    + '<div class="headline">'
-    +   '<div class="headline-left">'
-    +     '<div class="hl-eyebrow">National Total · All affiliates</div>'
-    +     '<div class="hl-title">'+esc(periodNote())+'</div>'
-    +   '</div>'
-    +   '<div class="hl-stats">'
-    +     hstat(tf,'Flagged')
-    +     hstat(tm,'Met')
-    +     hstat(to,'Still Open')
-    +     hstatBig(metRate+'%','Met Rate')
-    +   '</div>'
-    + '</div>'
-    + '<div class="stat-grid">'
-    +   statCard(tf,'','Total Needs Flagged','')
-    +   statCard(tm,'green','Needs Met','fulfilled this period')
-    +   statCard(to,'red','Still Open','not yet addressed')
-    +   statCard(d.urgency.urgent.flagged,'yellow','Marked Urgent',urgPct+'% of all needs')
-    +   statCard(d.delivery.avgDays !== null ? d.delivery.avgDays+'d' : '—','','Avg Days to Fulfill','from flag to fulfillment')
-    +   statCard(d.group.group.flagged,'','Group Needs','advocacy group level')
-    + '</div>'
-    + insightBar(d);
-}
-
-function insightBar(d) {
-  var lines = [];
-  var tf = d.total.flagged, tm = d.total.met;
-  if (tf) {
-    var mr = Math.round(tm/tf*100);
-    if (mr >= 80) lines.push('<strong>Strong fulfillment:</strong> '+mr+'% of needs met this period.');
-    else if (mr >= 65) lines.push('<strong>Solid fulfillment:</strong> '+mr+'% met — room to close the remaining gap.');
-    else lines.push('<strong>Fulfillment opportunity:</strong> '+mr+'% met. Worth reviewing what is keeping needs open.');
-  }
-  if (d.urgency.urgent.flagged > 0) {
-    var uMet = Math.round(d.urgency.urgent.met/d.urgency.urgent.flagged*100);
-    var rMet = d.urgency.routine.flagged ? Math.round(d.urgency.routine.met/d.urgency.routine.flagged*100) : null;
-    if (rMet !== null) {
-      var diff = uMet - rMet;
-      if (Math.abs(diff) >= 5) lines.push('Urgent needs were met at <strong>'+uMet+'%</strong> vs '+rMet+'% for routine — a '+(diff>=0?'+':'')+diff+'pt difference.');
-    }
-  }
-  if (d.delivery.avgDays !== null) lines.push('When needs are recorded as fulfilled, it takes an average of <strong>'+d.delivery.avgDays+' days</strong> (median '+d.delivery.medianDays+'d).');
-  if (!lines.length) return '';
-  return '<div class="insight">'+lines.join('<br>')+'</div>';
 }
 
 function hstat(n, lbl) {
@@ -473,147 +498,45 @@ function hstatBig(n, lbl) {
   return '<div class="hstat"><div class="hstat-num big">'+n+'</div><div class="hstat-lbl">'+lbl+'</div></div>';
 }
 function statCard(num, color, lbl, note) {
-  return '<div class="stat-card"><div class="stat-card-num'+(color?' '+color:'')+'">'+num+'</div><div class="stat-card-lbl">'+lbl+'</div>'+(note?'<div class="stat-card-note">'+note+'</div>':'')+'</div>';
+  return '<div class="stat-card"><div class="stat-num'+(color?' '+color:'')+'">'+num+'</div><div class="stat-lbl">'+lbl+'</div>'+(note?'<div class="stat-note">'+note+'</div>':'')+'</div>';
+}
+function cmp(lbl, num, sub, extra) {
+  return '<div class="cmp"><div class="cmp-lbl">'+lbl+'</div><div class="cmp-num">'+num+'</div>'+(sub?'<div class="cmp-sub">'+sub+'</div>':'')+(extra?'<div class="cmp-sub">'+extra+'</div>':'')+'</div>';
 }
 
-function renderAffiliates() {
-  var rows = DATA.byAffiliate.map(function(a,i){
-    var lead = i===0 && a.flagged>=SMALL_N;
-    var small = a.flagged<SMALL_N;
-    var pill = small ? '<span class="pill">Small n</span>' : '';
-    var note = small ? '<div class="row-note">Below interpretation threshold (n &lt; '+SMALL_N+')</div>' : '';
-    var pctVal = small ? '<span class="pct-sup">—</span>' : bar(a.met,a.flagged);
-    return '<tr'+(lead?' class="lead-row"':'')+'>'
-      +'<td><div class="row-name">'+esc(a.affiliate)+pill+'</div>'+note+'</td>'
-      +'<td class="right">'+a.flagged+'</td>'
-      +'<td class="right">'+a.met+'</td>'
-      +'<td style="min-width:160px">'+pctVal+'</td>'
-      +'</tr>';
-  }).join('');
-
-  return '<p class="sec-intro">Volume and fulfillment rate for each affiliate. Affiliates with fewer than '+SMALL_N+' records have their rate suppressed — too small for a reliable percentage.</p>'
-    + tableSection('By Affiliate', null,
-        '<tr><th>Affiliate</th><th class="right">Flagged</th><th class="right">Met</th><th>% Met</th></tr>',
-        rows,
-        'Source: BenevolenceNeed joined to Mom → Affiliate. Window: '+periodNote()+'. Trellis-native records only.'
-      );
+function buildInsight(d) {
+  var tf = d.total.flagged, tm = d.total.met;
+  var lines = [];
+  if (tf) {
+    var mr = Math.round(tm/tf*100);
+    if (mr >= 80) lines.push('<strong>Strong fulfillment:</strong> '+mr+'% of needs met this period.');
+    else if (mr >= 65) lines.push('<strong>Solid fulfillment:</strong> '+mr+'% met — closing the remaining gap is the opportunity.');
+    else lines.push('<strong>Fulfillment gap:</strong> '+mr+'% met. Worth reviewing what is keeping needs open.');
+  }
+  var urg = d.urgency.urgent, rou = d.urgency.routine;
+  if (urg.flagged && rou.flagged) {
+    var diff = Math.round(urg.met/urg.flagged*100) - Math.round(rou.met/rou.flagged*100);
+    if (Math.abs(diff) >= 5) lines.push('Urgent needs are met at <strong>'+(diff>=0?'+':'')+diff+'pt</strong> compared to routine needs.');
+  }
+  var lowest = d.byType.slice().sort(function(a,b){ return (a.flagged?a.met/a.flagged:1)-(b.flagged?b.met/b.flagged:1); })[0];
+  if (lowest && lowest.flagged >= SMALL_N) lines.push('Lowest fulfillment by type: <strong>'+esc(lowest.type)+'</strong> at '+pct(lowest.met,lowest.flagged)+'.');
+  if (d.delivery.avgDays !== null) lines.push('Average time from flag to fulfillment: <strong>'+d.delivery.avgDays+' days</strong> (median '+d.delivery.medianDays+'d).');
+  if (!lines.length) return '';
+  return '<div class="insight">'+lines.join(' &nbsp;·&nbsp; ')+'</div>';
 }
 
-function renderTypes() {
-  var rows = DATA.byType.map(function(t){
-    return '<tr>'
-      +'<td><div class="row-name">'+esc(t.type)+'</div></td>'
-      +'<td class="right">'+t.flagged+'</td>'
-      +'<td class="right">'+t.met+'</td>'
-      +'<td style="min-width:160px">'+bar(t.met,t.flagged)+'</td>'
-      +'</tr>';
-  }).join('');
-
-  var lowestType = DATA.byType.slice().sort(function(a,b){ return (a.met/a.flagged)-(b.met/b.flagged); })[0];
-  var insight = lowestType
-    ? '<div class="insight">Lowest fulfillment: <strong>'+esc(lowestType.type)+'</strong> at '+pct(lowestType.met,lowestType.flagged)+' met ('+lowestType.flagged+' flagged). This is the need category with the most room to close.</div>'
-    : '';
-
-  return '<p class="sec-intro">Breaks down needs by category. Identifies where fulfillment is strongest and where the biggest gaps exist.</p>'
-    + insight
-    + tableSection('By Need Type', null,
-        '<tr><th>Type</th><th class="right">Flagged</th><th class="right">Met</th><th>% Met</th></tr>',
-        rows, null
-      );
-}
-
-function renderUrgency() {
-  var urg = DATA.urgency.urgent;
-  var rou = DATA.urgency.routine;
-  var diff = (urg.flagged && rou.flagged)
-    ? (Math.round(urg.met/urg.flagged*100) - Math.round(rou.met/rou.flagged*100))
-    : null;
-  var diffNote = diff !== null
-    ? 'Urgent needs are met at a rate '+(diff>=0?'+':'')+diff+'pt '+(diff>=0?'higher':'lower')+' than routine needs.'
-    : '';
-
-  return '<p class="sec-intro">Shows whether urgent needs are being prioritized — and whether that urgency flag is predictive of faster or higher fulfillment.</p>'
-    + (diffNote ? '<div class="insight">'+diffNote+'</div>' : '')
-    + '<div class="data-section">'
-    +   '<div class="data-section-head"><div class="data-section-label">Urgent vs Routine</div></div>'
-    +   '<div class="compare-grid">'
-    +     compareCell('Urgent Needs',urg.flagged+' flagged',pct(urg.met,urg.flagged)+' met',urg.met+' fulfilled')
-    +     compareCell('Routine Needs',rou.flagged+' flagged',pct(rou.met,rou.flagged)+' met',rou.met+' fulfilled')
-    +   '</div>'
-    + '</div>'
-    + tableSection('By Affiliate — Urgent Only', 'How each affiliate handles urgent needs specifically.',
-        '<tr><th>Affiliate</th><th class="right">Urgent Flagged</th><th class="right">Urgent Met</th><th>% Met</th></tr>',
-        DATA.byAffiliate.map(function(a){
-          // we don't have per-affiliate urgency from the API yet — show note
-          return '';
-        }).join('') || '<tr><td colspan="4" style="padding:14px 20px;color:var(--light);font-style:italic;font-size:13px">Affiliate-level urgency breakdown coming — requires additional API rollup.</td></tr>',
-        null
-      );
-}
-
-function renderDelivery() {
-  var del = DATA.delivery;
-  var hasData = del.avgDays !== null;
-
-  return '<p class="sec-intro">Tracks how long it takes from when a need is flagged to when it is marked fulfilled. Calculated from <strong>created_at</strong> to <strong>provided_date_c</strong> or <strong>resolved_date_c</strong>, whichever is recorded.</p>'
-    + '<div class="data-section">'
-    +   '<div class="data-section-head"><div class="data-section-label">Time to Fulfill</div></div>'
-    +   '<div class="compare-grid">'
-    +     compareCell('Avg Days', hasData ? del.avgDays+' days' : '—', hasData ? 'from flag to fulfillment' : 'no fulfillment dates recorded','')
-    +     compareCell('Median Days', hasData ? del.medianDays+' days' : '—', hasData ? 'half of needs fulfilled faster' : '','')
-    +     compareCell('Measurable Records', hasData ? del.measuredCount : '—', 'have a fulfillment date recorded','')
-    +     compareCell('Without Date', DATA.total.met - (del.measuredCount||0), 'met but no date recorded','')
-    +   '</div>'
-    +   '<div class="footnote">A need is counted here only if it is marked met <strong>and</strong> has a provided_date_c or resolved_date_c. Needs met without a recorded date are excluded from the time calculation.</div>'
-    + '</div>';
-}
-
-function renderScope() {
-  var g = DATA.group.group;
-  var ind = DATA.group.individual;
-
-  return '<p class="sec-intro">Some needs are tied to an advocacy group rather than an individual mom. This view separates group-level needs from individual needs to show how each category is served.</p>'
-    + '<div class="data-section">'
-    +   '<div class="data-section-head"><div class="data-section-label">Group vs Individual</div></div>'
-    +   '<div class="compare-grid">'
-    +     compareCell('Individual Needs',ind.flagged+' flagged',pct(ind.met,ind.flagged)+' met',ind.met+' fulfilled')
-    +     compareCell('Group Needs',g.flagged+' flagged',pct(g.met,g.flagged)+' met',g.met+' fulfilled')
-    +   '</div>'
-    +   '<div class="footnote">Group needs are identified by a non-null advocacyGroupId on the BenevolenceNeed record.</div>'
-    + '</div>';
-}
-
-// ── HTML HELPERS ────────────────────────────────────
-
-function tableSection(label, sub, thead, tbody, footnote) {
-  return '<div class="data-section">'
-    +'<div class="data-section-head"><div class="data-section-label">'+label+'</div>'+(sub?'<div class="data-section-sub">'+sub+'</div>':'')+'</div>'
-    +'<table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table>'
-    +(footnote?'<div class="footnote">'+esc(footnote)+'</div>':'')
-    +'</div>';
-}
-
-function compareCell(lbl, num, sub, extra) {
-  return '<div class="compare-cell">'
-    +'<div class="compare-lbl">'+lbl+'</div>'
-    +'<div class="compare-num">'+num+'</div>'
-    +(sub?'<div class="compare-sub">'+sub+'</div>':'')
-    +(extra?'<div class="compare-sub">'+extra+'</div>':'')
-    +'</div>';
-}
-
-// ── BOOT ────────────────────────────────────────────
+// ── BOOT ─────────────────────────────────────────────────
 
 (async function(){
   try {
     var r = await fetch('/api/me');
-    if (r.ok) { var d=await r.json(); if (d.user) { applySession(d.user); return; } }
+    if (r.ok) { var d = await r.json(); if (d.user) { applySession(d.user); return; } }
   } catch(e) {}
   document.body.classList.add('show-login');
 })();
 
 document.getElementById('lp').addEventListener('keydown', function(e){
-  if (e.key==='Enter') doLogin();
+  if (e.key === 'Enter') doLogin();
 });
 </script>
 </body>

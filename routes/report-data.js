@@ -2039,7 +2039,18 @@ router.get('/', async (req, res) => {
         SELECT a."id", a."name"
         FROM "Affiliate" a
         WHERE a."deleted_at" = 0
-          AND a."status" = 'Active'
+          AND (
+            a."status" = 'Active'
+            OR EXISTS (
+              SELECT 1 FROM "Mom" m
+              JOIN "Pairing" p ON p."momId" = m."id"
+              WHERE m."affiliate_id" = a."id"
+                AND m."deleted_at" = 0
+                AND p."deleted_at" = 0
+                AND p."created_at" <= '${PERIOD_END} 23:59:59'
+                AND (p."completed_on" IS NULL OR p."completed_on" > '${PERIOD_START}')
+            )
+          )
         ORDER BY a."name"
       `) : Promise.resolve({ rows: [] }),
 

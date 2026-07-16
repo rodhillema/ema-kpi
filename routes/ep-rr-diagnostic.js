@@ -213,21 +213,46 @@ router.get('/', requireAdmin, async (req, res) => {
 
     if (pairedArIds.length > 0) {
       const ph = pairedArIds.map((_, i) => `$${i+1}`).join(',');
+
+      // Cross-template text matching: build a canonical question-text → construct map
+      // from any question that has assessmentConstructId set, then apply it to all
+      // responses by label match — this recovers domain data for templates where the
+      // construct linkage was never configured in Trellis but the question text is identical.
+      const textJoin = labelCol
+        ? `LEFT JOIN q_construct_map qcm ON qcm.q_text = aq."${labelCol}"`
+        : '';
+      const textCte = labelCol ? `
+        WITH q_construct_map AS (
+          SELECT DISTINCT ON (aq."${labelCol}")
+            aq."${labelCol}" AS q_text,
+            ac."name"  AS construct_name,
+            ac."order" AS construct_order
+          FROM "AssessmentQuestion" aq
+          JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId" AND ac."deleted_at" = 0
+          WHERE aq."deleted_at" = 0 AND aq."${labelCol}" IS NOT NULL
+          ORDER BY aq."${labelCol}", ac."order"
+        )` : '';
+
       const { rows: dr } = await pool.query(`
+        ${textCte}
         SELECT
           arqr."assessmentResultId" AS ar_id,
-          COALESCE(ac."name", 'No Domain') AS construct_name,
-          COALESCE(ac."order", 999)         AS construct_order,
+          COALESCE(ac."name", ${labelCol ? 'qcm.construct_name,' : ''} 'No Domain') AS construct_name,
+          COALESCE(ac."order", ${labelCol ? 'qcm.construct_order,' : ''} 999)        AS construct_order,
           AVG(arqr."intResponse")::numeric  AS domain_mean,
           COUNT(*)::int                     AS q_count
         FROM "AssessmentResultQuestionResponse" arqr
         JOIN "AssessmentQuestion" aq ON aq."id" = arqr."assessmentQuestionId" AND aq."deleted_at" = 0
         LEFT JOIN "AssessmentConstruct" ac ON ac."id" = aq."assessmentConstructId" AND ac."deleted_at" = 0
+        ${textJoin}
         WHERE arqr."assessmentResultId" IN (${ph})
           AND arqr."deleted_at" = 0
           AND arqr."intResponse" IS NOT NULL
-        GROUP BY arqr."assessmentResultId", ac."id", ac."name", ac."order"
-        ORDER BY arqr."assessmentResultId", COALESCE(ac."order", 999)
+        GROUP BY arqr."assessmentResultId",
+          COALESCE(ac."name", ${labelCol ? 'qcm.construct_name,' : ''} 'No Domain'),
+          COALESCE(ac."order", ${labelCol ? 'qcm.construct_order,' : ''} 999)
+        ORDER BY arqr."assessmentResultId",
+          COALESCE(ac."order", ${labelCol ? 'qcm.construct_order,' : ''} 999)
       `, pairedArIds);
       for (const d of dr) {
         if (!domainByAr[d.ar_id]) domainByAr[d.ar_id] = [];

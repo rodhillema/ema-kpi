@@ -3,7 +3,6 @@ const router = express.Router();
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
-// Administrator only
 function requireAdmin(req, res, next) {
   if (req.session.user && req.session.user.role === 'administrator') return next();
   res.status(403).json({ error: 'Access denied' });
@@ -13,74 +12,108 @@ function requireAdmin(req, res, next) {
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const year = parseInt(req.query.year) || 2026;
-    const period = (req.query.period || 'q1').toLowerCase();
+    const period = (req.query.period || 'ytd').toLowerCase();
 
     let startDate, endDate;
     if (period === 'q1') {
-      startDate = `${year}-01-01`;
-      endDate   = `${year}-04-01`;
+      startDate = `${year}-01-01`; endDate = `${year}-04-01`;
     } else if (period === 'q2') {
-      startDate = `${year}-04-01`;
-      endDate   = `${year}-07-01`;
+      startDate = `${year}-04-01`; endDate = `${year}-07-01`;
     } else if (period === 'ytd') {
-      startDate = `${year}-01-01`;
-      endDate   = `${year + 1}-01-01`;
+      startDate = `${year}-01-01`; endDate = `${year + 1}-01-01`;
     } else {
       return res.status(400).json({ error: 'Invalid period — use q1, q2, or ytd' });
     }
 
-    const q = `
+    const { rows } = await pool.query(`
       SELECT
-        COALESCE(af.name, 'Unknown')      AS affiliate_name,
-        COALESCE(bn."type_c"::text, 'Other') AS need_type,
-        COUNT(*)::int                        AS flagged,
-        SUM(CASE WHEN bn."did_address_need_c" = TRUE THEN 1 ELSE 0 END)::int AS met
+        COALESCE(af.name, 'Unknown')           AS affiliate_name,
+        COALESCE(bn."type_c"::text, 'Other')   AS need_type,
+        bn."is_urgent_c"                        AS urgent,
+        bn."did_address_need_c"                 AS met,
+        bn."advocacyGroupId" IS NOT NULL        AS is_group,
+        bn."created_at",
+        bn."provided_date_c",
+        bn."resolved_date_c"
       FROM "BenevolenceNeed" bn
-      JOIN "Mom" m ON m."id" = bn."momId"
+      JOIN  "Mom" m  ON m."id" = bn."momId"
       LEFT JOIN "Affiliate" af ON af."id" = m."affiliate_id"
       WHERE bn."created_at" >= $1
         AND bn."created_at" <  $2
         AND bn."deleted_at" = 0
-      GROUP BY af.name, bn."type_c"
-      ORDER BY COUNT(*) DESC, af.name
-    `;
+    `, [startDate, endDate]);
 
-    const result = await pool.query(q, [startDate, endDate]);
-    const rows = result.rows;
-
-    // Roll up by affiliate
+    // ── Roll-ups ────────────────────────────────────────────
     const affiliateMap = {};
+    const typeMap      = {};
+    let totalFlagged = 0, totalMet = 0;
+    let urgentFlagged = 0, urgentMet = 0;
+    let groupFlagged  = 0, groupMet  = 0;
+    let openCount     = 0;
+    const fulfillDays = [];
+
     for (const r of rows) {
+      totalFlagged++;
+      if (r.met) totalMet++;
+      if (!r.met) openCount++;
+
+      // Urgency
+      if (r.urgent) { urgentFlagged++; if (r.met) urgentMet++; }
+
+      // Group vs individual
+      if (r.is_group) { groupFlagged++; if (r.met) groupMet++; }
+
+      // Time to fulfill (days from created_at to provided_date or resolved_date)
+      const fulfilled = r.provided_date_c || r.resolved_date_c;
+      if (r.met && fulfilled) {
+        const days = Math.round((new Date(fulfilled) - new Date(r.created_at)) / 86400000);
+        if (days >= 0 && days < 365) fulfillDays.push(days);
+      }
+
+      // By affiliate
       const aff = r.affiliate_name;
       if (!affiliateMap[aff]) affiliateMap[aff] = { affiliate: aff, flagged: 0, met: 0 };
-      affiliateMap[aff].flagged += r.flagged;
-      affiliateMap[aff].met    += r.met;
-    }
+      affiliateMap[aff].flagged++;
+      if (r.met) affiliateMap[aff].met++;
 
-    // Roll up by need type
-    const typeMap = {};
-    for (const r of rows) {
+      // By type
       const t = r.need_type;
       if (!typeMap[t]) typeMap[t] = { type: t, flagged: 0, met: 0 };
-      typeMap[t].flagged += r.flagged;
-      typeMap[t].met     += r.met;
+      typeMap[t].flagged++;
+      if (r.met) typeMap[t].met++;
     }
 
-    const totalFlagged = rows.reduce((s, r) => s + r.flagged, 0);
-    const totalMet     = rows.reduce((s, r) => s + r.met, 0);
+    // Avg and median days to fulfill
+    let avgDays = null, medianDays = null;
+    if (fulfillDays.length) {
+      avgDays = Math.round(fulfillDays.reduce((a, b) => a + b, 0) / fulfillDays.length);
+      const sorted = [...fulfillDays].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      medianDays = sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2) : sorted[mid];
+    }
 
     res.json({
-      period,
-      year,
-      startDate,
-      endDate,
-      total: { flagged: totalFlagged, met: totalMet },
+      period, year, startDate, endDate,
+      total: { flagged: totalFlagged, met: totalMet, open: openCount },
+      urgency: {
+        urgent:  { flagged: urgentFlagged,                    met: urgentMet },
+        routine: { flagged: totalFlagged - urgentFlagged,     met: totalMet - urgentMet },
+      },
+      delivery: {
+        avgDays,
+        medianDays,
+        measuredCount: fulfillDays.length,
+      },
+      group: {
+        group:      { flagged: groupFlagged,                   met: groupMet },
+        individual: { flagged: totalFlagged - groupFlagged,    met: totalMet - groupMet },
+      },
       byAffiliate: Object.values(affiliateMap).sort((a, b) => b.flagged - a.flagged),
-      byType: Object.values(typeMap).sort((a, b) => b.flagged - a.flagged),
+      byType:      Object.values(typeMap).sort((a, b) => b.flagged - a.flagged),
     });
   } catch (err) {
     console.error('[flagged-needs]', err);
-    res.status(500).json({ error: 'Query failed' });
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -14,14 +14,15 @@
   --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
   --green:#123939;--green-lt:#ecefe1;
   --yellow:#f2a136;--yellow-lt:#fdf4e6;
-  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;
-  --border:#E0E0E0;--bg:#fdf7f3;--white:#fff;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--lighter:#c0c0c0;
+  --border:#E0E0E0;--border-lt:#f0ece8;--bg:#fdf7f3;--white:#fff;
+  --nav-w:210px;
 }
-html{font-size:14px}
-body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
+html,body{height:100%}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);overflow:hidden}
 
 /* ── LOGIN ── */
-.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--bg)}
+.login-view{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:999}
 body.show-login .login-view{display:flex}
 body.logged-in .login-view{display:none!important}
 .login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
@@ -38,14 +39,14 @@ body.logged-in .login-view{display:none!important}
 .login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
 .login-btn:hover{background:var(--red-dk)}
 
-/* ── PORTAL ── */
-.portal-view{display:none;flex-direction:column;min-height:100vh}
+/* ── PORTAL SHELL ── */
+.portal-view{display:none;flex-direction:column;height:100vh}
 body.logged-in .portal-view{display:flex}
 
-/* ── NAV ── */
-.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+/* ── TOP NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
 .nav-left{display:flex;align-items:center;gap:14px}
-.nav-logo{height:30px;width:auto;display:block}
+.nav-logo{height:28px;width:auto;display:block}
 .nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
 .nav-hub a{color:rgba(255,255,255,.8);text-decoration:none;transition:color .15s}
 .nav-hub a:hover{color:var(--white)}
@@ -61,64 +62,139 @@ body.logged-in .portal-view{display:flex}
 .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
 .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
 
-/* ── REPORT HEADER ── */
-.report-header{background:var(--green);padding:20px 40px 16px;color:var(--white)}
-.report-header-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.report-header h1{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);line-height:1.2}
-.rh-subtitle{font-size:13px;opacity:.75;margin-top:4px;font-family:'Lato',sans-serif}
-.rh-badge{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.25);margin-top:6px}
-.period-tabs{display:flex;gap:6px;align-items:center;margin-top:2px}
-.period-tab{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s}
-.period-tab:hover{color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.35)}
-.period-tab.active{color:var(--white);background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45)}
+/* ── REPORT HEADER (green bar) ── */
+.report-header{background:var(--green);padding:16px 24px 14px;color:var(--white);flex-shrink:0}
+.rh-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.rh-eyebrow{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:3px}
+.rh-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--white);line-height:1.1}
+.rh-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px}
+.rh-right{display:flex;align-items:center;gap:10px}
+.rh-badge{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;padding:3px 9px;border-radius:4px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.2)}
 
-/* ── CONTENT ── */
-.content{flex:1;padding:32px 40px;max-width:860px;width:100%}
+/* Period dropdown */
+.period-wrap{display:flex;flex-direction:column;gap:4px}
+.period-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.5)}
+.period-select{
+  appearance:none;-webkit-appearance:none;
+  background-color:rgba(255,255,255,.1);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.7' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;
+  border:1px solid rgba(255,255,255,.22);border-radius:7px;
+  color:var(--white);padding:7px 32px 7px 12px;
+  font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;letter-spacing:.4px;
+  cursor:pointer;min-width:140px;transition:background-color .15s,border-color .15s
+}
+.period-select:hover{background-color:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36)}
+.period-select:focus{outline:none;border-color:rgba(255,255,255,.5)}
+.period-select option{background:var(--green);color:white}
 
-/* Loading / error */
+/* ── BODY SHELL ── */
+.body-shell{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT NAV ── */
+.leftnav{width:var(--nav-w);min-width:var(--nav-w);background:var(--white);border-right:1px solid var(--border-lt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.leftnav::-webkit-scrollbar{width:3px}
+.leftnav::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.ln-back{display:flex;align-items:center;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--border-lt);text-decoration:none;color:var(--mid);transition:color .12s}
+.ln-back:hover{color:var(--dark)}
+.ln-back svg{width:13px;height:13px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ln-back-text{font-family:'Oswald',sans-serif;font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:1px}
+
+.nav-group{padding:14px 0 6px}
+.nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mid);padding:0 16px 7px;display:block}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s}
+.nav-item:hover{background:#f7f2ee}
+.nav-item.active{background:#fef0ed;border-left-color:var(--red)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:14px;height:14px;fill:none;stroke:var(--light);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s}
+.nav-item:hover .nav-icon svg{stroke:var(--mid)}
+.nav-item.active .nav-icon svg{stroke:var(--red)}
+.nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--dark);flex:1}
+.nav-item.active .nav-text{color:var(--red);font-weight:600}
+.nav-div{height:1px;background:var(--border-lt);margin:4px 0}
+
+/* ── RIGHT PANEL ── */
+.rightpanel{flex:1;overflow-y:auto;padding:28px 32px}
+.rightpanel::-webkit-scrollbar{width:5px}
+.rightpanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── SECTIONS ── */
+.section-panel{display:none}
+.section-panel.active{display:block}
+
+/* ── LOADING / ERROR ── */
 .state-msg{text-align:center;padding:60px 20px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--light)}
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.spinner{width:30px;height:30px;border:2.5px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err-msg{background:var(--red-lt);border-left:3px solid var(--red);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--red-dk);margin-bottom:20px}
 
-/* Headline card */
-.headline{background:var(--green);color:var(--white);border-radius:12px;padding:24px 28px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
-.headline-left{flex:1;min-width:200px}
-.headline-eyebrow{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.65);margin-bottom:4px}
-.headline-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:.5px;margin-bottom:4px}
-.headline-note{font-size:12px;color:rgba(255,255,255,.7)}
-.headline-stats{display:flex;gap:28px;align-items:flex-end}
+/* ── HEADLINE CARD ── */
+.headline{background:var(--green);color:var(--white);border-radius:12px;padding:22px 26px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px}
+.headline-left{flex:1;min-width:180px}
+.hl-eyebrow{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:rgba(255,255,255,.6);margin-bottom:4px}
+.hl-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.4px;margin-bottom:3px}
+.hl-note{font-size:12px;color:rgba(255,255,255,.65)}
+.hl-stats{display:flex;gap:24px;align-items:flex-end}
 .hstat{text-align:right}
-.hstat-num{font-family:'Shrikhand',cursive;font-weight:400;font-size:34px;line-height:1;color:var(--white);font-variant-numeric:tabular-nums}
-.hstat-num.big{font-size:46px;color:var(--yellow)}
-.hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.6);margin-top:5px}
+.hstat-num{font-family:'Shrikhand',cursive;font-size:32px;line-height:1;color:var(--white);font-variant-numeric:tabular-nums}
+.hstat-num.big{font-size:44px;color:var(--yellow)}
+.hstat-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.55);margin-top:4px}
 
-/* Section */
-.section{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
-.section-head{padding:14px 20px 12px;border-bottom:1px solid var(--border)}
-.section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
+/* ── STAT GRID (summary cards) ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.stat-card-num{font-family:'Shrikhand',cursive;font-size:28px;color:var(--dark);line-height:1;margin-bottom:4px}
+.stat-card-num.green{color:var(--green)}
+.stat-card-num.yellow{color:var(--yellow)}
+.stat-card-num.red{color:var(--red)}
+.stat-card-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--light)}
+.stat-card-note{font-size:11px;color:var(--light);margin-top:4px;line-height:1.4}
 
-/* Table */
+/* ── DATA TABLE SECTIONS ── */
+.data-section{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.data-section-head{padding:13px 20px 11px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
+.data-section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
+.data-section-sub{font-size:11.5px;color:var(--light);font-style:italic}
+
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);text-align:left;padding:10px 20px;border-bottom:1px solid var(--border);background:#fafaf8}
 th.right{text-align:right}
-td{padding:13px 20px;border-bottom:1px solid var(--border);vertical-align:top}
+td{padding:12px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 td.right{text-align:right;font-variant-numeric:tabular-nums}
 .row-name{font-weight:700;color:var(--dark)}
-.row-note{font-size:11.5px;color:var(--light);font-style:italic;margin-top:3px}
+.row-note{font-size:11.5px;color:var(--light);font-style:italic;margin-top:2px}
 .pct{font-weight:700;font-size:14px}
-.pct-sup{color:var(--light);font-style:italic;font-weight:400}
+.pct-sup{color:var(--light);font-weight:400}
 .pill{display:inline-block;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;background:var(--yellow-lt);color:var(--yellow);margin-left:6px;vertical-align:middle}
 .lead-row td{background:var(--green-lt)}
 .lead-row .row-name{color:var(--green)}
 
+/* Bar fill */
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+.bar-pct{font-weight:700;font-size:13px;min-width:38px;text-align:right}
+
+/* Two-row comparison */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 20px}
+.compare-cell{background:var(--bg);border-radius:8px;padding:14px 16px}
+.compare-lbl{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:6px}
+.compare-num{font-family:'Shrikhand',cursive;font-size:26px;color:var(--dark);line-height:1;margin-bottom:2px}
+.compare-sub{font-size:11.5px;color:var(--light)}
+
 /* Footnote */
-.footnote{font-size:12px;color:var(--mid);line-height:1.65;padding:16px 20px;border-top:1px solid var(--border);background:#fafaf8}
+.footnote{font-size:11.5px;color:var(--mid);line-height:1.65;padding:12px 20px;border-top:1px solid var(--border);background:#fafaf8}
 .footnote strong{color:var(--dark)}
 
-/* YTD note */
-.ytd-note{background:var(--yellow-lt);border:1px solid rgba(242,161,54,.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:#6a4a10;line-height:1.55}
+/* Section intro text */
+.sec-intro{font-size:13px;color:var(--mid);line-height:1.65;margin-bottom:20px;max-width:640px}
+.sec-intro strong{color:var(--dark)}
+
+/* Insight callout */
+.insight{background:var(--green-lt);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--dark);line-height:1.6}
+.insight strong{color:var(--green)}
 </style>
 </head>
 <body>
@@ -139,6 +215,7 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
 <!-- PORTAL -->
 <div class="portal-view">
 
+  <!-- TOP NAV -->
   <nav class="nav">
     <div class="nav-left">
       <a href="/"><img class="nav-logo" src="/email-logo.png" alt="ĒMA"></a>
@@ -162,43 +239,88 @@ td.right{text-align:right;font-variant-numeric:tabular-nums}
     </div>
   </nav>
 
+  <!-- REPORT HEADER -->
   <div class="report-header">
-    <div class="report-header-top">
+    <div class="rh-inner">
       <div>
-        <div style="font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.55);margin-bottom:4px">HQ Resources · Investor Report Pulse</div>
-        <h1>Flagged Needs Summary</h1>
-        <div class="rh-subtitle">Needs moms surfaced and how often they were met — by affiliate and type.</div>
-        <div class="rh-badge">Trellis-native records · Live from database</div>
+        <div class="rh-eyebrow">HQ Resources · Investor Report Pulse</div>
+        <div class="rh-title">Flagged Needs Summary</div>
+        <div class="rh-sub">Needs moms surfaced and how often they were met — by affiliate and type.</div>
       </div>
-      <div class="period-tabs">
-        <button class="period-tab active" onclick="loadPeriod('q1')">Q1 2026</button>
-        <button class="period-tab" onclick="loadPeriod('q2')">Q2 2026</button>
-        <button class="period-tab" onclick="loadPeriod('ytd')">YTD 2026</button>
+      <div class="rh-right">
+        <span class="rh-badge">Live from Trellis</span>
+        <div class="period-wrap">
+          <div class="period-lbl">Time period</div>
+          <select class="period-select" id="period-select" onchange="loadPeriod(this.value)">
+            <option value="ytd" selected>YTD 2026</option>
+            <option value="q1">Q1 2026 (Jan–Mar)</option>
+            <option value="q2">Q2 2026 (Apr–Jun)</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="content" id="content">
-    <div class="state-msg"><div class="spinner"></div>Loading…</div>
-  </div>
+  <!-- BODY -->
+  <div class="body-shell">
 
+    <!-- LEFT NAV -->
+    <aside class="leftnav">
+      <a class="ln-back" href="/#hq-resources">
+        <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+        <span class="ln-back-text">HQ Resources</span>
+      </a>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Report Sections</span>
+        <div class="nav-item active" onclick="showSection('overview',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
+          <span class="nav-text">Overview</span>
+        </div>
+        <div class="nav-item" onclick="showSection('affiliates',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/></svg></div>
+          <span class="nav-text">By Affiliate</span>
+        </div>
+        <div class="nav-item" onclick="showSection('types',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg></div>
+          <span class="nav-text">By Need Type</span>
+        </div>
+        <div class="nav-item" onclick="showSection('urgency',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M8,2 L14,5 L14,10 C14,13 8,15 8,15 C8,15 2,13 2,10 L2,5 Z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="5.5" r=".5" fill="currentColor" stroke="none"/></svg></div>
+          <span class="nav-text">Urgency</span>
+        </div>
+        <div class="nav-item" onclick="showSection('delivery',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10,10"/></svg></div>
+          <span class="nav-text">Time to Fulfill</span>
+        </div>
+        <div class="nav-item" onclick="showSection('scope',this)">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="6" cy="6" r="3.5"/><path d="M10.5,6 C10.5,8.5 8.5,10.5 6,10.5"/><circle cx="11" cy="11" r="2.5"/></svg></div>
+          <span class="nav-text">Group vs Individual</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT PANEL -->
+    <div class="rightpanel" id="rightpanel">
+      <div class="state-msg"><div class="spinner"></div>Loading…</div>
+    </div>
+
+  </div><!-- /body-shell -->
 </div><!-- /portal-view -->
 
 <script>
-var CURRENT_PERIOD = 'q1';
+var DATA = null;
+var ACTIVE_SECTION = 'overview';
 var YEAR = 2026;
-
-// Friendly date ranges for display
-var PERIOD_LABELS = {
-  q1:  { title: 'All affiliates · all types', note: 'January 1 – March 31, 2026', eyebrow: 'National Total' },
-  q2:  { title: 'All affiliates · all types', note: 'April 1 – June 30, 2026',    eyebrow: 'National Total' },
-  ytd: { title: 'All affiliates · all types', note: 'January 1 – June 30, 2026',  eyebrow: 'YTD National Total' },
-};
-
-// Small-n threshold for suppressing rates
 var SMALL_N = 20;
 
-// ── AUTH ────────────────────────────────────────────────
+var PERIOD_NOTES = {
+  ytd: 'January 1 – June 30, 2026',
+  q1:  'January 1 – March 31, 2026',
+  q2:  'April 1 – June 30, 2026',
+};
+
+// ── AUTH ────────────────────────────────────────────
 
 async function doLogin() {
   var u = document.getElementById('lu').value.trim().toLowerCase();
@@ -206,175 +328,292 @@ async function doLogin() {
   var err = document.getElementById('login-err');
   err.classList.remove('show');
   try {
-    var r = await fetch('/api/login', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username: u, password: p})
-    });
+    var r = await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
     if (!r.ok) { err.classList.add('show'); return; }
     var mr = await fetch('/api/me');
-    if (mr.ok) {
-      var md = await mr.json();
-      if (md.user) { applySession(md.user); return; }
-    }
+    if (mr.ok) { var md = await mr.json(); if (md.user) { applySession(md.user); return; } }
     err.classList.add('show');
   } catch(e) { err.classList.add('show'); }
 }
 
 async function doSignOut() {
-  try { await fetch('/api/logout', {method:'POST'}); } catch(e) {}
-  window.location.href = '/';
+  try { await fetch('/api/logout',{method:'POST'}); } catch(e) {}
+  window.location.href='/';
 }
 
 function applySession(u) {
-  if (u.role !== 'administrator') { window.location.href = '/'; return; }
+  if (u.role !== 'administrator') { window.location.href='/'; return; }
   document.body.classList.remove('show-login');
   document.body.classList.add('logged-in');
-  var first = u.firstName || '', last = u.lastName || '';
-  var av = document.getElementById('nav-avatar');
-  var nm = document.getElementById('nav-name');
-  var rl = document.getElementById('nav-role');
-  if (av) av.textContent = ((first[0]||'')+(last[0]||'')).toUpperCase();
-  if (nm) nm.textContent = (first+' '+last).trim();
-  if (rl) rl.textContent = 'HQ Admin';
-  document.getElementById('nav-scope').style.display = '';
-  document.getElementById('nav-scope-sep').style.display = '';
-  loadPeriod('q1');
+  var first=u.firstName||'',last=u.lastName||'';
+  var av=document.getElementById('nav-avatar'),nm=document.getElementById('nav-name'),rl=document.getElementById('nav-role');
+  if(av) av.textContent=((first[0]||'')+(last[0]||'')).toUpperCase();
+  if(nm) nm.textContent=(first+' '+last).trim();
+  if(rl) rl.textContent='HQ Admin';
+  document.getElementById('nav-scope').style.display='';
+  document.getElementById('nav-scope-sep').style.display='';
+  loadPeriod('ytd');
 }
 
-// ── DATA ────────────────────────────────────────────────
+// ── DATA ────────────────────────────────────────────
 
 async function loadPeriod(period) {
-  CURRENT_PERIOD = period;
-
-  // Update tab active state
-  document.querySelectorAll('.period-tab').forEach(function(btn, i) {
-    btn.classList.toggle('active', ['q1','q2','ytd'][i] === period);
-  });
-
-  // Show spinner
-  document.getElementById('content').innerHTML =
-    '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
-
+  document.getElementById('period-select').value = period;
+  setLoading();
   try {
-    var r = await fetch('/api/flagged-needs?period=' + period + '&year=' + YEAR);
-    if (!r.ok) { throw new Error('HTTP ' + r.status); }
-    var data = await r.json();
-    renderReport(data);
+    var r = await fetch('/api/flagged-needs?period='+period+'&year='+YEAR);
+    if (!r.ok) { var e=await r.json(); throw new Error(e.error||'HTTP '+r.status); }
+    DATA = await r.json();
+    renderSection(ACTIVE_SECTION);
   } catch(e) {
-    document.getElementById('content').innerHTML =
-      '<div class="err-msg">Could not load data — ' + e.message + '</div>';
+    document.getElementById('rightpanel').innerHTML = '<div class="err-msg">Could not load data — '+esc(e.message)+'</div>';
   }
 }
 
-// ── RENDER ───────────────────────────────────────────────
+function setLoading() {
+  document.getElementById('rightpanel').innerHTML = '<div class="state-msg"><div class="spinner"></div>Loading…</div>';
+}
+
+// ── NAV ─────────────────────────────────────────────
+
+function showSection(id, el) {
+  ACTIVE_SECTION = id;
+  document.querySelectorAll('.leftnav .nav-item').forEach(function(n){ n.classList.remove('active'); });
+  el.classList.add('active');
+  if (DATA) renderSection(id);
+  document.getElementById('rightpanel').scrollTop = 0;
+}
+
+function renderSection(id) {
+  var html = '';
+  if (id === 'overview')   html = renderOverview();
+  if (id === 'affiliates') html = renderAffiliates();
+  if (id === 'types')      html = renderTypes();
+  if (id === 'urgency')    html = renderUrgency();
+  if (id === 'delivery')   html = renderDelivery();
+  if (id === 'scope')      html = renderScope();
+  document.getElementById('rightpanel').innerHTML = html || '<div class="state-msg">No data.</div>';
+}
+
+// ── HELPERS ─────────────────────────────────────────
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function pct(met, flagged) {
   if (!flagged) return '—';
   return Math.round(met / flagged * 100) + '%';
 }
 
-function renderReport(d) {
-  var lbl = PERIOD_LABELS[d.period] || PERIOD_LABELS.q1;
-  var totalFlagged = d.total.flagged;
-  var totalMet    = d.total.met;
-  var metRate     = totalFlagged ? Math.round(totalMet / totalFlagged * 100) : 0;
+function bar(met, flagged) {
+  if (!flagged) return '<span class="pct-sup">—</span>';
+  var p = Math.round(met / flagged * 100);
+  return '<div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:'+p+'%"></div></div><span class="bar-pct">'+p+'%</span></div>';
+}
 
-  // YTD note if Q2 is zero
-  var ytdNote = '';
-  if (d.period === 'ytd') {
-    // Check if any Q2 data exists by seeing if endDate covers Q2
-    ytdNote = '<div class="ytd-note">YTD covers January 1 – June 30, 2026. Data is pulled live from Trellis.</div>';
+function periodNote() { return PERIOD_NOTES[DATA.period] || ''; }
+
+// ── SECTIONS ────────────────────────────────────────
+
+function renderOverview() {
+  var d = DATA;
+  var tf = d.total.flagged, tm = d.total.met, to = d.total.open;
+  var metRate = tf ? Math.round(tm/tf*100) : 0;
+  var urgPct  = tf ? Math.round(d.urgency.urgent.flagged/tf*100) : 0;
+
+  return ''
+    + '<div class="headline">'
+    +   '<div class="headline-left">'
+    +     '<div class="hl-eyebrow">National Total · All affiliates</div>'
+    +     '<div class="hl-title">'+esc(periodNote())+'</div>'
+    +   '</div>'
+    +   '<div class="hl-stats">'
+    +     hstat(tf,'Flagged')
+    +     hstat(tm,'Met')
+    +     hstat(to,'Still Open')
+    +     hstatBig(metRate+'%','Met Rate')
+    +   '</div>'
+    + '</div>'
+    + '<div class="stat-grid">'
+    +   statCard(tf,'','Total Needs Flagged','')
+    +   statCard(tm,'green','Needs Met','fulfilled this period')
+    +   statCard(to,'red','Still Open','not yet addressed')
+    +   statCard(d.urgency.urgent.flagged,'yellow','Marked Urgent',urgPct+'% of all needs')
+    +   statCard(d.delivery.avgDays !== null ? d.delivery.avgDays+'d' : '—','','Avg Days to Fulfill','from flag to fulfillment')
+    +   statCard(d.group.group.flagged,'','Group Needs','advocacy group level')
+    + '</div>'
+    + insightBar(d);
+}
+
+function insightBar(d) {
+  var lines = [];
+  var tf = d.total.flagged, tm = d.total.met;
+  if (tf) {
+    var mr = Math.round(tm/tf*100);
+    if (mr >= 80) lines.push('<strong>Strong fulfillment:</strong> '+mr+'% of needs met this period.');
+    else if (mr >= 65) lines.push('<strong>Solid fulfillment:</strong> '+mr+'% met — room to close the remaining gap.');
+    else lines.push('<strong>Fulfillment opportunity:</strong> '+mr+'% met. Worth reviewing what's keeping needs open.');
   }
+  if (d.urgency.urgent.flagged > 0) {
+    var uMet = Math.round(d.urgency.urgent.met/d.urgency.urgent.flagged*100);
+    var rMet = d.urgency.routine.flagged ? Math.round(d.urgency.routine.met/d.urgency.routine.flagged*100) : null;
+    if (rMet !== null) {
+      var diff = uMet - rMet;
+      if (Math.abs(diff) >= 5) lines.push('Urgent needs were met at <strong>'+uMet+'%</strong> vs '+rMet+'% for routine — a '+(diff>=0?'+':'')+diff+'pt difference.');
+    }
+  }
+  if (d.delivery.avgDays !== null) lines.push('When needs are recorded as fulfilled, it takes an average of <strong>'+d.delivery.avgDays+' days</strong> (median '+d.delivery.medianDays+'d).');
+  if (!lines.length) return '';
+  return '<div class="insight">'+lines.join('<br>')+'</div>';
+}
 
-  // Headline
-  var headline = '<div class="headline">'
-    + '<div class="headline-left">'
-    + '<div class="headline-eyebrow">' + lbl.eyebrow + '</div>'
-    + '<div class="headline-title">' + lbl.title + '</div>'
-    + '<div class="headline-note">' + lbl.note + '</div>'
-    + '</div>'
-    + '<div class="headline-stats">'
-    + '<div class="hstat"><div class="hstat-num">' + totalFlagged + '</div><div class="hstat-lbl">Flagged</div></div>'
-    + '<div class="hstat"><div class="hstat-num">' + totalMet + '</div><div class="hstat-lbl">Met</div></div>'
-    + '<div class="hstat"><div class="hstat-num big">' + (totalFlagged ? metRate + '%' : '—') + '</div><div class="hstat-lbl">Met Rate</div></div>'
-    + '</div>'
-    + '</div>';
+function hstat(n, lbl) {
+  return '<div class="hstat"><div class="hstat-num">'+n+'</div><div class="hstat-lbl">'+lbl+'</div></div>';
+}
+function hstatBig(n, lbl) {
+  return '<div class="hstat"><div class="hstat-num big">'+n+'</div><div class="hstat-lbl">'+lbl+'</div></div>';
+}
+function statCard(num, color, lbl, note) {
+  return '<div class="stat-card"><div class="stat-card-num'+(color?' '+color:'')+'">'+num+'</div><div class="stat-card-lbl">'+lbl+'</div>'+(note?'<div class="stat-card-note">'+note+'</div>':'')+'</div>';
+}
 
-  // By Affiliate table
-  var affRows = d.byAffiliate.map(function(a, i) {
-    var isLead = i === 0 && a.flagged > SMALL_N;
-    var smallN = a.flagged < SMALL_N;
-    var pctVal = smallN ? '<span class="pct-sup">—</span>' : '<span class="pct">' + pct(a.met, a.flagged) + '</span>';
-    var note   = smallN ? '<div class="row-note">Below interpretation threshold (n &lt; ' + SMALL_N + ')</div>' : '';
-    var pill   = smallN ? '<span class="pill">Small n</span>' : '';
-    return '<tr' + (isLead ? ' class="lead-row"' : '') + '>'
-      + '<td><div class="row-name">' + esc(a.affiliate) + pill + '</div>' + note + '</td>'
-      + '<td class="right">' + a.flagged + '</td>'
-      + '<td class="right">' + a.met + '</td>'
-      + '<td class="right">' + pctVal + '</td>'
-      + '</tr>';
+function renderAffiliates() {
+  var rows = DATA.byAffiliate.map(function(a,i){
+    var lead = i===0 && a.flagged>=SMALL_N;
+    var small = a.flagged<SMALL_N;
+    var pill = small ? '<span class="pill">Small n</span>' : '';
+    var note = small ? '<div class="row-note">Below interpretation threshold (n &lt; '+SMALL_N+')</div>' : '';
+    var pctVal = small ? '<span class="pct-sup">—</span>' : bar(a.met,a.flagged);
+    return '<tr'+(lead?' class="lead-row"':'')+'>'
+      +'<td><div class="row-name">'+esc(a.affiliate)+pill+'</div>'+note+'</td>'
+      +'<td class="right">'+a.flagged+'</td>'
+      +'<td class="right">'+a.met+'</td>'
+      +'<td style="min-width:160px">'+pctVal+'</td>'
+      +'</tr>';
   }).join('');
 
-  var affTable = '<div class="section">'
-    + '<div class="section-head"><div class="section-label">By Affiliate</div></div>'
-    + '<table><thead><tr>'
-    + '<th>Affiliate</th><th class="right">Flagged</th><th class="right">Met</th><th class="right">% Met</th>'
-    + '</tr></thead><tbody>' + affRows + '</tbody></table>'
-    + '<div class="footnote">'
-    + '<strong>Source:</strong> BenevolenceNeed table, Trellis Railway PostgreSQL. '
-    + '<strong>Window:</strong> ' + lbl.note + ' (created_at). '
-    + '<strong>Met:</strong> did_address_need_c = TRUE. '
-    + 'Trellis-native records only — PromiseServes-migrated history excluded.'
-    + '</div>'
-    + '</div>';
+  return '<p class="sec-intro">Volume and fulfillment rate for each affiliate. Affiliates with fewer than '+SMALL_N+' records have their rate suppressed — too small for a reliable percentage.</p>'
+    + tableSection('By Affiliate', null,
+        '<tr><th>Affiliate</th><th class="right">Flagged</th><th class="right">Met</th><th>% Met</th></tr>',
+        rows,
+        'Source: BenevolenceNeed joined to Mom → Affiliate. Window: '+periodNote()+'. Trellis-native records only.'
+      );
+}
 
-  // By Type table
-  var typeRows = d.byType.map(function(t) {
+function renderTypes() {
+  var rows = DATA.byType.map(function(t){
     return '<tr>'
-      + '<td><div class="row-name">' + esc(t.type) + '</div></td>'
-      + '<td class="right">' + t.flagged + '</td>'
-      + '<td class="right">' + t.met + '</td>'
-      + '<td class="right"><span class="pct">' + pct(t.met, t.flagged) + '</span></td>'
-      + '</tr>';
+      +'<td><div class="row-name">'+esc(t.type)+'</div></td>'
+      +'<td class="right">'+t.flagged+'</td>'
+      +'<td class="right">'+t.met+'</td>'
+      +'<td style="min-width:160px">'+bar(t.met,t.flagged)+'</td>'
+      +'</tr>';
   }).join('');
 
-  var typeTable = '<div class="section">'
-    + '<div class="section-head"><div class="section-label">By Need Type</div></div>'
-    + '<table><thead><tr>'
-    + '<th>Type</th><th class="right">Flagged</th><th class="right">Met</th><th class="right">% Met</th>'
-    + '</tr></thead><tbody>' + typeRows + '</tbody></table>'
+  var lowestType = DATA.byType.slice().sort(function(a,b){ return (a.met/a.flagged)-(b.met/b.flagged); })[0];
+  var insight = lowestType
+    ? '<div class="insight">Lowest fulfillment: <strong>'+esc(lowestType.type)+'</strong> at '+pct(lowestType.met,lowestType.flagged)+' met ('+lowestType.flagged+' flagged). This is the need category with the most room to close.</div>'
+    : '';
+
+  return '<p class="sec-intro">Breaks down needs by category. Identifies where fulfillment is strongest and where the biggest gaps exist.</p>'
+    + insight
+    + tableSection('By Need Type', null,
+        '<tr><th>Type</th><th class="right">Flagged</th><th class="right">Met</th><th>% Met</th></tr>',
+        rows, null
+      );
+}
+
+function renderUrgency() {
+  var urg = DATA.urgency.urgent;
+  var rou = DATA.urgency.routine;
+  var diff = (urg.flagged && rou.flagged)
+    ? (Math.round(urg.met/urg.flagged*100) - Math.round(rou.met/rou.flagged*100))
+    : null;
+  var diffNote = diff !== null
+    ? 'Urgent needs are met at a rate '+(diff>=0?'+':'')+diff+'pt '+(diff>=0?'higher':'lower')+' than routine needs.'
+    : '';
+
+  return '<p class="sec-intro">Shows whether urgent needs are being prioritized — and whether that urgency flag is predictive of faster or higher fulfillment.</p>'
+    + (diffNote ? '<div class="insight">'+diffNote+'</div>' : '')
+    + '<div class="data-section">'
+    +   '<div class="data-section-head"><div class="data-section-label">Urgent vs Routine</div></div>'
+    +   '<div class="compare-grid">'
+    +     compareCell('Urgent Needs',urg.flagged+' flagged',pct(urg.met,urg.flagged)+' met',urg.met+' fulfilled')
+    +     compareCell('Routine Needs',rou.flagged+' flagged',pct(rou.met,rou.flagged)+' met',rou.met+' fulfilled')
+    +   '</div>'
+    + '</div>'
+    + tableSection('By Affiliate — Urgent Only', 'How each affiliate handles urgent needs specifically.',
+        '<tr><th>Affiliate</th><th class="right">Urgent Flagged</th><th class="right">Urgent Met</th><th>% Met</th></tr>',
+        DATA.byAffiliate.map(function(a){
+          // we don't have per-affiliate urgency from the API yet — show note
+          return '';
+        }).join('') || '<tr><td colspan="4" style="padding:14px 20px;color:var(--light);font-style:italic;font-size:13px">Affiliate-level urgency breakdown coming — requires additional API rollup.</td></tr>',
+        null
+      );
+}
+
+function renderDelivery() {
+  var del = DATA.delivery;
+  var hasData = del.avgDays !== null;
+
+  return '<p class="sec-intro">Tracks how long it takes from when a need is flagged to when it is marked fulfilled. Calculated from <strong>created_at</strong> to <strong>provided_date_c</strong> or <strong>resolved_date_c</strong>, whichever is recorded.</p>'
+    + '<div class="data-section">'
+    +   '<div class="data-section-head"><div class="data-section-label">Time to Fulfill</div></div>'
+    +   '<div class="compare-grid">'
+    +     compareCell('Avg Days', hasData ? del.avgDays+' days' : '—', hasData ? 'from flag to fulfillment' : 'no fulfillment dates recorded','')
+    +     compareCell('Median Days', hasData ? del.medianDays+' days' : '—', hasData ? 'half of needs fulfilled faster' : '','')
+    +     compareCell('Measurable Records', hasData ? del.measuredCount : '—', 'have a fulfillment date recorded','')
+    +     compareCell('Without Date', DATA.total.met - (del.measuredCount||0), 'met but no date recorded','')
+    +   '</div>'
+    +   '<div class="footnote">A need is counted here only if it is marked met <strong>and</strong> has a provided_date_c or resolved_date_c. Needs met without a recorded date are excluded from the time calculation.</div>'
     + '</div>';
-
-  // No data state
-  if (!totalFlagged) {
-    document.getElementById('content').innerHTML = ytdNote
-      + '<div class="state-msg">No records found for this period.</div>';
-    return;
-  }
-
-  document.getElementById('content').innerHTML = ytdNote + headline + affTable + typeTable;
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function renderScope() {
+  var g = DATA.group.group;
+  var ind = DATA.group.individual;
+
+  return '<p class="sec-intro">Some needs are tied to an advocacy group rather than an individual mom. This view separates group-level needs from individual needs to show how each category is served.</p>'
+    + '<div class="data-section">'
+    +   '<div class="data-section-head"><div class="data-section-label">Group vs Individual</div></div>'
+    +   '<div class="compare-grid">'
+    +     compareCell('Individual Needs',ind.flagged+' flagged',pct(ind.met,ind.flagged)+' met',ind.met+' fulfilled')
+    +     compareCell('Group Needs',g.flagged+' flagged',pct(g.met,g.flagged)+' met',g.met+' fulfilled')
+    +   '</div>'
+    +   '<div class="footnote">Group needs are identified by a non-null advocacyGroupId on the BenevolenceNeed record.</div>'
+    + '</div>';
 }
 
-// ── BOOT ────────────────────────────────────────────────
+// ── HTML HELPERS ────────────────────────────────────
 
-(async function() {
+function tableSection(label, sub, thead, tbody, footnote) {
+  return '<div class="data-section">'
+    +'<div class="data-section-head"><div class="data-section-label">'+label+'</div>'+(sub?'<div class="data-section-sub">'+sub+'</div>':'')+'</div>'
+    +'<table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table>'
+    +(footnote?'<div class="footnote">'+esc(footnote)+'</div>':'')
+    +'</div>';
+}
+
+function compareCell(lbl, num, sub, extra) {
+  return '<div class="compare-cell">'
+    +'<div class="compare-lbl">'+lbl+'</div>'
+    +'<div class="compare-num">'+num+'</div>'
+    +(sub?'<div class="compare-sub">'+sub+'</div>':'')
+    +(extra?'<div class="compare-sub">'+extra+'</div>':'')
+    +'</div>';
+}
+
+// ── BOOT ────────────────────────────────────────────
+
+(async function(){
   try {
     var r = await fetch('/api/me');
-    if (r.ok) {
-      var d = await r.json();
-      if (d.user) { applySession(d.user); return; }
-    }
+    if (r.ok) { var d=await r.json(); if (d.user) { applySession(d.user); return; } }
   } catch(e) {}
   document.body.classList.add('show-login');
 })();
 
-document.getElementById('lp').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doLogin();
+document.getElementById('lp').addEventListener('keydown', function(e){
+  if (e.key==='Enter') doLogin();
 });
 </script>
 </body>

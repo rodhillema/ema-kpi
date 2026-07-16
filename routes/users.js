@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
         ORDER BY u."lastName", u."firstName"
       `, params),
       pool.query(
-        `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 ORDER BY "name"`
+        `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 AND "status" = 'Active' ORDER BY "name"`
       ),
     ]);
 

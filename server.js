@@ -302,7 +302,7 @@ app.get('/api/admin/audit-log-probe', requireAuth, async (req, res) => {
 app.get('/api/affiliates', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 ORDER BY "name"`
+      `SELECT "id", "name" FROM "Affiliate" WHERE "deleted_at" = 0 AND "status" = 'Active' ORDER BY "name"`
     );
     res.json(rows);
   } catch (err) {

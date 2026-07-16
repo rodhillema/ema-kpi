@@ -83,7 +83,7 @@ const PERIODS = {
   },
   'q2': {
     PERIOD_START:     '2026-01-01',  // YTD — full year to date, Jan 1 through period end
-    PERIOD_END:       '2026-06-26',  // update to 2026-06-30 after quarter closes
+    PERIOD_END:       '2026-06-30',
     PERIOD_GRACE_END: '2026-07-31',
     PERIOD_LABEL:     'Q2 2026 YTD',
     PERIOD_KEY:       '2026-Q2',

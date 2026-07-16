@@ -3421,7 +3421,7 @@
   });
   // "Q1" / "Q2" standalone quarter label
   document.querySelectorAll('.period-quarter-inline').forEach(function(el) {
-   el.textContent = (meta.period || 'Q1 2026').split(' ')[0];
+   var p = meta.period || 'Q1 2026'; el.textContent = p === 'Q2 2026 YTD' ? 'Q2 2026 YTD' : p.split(' ')[0];
   });
   // "Jan 1 to Mar 31" / "Apr 1 to Jun 30"
   var dateRanges = { 'Q1 2026': 'Jan 1 to Mar 31', 'Q2 2026 YTD': 'Jan 1 to Jun 30' };

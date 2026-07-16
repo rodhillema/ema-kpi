@@ -527,14 +527,14 @@ function render(d) {
     // Check if denominators differ (domain data gap)
     var epDomainGap = (rates.ep.C.den||0) - (rates.ep.A.den||0);
     var rrDomainGap = (rates.rr.C.den||0) - (rates.rr.A.den||0);
-    if(epDomainGap > 0 || rrDomainGap > 0) {
-      html += '<div class="callout alert"><strong>Why the denominators differ:</strong> '
-        +'"Current KPI 3" scores every paired mom because it just sums raw answers — even a score of 0 counts. '
-        +'"Domain-weighted" and "Any question improved" can only score moms whose post-assessment was actually filled out question by question in Trellis. '
-        +(epDomainGap>0?'EP: '+epDomainGap+' of '+(rates.ep.C.den||0)+' paired moms have a post-assessment with no question responses recorded (assessment was opened but not completed). ':'')
-        +(rrDomainGap>0?'RR: '+rrDomainGap+' of '+(rates.rr.C.den||0)+' paired moms have a post-assessment with no question responses recorded. ':'')
-        +'<strong>The domain-based methods are only computed for moms who completed their post-assessment — their rates are not directly comparable to the Current KPI 3 rate.</strong> '
-        +'This is a data completeness issue, not a scoring choice.</div>';
+    var epIncomplete = (rates.ep.C.den||0) < (counts.ep_pair||0) ? counts.ep_pair - rates.ep.C.den : 0;
+    var rrIncomplete = (rates.rr.C.den||0) < (counts.rr_pair||0) ? counts.rr_pair - rates.rr.C.den : 0;
+    if(epIncomplete > 0 || rrIncomplete > 0) {
+      html += '<div class="callout warning"><strong>Incomplete assessments excluded from all methods:</strong> '
+        +'A mom is only counted if she answered questions on both her pre- and post-assessment. '
+        +(epIncomplete>0?'EP: '+epIncomplete+' paired mom'+(epIncomplete>1?'s':'')+' had a post-assessment opened in Trellis but no questions answered — excluded from all scoring. ':'')
+        +(rrIncomplete>0?'RR: '+rrIncomplete+' paired mom'+(rrIncomplete>1?'s':'')+' same situation. ':'')
+        +'This is a workflow gap, not a scoring choice.</div>';
     }
 
     html += '<div class="tbl-wrap"><table><thead><tr><th>Track</th><th>Method</th><th>Moms improved</th><th>Total paired</th><th>Rate</th><th>What this means</th></tr></thead><tbody>';

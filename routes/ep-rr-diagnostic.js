@@ -314,7 +314,7 @@ router.get('/', requireAdmin, async (req, res) => {
     const momResults = pairedWithBoth.map(d => {
       const pre  = score(d.pre.ar_id,  d.pre.sum_score);
       const post = score(d.post.ar_id, d.post.sum_score);
-      const iC = post.C > pre.C;
+      const iC = d.pre.answered_count > 0 && d.post.answered_count > 0 ? post.C > pre.C : null;
       const iA = pre.A != null && post.A != null ? post.A > pre.A : null;
 
       // Any-domain: for tracks with real domain structure (EP), compare domain means.

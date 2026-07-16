@@ -453,19 +453,32 @@ function render(d) {
   html += '<div class="kpi-card '+((counts.rr_pair||0)<5?'kred':(counts.rr_pair||0)<10?'kywarn':'')+'"><div class="knum">'+(counts.rr_pair||0)+'</div><div class="klbl">RR Paired'+smallN(counts.rr_pair||0)+'</div></div>';
   html += '</div>';
   if(latDays.length>0){
-    html += '<div class="subsection">Pre-to-Post Latency (Days)</div><div class="tbl-wrap"><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-    html += '<tr><td>n</td><td>'+latDays.length+'</td></tr><tr><td>Median days</td><td>'+median(latDays)+'</td></tr><tr><td>Min</td><td>'+latDays[0]+'</td></tr><tr><td>Max</td><td>'+latDays[latDays.length-1]+'</td></tr>';
     var neg=latDays.filter(function(x){return x<0;}).length;
-    html += '<tr><td>Post before pre</td><td class="'+(neg>0?'flag-text':'')+'">'+neg+(neg>0?' - data integrity flag':'')+'</td></tr>';
-    html += '</tbody></table></div>';
+    html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
+      +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0;transition:transform .2s" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+      +'Pre-to-Post Latency (Days) &nbsp;<span style="font-weight:300;color:var(--mid)">median '+median(latDays)+' days &nbsp;·&nbsp; n='+latDays.length+(neg>0?' &nbsp;·&nbsp; <span style="color:var(--red)">'+neg+' post before pre</span>':'')+'</span>'
+      +'</summary>'
+      +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>'
+      +'<tr><td>Pairs (n)</td><td>'+latDays.length+'</td></tr>'
+      +'<tr><td>Median days pre → post</td><td>'+median(latDays)+'</td></tr>'
+      +'<tr><td>Shortest gap</td><td>'+latDays[0]+'</td></tr>'
+      +'<tr><td>Longest gap</td><td>'+latDays[latDays.length-1]+'</td></tr>'
+      +'<tr><td>Post dated before pre</td><td class="'+(neg>0?'flag-text':'')+'">'+neg+(neg>0?' — data integrity issue':'')+'</td></tr>'
+      +'</tbody></table></div>'
+      +'</details>';
   }
   if(Object.keys(affiliateFunnel).length){
-    html += '<div class="subsection">By Affiliate</div><div class="tbl-wrap"><table><thead><tr><th>Affiliate</th><th>Completions</th><th>Has Pre</th><th>Has Post</th><th>Has Both</th></tr></thead><tbody>';
-    Object.entries(affiliateFunnel).sort(function(a,b){return b[1].completions-a[1].completions;}).forEach(function(entry){
+    var affEntries=Object.entries(affiliateFunnel).sort(function(a,b){return b[1].completions-a[1].completions;});
+    html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
+      +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0;transition:transform .2s" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+      +'By Affiliate &nbsp;<span style="font-weight:300;color:var(--mid)">'+affEntries.length+' affiliates</span>'
+      +'</summary>'
+      +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>Affiliate</th><th>Completions</th><th>Has Pre</th><th>Has Post</th><th>Has Both</th></tr></thead><tbody>';
+    affEntries.forEach(function(entry){
       var aff=entry[0],c=entry[1];
       html += '<tr><td>'+esc(aff)+'</td><td>'+c.completions+(c.completions<5?' <span class="warn-badge">small-n</span>':'')+'</td><td>'+rateCell(c.has_pre,c.completions)+'</td><td>'+rateCell(c.has_post,c.completions)+'</td><td>'+rateCell(c.has_pair,c.completions)+'</td></tr>';
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div></details>';
   }
   html += '<div class="callout '+(captureIsAnswer?'alert':'info')+'" style="margin-top:14px"><strong>Takeaway from this section: </strong>'
     +(captureIsAnswer

@@ -402,13 +402,48 @@ function render(d) {
   html += '<div class="callout info"><strong>What this section shows:</strong> For every mom who completed an EP or RR program, did we capture a pre-test score AND a post-test score? KPI 3 requires both. If either is missing, that mom cannot be counted — even if she improved.</div>';
   html += '<div class="callout"><strong>Legacy templates excluded</strong>'+(legacyTemplates.length?legacyTemplates.map(function(t){return '"'+esc(t.name)+'" ('+t.result_count+' results)';}).join('; '):'None found.')+' Total legacy results set aside: <strong>'+(counts.legacy_count||0)+'</strong>.</div>';
   if(currentTemplates.length){
-    html += '<div class="subsection">Template Inventory</div><div class="tbl-wrap"><table><thead><tr><th>Template</th><th>Track</th><th>Results</th><th>Pre</th><th>Post</th><th>Note</th></tr></thead><tbody>';
-    currentTemplates.forEach(function(t){
-      var isPostTemplate = /post/i.test(t.name);
-      var noteCell = (isPostTemplate && t.post_count===0) ? '<span class="flag-text">No results — workflow issue</span>' : '';
-      html += '<tr><td>'+esc(t.name)+'</td><td>'+esc(t.track_group)+'</td><td>'+t.result_count+'</td><td>'+t.pre_count+'</td><td>'+t.post_count+'</td><td>'+noteCell+'</td></tr>';
+    html += '<div class="subsection">Template Inventory — Pre/Post Pairs</div>';
+    ['EP','RR'].forEach(function(track){
+      var trackTemplates = currentTemplates.filter(function(t){return t.track_group===track;});
+      if(!trackTemplates.length) return;
+      var preT  = trackTemplates.filter(function(t){return !/post/i.test(t.name);});
+      var postT = trackTemplates.filter(function(t){return /post/i.test(t.name);});
+      html += '<div style="margin-bottom:14px">'
+        +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:6px">'+track+' Track</div>'
+        +'<div class="tbl-wrap"><table><thead><tr>'
+        +'<th style="width:20px"></th>'
+        +'<th>Template Name</th>'
+        +'<th>Results on File</th>'
+        +'<th>Note</th>'
+        +'</tr></thead><tbody>';
+      preT.forEach(function(t){
+        html += '<tr style="border-left:3px solid var(--green)">'
+          +'<td style="font-family:\'Oswald\',sans-serif;font-size:10px;color:var(--mid);text-transform:uppercase;white-space:nowrap">Pre</td>'
+          +'<td>'+esc(t.name)+'</td>'
+          +'<td>'+t.pre_count+'</td>'
+          +'<td style="color:var(--mid);font-size:11px">Used to set baseline before program</td>'
+          +'</tr>';
+      });
+      postT.forEach(function(t){
+        var missing = t.post_count===0;
+        html += '<tr style="border-left:3px solid var(--yellow)">'
+          +'<td style="font-family:\'Oswald\',sans-serif;font-size:10px;color:var(--mid);text-transform:uppercase;white-space:nowrap">Post</td>'
+          +'<td>'+esc(t.name)+'</td>'
+          +'<td>'+(missing?'<span class="flag-text">0</span>':t.post_count)+'</td>'
+          +'<td>'+(missing?'<span class="flag-text">No results on file — workflow issue</span>':'Used to measure improvement after program')+'</td>'
+          +'</tr>';
+      });
+      // pairing summary row
+      var preN  = preT.reduce(function(s,t){return s+t.pre_count;},0);
+      var postN = postT.reduce(function(s,t){return s+t.post_count;},0);
+      var pairN = track==='EP'?counts.ep_pair:(track==='RR'?counts.rr_pair:0);
+      html += '<tr style="background:var(--green-lt)">'
+        +'<td colspan="2" style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;color:var(--green)">Matched pairs (both tests on file)</td>'
+        +'<td style="font-family:\'Oswald\',sans-serif;font-size:13px;font-weight:700;color:var(--green)">'+pairN+' of '+preN+'</td>'
+        +'<td style="font-size:11px;color:var(--mid)">'+Math.round(100*(pairN||0)/Math.max(preN,1))+'% of pre-assessments have a matching post</td>'
+        +'</tr>';
+      html += '</tbody></table></div></div>';
     });
-    html += '</tbody></table></div>';
   }
   html += '<div class="subsection">Completion Funnel</div><div class="kpi-grid">';
   html += '<div class="kpi-card"><div class="knum">'+(counts.total_completions||0)+'</div><div class="klbl">EP+RR Completions</div></div>';

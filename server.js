@@ -46,6 +46,7 @@ app.use('/api/child-welfare', require('./routes/child-welfare'));
 app.use('/api/flagged-needs', require('./routes/flagged-needs'));
 app.use('/api/kpi1-breakdown', require('./routes/kpi1-breakdown'));
 app.use('/api/kpi2-trial', requireAuth, require('./routes/kpi2-trial'));
+app.use('/api/ep-rr-diagnostic', requireAuth, require('./routes/ep-rr-diagnostic'));
 
 // Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.
 // Both pages POST { timestamp, recordCount, recordIds, filters } here on CSV export.
@@ -165,6 +166,12 @@ app.get('/report/kpi2-trial', requireAuth, (req, res) => {
     return res.status(403).send('Access denied');
   }
   res.sendFile(path.join(__dirname, 'public', 'kpi2-trial.html'));
+});
+app.get('/report/ep-rr-diagnostic', requireAuth, (req, res) => {
+  if ((req.session.user.role || '') !== 'administrator') {
+    return res.status(403).send('Access denied');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'ep-rr-diagnostic.html'));
 });
 
 // Startup migrations — idempotent ALTER TABLE statements for new columns

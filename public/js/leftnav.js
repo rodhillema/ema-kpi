@@ -19,6 +19,8 @@
     { group: "How We're Doing", items: [
       { href: '/#impact', label: 'Impact Reports', match: ['/report', '/report/quarterly/q1-2026'],
         icon: '<svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg>' },
+      { href: '/#hq-resources', label: 'HQ Resources', match: ['/report/flagged-needs', '/report/kpi1-preservation-breakdown', '/report/ep-rr-diagnostic'], adminOnly: true,
+        icon: '<svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>' },
     ]},
     { group: 'Trellis Live', items: [
       { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey'],

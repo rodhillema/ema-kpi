@@ -514,6 +514,17 @@ body.champ-admin .champ-mgmt-section{display:flex}
             <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
           </div>
         </a>
+        <a class="rcard cr" href="/report/ep-rr-diagnostic">
+          <div class="ricon r"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="10.5" x2="8" y2="11"/></svg></div>
+          <div class="rbody">
+            <div class="rname">EP/RR Learning Diagnostic</div>
+            <div class="rdesc">Instrument and scoring audit for Empowered Parenting and Roadmap to Resilience — why KPI 3 underperforms and which of three hypotheses explains it.</div>
+          </div>
+          <div class="rright">
+            <span class="badge-latest">Admin</span>
+            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
+          </div>
+        </a>
       </div>
     </div>
 
@@ -815,11 +826,12 @@ function applySession(u) {
 
 function applyHashNav() {
   var HASH_VIEWS = {
-    '#action-reports':'view-action',
-    '#impact':        'view-impact',
-    '#moms':          'view-mom',
-    '#advocates':     'view-advocate',
-    '#trellis-users': 'view-user'
+    '#action-reports': 'view-action',
+    '#impact':         'view-impact',
+    '#hq-resources':   'view-hq-resources',
+    '#moms':           'view-mom',
+    '#advocates':      'view-advocate',
+    '#trellis-users':  'view-user'
   };
   var view = HASH_VIEWS[window.location.hash];
   if (view) svById(view);

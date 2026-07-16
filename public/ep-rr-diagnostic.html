@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EP/RR Learning Diagnostic - EMA Impact Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #ec482f;
+      --red-dark: #c23018;
+      --red-light: #f9ece8;
+      --green: #123939;
+      --green-light: #ecefe1;
+      --warn: #f2a136;
+      --warn-light: #fff8ee;
+      --dark: #2C2C2C;
+      --mid: #5A5A5A;
+      --light: #F4F6F8;
+      --border: #E0E0E0;
+      --bg: #fdf7f3;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
+
+    /* ── Header ── */
+    .hub-header {
+      background: var(--green);
+      color: var(--white);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hub-header h1 { font-family: 'Shrikhand', serif; font-size: 20px; letter-spacing: 0.5px; }
+    .hub-header .back-link {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hub-header .back-link:hover { color: var(--white); }
+
+    /* ── Layout ── */
+    .page-body { max-width: 1140px; margin: 0 auto; padding: 28px 20px 60px; }
+    .page-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+    .page-subtitle { color: var(--mid); font-size: 13px; margin-bottom: 6px; }
+    .scope-note {
+      background: var(--green-light);
+      border-left: 3px solid var(--green);
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--mid);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* ── Loading / Error ── */
+    #loading { text-align: center; padding: 60px 20px; color: var(--mid); font-family: 'Oswald', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    #error-msg { display: none; background: var(--red-light); border-left: 4px solid var(--red); padding: 14px 18px; border-radius: 4px; margin-bottom: 20px; }
+
+    /* ── Section cards ── */
+    .section {
+      background: var(--white);
+      border-radius: 8px;
+      padding: 20px 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .section-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--red);
+      margin-bottom: 2px;
+    }
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--green);
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .subsection-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--green);
+      border-top: 1px solid var(--green-light);
+      padding-top: 10px;
+      margin: 16px 0 10px;
+    }
+
+    /* ── Synthesis verdicts ── */
+    .synthesis { background: var(--green); border-radius: 8px; padding: 20px 22px; margin-bottom: 18px; }
+    .synthesis .section-title { color: var(--warn); border-bottom-color: var(--warn); }
+    .verdict-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 12px; }
+    .verdict-card {
+      background: rgba(255,255,255,0.1);
+      border-left: 4px solid var(--warn);
+      border-radius: 4px;
+      padding: 12px 14px;
+      color: rgba(255,255,255,0.9);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .verdict-card.flag { border-left-color: var(--red); }
+    .verdict-card .vlabel {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--warn);
+      margin-bottom: 5px;
+    }
+    .verdict-card.flag .vlabel { color: #ff9f8e; }
+
+    /* ── KPI cards ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+    .kpi-card { background: var(--green-light); border-radius: 6px; padding: 12px 14px; text-align: center; }
+    .kpi-card .knum { font-family: 'Shrikhand', serif; font-size: 2rem; color: var(--green); }
+    .kpi-card .klbl { font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 300; text-transform: uppercase; color: var(--mid); letter-spacing: 0.06em; margin-top: 2px; }
+    .kpi-card.kred { background: var(--red-light); }
+    .kpi-card.kred .knum { color: var(--red); }
+    .kpi-card.kywarn { background: var(--warn-light); }
+    .kpi-card.kywarn .knum { color: var(--warn); }
+
+    /* ── Callouts ── */
+    .callout { border-left: 4px solid var(--warn); background: var(--warn-light); padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 10px 0; font-size: 13px; line-height: 1.5; }
+    .callout.alert { border-left-color: var(--red); background: var(--red-light); }
+    .callout.info  { border-left-color: var(--green); background: var(--green-light); }
+    .callout strong { display: block; margin-bottom: 3px; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; }
+
+    /* ── Tables ── */
+    .tbl-wrap { overflow-x: auto; margin: 8px 0 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table th {
+      background: var(--green);
+      color: var(--white);
+      text-align: left;
+      padding: 7px 9px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    table td { padding: 6px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: var(--bg); }
+    tr:hover td { background: var(--red-light); }
+
+    /* ── Tags / badges ── */
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; margin: 0 2px; }
+    .tag-A    { background: var(--green); color: var(--white); }
+    .tag-B    { background: var(--warn); color: var(--dark); }
+    .tag-C    { background: var(--green-light); color: var(--green); }
+    .tag-flip { background: var(--red); color: var(--white); }
+    .tag-same { background: #e0e0e0; color: #555; }
+    .warn-badge { background: var(--warn); color: var(--dark); padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+    .ok   { color: #1a6a1a; font-weight: 700; }
+    .bad  { color: var(--red); font-weight: 700; }
+    .ambig { color: #6a4a00; font-style: italic; }
+    .flag-text { color: var(--red); font-weight: 700; }
+    .marker-tag {
+      display: inline-block; padding: 1px 7px; border-radius: 3px;
+      font-size: 11px; background: var(--green-light); color: var(--green);
+      font-family: 'Oswald', sans-serif; font-weight: 300; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .proposed-note { font-size: 11px; color: var(--mid); font-style: italic; }
+
+    /* ── Collapsible methodology ── */
+    details { margin: 8px 0; }
+    summary {
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      color: var(--green);
+      padding: 6px 0;
+      user-select: none;
+    }
+    details[open] summary { color: var(--red); }
+    .sql-block {
+      background: #1a2a2a; color: #a0e0c0;
+      padding: 12px 14px; border-radius: 4px;
+      font-family: 'Courier New', monospace; font-size: 12px;
+      overflow-x: auto; white-space: pre; margin-top: 6px;
+    }
+
+    /* ── Footer ── */
+    .footnote { font-size: 12px; color: var(--mid); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+    footer { background: var(--green); color: rgba(255,255,255,0.7); padding: 16px 24px; font-size: 12px; margin-top: 24px; }
+    footer strong { color: var(--white); }
+
+    @media (max-width: 680px) {
+      .verdict-grid { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      table { font-size: 12px; }
+      table th, table td { padding: 5px 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hub-header">
+  <h1>ĒMA Impact Hub</h1>
+  <a href="/" class="back-link">&#8592; Hub Home</a>
+</header>
+
+<div class="page-body">
+  <div class="page-title">EP/RR Learning Diagnostic</div>
+  <div class="page-subtitle">Instrument and Scoring Audit - Empowered Parenting and Roadmap to Resilience</div>
+  <div class="scope-note">
+    <strong>Scope:</strong> All current-Trellis EP/RR data from Dec 2025 through today.
+    <strong>NOT period-anchored</strong> - counts here are larger than the Q2 2026 YTD oversight report,
+    which is limited to Jan 1 - Jun 30 completions. This is intentional to maximize n for instrument analysis.
+    Legacy templates are excluded from all analysis but counted and displayed.
+    NPP and AAPI are excluded entirely - this report is EP/RR only.
+    Admin access only.
+  </div>
+
+  <div id="loading">Loading diagnostic data...</div>
+  <div id="error-msg"></div>
+  <div id="report" style="display:none"></div>
+</div>
+
+<footer>
+  <strong>ĒMA EP/RR Learning Diagnostic</strong> - Administrator access only.<br>
+  Any segment n &lt; 30 carries a small-sample warning. Apparent post &lt; pre is labeled ambiguous, not failure.<br>
+  Proposed construct-to-marker mappings require confirmation by the training and content team.
+</footer>
+
+<script>
+'use strict';
+
+const pf = (v, d=2) => v == null ? null : parseFloat(parseFloat(v).toFixed(d));
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function rateCell(num, den) {
+  if (!den) return '<em style="color:#aaa">no data</em>';
+  const pct = Math.round(1000 * num / den) / 10;
+  const warn = den < 30 ? ' <span class="warn-badge">small-n</span>' : '';
+  return `${num}/${den} (${pct}%)${warn}`;
+}
+
+function smallN(n) {
+  return n < 30 ? ` <span class="warn-badge">n=${n} caution</span>` : '';
+}
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2===0 ? (s[m-1]+s[m])/2 : s[m];
+}
+
+function proposeMarker(label) {
+  if (!label) return 'Unclear';
+  const l = label.toLowerCase();
+  if (/recogni|identif|aware|notice|trigger|pattern|what is|what isn/.test(l)) return 'Identify and Recognize';
+  if (/reflect|understand|why|how|meaning|concept|theor|insight/.test(l))      return 'Reflect and Understand';
+  if (/appl|practice|use|skill|implement|daily|life|do\b|action/.test(l))      return 'Apply and Practice';
+  if (/evaluat|priorit|assess|need|stress|decid|choose|important|first/.test(l)) return 'Evaluate and Prioritize';
+  return 'Unclear - team review needed';
+}
+
+function render(d) {
+  const { meta, schema, templates, pairedData, questions, momResults,
+          itemMovement, teishaRows, teishaDomains, affiliateFunnel, rates, counts } = d;
+
+  const legacyTemplates = templates.filter(t => t.track_group === 'Legacy');
+  const currentTemplates = templates.filter(t => t.track_group !== 'Legacy' && t.track_group !== 'Other');
+  const epMoms = momResults.filter(m => m.track_group === 'EP');
+  const rrMoms = momResults.filter(m => m.track_group === 'RR');
+
+  const rrRobust = rates.rr.A.den > 0 && rates.rr.A.num === 0
+                && rates.rr.B.den > 0 && rates.rr.B.num === 0
+                && rates.rr.C.den > 0 && rates.rr.C.num === 0;
+
+  const captureIsAnswer = counts.total_completions < 10
+    || (counts.with_pair / Math.max(counts.total_completions,1) < 0.5);
+
+  const highCeilItems = questions.filter(q =>
+    q.template_type === 'pre' && q.answered > 0 && q.at_ceiling / q.answered > 0.4
+  );
+
+  // ── Latency ───────────────────────────────────────────────
+  const latDays = pairedData.filter(d=>d.has_pair).map(d=>{
+    const pre = new Date(d.pre.ar_date), post = new Date(d.post.ar_date);
+    return Math.round((post-pre)/86400000);
+  }).sort((a,b)=>a-b);
+
+  const genDate = new Date(meta.generated).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  // ── Schema validation ─────────────────────────────────────
+  const hasMomId       = schema.some(r => r.table_name==='AssessmentResult' && r.column_name==='momId');
+  const hasIntResp     = schema.some(r => r.table_name==='AssessmentResultQuestionResponse' && r.column_name==='intResponse');
+  const hasConstructId = schema.some(r => r.table_name==='AssessmentQuestion' && r.column_name==='assessmentConstructId');
+
+  // ─────────────────────────────────────────────────────────
+  // BUILD HTML
+  // ─────────────────────────────────────────────────────────
+  let html = '';
+
+  // ── Synthesis ────────────────────────────────────────────
+  html += `<div class="synthesis">
+    <div class="section-label">Synthesis Verdict</div>
+    <div class="section-title">Three Hypotheses - In Priority Order</div>
+    <p style="color:rgba(255,255,255,0.75);font-size:12px;margin-bottom:12px;">
+      All rates show numerator/denominator. A layer labeled inconclusive means thin data prevents a firm conclusion.
+    </p>
+    <div class="verdict-grid">
+      <div class="verdict-card ${captureIsAnswer?'flag':''}">
+        <div class="vlabel">Hypothesis 1 - Capture/Access</div>
+        ${counts.total_completions} EP+RR completions in window.
+        ${counts.with_pair} of ${counts.total_completions} (${counts.total_completions?Math.round(100*counts.with_pair/counts.total_completions):0}%)
+        have a matched pre+post pair.
+        ${captureIsAnswer
+          ? '<strong style="color:#ff9f8e">YES - capture/workflow is the primary driver.</strong> The denominator is too small for firm instrument conclusions.'
+          : `Capture rate is sufficient to test the scoring method. Instrument analysis is provisional.`}
+      </div>
+      <div class="verdict-card ${counts.flips_AvsC>0?'flag':''}">
+        <div class="vlabel">Hypothesis 2 - Scoring/Aggregation (Primary Test)</div>
+        ${counts.flips_AvsC} mom(s) flip improved/not when comparing Method A (domain-averaged) vs Method C (current KPI 3 flat sum).
+        ${counts.rr_pair > 0
+          ? rrRobust
+            ? 'RR 0% survives all three methods - aggregation is not the cause.'
+            : 'RR 0% does NOT survive all methods - domain averaging was suppressing movement.'
+          : 'RR has no paired moms - 0% is a pure capture finding, not an aggregation finding.'}
+      </div>
+      <div class="verdict-card ${highCeilItems.length>0?'flag':''}">
+        <div class="vlabel">Hypothesis 3 - Instrument/Ceiling</div>
+        ${highCeilItems.length} question(s) with ceiling rate above 40% in the pre-pool.
+        ${highCeilItems.length>0
+          ? 'High ceiling items mechanically suppress KPI improvement.'
+          : 'No severe ceiling effects in the pre-pool.'}
+        ${counts.with_pair < 5 ? `Paired cohort too small (n=${counts.with_pair}) for firm instrument conclusions.` : ''}
+      </div>
+      <div class="verdict-card">
+        <div class="vlabel">Construct Validity</div>
+        ${questions.filter(q=>q.template_type==='pre').length} questions mapped to ĒMA's 4 learning markers (proposed).
+        See Phase 2 - for training and content team to confirm.
+      </div>
+    </div>
+  </div>`;
+
+  // ── Phase 0 ───────────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Phase 0</div>
+    <div class="section-title">Schema + Scoring Code</div>
+
+    <div class="subsection-title">Key Columns</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Table</th><th>Column</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>AssessmentResult</td><td>momId</td><td class="${hasMomId?'ok':'bad'}">${hasMomId?'confirmed':'NOT FOUND - queries need adjustment'}</td></tr>
+        <tr><td>AssessmentResultQuestionResponse</td><td>intResponse</td><td class="${hasIntResp?'ok':'bad'}">${hasIntResp?'confirmed':'NOT FOUND'}</td></tr>
+        <tr><td>AssessmentQuestion</td><td>assessmentConstructId</td><td class="${hasConstructId?'ok':'bad'}">${hasConstructId?'confirmed':'NOT FOUND'}</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="subsection-title">Current KPI 3 Method (from report-data.js)</div>
+    <div class="callout">
+      <strong>How improved is determined for EP/RR</strong>
+      SUM(intResponse) across all answered questions = total_score.
+      Compares post_sum &gt; pre_sum. This is Method C (flat sum), directionally equivalent to
+      Method B (flat average) when answered-item counts match pre and post.
+      It differs from Method A (domain-averaged) when domains have unequal numbers of questions.
+    </div>
+
+    <div class="subsection-title">Track Journey Display vs KPI 3</div>
+    <div class="callout info">
+      <strong>Different methods - same data</strong>
+      Track Journey shows AVG(intResponse) grouped by assessmentConstructId (domain mean per construct).
+      A mom's overall 1-5 bar is the mean of domain means (Method A).
+      KPI 3 uses flat sum (Method C). These can show different directions. The 3.8 reference score
+      is a Method A value from Track Journey.
+    </div>
+
+    ${teishaRows.length > 0 ? `
+    <div class="subsection-title">Validation: Teisha Shepherd RR Pre (Target: 3.8)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Type</th><th>Date</th><th>Answered</th><th>Flat Avg (B)</th><th>Domain Mean of Means (A)</th></tr></thead>
+      <tbody>
+        ${teishaRows.map(r => {
+          const domMean = teishaDomains.length > 0 && r.atype === 'pre'
+            ? pf(teishaDomains.reduce((s,d)=>s+parseFloat(d.domain_mean),0)/teishaDomains.length)
+            : '-';
+          return `<tr>
+            <td>${esc(r.atype)}</td>
+            <td>${esc(String(r.ar_date||'').substring(0,10))}</td>
+            <td>${r.answered}</td>
+            <td>${pf(r.avg_score)}</td>
+            <td>${domMean}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>
+    ${teishaDomains.length > 0 ? (() => {
+      const domMean = pf(teishaDomains.reduce((s,d)=>s+parseFloat(d.domain_mean),0)/teishaDomains.length);
+      const matches = Math.abs(parseFloat(domMean) - 3.8) < 0.05;
+      return `<div class="callout ${matches?'info':'alert'}">
+        Domain mean of means = <strong>${domMean}</strong>.
+        ${matches ? 'Score reproduces correctly - matches the displayed 3.8.' : 'Score does not reproduce 3.8 via domain mean. Track Journey may use flat average for this template.'}
+      </div>`;
+    })() : ''}
+    ` : `<div class="callout">Teisha Shepherd not found in current data window. Validation cannot run.</div>`}
+  </div>`;
+
+  // ── Phase 1 ───────────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Phase 1 - Hypothesis 1</div>
+    <div class="section-title">Access / Capture Funnel</div>
+
+    <div class="callout info">
+      <strong>Legacy templates excluded and counted</strong>
+      ${legacyTemplates.length
+        ? legacyTemplates.map(t=>`"${esc(t.name)}" (${t.result_count} results)`).join('; ')
+        : 'None found.'}
+      Total legacy results set aside: <strong>${counts.legacy_count}</strong>.
+    </div>
+
+    <div class="subsection-title">Template Inventory</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Template Name</th><th>Track</th><th>Total Results</th><th>Pre</th><th>Post</th><th>Note</th></tr></thead>
+      <tbody>
+        ${currentTemplates.map(t=>`<tr>
+          <td>${esc(t.name)}</td>
+          <td>${esc(t.track_group)}</td>
+          <td>${t.result_count}</td>
+          <td>${t.pre_count}</td>
+          <td>${t.post_count}</td>
+          <td>${t.post_count===0?'<span class="flag-text">No posts - workflow/access issue</span>':''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+
+    <div class="subsection-title">Completion Funnel</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="knum">${counts.total_completions}</div>
+        <div class="klbl">EP+RR Completions in window</div>
+      </div>
+      <div class="kpi-card ${counts.total_completions - counts.with_post > 0 ? 'kred' : ''}">
+        <div class="knum">${counts.with_post}</div>
+        <div class="klbl">Have a Post Assessment</div>
+      </div>
+      <div class="kpi-card ${counts.with_pair < counts.total_completions ? 'kywarn' : ''}">
+        <div class="knum">${counts.with_pair}</div>
+        <div class="klbl">Have Both Pre + Post (KPI 3 eligible)</div>
+      </div>
+      <div class="kpi-card ${counts.ep_pair < 5 ? 'kred' : counts.ep_pair < 10 ? 'kywarn' : ''}">
+        <div class="knum">${counts.ep_pair}</div>
+        <div class="klbl">EP Paired${smallN(counts.ep_pair)}</div>
+      </div>
+      <div class="kpi-card ${counts.rr_pair < 5 ? 'kred' : counts.rr_pair < 10 ? 'kywarn' : ''}">
+        <div class="knum">${counts.rr_pair}</div>
+        <div class="klbl">RR Paired${smallN(counts.rr_pair)}</div>
+      </div>
+    </div>
+
+    <div class="subsection-title">Orphan Counts</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Situation</th><th>Count</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>Completed pairings - post but no pre</td><td>${pairedData.filter(d=>d.has_post&&!d.has_pre).length}</td><td>Pre was never entered or pre exists outside the window</td></tr>
+        <tr><td>Completed pairings - pre but no post</td><td class="${pairedData.filter(d=>d.has_pre&&!d.has_post).length>0?'flag-text':''}">${pairedData.filter(d=>d.has_pre&&!d.has_post).length}</td><td>Post was never entered - main capture gap</td></tr>
+        <tr><td>Completed pairings - neither</td><td>${pairedData.filter(d=>!d.has_pre&&!d.has_post).length}</td><td>No assessments at all for this pairing</td></tr>
+        <tr><td>Moms with pre-only (not in a completed pairing)</td><td>${counts.pre_only_orphans}</td><td>Pre entered; no pairing completed yet</td></tr>
+      </tbody>
+    </table></div>
+
+    ${latDays.length > 0 ? `
+    <div class="subsection-title">Pre-to-Post Latency (Days)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>n (paired pre+post)</td><td>${latDays.length}</td></tr>
+        <tr><td>Median days between pre and post</td><td>${median(latDays)}</td></tr>
+        <tr><td>Min days</td><td>${latDays[0]}</td></tr>
+        <tr><td>Max days</td><td>${latDays[latDays.length-1]}</td></tr>
+        <tr><td>Impossible gaps (post before pre)</td><td class="${latDays.filter(d=>d<0).length>0?'flag-text':''}">${latDays.filter(d=>d<0).length} ${latDays.filter(d=>d<0).length>0?'- data integrity flag':''}</td></tr>
+      </tbody>
+    </table></div>` : ''}
+
+    <div class="subsection-title">By Affiliate</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Affiliate</th><th>Completions</th><th>Has Pre</th><th>Has Post</th><th>Has Both</th></tr></thead>
+      <tbody>
+        ${Object.entries(affiliateFunnel).sort((a,b)=>b[1].completions-a[1].completions).map(([aff,c])=>`<tr>
+          <td>${esc(aff)}</td>
+          <td>${c.completions}${c.completions<5?' <span class="warn-badge">small-n</span>':''}</td>
+          <td>${rateCell(c.has_pre, c.completions)}</td>
+          <td>${rateCell(c.has_post, c.completions)}</td>
+          <td>${rateCell(c.has_pair, c.completions)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+
+    <div class="callout ${captureIsAnswer?'alert':'info'}">
+      <strong>Phase 1 Headline</strong>
+      ${captureIsAnswer
+        ? `The paired pre+post denominator is too small for statistically meaningful instrument or scoring analysis.
+           KPI 3 for EP/RR is primarily a capture and workflow story. Phases 2-4 run on available data but are provisional.`
+        : `The denominator is sufficient to proceed to instrument and scoring analysis.
+           Phases 2-4 draw from ${counts.with_pair} paired moms.`}
+    </div>
+  </div>`;
+
+  // ── Phase 2 ───────────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Phase 2 - Hypothesis 3 (Instrument)</div>
+    <div class="section-title">Question Inventory + Construct / Marker Map</div>
+
+    <div class="callout alert">
+      <strong>For the training and content team - not authoritative</strong>
+      Proposed Marker column maps question wording to ĒMA's four learning markers using keyword matching.
+      These mappings must be confirmed, corrected, or reclassified by the training and content team.
+    </div>
+    <p class="proposed-note" style="margin-bottom:10px;">
+      ĒMA learning markers: (1) Identify and Recognize - triggers, patterns, what is/is not serving her;
+      (2) Reflect and Understand - the why and how behind choices and curriculum concepts;
+      (3) Apply and Practice - actively apply new skills in daily life;
+      (4) Evaluate and Prioritize - assess competing needs, decide priorities.
+    </p>
+
+    ${['EP','RR'].map(track => {
+      const qs = questions.filter(q => q.track_group === track && q.template_type === 'pre');
+      if (!qs.length) return `<div class="subsection-title">${track} - No questions found</div>`;
+
+      const markerCounts = {};
+      qs.forEach(q => {
+        const m = proposeMarker(q.question_label);
+        markerCounts[m] = (markerCounts[m]||0)+1;
+      });
+      const distinctDomains = [...new Set(qs.map(q=>q.construct_name||'No Domain'))];
+
+      return `
+      <div class="subsection-title">${track} Questions (${qs.length} total, ${distinctDomains.length} domain(s))</div>
+      <p style="font-size:12px;margin-bottom:6px;">
+        <strong>Proposed marker coverage:</strong>
+        ${Object.entries(markerCounts).map(([m,c])=>`${esc(m)}: <strong>${c}</strong>`).join(' | ')}
+      </p>
+      ${Object.keys(markerCounts).length < 3 ? `<div class="callout alert" style="margin-bottom:8px;">
+        Instrument appears to under-represent ${4-Object.keys(markerCounts).length} of ĒMA's 4 learning markers (proposed only).
+      </div>` : ''}
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>#</th><th>Domain</th><th>Qs in Domain</th><th style="min-width:220px">Full Question Label</th>
+          <th>Obs Min</th><th>Obs Max</th><th>Pre Mean (n)</th><th>Ceiling %</th><th>Proposed Marker</th>
+        </tr></thead>
+        <tbody>
+          ${qs.map((q,i) => {
+            const domCount = qs.filter(x=>(x.construct_name||'No Domain')===(q.construct_name||'No Domain')).length;
+            const ceilPct  = q.answered > 0 ? Math.round(100*q.at_ceiling/q.answered) : null;
+            const offScale = (q.obs_min < 1 || q.obs_max > 5) ? ' <span class="flag-text">OFF-SCALE</span>' : '';
+            return `<tr>
+              <td>${q.q_order!=null?q.q_order:i+1}</td>
+              <td>${esc(q.construct_name||'No Domain')}</td>
+              <td>${domCount}</td>
+              <td style="white-space:normal;max-width:260px;font-size:12px;">${esc(q.question_label||'')}${offScale}</td>
+              <td>${q.obs_min!=null?q.obs_min:'n/a'}</td>
+              <td>${q.obs_max!=null?q.obs_max:'n/a'}</td>
+              <td>${q.obs_mean!=null?pf(q.obs_mean):'n/a'} (n=${q.answered||0})</td>
+              <td class="${ceilPct>40?'flag-text':''}">${ceilPct!=null?ceilPct+'%':'n/a'}</td>
+              <td><span class="marker-tag">${esc(proposeMarker(q.question_label))}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>`;
+    }).join('')}
+
+    <div class="footnote">
+      Observed min/max from all non-legacy current-Trellis pre assessments in window.
+      Values outside 1-5 are data integrity flags. Proposed markers are AI-generated from question wording
+      and must be confirmed by the training and content team.
+    </div>
+  </div>`;
+
+  // ── Phase 3 ───────────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Phase 3 - PRIMARY TEST - Hypothesis 2</div>
+    <div class="section-title">Scoring Method + Domain Aggregation</div>
+
+    <div class="callout">
+      <strong>Three methods compared</strong>
+      <span class="tag tag-A">A</span> Domain-averaged: mean within each domain, then mean of domain means. Equal weight per domain.<br>
+      <span class="tag tag-B">B</span> Flat question average: mean of all responses. Larger domains dominate.<br>
+      <span class="tag tag-C">C (current)</span> Flat sum: SUM(intResponse) compared pre vs post. Direction = Method B when item counts match.
+    </div>
+
+    ${counts.with_pair === 0 ? `
+    <div class="callout alert">
+      No paired pre+post moms in this window. Phase 3 cannot be computed.
+      This is a pure Phase 1 capture finding.
+    </div>` : `
+
+    <div class="subsection-title">3b. Per-Mom Scores Under Each Method</div>
+    ${['EP','RR'].map(track => {
+      const moms = momResults.filter(m=>m.track_group===track);
+      if (!moms.length) return `<p><strong>${track}:</strong> No paired moms - Phase 3 not applicable.</p>`;
+      return `<p style="font-weight:700;margin-bottom:4px;">${track} (${moms.length} paired mom${moms.length!==1?'s':''})${smallN(moms.length)}</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>Mom</th><th>Affiliate</th><th>Pre Ans</th><th>Post Ans</th>
+          <th>Pre A</th><th>Post A</th><th>Impr A</th>
+          <th>Pre B</th><th>Post B</th><th>Impr B</th>
+          <th>Sum Pre (C)</th><th>Sum Post (C)</th><th>Impr C</th>
+          <th>A vs C Flip?</th>
+        </tr></thead>
+        <tbody>
+          ${moms.map(m=>`<tr>
+            <td>${esc(m.first_name)} ${esc(m.last_name)}</td>
+            <td style="font-size:12px;">${esc(m.affiliate||'')}</td>
+            <td>${m.pre_answered}</td>
+            <td>${m.post_answered}</td>
+            <td>${m.pre_A!=null?m.pre_A:'-'}</td>
+            <td>${m.post_A!=null?m.post_A:'-'}</td>
+            <td class="${m.improved_A===true?'ok':m.improved_A===false?'ambig':''}">${m.improved_A===true?'yes':m.improved_A===false?'<em>no</em>':'n/a'}</td>
+            <td>${m.pre_B!=null?m.pre_B:'-'}</td>
+            <td>${m.post_B!=null?m.post_B:'-'}</td>
+            <td class="${m.improved_B===true?'ok':m.improved_B===false?'ambig':''}">${m.improved_B===true?'yes':m.improved_B===false?'<em>no</em>':'n/a'}</td>
+            <td>${m.pre_C!=null?m.pre_C:'-'}</td>
+            <td>${m.post_C!=null?m.post_C:'-'}</td>
+            <td class="${m.improved_C?'ok':'ambig'}">${m.improved_C?'yes':'<em>no</em>'}</td>
+            <td>${m.flip_AvsC?'<span class="tag tag-flip">FLIP</span>':'<span class="tag tag-same">same</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    }).join('')}
+
+    <div class="subsection-title">3c. KPI Rate per Method per Track</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Track</th><th>Method</th><th>Improved</th><th>Eligible</th><th>Rate</th><th>vs Method C</th></tr></thead>
+      <tbody>
+        ${['ep','rr'].flatMap(track => ['A','B','C'].map(method => {
+          const r  = rates[track][method];
+          const rC = rates[track]['C'];
+          const diff = method!=='C' && r.den>0 && rC.den>0
+            ? ((r.num/r.den)-(rC.num/rC.den)>0.01 ? 'higher than C'
+               : (r.num/r.den)-(rC.num/rC.den)<-0.01 ? 'lower than C' : 'same as C')
+            : '-';
+          return `<tr>
+            <td>${track.toUpperCase()}</td>
+            <td><span class="tag tag-${method}">${method}</span></td>
+            <td>${r.num}</td>
+            <td>${r.den}${r.den<30?' <span class="warn-badge">small-n</span>':''}</td>
+            <td>${rateCell(r.num,r.den)}</td>
+            <td>${diff}</td>
+          </tr>`;
+        })).join('')}
+      </tbody>
+    </table></div>
+
+    <div class="callout ${rrRobust?'info':'alert'}">
+      <strong>RR Robustness - The Money Question</strong>
+      ${rrMoms.length===0
+        ? 'RR has no paired moms in this window. The 0% rate in the oversight report is a pure capture/workflow finding. No aggregation test possible.'
+        : rrRobust
+          ? `RR 0% survives all three methods (A, B, C). Aggregation method is NOT the cause of RR 0%.
+             Look to ceiling effects, honest-regression, or the capture/workflow layer.`
+          : `RR 0% does NOT survive all three methods. At least one method shows improvement for some RR moms.
+             Domain averaging may be suppressing real movement. See per-mom table above.`}
+    </div>
+
+    <div class="callout">
+      <strong>Method Flip Summary</strong>
+      ${counts.flips_AvsC} mom(s) classify differently (improved vs not) between Method A and Method C.
+      ${counts.flips_AvsC===0
+        ? 'No flips - aggregation method does not change who counts as improved in this sample.'
+        : 'Flips exist - the choice of aggregation method changes the KPI numerator.'}
+    </div>
+
+    <div class="subsection-title">3d. AAPI-Style View</div>
+    <p style="font-size:12px;margin-bottom:6px;">
+      Reference: 2025 AAPI analysis reported 61.69% increased / 5.53% median % change.
+    </p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Track</th><th>Method</th><th>% of Paired Moms Increased</th><th>Median % Change</th></tr></thead>
+      <tbody>
+        ${['ep','rr'].flatMap(track => {
+          const moms = track==='ep' ? epMoms : rrMoms;
+          return ['A','B'].map(m => {
+            const pctKey = `pct_change_${m}`;
+            const vals = moms.map(mom=>mom[pctKey]).filter(v=>v!=null).sort((a,b)=>a-b);
+            const pctIncr = vals.length ? pf(100*vals.filter(v=>v>0).length/vals.length) : null;
+            const med = pf(median(vals));
+            return `<tr>
+              <td>${track.toUpperCase()}</td>
+              <td><span class="tag tag-${m}">${m}</span></td>
+              <td>${pctIncr!=null?pctIncr+'%':'n/a'}</td>
+              <td>${med!=null?med+'%':'n/a'}</td>
+            </tr>`;
+          });
+        }).join('')}
+      </tbody>
+    </table></div>
+
+    <div class="subsection-title">3e. Sensitivity</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Sensitivity</th><th>EP Rate</th><th>RR Rate</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Post strictly &gt; Pre (current)</td>
+          <td>${rateCell(rates.ep.C.num, rates.ep.C.den)}</td>
+          <td>${rateCell(rates.rr.C.num, rates.rr.C.den)}</td>
+          <td>Current KPI 3 definition</td>
+        </tr>
+        <tr>
+          <td>Post - Pre &gt; 0.5 threshold (non-trivial, Method B scale)</td>
+          <td>${(() => {
+            const n = epMoms.filter(m=>m.post_B!=null&&m.pre_B!=null&&m.post_B-m.pre_B>0.5).length;
+            const d = epMoms.filter(m=>m.post_B!=null&&m.pre_B!=null).length;
+            return rateCell(n,d);
+          })()}</td>
+          <td>${(() => {
+            const n = rrMoms.filter(m=>m.post_B!=null&&m.pre_B!=null&&m.post_B-m.pre_B>0.5).length;
+            const d = rrMoms.filter(m=>m.post_B!=null&&m.pre_B!=null).length;
+            return rateCell(n,d);
+          })()}</td>
+          <td>Requires &gt;0.5 average-point gain. Filters trivial movement.</td>
+        </tr>
+        <tr>
+          <td class="ambig">Apparent regressions (post &lt; pre)</td>
+          <td>${(() => {
+            const n = epMoms.filter(m=>!m.improved_C&&m.pre_C!=null).length;
+            const d = epMoms.filter(m=>m.pre_C!=null).length;
+            return rateCell(n,d);
+          })()}</td>
+          <td>${(() => {
+            const n = rrMoms.filter(m=>!m.improved_C&&m.pre_C!=null).length;
+            const d = rrMoms.filter(m=>m.pre_C!=null).length;
+            return rateCell(n,d);
+          })()}</td>
+          <td class="ambig">AMBIGUOUS, not failure. A mom who learns may self-assess lower once she is honest about her starting point.</td>
+        </tr>
+      </tbody>
+    </table></div>
+    `}
+  </div>`;
+
+  // ── Phase 4 ───────────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Phase 4 - Item Psychometrics</div>
+    <div class="section-title">Item-Level Analysis</div>
+
+    <div class="callout info">
+      <strong>Two pools</strong>
+      Pre-pool: all non-legacy current-Trellis pre assessments in window (largest n).
+      Paired cohort: ${counts.with_pair} moms with matched pre+post.${counts.with_pair<5?' <span class="warn-badge">Very small - provisional.</span>':''}
+    </div>
+
+    ${['EP','RR'].map(track => {
+      const qs = questions.filter(q=>q.track_group===track&&q.template_type==='pre');
+      if (!qs.length) return `<div class="subsection-title">${track} - No questions</div>`;
+
+      const highCeil = qs.filter(q=>q.answered>0&&q.at_ceiling/q.answered>0.4);
+      return `
+      <div class="subsection-title">${track} Items</div>
+      ${highCeil.length>0
+        ? `<div class="callout alert">${highCeil.length} ${track} question(s) have ceiling rate above 40% in the pre-pool. These cannot show improvement for moms already at the maximum.</div>`
+        : `<div class="callout info">No items with ceiling rate above 40% in the ${track} pre-pool.</div>`}
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>Domain</th><th style="min-width:160px">Question (truncated)</th>
+          <th>Pre n</th><th>Mean</th><th>Median</th><th>SD</th>
+          <th>Floor%</th><th>Ceiling%</th><th>Dist 1-2-3-4-5</th>
+          <th>Paired n</th><th>Pre M</th><th>Post M</th><th>Delta</th>
+          <th>%Incr</th><th>%Decr</th><th>Reverse-Coding?</th>
+        </tr></thead>
+        <tbody>
+          ${qs.map(q => {
+            const mv = itemMovement[q.question_id] || null;
+            const preMean  = mv ? pf(mv.pre_sum/mv.n)  : null;
+            const postMean = mv ? pf(mv.post_sum/mv.n) : null;
+            const delta    = (preMean!=null&&postMean!=null) ? pf(postMean-preMean) : null;
+            const pctIncr  = mv ? Math.round(100*mv.increased/mv.n) : null;
+            const pctDecr  = mv ? Math.round(100*mv.decreased/mv.n) : null;
+            const negWording = /\bnot\b|never|\bno\b|less|avoid|hard|difficult|struggle/i.test(q.question_label||'');
+            const reverseSuspect = delta!=null && delta<-0.2;
+            const reverseFlag = negWording || reverseSuspect;
+            const ceilPct  = q.answered>0 ? Math.round(100*q.at_ceiling/q.answered) : null;
+            const floorPct = q.answered>0 ? Math.round(100*q.at_floor/q.answered)   : null;
+            const dist = [q.resp_1,q.resp_2,q.resp_3,q.resp_4,q.resp_5].map(v=>v!=null?v:0).join('-');
+            const label = (q.question_label||'').substring(0,70) + ((q.question_label||'').length>70?'...':'');
+            return `<tr>
+              <td style="font-size:11px;">${esc(q.construct_name||'No Domain')}</td>
+              <td style="white-space:normal;font-size:11px;">${esc(label)}</td>
+              <td>${q.answered||0}</td>
+              <td>${q.obs_mean!=null?pf(q.obs_mean):'n/a'}</td>
+              <td>${q.obs_median!=null?pf(q.obs_median):'n/a'}</td>
+              <td>${q.obs_stddev!=null?pf(q.obs_stddev):'n/a'}</td>
+              <td>${floorPct!=null?floorPct+'%':'n/a'}</td>
+              <td class="${ceilPct>40?'flag-text':''}">${ceilPct!=null?ceilPct+'%':'n/a'}</td>
+              <td style="font-family:monospace;font-size:11px;">${dist}</td>
+              <td>${mv?mv.n:'n/a'}</td>
+              <td>${preMean!=null?preMean:'n/a'}</td>
+              <td>${postMean!=null?postMean:'n/a'}</td>
+              <td class="${delta!=null&&delta>0?'ok':delta!=null&&delta<0?'ambig':''}">${delta!=null?delta:'n/a'}</td>
+              <td>${pctIncr!=null?pctIncr+'%':'n/a'}</td>
+              <td class="${pctDecr!=null&&pctDecr>50?'ambig':''}">${pctDecr!=null?pctDecr+'%':'n/a'}</td>
+              <td>${reverseFlag?`<span class="flag-text">REVIEW</span> <span style="font-size:11px;">${negWording?'negative wording':''} ${reverseSuspect?'moves opposite':''}`.trim()+'</span>':'-'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>`;
+    }).join('')}
+
+    <div class="footnote">
+      Apparent regression (post &lt; pre) is ambiguous, not proof of no learning.
+      A mom who internalizes the curriculum may score herself more honestly - and therefore lower -
+      because she now understands what she was missing.
+      Do not auto-correct any reverse-coded items - flag for human confirmation first.
+    </div>
+  </div>`;
+
+  // ── Methodology ───────────────────────────────────────────
+  html += `<div class="section">
+    <div class="section-label">Methodology</div>
+    <div class="section-title">SQL Queries + Code References</div>
+    <details>
+      <summary>Current KPI 3 Scoring (report-data.js reference)</summary>
+      <div class="sql-block">-- ep_rr_ar CTE in report-data.js:
+(SELECT SUM(arqr."intResponse")
+ FROM "AssessmentResultQuestionResponse" arqr
+ WHERE arqr."assessmentResultId" = ar."id"
+   AND arqr."deleted_at" = 0
+   AND arqr."intResponse" IS NOT NULL) AS total_score
+
+-- Improved = post_sum > pre_sum (Method C / flat sum).
+-- Equivalent to Method B (flat average) when answered-item counts match.
+-- Differs from Method A (domain-averaged) when domains have unequal question counts.
+
+-- Track Journey domain display (track-journey.js):
+AVG(arqr."intResponse") AS mean_score
+GROUP BY arqr."assessmentResultId", ac."id", ac."name", ac."order"
+-- This is Method A. KPI 3 and Track Journey can show different directions.</div>
+    </details>
+    <details>
+      <summary>Data Window and Scope</summary>
+      <div class="sql-block">Data start: ${meta.data_start}
+Data end:   ${meta.data_end}
+NOT period-anchored. Window chosen to maximize n for instrument analysis.
+Legacy templates excluded (name ILIKE '%Legacy%') but counted and displayed.
+NPP and AAPI excluded entirely.
+Generated: ${meta.generated}</div>
+    </details>
+    <details>
+      <summary>Schema Deviations</summary>
+      <div class="sql-block">${
+        (!hasMomId || !hasIntResp || !hasConstructId)
+          ? [
+              !hasMomId       ? 'AssessmentResult.momId NOT CONFIRMED' : '',
+              !hasIntResp     ? 'AssessmentResultQuestionResponse.intResponse NOT CONFIRMED' : '',
+              !hasConstructId ? 'AssessmentQuestion.assessmentConstructId NOT CONFIRMED' : '',
+            ].filter(Boolean).join('\n')
+          : 'None - all assumed column names confirmed in live schema.'
+      }</div>
+    </details>
+  </div>`;
+
+  html += `<p style="font-size:11px;color:var(--mid);margin-top:8px;">Generated ${genDate}. Admin access only.</p>`;
+
+  return html;
+}
+
+// ── Fetch and render ──────────────────────────────────────────
+fetch('/api/ep-rr-diagnostic')
+  .then(r => {
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  })
+  .then(data => {
+    document.getElementById('loading').style.display = 'none';
+    const report = document.getElementById('report');
+    report.innerHTML = render(data);
+    report.style.display = '';
+  })
+  .catch(err => {
+    document.getElementById('loading').style.display = 'none';
+    const el = document.getElementById('error-msg');
+    el.textContent = `Failed to load diagnostic data: ${err.message}`;
+    el.style.display = '';
+  });
+</script>
+</body>
+</html>

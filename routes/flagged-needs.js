@@ -34,7 +34,8 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
         bn."advocacyGroupId" IS NOT NULL        AS is_group,
         bn."created_at",
         bn."provided_date_c",
-        bn."resolved_date_c"
+        bn."resolved_date_c",
+        bn."notes_c"                            AS notes
       FROM "BenevolenceNeed" bn
       JOIN  "Mom" m  ON m."id" = bn."momId"
       LEFT JOIN "Affiliate" af ON af."id" = m."affiliate_id"
@@ -43,6 +44,17 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
         AND bn."deleted_at" = 0
     `, [startDate, endDate]);
 
+    // Parse initiator role from notes_c (contains "nmsg_permissions: role_X")
+    function initiatorRole(notes) {
+      if (!notes) return 'unknown';
+      const m = notes.match(/nmsg_permissions:\s*(role_\w+)/i);
+      if (!m) return 'unknown';
+      const r = m[1].toLowerCase();
+      if (r === 'role_advocate') return 'advocate';
+      if (r === 'role_staff_advocate') return 'advocate';
+      return 'staff';
+    }
+
     // ── Roll-ups ────────────────────────────────────────────
     const affiliateMap = {};
     const typeMap      = {};
@@ -50,6 +62,9 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     let urgentFlagged = 0, urgentMet = 0;
     let groupFlagged  = 0, groupMet  = 0;
     let openCount     = 0;
+    let advocateFlagged = 0, advocateMet = 0;
+    let staffFlagged    = 0, staffMet    = 0;
+    let unknownFlagged  = 0, unknownMet  = 0;
     const fulfillDays = [];
 
     for (const r of rows) {
@@ -62,6 +77,12 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 
       // Group vs individual
       if (r.is_group) { groupFlagged++; if (r.met) groupMet++; }
+
+      // Initiator role
+      const init = initiatorRole(r.notes);
+      if (init === 'advocate') { advocateFlagged++; if (r.met) advocateMet++; }
+      else if (init === 'staff') { staffFlagged++; if (r.met) staffMet++; }
+      else { unknownFlagged++; if (r.met) unknownMet++; }
 
       // Time to fulfill (days from created_at to provided_date or resolved_date)
       const fulfilled = r.provided_date_c || r.resolved_date_c;
@@ -110,6 +131,11 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       },
       byAffiliate: Object.values(affiliateMap).sort((a, b) => b.flagged - a.flagged),
       byType:      Object.values(typeMap).sort((a, b) => b.flagged - a.flagged),
+      byInitiator: {
+        advocate: { flagged: advocateFlagged, met: advocateMet },
+        staff:    { flagged: staffFlagged,    met: staffMet },
+        unknown:  { flagged: unknownFlagged,  met: unknownMet },
+      },
     });
   } catch (err) {
     console.error('[flagged-needs]', err);

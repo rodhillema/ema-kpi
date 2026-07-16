@@ -167,10 +167,7 @@ app.get('/report/kpi2-trial', requireAuth, (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'public', 'kpi2-trial.html'));
 });
-app.get('/report/ep-rr-diagnostic', requireAuth, (req, res) => {
-  if ((req.session.user.role || '') !== 'administrator') {
-    return res.status(403).send('Access denied');
-  }
+app.get('/report/ep-rr-diagnostic', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ep-rr-diagnostic.html'));
 });
 

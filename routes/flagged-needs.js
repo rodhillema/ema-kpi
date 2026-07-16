@@ -47,12 +47,12 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     // Parse initiator role from notes_c (contains "nmsg_permissions: role_X")
     function initiatorRole(notes) {
       if (!notes) return 'unknown';
-      const m = notes.match(/nmsg_permissions:\s*(role_\w+)/i);
+      const m = notes.match(/msg_permissions:\s*(role_\w+)/i);
       if (!m) return 'unknown';
       const r = m[1].toLowerCase();
-      if (r === 'role_advocate') return 'advocate';
-      if (r === 'role_staff_advocate') return 'advocate';
-      return 'staff';
+      if (r === 'role_advocate' || r === 'role_staff_advocate') return 'advocate';
+      if (r === 'role_coordinator' || r === 'role_supervisor' || r === 'role_administrator' || r === 'role_staff') return 'staff';
+      return 'unknown';
     }
 
     // ── Roll-ups ────────────────────────────────────────────

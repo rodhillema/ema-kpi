@@ -397,26 +397,6 @@ function render(d) {
 
     +'</div></div>';
 
-  // ── Phase 0 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 0 &nbsp;·&nbsp; Verification</span><span class="section-title">Scoring Code Baseline</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>What this section does:</strong> Confirms that the three scoring methods above produce the numbers we expect, using a known case (Teisha Shepherd) as a reference. This is a sanity check — not a finding.</div>';
-  html += '<div class="callout"><strong>KPI 3 today (report-data.js):</strong> Flat total (Method C) — adds up all answers, pre vs post. The Track Journey view in Trellis uses Method A (domain-weighted). These two methods can give a different result for the same mom.</div>';
-  if(teishaRows.length>0){
-    html += '<div class="subsection">Teisha Shepherd RR Pre Validation (Target: 3.8)</div><div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Date</th><th>Answered</th><th>Flat Avg (B)</th><th>Domain Mean of Means (A)</th></tr></thead><tbody>';
-    teishaRows.forEach(function(r){
-      var domMean = teishaDomains.length>0&&r.atype==='pre'?pf(teishaDomains.reduce(function(s,dd){return s+parseFloat(dd.domain_mean);},0)/teishaDomains.length):'-';
-      html += '<tr><td>'+esc(r.atype)+'</td><td>'+esc(String(r.ar_date||'').substring(0,10))+'</td><td>'+(r.answered||0)+'</td><td>'+pf(r.avg_score)+'</td><td>'+domMean+'</td></tr>';
-    });
-    html += '</tbody></table></div>';
-    if(teishaDomains.length>0){
-      var dm=pf(teishaDomains.reduce(function(s,dd){return s+parseFloat(dd.domain_mean);},0)/teishaDomains.length);
-      html += '<div class="callout '+(Math.abs(parseFloat(dm)-3.8)<0.05?'info':'alert')+'">Domain mean of means = <strong>'+dm+'</strong>. '+(Math.abs(parseFloat(dm)-3.8)<0.05?'Reproduces 3.8 correctly.':'Does not reproduce 3.8 exactly.')+'</div>';
-    }
-  } else {
-    html += '<div class="callout">Teisha Shepherd not found in current data window.</div>';
-  }
-  html += '</div></div>';
-
   // ── Phase 1 ──
   html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 1 &nbsp;·&nbsp; Finding ①</span><span class="section-title">Data Capture — Do We Have Both Tests on File?</span></div><div class="section-body">';
   html += '<div class="callout info"><strong>What this section shows:</strong> For every mom who completed an EP or RR program, did we capture a pre-test score AND a post-test score? KPI 3 requires both. If either is missing, that mom cannot be counted — even if she improved.</div>';
@@ -478,8 +458,15 @@ function render(d) {
   });
   html += '</div></div>';
 
+  // ── Granular divider ──
+  html += '<div style="display:flex;align-items:center;gap:14px;margin:28px 0 18px">'
+    +'<div style="flex:1;height:1px;background:var(--border)"></div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--light);white-space:nowrap">Additional Detail &mdash; For Granular Analysis</div>'
+    +'<div style="flex:1;height:1px;background:var(--border)"></div>'
+    +'</div>';
+
   // ── Phase 3 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 3 &nbsp;·&nbsp; Finding ②</span><span class="section-title">Scoring Method — Does the Formula Change Who Counts as Improved?</span></div><div class="section-body">';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Detail A &nbsp;·&nbsp; Finding ②</span><span class="section-title">Scoring Method — Per-Mom Breakdown</span></div><div class="section-body">';
   html += '<div class="callout info"><strong>What this section shows:</strong> Each mom who has both a pre-test and post-test is scored three ways (A, B, C). If A and C disagree on whether she improved, the formula — not her learning — is deciding her outcome. The table flags any mom where the methods conflict.</div>';
   if(!(counts.with_pair>0)){
     html += '<div class="callout alert">No paired moms in this window. Phase 3 cannot be computed - this is a pure Phase 1 capture finding.</div>';
@@ -525,7 +512,7 @@ function render(d) {
   html += '</div></div>';
 
   // ── Phase 4 ──
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 4 &nbsp;·&nbsp; Detail</span><span class="section-title">Question-by-Question Performance</span></div><div class="section-body">';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Detail B &nbsp;·&nbsp; Finding ③</span><span class="section-title">Question-by-Question Performance</span></div><div class="section-body">';
   html += '<div class="callout info"><strong>What this section shows:</strong> Each question\'s score distribution before the program (pre-pool), and — for moms with both tests — how scores moved between pre and post. Use this to identify which specific questions are helping or hurting the KPI, and to inform future assessment revisions.</div>';
   html += '<div class="callout"><strong>Two data pools:</strong> <em>Pre-pool</em> = all moms who took a pre-test in this window (larger group, shows baseline). <em>Paired cohort</em> = '+(counts.with_pair||0)+' moms with both pre and post (smaller group, shows actual movement).'+((counts.with_pair||0)<5?' <span class="warn-badge">Very small — treat as directional only.</span>':'')+'</div>';
   ['EP','RR'].forEach(function(track){
@@ -561,6 +548,26 @@ function render(d) {
     html += '</tbody></table></div>';
   });
   html += '<div class="footnote">Apparent regression (post &lt; pre) is ambiguous, not proof of no learning. A mom who internalizes the curriculum may score herself more honestly. Admin access only.</div>';
+  html += '</div></div>';
+
+  // ── Phase 0 (moved to end — technical verification) ──
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Detail C &nbsp;·&nbsp; Verification</span><span class="section-title">Scoring Code Baseline</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section does:</strong> Confirms the three scoring methods produce expected numbers using a known reference case (Teisha Shepherd). This is a technical sanity check — not a finding to act on.</div>';
+  html += '<div class="callout"><strong>KPI 3 today (report-data.js):</strong> Flat total (Method C). The Trellis Track Journey view uses Method A (domain-weighted). These can give a different result for the same mom.</div>';
+  if(teishaRows.length>0){
+    html += '<div class="subsection">Teisha Shepherd RR Pre Validation (Target: 3.8)</div><div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Date</th><th>Answered</th><th>Flat Avg (B)</th><th>Domain Mean of Means (A)</th></tr></thead><tbody>';
+    teishaRows.forEach(function(r){
+      var domMean = teishaDomains.length>0&&r.atype==='pre'?pf(teishaDomains.reduce(function(s,dd){return s+parseFloat(dd.domain_mean);},0)/teishaDomains.length):'-';
+      html += '<tr><td>'+esc(r.atype)+'</td><td>'+esc(String(r.ar_date||'').substring(0,10))+'</td><td>'+(r.answered||0)+'</td><td>'+pf(r.avg_score)+'</td><td>'+domMean+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    if(teishaDomains.length>0){
+      var dm=pf(teishaDomains.reduce(function(s,dd){return s+parseFloat(dd.domain_mean);},0)/teishaDomains.length);
+      html += '<div class="callout '+(Math.abs(parseFloat(dm)-3.8)<0.05?'info':'alert')+'">Domain mean of means = <strong>'+dm+'</strong>. '+(Math.abs(parseFloat(dm)-3.8)<0.05?'Reproduces 3.8 correctly.':'Does not reproduce 3.8 exactly — investigate before relying on Method A scores.')+'</div>';
+    }
+  } else {
+    html += '<div class="callout">Teisha Shepherd not found in current data window.</div>';
+  }
   html += '</div></div>';
 
   return html;

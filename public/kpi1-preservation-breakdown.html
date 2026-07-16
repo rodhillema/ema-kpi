@@ -176,7 +176,7 @@
     <div class="kpi-frac" id="rateFrac"></div>
     <div class="kpi-dollar">
       <span class="num" id="dollarNum"></span>
-      <span class="dlabel">Estimated prevention value &middot; numerator &times; $38,850 per child &middot; estimate, not a confirmed figure</span>
+      <span class="dlabel" id="dollarLabel">Estimated prevention value &middot; foster care prevention children &times; $38,850 per child &middot; estimate, not a confirmed figure</span>
     </div>
   </div>
 
@@ -269,6 +269,8 @@ function hydrate(d) {
     'Denominator is every child linked to a mom with a current wellbeing assessment ' +
     '(' + d.fwaWindow + ' window, scored composite on file).';
   document.getElementById('dollarNum').textContent = '$' + fmt(d.dollar_impact);
+  document.getElementById('dollarLabel').textContent =
+    'Estimated prevention value · ' + fmt(d.foster_prevented) + ' foster care prevention children × $38,850 per child · estimate, not a confirmed figure';
 
   var gap  = d.target - rate;
   var pill = document.getElementById('statusPill');

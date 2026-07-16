@@ -160,6 +160,82 @@ app.get('/api/admin/domain-linkage-probe', requireAuth, async (req, res) => {
   }
 });
 
+// RR post-assessment gap probe — checks why RR moms have 0 post responses
+app.get('/api/admin/rr-post-probe', requireAuth, async (req, res) => {
+  if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
+  try {
+    // Step 1: get the RR paired moms from the same window as the diagnostic
+    const { rows: rrMoms } = await pool.query(`
+      SELECT DISTINCT ON (p."momId")
+        p."id" AS pairing_id, p."momId" AS mom_id,
+        p."created_at" AS pairing_start, p."completed_on",
+        m."first_name", m."last_name", aff."name" AS affiliate
+      FROM "Pairing" p
+      JOIN "Track" t ON t."id" = p."trackId"
+      JOIN "Mom" m ON m."id" = p."momId"
+      LEFT JOIN "Affiliate" aff ON aff."id" = m."affiliate_id"
+      WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
+        AND p."status"::text = 'pairing_complete'
+        AND p."completed_on" >= '2026-01-01'
+        AND p."completed_on" <= '2026-06-30 23:59:59'
+        AND DATE_TRUNC('day', p."created_at") != DATE_TRUNC('day', p."completed_on")
+        AND (t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%')
+      ORDER BY p."momId", p."completed_on" DESC
+    `);
+
+    const momIds = rrMoms.map(r => r.mom_id);
+    if (!momIds.length) return res.json({ rr_moms: [], all_assessments: [] });
+
+    const ph = momIds.map((_, i) => `$${i+1}`).join(',');
+
+    // Step 2: ALL assessment results for these moms — any template, any type, any date
+    const { rows: allAr } = await pool.query(`
+      SELECT
+        ar."id" AS ar_id, ar."momId" AS mom_id,
+        ar."type"::text AS atype,
+        a."name" AS template_name,
+        COALESCE(ar."completedAt", ar."created_at") AS ar_date,
+        ar."deleted_at",
+        COUNT(arqr."id")::int AS response_count,
+        SUM(CASE WHEN arqr."intResponse" IS NOT NULL THEN 1 ELSE 0 END)::int AS answered_count
+      FROM "AssessmentResult" ar
+      JOIN "Assessment" a ON a."id" = ar."assessmentId"
+      LEFT JOIN "AssessmentResultQuestionResponse" arqr
+        ON arqr."assessmentResultId" = ar."id" AND arqr."deleted_at" = 0
+      WHERE ar."momId" IN (${ph})
+      GROUP BY ar."id", ar."momId", ar."type", a."name", ar."completedAt", ar."created_at", ar."deleted_at"
+      ORDER BY ar."momId", ar_date DESC
+    `, momIds);
+
+    // Step 3: check what distinct assessment types and template names appear for 'post' results
+    const { rows: postSummary } = await pool.query(`
+      SELECT
+        a."name" AS template_name,
+        ar."type"::text AS atype,
+        COUNT(ar."id")::int AS result_count,
+        SUM(CASE WHEN arqr."intResponse" IS NOT NULL THEN 1 ELSE 0 END)::int AS total_answered,
+        COUNT(DISTINCT ar."momId")::int AS distinct_moms
+      FROM "AssessmentResult" ar
+      JOIN "Assessment" a ON a."id" = ar."assessmentId"
+      LEFT JOIN "AssessmentResultQuestionResponse" arqr
+        ON arqr."assessmentResultId" = ar."id" AND arqr."deleted_at" = 0
+      WHERE ar."momId" IN (${ph}) AND ar."deleted_at" = 0
+      GROUP BY a."name", ar."type"
+      ORDER BY a."name", ar."type"
+    `, momIds);
+
+    res.json({
+      rr_mom_count: rrMoms.length,
+      rr_moms: rrMoms,
+      template_type_summary: postSummary,
+      all_assessments: allAr,
+    });
+  } catch (err) {
+    console.error('rr-post-probe error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // BenevolenceNeed column probe — administrator only, temporary
 app.get('/api/admin/benevolence-need-probe', requireAuth, async (req, res) => {
   if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });

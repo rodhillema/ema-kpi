@@ -302,6 +302,57 @@ app.get('/api/admin/audit-log-probe', requireAuth, async (req, res) => {
 });
 
 
+app.get('/api/admin/wa-schema-probe', requireAuth, async (req, res) => {
+  if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
+  try {
+    const [allTables, waCols, assessmentTypes, assessmentRows, arqrSample] = await Promise.all([
+      // All table names — look for anything we haven't queried yet
+      pool.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `),
+      // Every column on WellnessAssessment (may reveal question-level cols)
+      pool.query(`
+        SELECT column_name, data_type, ordinal_position
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'WellnessAssessment'
+        ORDER BY ordinal_position
+      `),
+      // AssessmentResult type values + counts (check for FWA-type rows)
+      pool.query(`
+        SELECT type, COUNT(*)::int AS n
+        FROM "AssessmentResult"
+        WHERE deleted_at = 0
+        GROUP BY type ORDER BY n DESC
+      `).catch(() => ({ rows: [] })),
+      // Assessment table — all defined assessments
+      pool.query(`
+        SELECT id, name, type FROM "Assessment" ORDER BY name LIMIT 50
+      `).catch(() => ({ rows: [] })),
+      // Sample ARQR row to see data shape
+      pool.query(`
+        SELECT arqr.*, aq.*, ac.name AS construct_name
+        FROM "AssessmentResultQuestionResponse" arqr
+        JOIN "AssessmentQuestion" aq ON aq.id = arqr."assessmentQuestionId"
+        LEFT JOIN "AssessmentConstruct" ac ON ac.id = aq."assessmentConstructId"
+        LIMIT 3
+      `).catch(() => ({ rows: [] })),
+    ]);
+    res.json({
+      all_tables: allTables.rows.map(r => r.table_name),
+      wa_columns: waCols.rows,
+      assessment_result_types: assessmentTypes.rows,
+      assessments: assessmentRows.rows,
+      arqr_sample: arqrSample.rows,
+    });
+  } catch (err) {
+    console.error('wa-schema-probe error:', err);
+    res.status(500).json({ error: err.message, detail: err.detail });
+  }
+});
+
 app.get('/api/affiliates', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(

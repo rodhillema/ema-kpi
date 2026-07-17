@@ -16,16 +16,15 @@ const DATA_END   = '2026-06-30';
 
 const DOMAINS = ['ats','cc','edu','ei','fin','home','naa','res','soc','trnprt','well'];
 
-// Best-effort labels derived from column names — confirm with program team
 const DOMAIN_LABELS = {
-  ats:    'Assistive Tech. Support',
-  cc:     'Child Care',
+  ats:    'Access to Services',
+  cc:     'Child Care & Wellness',
   edu:    'Education',
-  ei:     'Early Intervention',
-  fin:    'Financial Stability',
-  home:   'Housing Stability',
-  naa:    'Needs & Access',
-  res:    'Resources',
+  ei:     'Employment & Income',
+  fin:    'Financial',
+  home:   'Housing',
+  naa:    'Nurturing & Attachment',
+  res:    'Resilience',
   soc:    'Social Support',
   trnprt: 'Transportation',
   well:   'Wellness',
@@ -237,35 +236,59 @@ ${POST_COLS}
                                                                      AS no_pre_n
       `),
 
-      // ── Q3: Per-affiliate funnel ──
+      // ── Q3: Per-affiliate funnel with gap breakdown ──
       pool.query(`
         WITH
         ${PS_BATCH_CTE},
         ${INTAKE_CTES},
-        pre_fwa_ids AS (
-          SELECT DISTINCT w."mom_id"::text AS mom_id
+        intake_fwa_ids AS (
+          SELECT DISTINCT w."mom_id"::text AS mom_id,
+            MIN(w."created_at") AS intake_fwa_date
           FROM "WellnessAssessment" w
           JOIN intake_dates id ON id.mom_id = w."mom_id"::text
           WHERE w."cpi_total" IS NOT NULL AND w."deleted_at" = 0
+          GROUP BY w."mom_id"
         ),
-        post_in_window AS (
+        sixmo_fwa AS (
           SELECT DISTINCT w."mom_id"::text AS mom_id
           FROM "WellnessAssessment" w
           JOIN intake_dates id ON id.mom_id = w."mom_id"::text
           WHERE w."cpi_total" IS NOT NULL AND w."deleted_at" = 0
             AND w."updated_at" >= id.intake_date + INTERVAL '91 days'
             AND w."updated_at" <= id.intake_date + INTERVAL '180 days'
+        ),
+        next_fwa AS (
+          SELECT DISTINCT ON (w."mom_id")
+            w."mom_id"::text AS mom_id,
+            EXTRACT(EPOCH FROM (w."updated_at" - id.intake_date))::int / 86400 AS days_from_intake
+          FROM "WellnessAssessment" w
+          JOIN intake_dates id ON id.mom_id = w."mom_id"::text
+          JOIN intake_fwa_ids pf ON pf.mom_id = w."mom_id"::text
+          WHERE w."cpi_total" IS NOT NULL AND w."deleted_at" = 0
+            AND w."created_at" > pf.intake_fwa_date
+          ORDER BY w."mom_id", w."created_at" ASC
         )
         SELECT
           COALESCE(aff."name", 'Unknown') AS affiliate_name,
           COUNT(DISTINCT id.mom_id)::int  AS total_n,
-          COUNT(DISTINCT pf.mom_id)::int  AS has_pre_n,
-          COUNT(DISTINCT pw.mom_id)::int  AS has_post_in_window_n
+          COUNT(DISTINCT pf.mom_id)::int  AS has_intake_fwa_n,
+          COUNT(DISTINCT sw.mom_id)::int  AS has_sixmo_fwa_n,
+          -- Gap sub-categories (moms with intake FWA but no 6-month FWA)
+          COUNT(DISTINCT CASE
+            WHEN pf.mom_id IS NOT NULL AND sw.mom_id IS NULL AND nf.mom_id IS NULL
+            THEN id.mom_id END)::int AS no_followup_n,
+          COUNT(DISTINCT CASE
+            WHEN pf.mom_id IS NOT NULL AND sw.mom_id IS NULL AND nf.mom_id IS NOT NULL AND nf.days_from_intake < 91
+            THEN id.mom_id END)::int AS has_3mo_only_n,
+          COUNT(DISTINCT CASE
+            WHEN pf.mom_id IS NOT NULL AND sw.mom_id IS NULL AND nf.mom_id IS NOT NULL AND nf.days_from_intake > 180
+            THEN id.mom_id END)::int AS post_window_n
         FROM intake_dates id
         JOIN "Mom" m ON m."id"::text = id.mom_id AND m."deleted_at" = 0
         LEFT JOIN "Affiliate" aff ON aff."id" = m."affiliate_id"
-        LEFT JOIN pre_fwa_ids pf ON pf.mom_id = id.mom_id
-        LEFT JOIN post_in_window pw ON pw.mom_id = id.mom_id
+        LEFT JOIN intake_fwa_ids pf ON pf.mom_id = id.mom_id
+        LEFT JOIN sixmo_fwa sw ON sw.mom_id = id.mom_id
+        LEFT JOIN next_fwa nf ON nf.mom_id = id.mom_id
         GROUP BY aff."name"
         ORDER BY total_n DESC, aff."name"
       `),
@@ -340,14 +363,14 @@ ${PRE_COLS}
         domain_labels: DOMAIN_LABELS,
       },
       counts: {
-        total_organic:         parseInt(gap.total_organic) || 0,
-        ps_migrated_n:         parseInt(gap.ps_migrated_n) || 0,
-        has_pre_n:             parseInt(gap.has_pre_n) || 0,
-        has_post_in_window_n:  parseInt(gap.has_post_in_window_n) || 0,
-        no_pre_n:              parseInt(gap.no_pre_n) || 0,
-        no_second_fwa_n:       parseInt(gap.no_second_fwa_n) || 0,
-        post_too_early_n:      parseInt(gap.post_too_early_n) || 0,
-        post_too_late_n:       parseInt(gap.post_too_late_n) || 0,
+        total_organic:        parseInt(gap.total_organic) || 0,
+        ps_migrated_n:        parseInt(gap.ps_migrated_n) || 0,
+        has_intake_fwa_n:     parseInt(gap.has_pre_n) || 0,
+        has_sixmo_fwa_n:      parseInt(gap.has_post_in_window_n) || 0,
+        no_intake_fwa_n:      parseInt(gap.no_pre_n) || 0,
+        no_followup_fwa_n:    parseInt(gap.no_second_fwa_n) || 0,
+        has_3mo_only_n:       parseInt(gap.post_too_early_n) || 0,
+        post_window_n:        parseInt(gap.post_too_late_n) || 0,
         paired_n,
         fss_improved_n,
         any_domain_n,
@@ -363,12 +386,12 @@ ${PRE_COLS}
         affiliate:     r.affiliate_name,
         strict_kpi2:   parseInt(r.strict_kpi2),
         intake_date:   r.intake_date,
-        pre_date:      r.pre_date,
-        post_date:     r.post_date,
+        intake_fwa_date: r.pre_date,
+        sixmo_fwa_date:  r.post_date,
         days_between:  parseInt(r.days_between),
         inversion:     parseInt(r.temporal_inversion) === 1,
-        pre_fss:       parseFloat(r.pre_fss),
-        post_fss:      parseFloat(r.post_fss),
+        intake_fss:    parseFloat(r.pre_fss),
+        sixmo_fss:     parseFloat(r.post_fss),
         fss_delta:     parseFloat(r.fss_delta),
         fss_improved:  parseInt(r.fss_improved) === 1,
         any_domain_improved: parseInt(r.any_domain_improved) === 1,
@@ -376,9 +399,9 @@ ${PRE_COLS}
         flip:          parseInt(r.fss_vs_anydomain_flip) === 1,
         domains: DOMAINS.reduce((acc, d) => {
           acc[d] = {
-            pre:  parseFloat(r[`pre_${d}`]),
-            post: parseFloat(r[`post_${d}`]),
-            up:   parseInt(r[`${d}_up`]) === 1,
+            intake: parseFloat(r[`pre_${d}`]),
+            sixmo:  parseFloat(r[`post_${d}`]),
+            up:     parseInt(r[`${d}_up`]) === 1,
           };
           return acc;
         }, {}),

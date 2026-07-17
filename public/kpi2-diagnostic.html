@@ -81,9 +81,6 @@ body.logged-in .portal-view{display:flex}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err-box{background:var(--red-lt);border-left:3px solid var(--red);border-radius:4px;padding:12px 16px;font-size:13px;color:var(--red-dk)}
 
-/* ── Scope note ── */
-.scope-note{background:var(--green-lt);border-left:3px solid var(--green);padding:10px 14px;border-radius:0 4px 4px 0;font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.5}
-
 /* ── Section cards ── */
 .section{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
 .section-head{padding:11px 18px 9px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
@@ -234,6 +231,7 @@ function esc(s){ return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,
 function rateCell(num,den){ if(!den) return '<em style="color:#aaa">no data</em>'; var pct=Math.round(1000*num/den)/10; return num+'/'+den+' ('+pct+'%)'+(den<10?' <span class="warn-badge">small-n</span>':''); }
 function smallN(n){ return n<10?' <span class="warn-badge">n='+n+' caution</span>':''; }
 function pct(n,d){ return d ? Math.round(100*n/d)+'%' : 'n/a'; }
+function nCell(v){ return v > 0 ? '<span class="flag-text">'+v+'</span>' : '<span style="color:#aaa">0</span>'; }
 
 var DOMAIN_ORDER = ['ats','cc','edu','ei','fin','home','naa','res','soc','trnprt','well'];
 
@@ -269,40 +267,47 @@ function render(d) {
   var genDate = new Date(meta.generated).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
   // ── Flags for findings summary ──
-  var captureRate = counts.has_pre_n ? counts.has_post_in_window_n / counts.has_pre_n : 0;
-  var f1flag = counts.has_pre_n === 0 || captureRate < 0.5;
+  var intakeN  = counts.has_intake_fwa_n || 0;
+  var sixmoN   = counts.has_sixmo_fwa_n  || 0;
+  var captureRate = intakeN ? sixmoN / intakeN : 0;
+  var f1flag = intakeN === 0 || captureRate < 0.5;
 
-  var f2flag = counts.flip_n > 0;
-
-  var ceilingDomains = DOMAIN_ORDER.filter(function(d){ var dr=distBD[d]; return dr && dr.n>0 && dr.ceil_pct > 40; });
+  var ceilingDomains  = DOMAIN_ORDER.filter(function(d){ var dr=distBD[d]; return dr && dr.n>0 && dr.ceil_pct > 40; });
   var stagnantDomains = DOMAIN_ORDER.filter(function(d){ var ds=domStats[d]; return ds && ds.n>=3 && ds.up/ds.n < 0.2; });
-  var f3flag = ceilingDomains.length > 0 || stagnantDomains.length > 0;
+  var f2flag = ceilingDomains.length > 0 || stagnantDomains.length > 0;
 
   var html = '';
 
   // ── Overview ──
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px">'
     +'<div style="font-family:\'Oswald\',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:8px">What this report does</div>'
-    +'<p style="font-size:13px;line-height:1.6;color:var(--dark);margin-bottom:8px">KPI 2 measures financial and family wellness progress. A mom "counts" as improved if her Family Stability Score (FSS) — the sum of all 11 FWA domain scores — is higher on a post-assessment than on her pre-assessment, taken 91–180 days after her intake date. This report investigates <strong>three possible reasons KPI 2 is low</strong>.</p>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">'
-    +'<div style="background:var(--red-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--red);display:block;margin-bottom:3px">① Data Capture</strong>How many eligible moms have both a pre-FWA and a post-FWA on file within the 91–180 day window? Where are the gaps?</div>'
-    +'<div style="background:var(--yellow-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:#8a6000;display:block;margin-bottom:3px">② Scoring Method</strong>Does the FSS composite score agree with domain-level improvement? Would a mom count as improved under "any domain up" even if her composite went down?</div>'
-    +'<div style="background:var(--green-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--green);display:block;margin-bottom:3px">③ Assessment Design</strong>Are pre-scores already high (ceiling effects)? Are some domains consistently stagnant across all moms?</div>'
+    +'<p style="font-size:13px;line-height:1.6;color:var(--dark);margin-bottom:8px">KPI 2 measures financial and family wellness progress. A mom "counts" as improved if her Family Stability Score (FSS) — the sum of all 11 FWA domain scores — is higher on her 6-month assessment than on her intake assessment, where the 6-month window is 91–180 days after her intake date. This report investigates two possible reasons KPI 2 is low.</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:12px">'
+    +'<div style="background:var(--red-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--red);display:block;margin-bottom:3px">① Data Capture</strong>How many eligible moms have both an Intake FWA and a 6-Month FWA on file within the 91–180 day window? Where are the gaps, and why?</div>'
+    +'<div style="background:var(--green-lt);border-radius:6px;padding:9px 11px"><strong style="font-family:\'Oswald\',sans-serif;color:var(--green);display:block;margin-bottom:3px">② Assessment Design</strong>Are intake scores already high (ceiling effects)? Are some domains consistently stagnant — showing little movement between intake and 6 months?</div>'
     +'</div>'
     +'<div style="font-size:11px;color:var(--light);margin-top:10px">Window: '+esc(meta.data_start)+' – '+esc(meta.data_end)+' &nbsp;·&nbsp; Organic cohort only (PS-migrated moms excluded) &nbsp;·&nbsp; Generated '+genDate+'</div>'
     +'</div>';
 
-  // ── Scoring method reference ──
+  // ── Assessment timing reference ──
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;margin-bottom:14px">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">The two ways this report measures improvement</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'
-    +'<div style="border-left:4px solid var(--red);padding:9px 12px;background:var(--red-lt);border-radius:0 6px 6px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">Current KPI 2 &nbsp;·&nbsp; FSS Composite</div>'
-    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Sum all 11 domain scores pre and post. If the total went up by any amount, she counts as improved. <strong>This is how KPI 2 is calculated today.</strong> A domain that dropped can cancel out a domain that rose.</div>'
-    +'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:10px">FWA Assessment Cadence</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">'
     +'<div style="border-left:4px solid var(--green);padding:9px 12px;background:var(--green-lt);border-radius:0 6px 6px 0">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:4px">Any domain improved</div>'
-    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">A mom counts as improved if her score went up in <em>at least one</em> of the 11 domains — even if others stayed flat or dipped. Sets the most achievable bar.</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:4px">Intake FWA &nbsp;·&nbsp; Day 0</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Baseline assessment taken at or around the time of program enrollment. Sets the benchmark for improvement.</div>'
+    +'</div>'
+    +'<div style="border-left:4px solid var(--yellow);padding:9px 12px;background:var(--yellow-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:4px">3-Month FWA &nbsp;·&nbsp; ~Day 90</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Progress check. Not the primary KPI measurement. Moms who have a follow-up FWA recorded before the 91-day mark are counted in this category.</div>'
+    +'</div>'
+    +'<div style="border-left:4px solid var(--red);padding:9px 12px;background:var(--red-lt);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">6-Month FWA &nbsp;·&nbsp; Days 91–180</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">The primary KPI 2 measurement. A mom counts as improved if her FSS is higher here than at intake. <strong>Both assessments are required to count her.</strong></div>'
+    +'</div>'
+    +'<div style="border-left:4px solid var(--border);padding:9px 12px;background:var(--bg);border-radius:0 6px 6px 0">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin-bottom:4px">9-Month FWA &nbsp;·&nbsp; ~Day 270</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:var(--dark)">Future: progress toward long-term stability. Not yet tracked in this diagnostic.</div>'
     +'</div>'
     +'</div>'
     +'</div>';
@@ -311,7 +316,7 @@ function render(d) {
   html += '<div style="background:var(--green);border-radius:10px;padding:18px 20px;margin-bottom:14px">'
     +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:4px">Findings Summary</div>'
     +'<div style="font-family:\'Oswald\',sans-serif;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--yellow);margin-bottom:14px">What Is Causing KPI 2 to Underperform?</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px">'
 
     // Finding 1
     +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f1flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
@@ -320,49 +325,32 @@ function render(d) {
     +(f1flag ? 'YES — missing assessments are the primary problem.' : 'Capture rate is acceptable.')
     +'</div>'
     +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
-    +(counts.has_pre_n||0)+' moms have a pre-FWA. Of those, '+(counts.has_post_in_window_n||0)+' ('+pct(counts.has_post_in_window_n||0, counts.has_pre_n||1)+') have a post in the 91–180 day window. '
-    +(f1flag ? 'The low rate is primarily a missing data problem.' : 'Most moms with a pre-FWA also have a qualifying post.')
+    +intakeN+' moms have an Intake FWA. Of those, '+sixmoN+' ('+pct(sixmoN, intakeN || 1)+') have a 6-Month FWA in the 91–180 day window. '
+    +(counts.has_3mo_only_n > 0 ? counts.has_3mo_only_n+' have a 3-month follow-up but no 6-month. ' : '')
+    +(f1flag ? 'Missing data is the primary reason KPI 2 is low.' : 'Most moms with an intake FWA also have a qualifying 6-month FWA.')
     +'</div>'
     +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
     +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
-    +(f1flag ? 'Fix the workflow so every mom in the program receives a post-FWA at the right time. See Section 1 for affiliate-by-affiliate breakdowns.' : 'Monitor capture rate as volume grows.')
+    +(f1flag ? 'Fix the workflow so every mom receives a 6-Month FWA at the right time. See Section 1 for affiliate-by-affiliate breakdowns.' : 'Monitor capture rate as volume grows.')
     +'</div></div>'
 
     // Finding 2
     +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f2flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f2flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">② Scoring Method</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f2flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">② Assessment Design</div>'
     +'<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">'
-    +(counts.paired_n===0 ? 'Untestable — no paired moms yet.' : f2flag ? 'YES — FSS composite misses some real improvement.' : 'FSS and any-domain agree for all moms.')
-    +'</div>'
-    +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
-    +(counts.paired_n>0
-      ? (counts.flip_n===0
-        ? 'The FSS composite and "any domain improved" give the same verdict for every paired mom. The formula is not the cause of the low rate.'
-        : counts.flip_n+' mom(s) have at least one domain that went up, yet their FSS composite went down or held flat — those moms count as "not improved" under current KPI 2 but would count as improved under any-domain.')
-      : 'Not enough paired moms yet to test this.')
-    +'</div>'
-    +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
-    +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
-    +(f2flag ? 'Review Section 2 to see which domains are driving the flips. Consider whether partial domain improvement should count.' : 'No formula change needed. Focus on data capture.')
-    +'</div></div>'
-
-    // Finding 3
-    +'<div style="background:rgba(255,255,255,.08);border-left:4px solid '+(f3flag?'var(--red)':'rgba(255,255,255,.2)')+';border-radius:0 6px 6px 0;padding:12px 14px">'
-    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:'+(f3flag?'#ff9f8e':'rgba(255,255,255,.5)')+';margin-bottom:6px">③ Assessment Design</div>'
-    +'<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">'
-    +(f3flag
+    +(f2flag
       ? (ceilingDomains.length ? ceilingDomains.length+' domain(s) have a ceiling problem. ' : '')
         + (stagnantDomains.length ? stagnantDomains.length+' domain(s) are stagnant.' : '')
       : 'No severe ceiling or stagnation issues found.')
     +'</div>'
     +'<div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:8px">'
-    +(ceilingDomains.length ? 'Domains where >40% of moms start at the observed maximum score: '+ceilingDomains.map(function(d){return esc(domLabels[d]||d);}).join(', ')+'. Moms at ceiling cannot score higher. ' : '')
-    +(stagnantDomains.length ? 'Domains with <20% improvement rate in the paired cohort: '+stagnantDomains.map(function(d){return esc(domLabels[d]||d);}).join(', ')+'. ' : '')
-    +(!f3flag ? 'Most domains leave room for improvement. The assessment design is not mechanically blocking progress in this window.' : '')
+    +(ceilingDomains.length ? 'Ceiling domains: '+ceilingDomains.map(function(d){return esc(domLabels[d]||d);}).join(', ')+'. ' : '')
+    +(stagnantDomains.length ? 'Stagnant domains (paired cohort): '+stagnantDomains.map(function(d){return esc(domLabels[d]||d);}).join(', ')+'. ' : '')
+    +(!f2flag ? 'Most domains show reasonable variation and leave room for improvement.' : '')
     +'</div>'
     +'<div style="font-size:11px;background:rgba(255,255,255,.1);border-radius:4px;padding:7px 9px;color:rgba(255,255,255,.9)">'
     +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action: </strong>'
-    +(f3flag ? 'Review Section 3 for domain-level distributions. Consider whether ceiling domains reflect real stability or a scoring limitation.' : 'No immediate redesign needed. Revisit once paired-cohort volume grows.')
+    +(f2flag ? 'Review Section 2 for domain-level distributions. Consider whether ceiling domains reflect real stability or a scoring limitation.' : 'No immediate redesign needed. Revisit once paired-cohort volume grows.')
     +'</div></div>'
 
     +'</div></div>';
@@ -371,158 +359,77 @@ function render(d) {
   // SECTION 1 — Data Capture
   // ────────────────────────────────────────────────────────────────────────────
   html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 1 &nbsp;·&nbsp; Finding ①</span><span class="section-title">Data Capture — Do We Have Both FWAs on File?</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>What this section shows:</strong> For every organic mom with an intake date, did we capture a pre-FWA AND a post-FWA within the 91–180 day window? KPI 2 requires both. If either is missing, that mom cannot be counted as improved — even if she genuinely improved.</div>';
+  html += '<div class="callout info"><strong>What this section shows:</strong> For every organic mom with an intake date, did we capture an Intake FWA AND a 6-Month FWA within the 91–180 day window? KPI 2 requires both. If either is missing, that mom cannot be counted as improved — even if she genuinely improved.</div>';
 
   // Funnel KPI grid
   html += '<div class="subsection">Capture Funnel</div>';
   html += '<div class="kpi-grid">';
   html += '<div class="kpi-card"><div class="knum">'+(counts.total_organic||0)+'</div><div class="klbl">Organic Moms (with intake date)</div></div>';
-  html += '<div class="kpi-card '+(counts.no_pre_n>0?'kred':'')+'"><div class="knum">'+(counts.has_pre_n||0)+'</div><div class="klbl">Have a Pre-FWA</div></div>';
-  html += '<div class="kpi-card kywarn"><div class="knum">'+(counts.has_post_in_window_n||0)+'</div><div class="klbl">Have Post in Window (91–180d)</div></div>';
-  html += '<div class="kpi-card '+(counts.no_pre_n>0?'kred':'')+'"><div class="knum">'+(counts.no_pre_n||0)+'</div><div class="klbl">No Pre-FWA at All</div></div>';
+  html += '<div class="kpi-card '+(counts.no_intake_fwa_n>0?'kred':'')+'"><div class="knum">'+intakeN+'</div><div class="klbl">Have an Intake FWA</div></div>';
+  html += '<div class="kpi-card kywarn"><div class="knum">'+sixmoN+'</div><div class="klbl">Have a 6-Month FWA (91–180d)</div></div>';
+  html += '<div class="kpi-card '+(counts.no_intake_fwa_n>0?'kred':'')+'"><div class="knum">'+(counts.no_intake_fwa_n||0)+'</div><div class="klbl">No Intake FWA at All</div></div>';
   html += '</div>';
 
   if (counts.ps_migrated_n > 0) {
-    html += '<div class="callout"><strong>PS-migrated cohort excluded:</strong> '+counts.ps_migrated_n+' moms engaged via the Nov 30 / Dec 17 2025 batch entries are not counted in the organic funnel above (consistent with KPI 2 exclusion criteria).</div>';
+    html += '<div class="callout"><strong>PS-migrated cohort excluded:</strong> '+counts.ps_migrated_n+' moms engaged via the Nov 30 / Dec 17 2025 batch entries are not counted in the organic funnel (consistent with KPI 2 exclusion criteria).</div>';
   }
 
-  // Gap breakdown
-  var gapTotal = (counts.no_second_fwa_n||0) + (counts.post_too_early_n||0) + (counts.post_too_late_n||0);
-  if (counts.has_pre_n > 0) {
-    html += '<div class="subsection">Why Moms With a Pre-FWA Have No Post in Window</div>';
-    html += '<div class="tbl-wrap"><table><thead><tr><th>Status</th><th>Count</th><th>% of pre-FWA moms</th><th>What it means</th></tr></thead><tbody>';
-    html += '<tr><td><strong class="ok">Post in window ✓</strong></td><td>'+counts.has_post_in_window_n+'</td><td>'+pct(counts.has_post_in_window_n, counts.has_pre_n)+'</td><td style="font-size:11px">Eligible for KPI 2 analysis</td></tr>';
-    html += '<tr><td class="flag-text">No second FWA at all</td><td>'+counts.no_second_fwa_n+'</td><td>'+pct(counts.no_second_fwa_n, counts.has_pre_n)+'</td><td style="font-size:11px">Mom received a pre but was never given a post — workflow gap</td></tr>';
-    html += '<tr><td class="ambig">Post exists but too early (&lt;91 days)</td><td>'+counts.post_too_early_n+'</td><td>'+pct(counts.post_too_early_n, counts.has_pre_n)+'</td><td style="font-size:11px">Post was administered before the 91-day mark; does not qualify</td></tr>';
-    html += '<tr><td class="ambig">Post exists but too late (&gt;180 days)</td><td>'+counts.post_too_late_n+'</td><td>'+pct(counts.post_too_late_n, counts.has_pre_n)+'</td><td style="font-size:11px">Post was administered after the 180-day window closed</td></tr>';
+  // Gap breakdown table
+  if (intakeN > 0) {
+    html += '<div class="subsection">Why Moms With an Intake FWA Have No 6-Month FWA</div>';
+    html += '<div class="tbl-wrap"><table><thead><tr><th>Status</th><th>Count</th><th>% of Intake FWA moms</th><th>What it means</th></tr></thead><tbody>';
+    html += '<tr><td><strong class="ok">6-Month FWA on file ✓</strong></td><td>'+sixmoN+'</td><td>'+pct(sixmoN, intakeN)+'</td><td style="font-size:11px">Eligible for KPI 2 analysis</td></tr>';
+    html += '<tr><td class="flag-text">No follow-up FWA at all</td><td>'+(counts.no_followup_fwa_n||0)+'</td><td>'+pct(counts.no_followup_fwa_n||0, intakeN)+'</td><td style="font-size:11px">Mom received an Intake FWA but was never given a follow-up — workflow gap</td></tr>';
+    html += '<tr><td class="ambig">Has 3-Month FWA only (before 91-day mark)</td><td>'+(counts.has_3mo_only_n||0)+'</td><td>'+pct(counts.has_3mo_only_n||0, intakeN)+'</td><td style="font-size:11px">A follow-up FWA was done before the 91-day window opened; 6-Month FWA still needed</td></tr>';
+    html += '<tr><td class="ambig">Follow-up FWA done after 6-month window</td><td>'+(counts.post_window_n||0)+'</td><td>'+pct(counts.post_window_n||0, intakeN)+'</td><td style="font-size:11px">A follow-up exists but was administered after the 180-day window closed</td></tr>';
     html += '</tbody></table></div>';
   }
 
-  // Inversions warning
+  // Temporal inversions warning
   if (counts.inversion_n > 0) {
-    html += '<div class="callout alert"><strong>Temporal inversions detected: '+counts.inversion_n+' paired mom(s)</strong>The post-assessment date is recorded as earlier than the pre-assessment date for '+counts.inversion_n+' mom(s). This is a data integrity issue — it may reflect a recording error, a reassigned record, or incorrect use of the "completed ahead" flag. These moms are included in the paired analysis but should be investigated.</div>';
+    html += '<div class="callout alert"><strong>Temporal inversions detected: '+counts.inversion_n+' paired mom(s)</strong>The 6-Month FWA date is recorded as earlier than the Intake FWA date for '+counts.inversion_n+' mom(s). This is a data integrity issue — it may reflect a recording error or incorrect use of the "completed ahead" flag. These moms are included in the paired analysis below but should be investigated.</div>';
   }
 
-  // By-affiliate table
+  // ── Affiliate breakdown with gap detail ──
   if (affRows.length) {
-    html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
-      +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
-      +'By Affiliate &nbsp;<span style="font-weight:300;color:var(--mid)">'+affRows.length+' affiliates</span>'
-      +'</summary>'
-      +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
-      +'<th>Affiliate</th><th>Total (organic)</th><th>Has Pre-FWA</th><th>Post in Window</th><th>Capture Rate</th>'
+    html += '<div class="subsection">By Affiliate — FWA Status Breakdown</div>';
+    html += '<div class="tbl-wrap"><table><thead><tr>'
+      +'<th>Affiliate</th>'
+      +'<th>Total (organic)</th>'
+      +'<th>Intake FWA</th>'
+      +'<th>6-Month FWA ✓</th>'
+      +'<th>Capture Rate</th>'
+      +'<th>No Follow-up</th>'
+      +'<th>3-Month Only</th>'
+      +'<th>Post-Window</th>'
       +'</tr></thead><tbody>';
     affRows.forEach(function(r) {
-      var capRate = r.has_pre_n > 0 ? Math.round(100 * r.has_post_in_window_n / r.has_pre_n) : null;
+      var hasPre  = parseInt(r.has_intake_fwa_n) || 0;
+      var has6mo  = parseInt(r.has_sixmo_fwa_n)  || 0;
+      var noFU    = parseInt(r.no_followup_n)     || 0;
+      var has3mo  = parseInt(r.has_3mo_only_n)    || 0;
+      var postWin = parseInt(r.post_window_n)     || 0;
+      var capRate = hasPre > 0 ? Math.round(100 * has6mo / hasPre) : null;
       html += '<tr>'
         +'<td>'+esc(r.affiliate_name)+'</td>'
         +'<td>'+r.total_n+(r.total_n<5?' <span class="warn-badge">small-n</span>':'')+'</td>'
-        +'<td>'+rateCell(r.has_pre_n, r.total_n)+'</td>'
-        +'<td>'+rateCell(r.has_post_in_window_n, r.has_pre_n)+'</td>'
+        +'<td>'+rateCell(hasPre, r.total_n)+'</td>'
+        +'<td>'+rateCell(has6mo, hasPre)+'</td>'
         +'<td class="'+(capRate!=null&&capRate<50?'flag-text':capRate!=null&&capRate<80?'ambig':'ok')+'">'+(capRate!=null?capRate+'%':'n/a')+'</td>'
+        +'<td>'+nCell(noFU)+'</td>'
+        +'<td>'+(has3mo>0?'<span class="ambig">'+has3mo+'</span>':'<span style="color:#aaa">0</span>')+'</td>'
+        +'<td>'+(postWin>0?'<span class="ambig">'+postWin+'</span>':'<span style="color:#aaa">0</span>')+'</td>'
         +'</tr>';
     });
-    html += '</tbody></table></div></details>';
+    html += '</tbody></table></div>';
+    html += '<div class="footnote">No Follow-up = Intake FWA on file but no second FWA of any kind. 3-Month Only = follow-up FWA administered before the 91-day mark (too early for the 6-month window). Post-Window = follow-up FWA recorded after 180 days.</div>';
   }
 
   html += '<div class="callout '+(f1flag?'alert':'info')+'" style="margin-top:14px"><strong>Takeaway from this section: </strong>'
     +(f1flag
-      ? 'Missing FWA data is the primary reason KPI 2 is low — not how the assessment is scored or designed. Until every eligible mom receives a post-FWA within the 91–180 day window, KPI 2 will remain artificially low. The affiliate table above shows exactly where the gaps are.'
-      : 'Capture is not the primary problem. Most moms with a pre-FWA have a qualifying post, giving enough paired moms to analyze scoring and design.')
+      ? 'Missing FWA data is the primary reason KPI 2 is low — not how the assessment is scored or designed. Until every eligible mom receives a 6-Month FWA within the 91–180 day window, KPI 2 will remain artificially low. The affiliate table above shows exactly where the gaps are.'
+      : 'Capture is not the primary problem. Most moms with an Intake FWA also have a qualifying 6-Month FWA.')
     +'</div>';
-  html += '</div></div>';
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // SECTION 2 — Scoring Method
-  // ────────────────────────────────────────────────────────────────────────────
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 2 &nbsp;·&nbsp; Finding ②</span><span class="section-title">Scoring Method — FSS Composite vs. Domain-Level Improvement</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>What this section shows:</strong> For each mom with both a pre-FWA and a post-FWA, we compare the current FSS composite method against an "any domain improved" bar. If they disagree, the formula — not the mom\'s actual progress — is deciding her outcome.</div>';
-
-  if (!counts.paired_n) {
-    html += '<div class="callout alert">No paired moms (pre + post in window) yet. This section cannot be computed — this is a pure Section 1 capture finding.</div>';
-  } else {
-    html += '<div class="kpi-grid">';
-    html += '<div class="kpi-card kywarn"><div class="knum">'+counts.paired_n+'</div><div class="klbl">Paired Moms (pre + post in window)</div></div>';
-    html += '<div class="kpi-card"><div class="knum">'+counts.strict_n+'</div><div class="klbl">In Strict KPI 2 Cohort</div></div>';
-    html += '<div class="kpi-card '+(counts.fss_improved_n<counts.paired_n?'kred':'')+'"><div class="knum">'+counts.fss_improved_n+'</div><div class="klbl">FSS Composite Improved</div></div>';
-    html += '<div class="kpi-card"><div class="knum">'+counts.any_domain_n+'</div><div class="klbl">Any Domain Improved</div></div>';
-    html += '<div class="kpi-card '+(counts.flip_n>0?'kred':'')+'"><div class="knum">'+counts.flip_n+'</div><div class="klbl">FSS vs. Any-Domain Flips</div></div>';
-    html += '</div>';
-
-    // KPI rates table
-    html += '<div class="subsection">KPI Rate by Method</div>';
-    html += '<div class="tbl-wrap"><table><thead><tr><th>Method</th><th>Moms Improved</th><th>Total Paired</th><th>Rate</th><th>What this means</th></tr></thead><tbody>';
-    html += '<tr><td><strong>Current KPI 2</strong><br><span style="font-size:10px;color:var(--mid)">FSS composite (sum of 11 domains) up</span></td>'
-      +'<td>'+counts.fss_improved_n+'</td><td>'+counts.paired_n+(counts.paired_n<10?' <span class="warn-badge">small-n</span>':'')+'</td>'
-      +'<td style="font-size:14px;font-weight:700;color:var(--red)">'+rateCell(counts.fss_improved_n, counts.paired_n)+'</td>'
-      +'<td style="font-size:11px;color:var(--mid)">How KPI 2 is reported today — a domain that drops can cancel a domain that rose</td></tr>';
-    html += '<tr><td>Any domain improved<br><span style="font-size:10px;color:var(--mid)">≥1 of 11 domains up</span></td>'
-      +'<td>'+counts.any_domain_n+'</td><td>'+counts.paired_n+(counts.paired_n<10?' <span class="warn-badge">small-n</span>':'')+'</td>'
-      +'<td style="font-size:14px;font-weight:700;color:var(--green)">'+rateCell(counts.any_domain_n, counts.paired_n)+'</td>'
-      +'<td style="font-size:11px;color:var(--mid)">Most achievable bar — partial improvement counts</td></tr>';
-    html += '</tbody></table></div>';
-
-    // Domain improvement rates
-    html += '<div class="subsection">Improvement Rate by Domain (Paired Cohort)</div>';
-    html += '<div class="callout"><strong>Note:</strong> These rates are from the '+counts.paired_n+' moms who have both a pre and post in window. Domain labels are derived from column names — confirm with the program team that the labels are correct.'+(counts.paired_n<10?' <span class="warn-badge">Small sample — treat as directional only.</span>':'')+'</div>';
-    html += '<div class="tbl-wrap"><table><thead><tr><th>Domain</th><th>Label</th><th>Paired (n)</th><th>Pre Mean</th><th>Post Mean</th><th>Delta</th><th>% Improved</th><th>% Same</th><th>% Declined</th></tr></thead><tbody>';
-    DOMAIN_ORDER.forEach(function(d) {
-      var ds = domStats[d] || {};
-      var n = ds.n || 0;
-      var upPct  = n ? Math.round(100 * (ds.up||0)  / n) : null;
-      var samePct= n ? Math.round(100 * (ds.same||0) / n) : null;
-      var dnPct  = n ? Math.round(100 * (ds.down||0) / n) : null;
-      var delta  = ds.preMean != null && ds.postMean != null ? pf(ds.postMean - ds.preMean) : null;
-      var isStag = n >= 3 && upPct !== null && upPct < 20;
-      html += '<tr>'
-        +'<td style="font-family:monospace;font-size:11px">'+esc(d)+'</td>'
-        +'<td style="font-size:11px">'+esc(domLabels[d]||d)+'</td>'
-        +'<td>'+n+'</td>'
-        +'<td>'+(ds.preMean!=null?pf(ds.preMean):'n/a')+'</td>'
-        +'<td>'+(ds.postMean!=null?pf(ds.postMean):'n/a')+'</td>'
-        +'<td class="'+(delta!=null&&delta>0?'ok':delta!=null&&delta<0?'ambig':'')+'">'+(delta!=null?delta:'n/a')+'</td>'
-        +'<td class="'+(upPct!=null&&upPct<20?'flag-text':upPct!=null&&upPct>=50?'ok':'')+'">'+(upPct!=null?upPct+'%':'n/a')+'</td>'
-        +'<td>'+(samePct!=null?samePct+'%':'n/a')+'</td>'
-        +'<td class="'+(dnPct!=null&&dnPct>50?'ambig':'')+'">'+(dnPct!=null?dnPct+'%':'n/a')+'</td>'
-        +'</tr>';
-    });
-    html += '</tbody></table></div>';
-
-    // Agreement check
-    html += '<div class="callout '+(counts.flip_n>0?'alert':'info')+'"><strong>Do FSS and any-domain agree?</strong> '
-      +(counts.flip_n===0
-        ? 'Yes — for every paired mom, FSS composite and "any domain improved" give the same verdict. The formula is not changing anyone\'s outcome.'
-        : counts.flip_n+' mom(s) have a domain that went up but an FSS composite that did not improve. Under current KPI 2, these moms are counted as "not improved" even though part of their financial wellness got better.')
-      +'</div>';
-
-    // Per-mom table (collapsible)
-    if (paired.length) {
-      html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
-        +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
-        +'Per-Mom Detail &nbsp;<span style="font-weight:300;color:var(--mid)">'+paired.length+' paired mom'+(paired.length!==1?'s':'')+'</span>'
-        +'</summary>'
-        +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
-        +'<th>Mom</th><th>Affiliate</th><th>KPI Cohort</th><th>Days Pre→Post</th><th>Pre FSS</th><th>Post FSS</th><th>Delta</th><th>FSS Improved?</th><th>Any Domain Up?</th><th>Domains Up (of 11)</th><th>Methods Agree?</th>'
-        +'</tr></thead><tbody>';
-      paired.forEach(function(r) {
-        var agree = r.fss_improved === r.any_domain_improved;
-        html += '<tr>'
-          +'<td>'+esc(r.first_name)+' '+esc(r.last_name)+(r.inversion?' <span class="warn-badge" title="Post date before pre date">⚠ inv</span>':'')+'</td>'
-          +'<td style="font-size:11px">'+esc(r.affiliate||'')+'</td>'
-          +'<td style="font-size:11px">'+(r.strict_kpi2?'<span class="tag tag-ok">Strict</span>':'<span style="color:var(--light);font-size:10px">Widened</span>')+'</td>'
-          +'<td>'+r.days_between+'</td>'
-          +'<td>'+pf(r.pre_fss)+'</td>'
-          +'<td>'+pf(r.post_fss)+'</td>'
-          +'<td class="'+(r.fss_delta>0?'ok':r.fss_delta<0?'ambig':'')+'">'+pf(r.fss_delta)+'</td>'
-          +'<td class="'+(r.fss_improved?'ok':'ambig')+'">'+(r.fss_improved?'yes':'no')+'</td>'
-          +'<td class="'+(r.any_domain_improved?'ok':'ambig')+'">'+(r.any_domain_improved?'yes':'no')+'</td>'
-          +'<td>'+r.domains_improved_count+' / 11</td>'
-          +'<td>'+(agree?'<span class="tag tag-same">agree</span>':'<span class="tag tag-flip">DISAGREE</span>')+'</td>'
-          +'</tr>';
-      });
-      html += '</tbody></table></div></details>';
-    }
-  }
   html += '</div></div>';
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -535,18 +442,17 @@ function render(d) {
     +'</div>';
 
   // ────────────────────────────────────────────────────────────────────────────
-  // SECTION 3 — Assessment Design
+  // SECTION 2 — Assessment Design
   // ────────────────────────────────────────────────────────────────────────────
-  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Detail A &nbsp;·&nbsp; Finding ③</span><span class="section-title">Assessment Design — Pre-Score Distributions and Ceiling Effects</span></div><div class="section-body">';
-  html += '<div class="callout info"><strong>What this section shows:</strong> The pre-score distribution for each FWA domain, computed from <em>all</em> moms who have a pre-FWA (not just the paired cohort). A domain where most moms start at the observed maximum has a ceiling effect — those moms have no room to score higher on the post-FWA, regardless of real-world improvement.</div>';
-  html += '<div class="callout"><strong>Domain labels are approximate.</strong> They are derived from column names (e.g., <code>fin_cpi_sum</code> → "Financial Stability"). Confirm with the program team that the labels are accurate before drawing conclusions about any specific domain.</div>';
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">Section 2 &nbsp;·&nbsp; Finding ②</span><span class="section-title">Assessment Design — Intake Score Distributions and Ceiling Effects</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>What this section shows:</strong> The intake-score distribution for each FWA domain, computed from <em>all</em> moms who have an Intake FWA. A domain where most moms start at the observed maximum has a ceiling effect — those moms have no room to score higher on the 6-Month FWA regardless of real-world improvement.</div>';
 
   if (Object.keys(distBD).length === 0) {
-    html += '<div class="callout alert">No pre-FWA distribution data available.</div>';
+    html += '<div class="callout alert">No Intake FWA distribution data available.</div>';
   } else {
-    html += '<div class="subsection">Pre-Score Stats by Domain (All Pre-FWA Pool)</div>';
+    html += '<div class="subsection">Intake Score Stats by Domain (All Intake FWA Pool)</div>';
     html += '<div class="tbl-wrap"><table><thead><tr>'
-      +'<th>Domain</th><th>Label</th><th>Pre-pool (n)</th><th>Min</th><th>Mean</th><th>Median</th><th>Max</th><th>Std Dev</th><th>At Observed Max</th><th>Ceiling %</th><th>Flag</th>'
+      +'<th>Domain</th><th>Full Name</th><th>Intake pool (n)</th><th>Min</th><th>Mean</th><th>Median</th><th>Max</th><th>Std Dev</th><th>At Observed Max</th><th>Ceiling %</th><th>Flag</th>'
       +'</tr></thead><tbody>';
     DOMAIN_ORDER.forEach(function(d) {
       var dr = distBD[d];
@@ -570,33 +476,86 @@ function render(d) {
     html += '</tbody></table></div>';
 
     if (ceilingDomains.length) {
-      html += '<div class="callout alert"><strong>Ceiling domains (&gt;40%): </strong>'+ceilingDomains.map(function(d){return esc(domLabels[d]||d)+' ('+esc(d)+')';}).join(', ')+'. More than 40% of moms who take the pre-FWA already score at the observed maximum for these domains. They cannot improve their score no matter what happens in real life — the assessment is not sensitive enough to detect change at the top of the range.</div>';
+      html += '<div class="callout alert"><strong>Ceiling domains (&gt;40%): </strong>'+ceilingDomains.map(function(d){return esc(domLabels[d]||d)+' ('+esc(d)+')';}).join(', ')+'. More than 40% of moms who take the Intake FWA already score at the observed maximum for these domains. They cannot improve their score on the 6-Month FWA no matter what changes in real life — the assessment cannot detect improvement at the top end of the range.</div>';
     }
 
     // Stagnant domains from paired cohort
     if (counts.paired_n >= 3 && stagnantDomains.length) {
-      html += '<div class="callout"><strong>Stagnant domains in paired cohort (&lt;20% improvement rate): </strong>'+stagnantDomains.map(function(d){var ds=domStats[d]; return esc(domLabels[d]||d)+' ('+pct(ds.up,ds.n)+')';}).join(', ')+'. These domains rarely improve between pre and post within the 91–180 day window. This could reflect real stability, ceiling effects, or domains that take longer than 180 days to show change.</div>';
+      html += '<div class="callout"><strong>Stagnant domains in paired cohort (&lt;20% improvement rate): </strong>'+stagnantDomains.map(function(d){var ds=domStats[d]; return esc(domLabels[d]||d)+' ('+pct(ds.up, ds.n)+')';}).join(', ')+'. These domains rarely show improvement between intake and 6 months. This could reflect real stability in moms at enrollment, ceiling effects, or domains that take longer than 180 days to shift.</div>';
     } else if (counts.paired_n > 0 && counts.paired_n < 3) {
-      html += '<div class="callout"><strong>Paired cohort too small for stagnation analysis.</strong> Need at least 3 paired moms to flag stagnant domains. Currently '+counts.paired_n+'.</div>';
+      html += '<div class="callout"><strong>Paired cohort too small for stagnation analysis</strong> — need at least 3 paired moms. Currently '+counts.paired_n+'.</div>';
     }
 
-    // FSS composite distribution from paired cohort
-    if (paired.length >= 3) {
-      var preScores = paired.map(function(r){ return r.pre_fss; }).sort(function(a,b){return a-b;});
-      var postScores = paired.map(function(r){ return r.post_fss; }).sort(function(a,b){return a-b;});
-      var preMean = pf(preScores.reduce(function(s,v){return s+v;},0)/preScores.length);
-      var postMean = pf(postScores.reduce(function(s,v){return s+v;},0)/postScores.length);
-      var preMax = preScores[preScores.length-1];
-      var preMin = preScores[0];
-      html += '<div class="subsection">FSS Composite Distribution (Paired Cohort, n='+paired.length+')</div>';
-      html += '<div class="tbl-wrap"><table><thead><tr><th>Metric</th><th>Pre FSS</th><th>Post FSS</th></tr></thead><tbody>';
-      html += '<tr><td>Mean</td><td>'+preMean+'</td><td>'+postMean+'</td></tr>';
-      html += '<tr><td>Min observed</td><td>'+pf(preMin)+'</td><td>'+pf(postScores[0])+'</td></tr>';
-      html += '<tr><td>Max observed</td><td>'+pf(preMax)+'</td><td>'+pf(postScores[postScores.length-1])+'</td></tr>';
+    // Domain improvement rates from paired cohort
+    if (counts.paired_n > 0) {
+      html += '<div class="subsection">Domain Improvement Rates (Paired Cohort — Intake vs. 6-Month)</div>';
+      html += '<div class="callout"><strong>Paired cohort: '+counts.paired_n+' moms</strong> who have both an Intake FWA and a 6-Month FWA in window.'+(counts.paired_n<10?' <span class="warn-badge">Small sample — treat as directional only.</span>':'')+'</div>';
+      html += '<div class="tbl-wrap"><table><thead><tr><th>Domain</th><th>Full Name</th><th>n</th><th>Intake Mean</th><th>6-Mo Mean</th><th>Delta</th><th>% Improved</th><th>% Same</th><th>% Declined</th></tr></thead><tbody>';
+      DOMAIN_ORDER.forEach(function(d) {
+        var ds = domStats[d] || {};
+        var n = ds.n || 0;
+        var upPct   = n ? Math.round(100 * (ds.up||0)  / n) : null;
+        var samePct = n ? Math.round(100 * (ds.same||0) / n) : null;
+        var dnPct   = n ? Math.round(100 * (ds.down||0) / n) : null;
+        var delta   = ds.preMean != null && ds.postMean != null ? pf(ds.postMean - ds.preMean) : null;
+        html += '<tr>'
+          +'<td style="font-family:monospace;font-size:11px">'+esc(d)+'</td>'
+          +'<td style="font-size:11px">'+esc(domLabels[d]||d)+'</td>'
+          +'<td>'+n+'</td>'
+          +'<td>'+(ds.preMean!=null?pf(ds.preMean):'n/a')+'</td>'
+          +'<td>'+(ds.postMean!=null?pf(ds.postMean):'n/a')+'</td>'
+          +'<td class="'+(delta!=null&&delta>0?'ok':delta!=null&&delta<0?'ambig':'')+'">'+(delta!=null?delta:'n/a')+'</td>'
+          +'<td class="'+(upPct!=null&&upPct<20?'flag-text':upPct!=null&&upPct>=50?'ok':'')+'">'+(upPct!=null?upPct+'%':'n/a')+'</td>'
+          +'<td>'+(samePct!=null?samePct+'%':'n/a')+'</td>'
+          +'<td class="'+(dnPct!=null&&dnPct>50?'ambig':'')+'">'+(dnPct!=null?dnPct+'%':'n/a')+'</td>'
+          +'</tr>';
+      });
       html += '</tbody></table></div>';
-      html += '<div class="footnote">FSS composite = sum of all 11 domain scores. Pre-mean of '+preMean+' relative to observed max of '+preMax+' shows '+(preMax>0?Math.round(100*preMean/preMax):'?')+'% utilization — if moms are starting near the top of the observable range, FSS improvement becomes structurally difficult.</div>';
+    }
+
+    // FSS composite summary from paired cohort
+    if (paired.length >= 3) {
+      var intakeScores = paired.map(function(r){ return r.intake_fss; }).sort(function(a,b){return a-b;});
+      var sixmoScores  = paired.map(function(r){ return r.sixmo_fss;  }).sort(function(a,b){return a-b;});
+      var intakeMean = pf(intakeScores.reduce(function(s,v){return s+v;},0)/intakeScores.length);
+      var sixmoMean  = pf(sixmoScores.reduce(function(s,v){return s+v;},0)/sixmoScores.length);
+      var intakeMax  = intakeScores[intakeScores.length-1];
+      html += '<div class="subsection">FSS Composite Distribution (Paired Cohort, n='+paired.length+')</div>';
+      html += '<div class="tbl-wrap"><table><thead><tr><th>Metric</th><th>Intake FSS</th><th>6-Month FSS</th></tr></thead><tbody>';
+      html += '<tr><td>Mean</td><td>'+intakeMean+'</td><td>'+sixmoMean+'</td></tr>';
+      html += '<tr><td>Min observed</td><td>'+pf(intakeScores[0])+'</td><td>'+pf(sixmoScores[0])+'</td></tr>';
+      html += '<tr><td>Max observed</td><td>'+pf(intakeMax)+'</td><td>'+pf(sixmoScores[sixmoScores.length-1])+'</td></tr>';
+      html += '<tr><td>FSS improved (composite up)</td><td colspan="2">'+counts.fss_improved_n+' of '+paired.length+' ('+pct(counts.fss_improved_n, paired.length)+')</td></tr>';
+      html += '</tbody></table></div>';
+    }
+
+    // Per-mom table (collapsible)
+    if (paired.length) {
+      html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
+        +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+        +'Per-Mom Paired Detail &nbsp;<span style="font-weight:300;color:var(--mid)">'+paired.length+' moms with both Intake + 6-Month FWA</span>'
+        +'</summary>'
+        +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
+        +'<th>Mom</th><th>Affiliate</th><th>KPI Cohort</th><th>Intake Date</th><th>Days Intake→6-Mo</th><th>Intake FSS</th><th>6-Month FSS</th><th>FSS Delta</th><th>FSS Improved?</th><th>Domains Up (of 11)</th>'
+        +'</tr></thead><tbody>';
+      paired.forEach(function(r) {
+        html += '<tr>'
+          +'<td>'+esc(r.first_name)+' '+esc(r.last_name)+(r.inversion?' <span class="warn-badge" title="6-month date before intake date">⚠ inv</span>':'')+'</td>'
+          +'<td style="font-size:11px">'+esc(r.affiliate||'')+'</td>'
+          +'<td style="font-size:11px">'+(r.strict_kpi2?'<span class="tag tag-ok">Strict</span>':'<span style="color:var(--light);font-size:10px">Widened</span>')+'</td>'
+          +'<td style="font-size:11px">'+(r.intake_date?String(r.intake_date).substring(0,10):'')+'</td>'
+          +'<td>'+r.days_between+'</td>'
+          +'<td>'+pf(r.intake_fss)+'</td>'
+          +'<td>'+pf(r.sixmo_fss)+'</td>'
+          +'<td class="'+(r.fss_delta>0?'ok':r.fss_delta<0?'ambig':'')+'">'+pf(r.fss_delta)+'</td>'
+          +'<td class="'+(r.fss_improved?'ok':'ambig')+'">'+(r.fss_improved?'yes':'no')+'</td>'
+          +'<td>'+r.domains_improved_count+' / 11</td>'
+          +'</tr>';
+      });
+      html += '</tbody></table></div></details>';
     }
   }
+  html += '<div class="footnote">FSS composite = sum of all 11 domain scores. Apparent decline on a domain (6-month &lt; intake) is ambiguous — it may reflect a more honest self-assessment after the program, not a real regression. Admin access only.</div>';
   html += '</div></div>';
 
   return html;

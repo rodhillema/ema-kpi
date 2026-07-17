@@ -48,6 +48,7 @@ app.use('/api/kpi1-breakdown', require('./routes/kpi1-breakdown'));
 app.use('/api/kpi2-trial', requireAuth, require('./routes/kpi2-trial'));
 app.use('/api/ep-rr-diagnostic', requireAuth, require('./routes/ep-rr-diagnostic'));
 app.use('/api/kpi2-diagnostic', requireAuth, require('./routes/kpi2-diagnostic'));
+app.use('/api/sla-timing', require('./routes/sla-timing'));
 
 // Generic HIPAA export audit endpoint — shared by advocate-care.html and mom-status-report.html.
 // Both pages POST { timestamp, recordCount, recordIds, filters } here on CSV export.
@@ -357,6 +358,7 @@ app.get('/report/kpi2-trial', requireAuth, (req, res) => {
 app.get('/report/ep-rr-diagnostic', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ep-rr-diagnostic.html'));
 });
+app.get('/report/sla-timing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sla-timing.html')));
 app.get('/report/kpi2-diagnostic', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kpi2-diagnostic.html'));
 });

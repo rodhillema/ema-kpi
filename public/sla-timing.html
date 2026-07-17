@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLA Timing Analysis · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;
+  --yellow:#f2a136;--yellow-lt:#fdf4e6;
+  --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;--lighter:#c0c0c0;
+  --border:#E0E0E0;--border-lt:#f0ece8;--bg:#fdf7f3;--white:#fff;
+  --nav-w:220px;
+}
+html,body{height:100%}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark)}
+body:not(.show-login):not(.logged-in){visibility:hidden}
+
+/* ── LOGIN ── */
+.login-view{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:999}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none!important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px;filter:brightness(0) saturate(100%) invert(34%) sepia(76%) saturate(2800%) hue-rotate(340deg) brightness(102%)}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid);margin-bottom:6px}
+.field input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:10px 13px;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s}
+.field input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(236,72,47,.1)}
+.field input::placeholder{color:#c8c8c8}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.login-btn:hover{background:var(--red-dk)}
+
+/* ── PORTAL SHELL ── */
+.portal-view{display:none;flex-direction:column;height:100vh;overflow:hidden}
+body.logged-in .portal-view{display:flex}
+
+/* ── TOP NAV ── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo{height:30px;width:auto;display:block}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── SHELL ── */
+.shell{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT NAV ── */
+.leftnav{width:var(--nav-w);min-width:var(--nav-w);background:var(--white);border-right:1px solid var(--border-lt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.leftnav::-webkit-scrollbar{width:3px}
+.leftnav::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.nav-group{padding:14px 0 6px}
+.nav-group-label{font-family:'Oswald',sans-serif;font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mid);padding:0 16px 7px;display:block}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s,border-color .12s;text-decoration:none}
+.nav-item:hover{background:#f7f2ee}
+.nav-item.active{background:#fef0ed;border-left-color:var(--red)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-icon svg{width:14px;height:14px;fill:none;stroke:var(--light);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s}
+.nav-item:hover .nav-icon svg,.nav-item.active .nav-icon svg{stroke:var(--red)}
+.nav-text{font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;color:var(--dark);flex:1}
+.nav-item.active .nav-text{color:var(--red);font-weight:600}
+.nav-div{height:1px;background:var(--border-lt);margin:4px 0}
+
+/* ── RIGHT PANEL ── */
+.rightpanel{flex:1;overflow-y:auto}
+.rightpanel::-webkit-scrollbar{width:5px}
+.rightpanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── REPORT HEADER ── */
+.report-header{background:var(--green);padding:20px 36px 18px;color:var(--white)}
+.rh-inner{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.rh-eyebrow{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.rh-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--white);line-height:1.1;margin-bottom:3px}
+.rh-sub{font-size:13px;color:rgba(255,255,255,.65)}
+.rh-right{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
+.filter-wrap{display:flex;flex-direction:column;gap:4px}
+.filter-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.5)}
+.filter-select{appearance:none;-webkit-appearance:none;background-color:rgba(255,255,255,.1);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-opacity='0.7' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;border:1px solid rgba(255,255,255,.22);border-radius:7px;color:var(--white);padding:7px 34px 7px 12px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:400;letter-spacing:.4px;cursor:pointer;min-width:200px;transition:background-color .15s,border-color .15s}
+.filter-select:hover{background-color:rgba(255,255,255,.16);border-color:rgba(255,255,255,.36)}
+.filter-select:focus{outline:none}
+.filter-select option{background:var(--green);color:white}
+
+/* ── REPORT BODY ── */
+.report-body{padding:28px 36px;max-width:1100px}
+
+/* Loading / error */
+.state-msg{text-align:center;padding:60px 20px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--light)}
+.spinner{width:30px;height:30px;border:2.5px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-msg{background:var(--red-lt);border-left:3px solid var(--red);border-radius:6px;padding:12px 16px;font-size:13px;color:var(--red-dk);margin-bottom:20px}
+
+/* Divider label */
+.divider-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--lighter);margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border-lt)}
+.divider-label:first-child{margin-top:0}
+
+/* Section card */
+.sec{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.sec-head{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sec-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--green)}
+.sec-sub{font-size:12px;color:var(--light);font-style:italic;flex:1}
+
+/* Outcome tabs */
+.outcome-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:#fafaf8}
+.otab{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:9px 18px;cursor:pointer;color:var(--light);border-bottom:2px solid transparent;transition:color .12s,border-color .12s;background:none;border-top:none;border-left:none;border-right:none}
+.otab:hover{color:var(--dark)}
+.otab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--mid);text-align:right;padding:9px 14px;border-bottom:1px solid var(--border);background:#fafaf8;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:10px 14px;border-bottom:1px solid var(--border-lt);text-align:right;font-variant-numeric:tabular-nums}
+td:first-child{text-align:left;font-weight:700;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.3px}
+tr:last-child td{border-bottom:none}
+.num-big{font-family:'Shrikhand',cursive;font-size:18px;line-height:1;color:var(--dark)}
+.num-zero{color:var(--lighter)}
+.cell-hot{color:var(--red-dk);font-weight:700}
+.cell-warm{color:var(--yellow)}
+.cell-ok{color:var(--green)}
+
+/* Footnote */
+.fn{font-size:11.5px;color:var(--mid);line-height:1.6;padding:10px 20px;border-top:1px solid var(--border);background:#fafaf8}
+.fn strong{color:var(--dark)}
+
+/* Insight */
+.insight{background:var(--green-lt);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:11px 15px;margin-bottom:20px;font-size:13px;color:var(--dark);line-height:1.6}
+.insight strong{color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-view">
+  <div class="login-box">
+    <img class="login-logo" src="/email-logo.png" alt="ĒMA">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Sign in with your ĒMA account</div>
+    <div class="login-err" id="login-err">Incorrect username or password.</div>
+    <div class="field"><label>Username</label><input type="text" id="lu" autocomplete="username" placeholder="your.name"></div>
+    <div class="field"><label>Password</label><input type="password" id="lp" autocomplete="current-password" placeholder="••••••••"></div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal-view">
+
+  <!-- TOP NAV -->
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="/"><img class="nav-logo" src="/email-logo.png" alt="ĒMA"></a>
+      <div class="nav-hub">Impact Hub</div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-scope" id="nav-scope" style="display:none">
+        <div class="nav-scope-lbl">Viewing</div>
+        <div class="nav-scope-val" id="nav-scope-val">All Affiliates</div>
+      </div>
+      <div class="nav-sep" id="nav-scope-sep" style="display:none"></div>
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar"></div>
+        <div>
+          <div class="nav-name" id="nav-name"></div>
+          <div class="nav-role" id="nav-role"></div>
+        </div>
+      </div>
+      <div class="nav-sep"></div>
+      <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </nav>
+
+  <div class="shell">
+
+    <!-- LEFT NAV -->
+    <aside class="leftnav">
+      <div class="nav-group" style="padding-bottom:2px">
+        <a href="/" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M2,8 L8,2 L14,8"/><polyline points="4,8 4,14 12,14 12,8"/></svg></div>
+          <span class="nav-text">Home</span>
+        </a>
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-group">
+        <span class="nav-group-label">How We're Doing</span>
+        <a href="/#impact" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
+          <span class="nav-text">Impact Reports</span>
+        </a>
+        <a href="/#hq-resources" class="nav-item active" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg></div>
+          <span class="nav-text">HQ Resources</span>
+        </a>
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-group">
+        <span class="nav-group-label">Trellis Live</span>
+        <a href="/report/mom-status" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg></div>
+          <span class="nav-text">Our Moms</span>
+        </a>
+        <a href="/report/advocate-care" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg></div>
+          <span class="nav-text">Our Advocates</span>
+        </a>
+        <a href="/report/users" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="10" rx="1.5"/><line x1="5" y1="14" x2="11" y2="14"/><line x1="8" y1="12" x2="8" y2="14"/></svg></div>
+          <span class="nav-text">Trellis Users</span>
+        </a>
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-group">
+        <span class="nav-group-label">Affiliates &amp; Admin</span>
+        <a href="/admin/champions" class="nav-item" style="text-decoration:none">
+          <div class="nav-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8,2 L10,6 L14,6.5 L11,9.5 L12,14 L8,11.5 L4,14 L5,9.5 L2,6.5 L6,6 Z"/></svg></div>
+          <span class="nav-text">Champion Management</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- RIGHT PANEL -->
+    <div class="rightpanel">
+
+      <!-- REPORT HEADER -->
+      <div class="report-header">
+        <div class="rh-inner">
+          <div>
+            <div class="rh-eyebrow">HQ Resources · SLA Analysis</div>
+            <div class="rh-title">Referral &amp; Pairing Timing</div>
+            <div class="rh-sub">How long families wait — from referral to first contact, and from intake to advocate pairing. January – June 2026.</div>
+          </div>
+          <div class="rh-right">
+            <div class="filter-wrap">
+              <div class="filter-lbl">Affiliate</div>
+              <select class="filter-select" id="aff-select" onchange="render()">
+                <option value="">All Affiliates</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT BODY -->
+      <div class="report-body" id="report-body">
+        <div class="state-msg"><div class="spinner"></div>Loading…</div>
+      </div>
+
+    </div><!-- /rightpanel -->
+  </div><!-- /shell -->
+</div><!-- /portal-view -->
+
+<script>
+var DATA = null;
+
+// which outcome tab is active per section
+var CONTACT_TAB  = 'Engaged';
+var PAIRING_TAB  = 'Completed Track';
+
+var MONTHS = ['Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026','Jun 2026'];
+
+// ── AUTH ─────────────────────────────────────────────────────────────
+
+async function doLogin() {
+  var u = document.getElementById('lu').value.trim().toLowerCase();
+  var p = document.getElementById('lp').value;
+  var err = document.getElementById('login-err');
+  err.classList.remove('show');
+  try {
+    var r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    if (!r.ok) { err.classList.add('show'); return; }
+    var mr = await fetch('/api/me');
+    if (mr.ok) { var md = await mr.json(); if (md.user) { applySession(md.user); return; } }
+    err.classList.add('show');
+  } catch(e) { err.classList.add('show'); }
+}
+
+async function doSignOut() {
+  try { await fetch('/api/logout',{method:'POST'}); } catch(e) {}
+  window.location.href = '/';
+}
+
+function applySession(u) {
+  if (u.role !== 'administrator') { window.location.href = '/'; return; }
+  document.body.classList.remove('show-login');
+  document.body.classList.add('logged-in');
+  var first = u.firstName||'', last = u.lastName||'';
+  document.getElementById('nav-avatar').textContent = ((first[0]||'')+(last[0]||'')).toUpperCase();
+  document.getElementById('nav-name').textContent   = (first+' '+last).trim();
+  document.getElementById('nav-role').textContent   = 'HQ Admin';
+  document.getElementById('nav-scope').style.display    = '';
+  document.getElementById('nav-scope-sep').style.display = '';
+  loadData();
+}
+
+// ── DATA ─────────────────────────────────────────────────────────────
+
+async function loadData() {
+  try {
+    var r = await fetch('/api/sla-timing');
+    if (!r.ok) { var e = await r.json(); throw new Error(e.error||'HTTP '+r.status); }
+    DATA = await r.json();
+    // populate affiliate selector
+    var sel = document.getElementById('aff-select');
+    DATA.affiliates.forEach(function(a) {
+      var o = document.createElement('option');
+      o.value = a; o.textContent = a;
+      sel.appendChild(o);
+    });
+    render();
+  } catch(e) {
+    document.getElementById('report-body').innerHTML = '<div class="err-msg">Could not load data — '+esc(e.message)+'</div>';
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────
+
+function render() {
+  if (!DATA) return;
+  var aff = document.getElementById('aff-select').value;
+
+  // Filter rows
+  var contactRows = aff
+    ? DATA.contact.byAffiliate.filter(function(r){ return r.affiliate === aff; })
+    : DATA.contact.overall;
+  var pairingRows = aff
+    ? DATA.pairing.byAffiliate.filter(function(r){ return r.affiliate === aff; })
+    : DATA.pairing.overall;
+
+  // Update nav scope
+  document.getElementById('nav-scope-val').textContent = aff || 'All Affiliates';
+
+  var html = '';
+
+  // ── Section 1: Referral → First Contact ──────────────────────────
+  html += '<div class="divider-label">Referral → First Contact</div>';
+  html += '<div class="insight">Days from when a family was entered in Trellis to when a coordinator logged their first ConnectionLog contact. Broken out by whether the family ultimately engaged in the program.</div>';
+
+  html += buildContactSection(contactRows);
+
+  // ── Section 2: Intake → First Pairing ────────────────────────────
+  html += '<div class="divider-label">Intake → Advocate Pairing</div>';
+  html += '<div class="insight">Days from intake (engaged_in_program status) to when a family was first matched with an advocate. Broken out by whether they completed a track, are still active, or were never paired.</div>';
+
+  html += buildPairingSection(pairingRows);
+
+  document.getElementById('report-body').innerHTML = html;
+
+  // re-attach tab listeners
+  document.querySelectorAll('.otab[data-section="contact"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      CONTACT_TAB = btn.dataset.outcome;
+      render();
+    });
+  });
+  document.querySelectorAll('.otab[data-section="pairing"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      PAIRING_TAB = btn.dataset.outcome;
+      render();
+    });
+  });
+}
+
+// ── CONTACT SECTION ───────────────────────────────────────────────
+
+function buildContactSection(rows) {
+  var outcomes = ['Engaged','Did Not Engage','Pending'];
+  var html = '<div class="sec">';
+
+  // Tabs
+  html += '<div class="outcome-tabs">';
+  outcomes.forEach(function(o){
+    html += '<button class="otab'+(CONTACT_TAB===o?' active':'')+'" data-section="contact" data-outcome="'+esc(o)+'">'+esc(o)+'</button>';
+  });
+  html += '</div>';
+
+  // Table for active tab
+  var tabRows = rows.filter(function(r){ return r.outcome === CONTACT_TAB; });
+  // Build month-keyed map
+  var byMonth = {};
+  tabRows.forEach(function(r){ byMonth[r.month_key] = r; });
+
+  html += '<table><thead><tr>'
+    + '<th>Month</th>'
+    + '<th>Families</th>'
+    + '<th>≤ 1 day</th>'
+    + '<th>2 days</th>'
+    + '<th>3 days</th>'
+    + '<th>4 – 7 days</th>'
+    + '<th>8 – 14 days</th>'
+    + '<th>Over 14 days</th>'
+    + '<th>Never Contacted</th>'
+    + '</tr></thead><tbody>';
+
+  // Totals accumulators
+  var tot = {families:0,d1:0,d2:0,d3:0,d4_7:0,d8_14:0,over14:0,never:0};
+
+  MONTHS.forEach(function(m){
+    // find matching row
+    var key = monthKey(m);
+    var r = byMonth[key];
+    if (!r) {
+      html += '<tr><td>'+esc(m)+'</td><td colspan="8" style="color:var(--lighter);text-align:center;font-family:Lato,sans-serif;font-size:12px;font-style:italic">no data</td></tr>';
+      return;
+    }
+    tot.families += r.families; tot.d1 += r.d1; tot.d2 += r.d2; tot.d3 += r.d3;
+    tot.d4_7 += r.d4_7; tot.d8_14 += r.d8_14; tot.over14 += r.over14; tot.never += r.never;
+
+    html += '<tr>'
+      + '<td>'+esc(r.month)+'</td>'
+      + '<td><span class="num-big">'+r.families+'</span></td>'
+      + tdContact(r.d1, r.families, true)
+      + tdContact(r.d2, r.families, true)
+      + tdContact(r.d3, r.families, true)
+      + tdContact(r.d4_7, r.families, false)
+      + tdContact(r.d8_14, r.families, false)
+      + tdContact(r.over14, r.families, false)
+      + tdNever(r.never, r.families)
+      + '</tr>';
+  });
+
+  // Totals row
+  if (tot.families > 0) {
+    html += '<tr style="background:#fafaf8;font-weight:700">'
+      + '<td style="font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mid)">Jan – Jun Total</td>'
+      + '<td><span class="num-big">'+tot.families+'</span></td>'
+      + tdContact(tot.d1, tot.families, true)
+      + tdContact(tot.d2, tot.families, true)
+      + tdContact(tot.d3, tot.families, true)
+      + tdContact(tot.d4_7, tot.families, false)
+      + tdContact(tot.d8_14, tot.families, false)
+      + tdContact(tot.over14, tot.families, false)
+      + tdNever(tot.never, tot.families)
+      + '</tr>';
+  }
+
+  html += '</tbody></table>';
+  html += '<div class="fn"><strong>Source:</strong> ConnectionLog.date_created_c vs Mom.created_at (referral date). <strong>Cohort:</strong> families with intake date Jan–Jun 2026. prospect_status reflects current value.</div>';
+  html += '</div>'; // /sec
+  return html;
+}
+
+// ── PAIRING SECTION ───────────────────────────────────────────────
+
+function buildPairingSection(rows) {
+  var outcomes = ['Completed Track','Incomplete / Active','Never Paired'];
+  var html = '<div class="sec">';
+
+  // Tabs
+  html += '<div class="outcome-tabs">';
+  outcomes.forEach(function(o){
+    html += '<button class="otab'+(PAIRING_TAB===o?' active':'')+'" data-section="pairing" data-outcome="'+esc(o)+'">'+esc(o)+'</button>';
+  });
+  html += '</div>';
+
+  var tabRows = rows.filter(function(r){ return r.outcome === PAIRING_TAB; });
+  var byMonth = {};
+  tabRows.forEach(function(r){ byMonth[r.month_key] = r; });
+
+  var isPaired = PAIRING_TAB !== 'Never Paired';
+
+  html += '<table><thead><tr>'
+    + '<th>Month</th>'
+    + '<th>Families</th>';
+  if (isPaired) {
+    html += '<th>0 – 7 days</th><th>8 – 14 days</th><th>15 – 21 days</th><th>Over 21 days</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  var tot = {families:0,d0_7:0,d8_14:0,d15_21:0,over21:0};
+
+  MONTHS.forEach(function(m){
+    var key = monthKey(m);
+    var r = byMonth[key];
+    if (!r) {
+      html += '<tr><td>'+esc(m)+'</td><td colspan="'+(isPaired?5:1)+'" style="color:var(--lighter);text-align:center;font-family:Lato,sans-serif;font-size:12px;font-style:italic">no data</td></tr>';
+      return;
+    }
+    tot.families += r.families;
+    html += '<tr><td>'+esc(r.month)+'</td><td><span class="num-big">'+r.families+'</span></td>';
+    if (isPaired) {
+      tot.d0_7 += r.d0_7; tot.d8_14 += r.d8_14; tot.d15_21 += r.d15_21; tot.over21 += r.over21;
+      html += tdPairing(r.d0_7, r.families, 'ok')
+            + tdPairing(r.d8_14, r.families, 'warn')
+            + tdPairing(r.d15_21, r.families, 'warn')
+            + tdPairing(r.over21, r.families, 'hot');
+    }
+    html += '</tr>';
+  });
+
+  if (tot.families > 0) {
+    html += '<tr style="background:#fafaf8;font-weight:700">'
+      + '<td style="font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mid)">Jan – Jun Total</td>'
+      + '<td><span class="num-big">'+tot.families+'</span></td>';
+    if (isPaired) {
+      html += tdPairing(tot.d0_7, tot.families, 'ok')
+            + tdPairing(tot.d8_14, tot.families, 'warn')
+            + tdPairing(tot.d15_21, tot.families, 'warn')
+            + tdPairing(tot.over21, tot.families, 'hot');
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  html += '<div class="fn"><strong>Source:</strong> MIN(Pairing.created_at) vs intake date (engaged_in_program AuditLog or WellnessAssessment.completed_date for link-based intakes). <strong>Completed Track:</strong> any Pairing with status = pairing_complete.</div>';
+  html += '</div>';
+  return html;
+}
+
+// ── CELL HELPERS ─────────────────────────────────────────────────
+
+function tdContact(n, total, isEarly) {
+  if (!total) return '<td class="num-zero">—</td>';
+  var pct = Math.round(n / total * 100);
+  var cls = n === 0 ? 'num-zero' : (isEarly ? 'cell-ok' : (pct >= 20 ? 'cell-hot' : ''));
+  return '<td class="'+cls+'">'+(n === 0 ? '—' : n+' <span style="font-size:11px;color:var(--light);font-weight:400">('+pct+'%)</span>')+'</td>';
+}
+
+function tdNever(n, total) {
+  if (!total) return '<td class="num-zero">—</td>';
+  var pct = Math.round(n / total * 100);
+  var cls = n === 0 ? 'num-zero' : (pct >= 30 ? 'cell-hot' : pct >= 15 ? 'cell-warm' : '');
+  return '<td class="'+cls+'">'+(n === 0 ? '—' : n+' <span style="font-size:11px;color:var(--light);font-weight:400">('+pct+'%)</span>')+'</td>';
+}
+
+function tdPairing(n, total, level) {
+  if (!total) return '<td class="num-zero">—</td>';
+  var pct = Math.round(n / total * 100);
+  var cls = n === 0 ? 'num-zero' : (level === 'ok' && pct >= 40 ? 'cell-ok' : level === 'hot' && pct >= 20 ? 'cell-hot' : level === 'warn' && pct >= 25 ? 'cell-warm' : '');
+  return '<td class="'+cls+'">'+(n === 0 ? '—' : n+' <span style="font-size:11px;color:var(--light);font-weight:400">('+pct+'%)</span>')+'</td>';
+}
+
+// ── UTILS ────────────────────────────────────────────────────────
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function monthKey(label) {
+  // 'Jan 2026' → '2026-01'
+  var months = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  var parts = label.split(' ');
+  return parts[1]+'-'+months[parts[0]];
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────
+
+(async function(){
+  try {
+    var r = await fetch('/api/me');
+    if (r.ok) { var d = await r.json(); if (d.user) { applySession(d.user); return; } }
+  } catch(e) {}
+  document.body.classList.add('show-login');
+})();
+
+document.getElementById('lp').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

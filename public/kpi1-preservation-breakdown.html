@@ -119,6 +119,22 @@
   .page-foot{background:var(--red);color:#fff;padding:20px 26px;margin-top:50px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between}
   .page-foot a{color:#fff;text-decoration:underline}
   @media(max-width:720px){.nav{flex-wrap:wrap;height:auto;padding:14px 18px;gap:14px}.nav-right{gap:14px}h1.title{font-size:30px}}
+
+  /* Comparison chart */
+  .comp-chart{display:flex;flex-direction:column;gap:20px}
+  .comp-row{display:flex;align-items:center;gap:16px}
+  .comp-row-label{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);min-width:78px;text-align:right;flex-shrink:0}
+  .comp-bar{flex:1;height:46px;border-radius:6px;display:flex;overflow:hidden;gap:2px}
+  .comp-seg{height:100%;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:#fff;cursor:default;transition:filter .12s;min-width:0;overflow:hidden;flex-shrink:0}
+  .comp-seg:hover{filter:brightness(.88)}
+  .comp-seg-label{padding:0 10px;white-space:nowrap;overflow:hidden}
+  .comp-legend{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+  .comp-legend-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mid)}
+  .comp-legend-swatch{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+  .comp-tt{position:fixed;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.13);pointer-events:none;z-index:50;display:none;min-width:170px}
+  .comp-tt-title{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mid);margin-bottom:4px}
+  .comp-tt-val{font-size:16px;font-family:'Shrikhand',cursive;color:var(--dark)}
+  .comp-tt-sub{font-size:12px;color:var(--mid);margin-top:2px}
 </style>
 </head>
 <body>
@@ -189,6 +205,13 @@
     </div>
   </div>
 
+  <!-- Prevention vs Out of Care chart -->
+  <div class="section-label" style="margin-top:38px">Prevention vs. Out of Care</div>
+  <div class="anchor-note">At intake: share of eligible children with a prevention goal vs. already in care. Today: share with a recorded prevention outcome vs. a removal outcome. "Not yet recorded" children are shown separately.</div>
+  <div class="card" id="compChartCard">
+    <div id="compChart"></div>
+  </div>
+
   <!-- GOAL breakdown -->
   <div class="section-label">By Family Preservation Goal</div>
   <div class="anchor-note">What ĒMA identified as the preservation goal for each eligible child at assessment. Proportions are of the full eligible population.</div>
@@ -213,6 +236,8 @@
   </div>
 
 </div>
+
+<div class="comp-tt" id="compTt"></div>
 
 <div class="page-foot">
   <span>ĒMA Impact Hub &middot; HQ Resource</span>
@@ -258,6 +283,84 @@ function renderBreakdown(rows, barId, tableId, showTags) {
   tbody.appendChild(tr);
 }
 
+function renderCompChart(d) {
+  var g = d.goal, im = d.impact;
+  var tt = document.getElementById('compTt');
+
+  var rows = [
+    { label: 'At Intake', segments: [
+      { key: 'Prevention Goal',   count: g.prevent_cps_involvement + g.prevent_foster_care_placement, color: 'var(--green)' },
+      { key: 'Already in Care',   count: g.prevent_permanent_removal + g.not_eligible_program,        color: 'var(--red)' },
+      { key: 'Not Recorded',      count: g.not_recorded,                                              color: 'var(--border)', dashed: true },
+    ]},
+    { label: 'Today', segments: [
+      { key: 'Prevention Outcome', count: im.prevented_from_cps_involvement + im.prevented_from_foster_care_placement, color: 'var(--green)' },
+      { key: 'Out of Care',        count: im.temporary_removal + im.permanent_removal,                                  color: 'var(--red)' },
+      { key: 'Not Yet Recorded',   count: im.not_yet_recorded,                                                          color: 'var(--border)', dashed: true },
+    ]},
+  ];
+
+  var chart = document.getElementById('compChart');
+  chart.innerHTML = '<div class="comp-chart"></div>';
+  var wrap = chart.querySelector('.comp-chart');
+
+  rows.forEach(function(row) {
+    var total = row.segments.reduce(function(s, seg) { return s + seg.count; }, 0);
+    var rowEl = document.createElement('div');
+    rowEl.className = 'comp-row';
+
+    var lbl = document.createElement('div');
+    lbl.className = 'comp-row-label';
+    lbl.textContent = row.label;
+    rowEl.appendChild(lbl);
+
+    var bar = document.createElement('div');
+    bar.className = 'comp-bar';
+
+    row.segments.forEach(function(seg) {
+      if (!seg.count) return;
+      var pctVal = total ? seg.count / total * 100 : 0;
+      var el = document.createElement('div');
+      el.className = 'comp-seg';
+      el.style.width = pctVal + '%';
+      el.style.background = seg.color;
+      if (seg.dashed) { el.style.border = '1.5px dashed #c9c2b4'; el.style.color = '#aaa'; }
+      if (pctVal >= 7) {
+        el.innerHTML = '<span class="comp-seg-label">' + Math.round(pctVal) + '%</span>';
+      }
+      el.addEventListener('mousemove', function(e) {
+        tt.style.display = 'block';
+        tt.style.left = (e.clientX + 14) + 'px';
+        tt.style.top  = (e.clientY - 54) + 'px';
+        tt.innerHTML =
+          '<div class="comp-tt-title">' + row.label + ' · ' + seg.key + '</div>' +
+          '<div class="comp-tt-val">' + fmt(seg.count) + ' children</div>' +
+          '<div class="comp-tt-sub">' + (Math.round(pctVal * 10) / 10).toFixed(1) + '% of ' + row.label.toLowerCase() + ' cohort (' + fmt(total) + ')</div>';
+      });
+      el.addEventListener('mouseleave', function() { tt.style.display = 'none'; });
+      bar.appendChild(el);
+    });
+
+    rowEl.appendChild(bar);
+    wrap.appendChild(rowEl);
+  });
+
+  var legend = document.createElement('div');
+  legend.className = 'comp-legend';
+  [
+    { label: 'Prevention', color: 'var(--green)' },
+    { label: 'In Care / Out of Care', color: 'var(--red)' },
+    { label: 'Not Recorded', color: 'var(--border)', dashed: true },
+  ].forEach(function(item) {
+    var li = document.createElement('div');
+    li.className = 'comp-legend-item';
+    var sw = '<div class="comp-legend-swatch" style="background:' + item.color + ';' + (item.dashed ? 'border:1.5px dashed #c9c2b4;' : '') + '"></div>';
+    li.innerHTML = sw + item.label;
+    legend.appendChild(li);
+  });
+  wrap.appendChild(legend);
+}
+
 function hydrate(d) {
   var denom     = d.denominator;
   var numerator = d.numerator;
@@ -289,6 +392,8 @@ function hydrate(d) {
     'A preservation goal is missing for ' + fmt(goalNull) + ' children (' + pctStr(goalNull, denom) + '). ' +
     'FWA currency is based on submission timestamp plus a scored composite; a timestamp alone does not confirm a full re-assessment.';
   if (notRecorded === 0 && goalNull === 0) document.getElementById('banner').style.display = 'none';
+
+  renderCompChart(d);
 
   renderBreakdown([
     { label: 'Prevent CPS Involvement',       count: g.prevent_cps_involvement,       color: 'var(--green)' },

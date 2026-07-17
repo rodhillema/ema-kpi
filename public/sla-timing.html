@@ -271,8 +271,8 @@ tr:last-child td{border-bottom:none}
 var DATA = null;
 
 // which outcome tab is active per section
-var CONTACT_TAB  = 'Engaged';
-var PAIRING_TAB  = 'Completed Track';
+var CONTACT_TAB  = 'All';
+var PAIRING_TAB  = 'All';
 
 var MONTHS = ['Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026','Jun 2026'];
 
@@ -381,7 +381,7 @@ function render() {
 // ── CONTACT SECTION ───────────────────────────────────────────────
 
 function buildContactSection(rows) {
-  var outcomes = ['Engaged','Did Not Engage','Pending'];
+  var outcomes = ['All','Engaged','Did Not Engage','Pending'];
   var html = '<div class="sec">';
 
   // Tabs
@@ -391,11 +391,21 @@ function buildContactSection(rows) {
   });
   html += '</div>';
 
-  // Table for active tab
-  var tabRows = rows.filter(function(r){ return r.outcome === CONTACT_TAB; });
-  // Build month-keyed map
+  // Build month-keyed map — aggregate all outcomes if tab is 'All'
   var byMonth = {};
-  tabRows.forEach(function(r){ byMonth[r.month_key] = r; });
+  rows.forEach(function(r){
+    if (CONTACT_TAB !== 'All' && r.outcome !== CONTACT_TAB) return;
+    var key = r.month_key;
+    if (!byMonth[key]) byMonth[key] = {month_key:key,month:r.month,families:0,d1:0,d2:0,d3:0,d4_7:0,d8_14:0,over14:0,never:0};
+    byMonth[key].families += r.families;
+    byMonth[key].d1      += r.d1;
+    byMonth[key].d2      += r.d2;
+    byMonth[key].d3      += r.d3;
+    byMonth[key].d4_7    += r.d4_7;
+    byMonth[key].d8_14   += r.d8_14;
+    byMonth[key].over14  += r.over14;
+    byMonth[key].never   += r.never;
+  });
 
   html += '<table><thead><tr>'
     + '<th>Month</th>'
@@ -460,7 +470,7 @@ function buildContactSection(rows) {
 // ── PAIRING SECTION ───────────────────────────────────────────────
 
 function buildPairingSection(rows) {
-  var outcomes = ['Completed Track','Incomplete / Active','Never Paired'];
+  var outcomes = ['All','Completed Track','Incomplete / Active','Never Paired'];
   var html = '<div class="sec">';
 
   // Tabs
@@ -470,9 +480,18 @@ function buildPairingSection(rows) {
   });
   html += '</div>';
 
-  var tabRows = rows.filter(function(r){ return r.outcome === PAIRING_TAB; });
+  // Build month-keyed map — aggregate all outcomes if tab is 'All'
   var byMonth = {};
-  tabRows.forEach(function(r){ byMonth[r.month_key] = r; });
+  rows.forEach(function(r){
+    if (PAIRING_TAB !== 'All' && r.outcome !== PAIRING_TAB) return;
+    var key = r.month_key;
+    if (!byMonth[key]) byMonth[key] = {month_key:key,month:r.month,families:0,d0_7:0,d8_14:0,d15_21:0,over21:0};
+    byMonth[key].families += r.families;
+    byMonth[key].d0_7    += r.d0_7;
+    byMonth[key].d8_14   += r.d8_14;
+    byMonth[key].d15_21  += r.d15_21;
+    byMonth[key].over21  += r.over21;
+  });
 
   var isPaired = PAIRING_TAB !== 'Never Paired';
 

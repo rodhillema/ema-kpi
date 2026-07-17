@@ -58,6 +58,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
     // ── Roll-ups ────────────────────────────────────────────
     const affiliateMap = {};
     const typeMap      = {};
+    const monthMap     = {};
     let totalFlagged = 0, totalMet = 0;
     let urgentFlagged = 0, urgentMet = 0;
     let groupFlagged  = 0, groupMet  = 0;
@@ -102,6 +103,12 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       if (!typeMap[t]) typeMap[t] = { type: t, flagged: 0, met: 0 };
       typeMap[t].flagged++;
       if (r.met) typeMap[t].met++;
+
+      // By month (YYYY-MM key)
+      const mo = new Date(r.created_at).toISOString().slice(0, 7);
+      if (!monthMap[mo]) monthMap[mo] = { month: mo, flagged: 0, met: 0 };
+      monthMap[mo].flagged++;
+      if (r.met) monthMap[mo].met++;
     }
 
     // Avg and median days to fulfill
@@ -131,6 +138,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       },
       byAffiliate: Object.values(affiliateMap).sort((a, b) => b.flagged - a.flagged),
       byType:      Object.values(typeMap).sort((a, b) => b.flagged - a.flagged),
+      byMonth:     Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month)),
       byInitiator: {
         advocate: { flagged: advocateFlagged, met: advocateMet },
         staff:    { flagged: staffFlagged,    met: staffMet },

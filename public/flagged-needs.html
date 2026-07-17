@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -402,6 +403,12 @@ function render() {
   // ── Insight
   html += buildInsight(d);
 
+  // ── Month-over-month chart
+  if (d.byMonth && d.byMonth.length > 1) {
+    html += '<div class="divider-label">Month Over Month</div>';
+    html += '<div class="sec"><canvas id="mom-chart" height="90"></canvas></div>';
+  }
+
   // ── By Affiliate
   html += '<div class="divider-label">By Affiliate</div>';
   html += '<div class="sec">'
@@ -474,6 +481,43 @@ function render() {
     + '</div>';
 
   document.getElementById('report-body').innerHTML = html;
+
+  // ── Render month-over-month chart
+  if (d.byMonth && d.byMonth.length > 1) {
+    var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var labels  = d.byMonth.map(function(m) { return MONTH_NAMES[parseInt(m.month.slice(5,7),10)-1]; });
+    var flagged = d.byMonth.map(function(m) { return m.flagged; });
+    var met     = d.byMonth.map(function(m) { return m.met; });
+    var ctx = document.getElementById('mom-chart').getContext('2d');
+    if (window._momChart) window._momChart.destroy();
+    window._momChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Flagged', data: flagged, backgroundColor: 'rgba(18,57,57,0.15)', borderColor: '#123939', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Met',     data: met,     backgroundColor: '#123939',              borderColor: '#123939', borderWidth: 0,   borderRadius: 4 },
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { family: 'Lato', size: 12 }, color: '#5A5A5A', boxWidth: 12, padding: 16 } },
+          tooltip: { callbacks: { label: function(ctx) {
+            var i = ctx.dataIndex;
+            var f = flagged[i], m = met[i];
+            if (ctx.datasetIndex === 1) return 'Met: '+m+' ('+Math.round(m/f*100)+'%)';
+            return 'Flagged: '+f;
+          }}}
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'Lato', size: 12 }, color: '#5A5A5A' } },
+          y: { grid: { color: '#f0ece8' }, ticks: { font: { family: 'Lato', size: 11 }, color: '#999' }, beginAtZero: true }
+        }
+      }
+    });
+  }
 }
 
 // ── HELPERS ──────────────────────────────────────────────

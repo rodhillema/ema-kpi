@@ -2423,7 +2423,7 @@ router.get('/', async (req, res) => {
         membership_community: membershipCommunity.rows[0].count,
         sessions_in_period: sessionsInPeriod.rows,
         kpi1: { rate: kpi1Rate, numerator: kpi1Num, denominator: kpi1Den, cps_prevented: kpi1CpsPrevented, foster_prevented: kpi1FosterPrevented, dollar_impact: kpi1FosterPrevented * 38850, excluded: kpi1Excluded.rows[0]?.count || 0, target: 85 },
-        kpi2: { rate: kpi2Rate, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, excluded: kpi2ExcludedN, stable: kpi2Stable, declined: kpi2Declined, status: 'pending', target: 70 },
+        kpi2: { rate: null, numerator: kpi2Num, denominator: kpi2Den, cohort_n: kpi2CohortN, excluded: kpi2ExcludedN, stable: kpi2Stable, declined: kpi2Declined, status: 'pending', target: 70 },
         kpi3: { rate: kpi3Rate, numerator: kpi3Improved, denominator: kpi3WithData, total_completions: kpi3Total, target: 70 },
       },
 

@@ -1650,8 +1650,8 @@ router.get('/', async (req, res) => {
         ep_rr_pairings AS (
           SELECT p."id" AS pairing_id, p."momId", p."created_at" AS pairing_start,
             CASE
-              WHEN t."title" ILIKE 'Empowered Parenting%' OR t."title" ILIKE 'Crianza empoderada%' THEN 'EP'
-              WHEN t."title" ILIKE 'Resilience%' OR t."title" ILIKE 'Hoja de ruta%' THEN 'RR'
+              WHEN t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%' THEN 'EP'
+              WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%' THEN 'RR'
             END AS track_group
           FROM "Pairing" p
           JOIN "Track" t ON t."id" = p."trackId"
@@ -1660,8 +1660,8 @@ router.get('/', async (req, res) => {
             AND p."status"::text = 'pairing_complete'
             AND p."completed_on" >= '${PERIOD_START}'
             AND p."completed_on" <= '${PERIOD_END} 23:59:59'
-            AND (t."title" ILIKE 'Empowered Parenting%' OR t."title" ILIKE 'Crianza empoderada%'
-                 OR t."title" ILIKE 'Resilience%' OR t."title" ILIKE 'Hoja de ruta%')
+            AND (t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%'
+                 OR t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%')
             ${affWhere}
         ),
         -- NPP pairings completed in period

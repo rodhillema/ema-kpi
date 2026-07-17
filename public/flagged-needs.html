@@ -488,32 +488,34 @@ function render() {
     var labels  = d.byMonth.map(function(m) { return MONTH_NAMES[parseInt(m.month.slice(5,7),10)-1]; });
     var flagged = d.byMonth.map(function(m) { return m.flagged; });
     var met     = d.byMonth.map(function(m) { return m.met; });
+    var rates = d.byMonth.map(function(m) { return m.flagged ? Math.round(m.met/m.flagged*100) : null; });
     var ctx = document.getElementById('mom-chart').getContext('2d');
     if (window._momChart) window._momChart.destroy();
     window._momChart = new Chart(ctx, {
-      type: 'bar',
       data: {
         labels: labels,
         datasets: [
-          { label: 'Flagged', data: flagged, backgroundColor: 'rgba(18,57,57,0.15)', borderColor: '#123939', borderWidth: 1.5, borderRadius: 4 },
-          { label: 'Met',     data: met,     backgroundColor: '#123939',              borderColor: '#123939', borderWidth: 0,   borderRadius: 4 },
+          { type: 'bar',  label: 'Flagged', data: flagged, backgroundColor: 'rgba(18,57,57,0.12)', borderColor: '#123939', borderWidth: 1.5, borderRadius: 4, yAxisID: 'y' },
+          { type: 'bar',  label: 'Met',     data: met,     backgroundColor: '#123939',             borderColor: '#123939', borderWidth: 0,   borderRadius: 4, yAxisID: 'y' },
+          { type: 'line', label: '% Met',   data: rates,   borderColor: '#ec482f', backgroundColor: 'rgba(236,72,47,0.08)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#ec482f', tension: 0.3, yAxisID: 'pct' },
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { position: 'bottom', labels: { font: { family: 'Lato', size: 12 }, color: '#5A5A5A', boxWidth: 12, padding: 16 } },
-          tooltip: { callbacks: { label: function(ctx) {
-            var i = ctx.dataIndex;
-            var f = flagged[i], m = met[i];
-            if (ctx.datasetIndex === 1) return 'Met: '+m+' ('+Math.round(m/f*100)+'%)';
-            return 'Flagged: '+f;
+          tooltip: { callbacks: { label: function(c) {
+            if (c.datasetIndex === 2) return '% Met: '+c.parsed.y+'%';
+            if (c.datasetIndex === 1) return 'Met: '+c.parsed.y;
+            return 'Flagged: '+c.parsed.y;
           }}}
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { family: 'Lato', size: 12 }, color: '#5A5A5A' } },
-          y: { grid: { color: '#f0ece8' }, ticks: { font: { family: 'Lato', size: 11 }, color: '#999' }, beginAtZero: true }
+          x:   { grid: { display: false }, ticks: { font: { family: 'Lato', size: 12 }, color: '#5A5A5A' } },
+          y:   { grid: { color: '#f0ece8' }, ticks: { font: { family: 'Lato', size: 11 }, color: '#999' }, beginAtZero: true, position: 'left' },
+          pct: { grid: { display: false }, ticks: { font: { family: 'Lato', size: 11 }, color: '#ec482f', callback: function(v){ return v+'%'; } }, min: 0, max: 100, position: 'right' }
         }
       }
     });

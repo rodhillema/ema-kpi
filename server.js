@@ -339,6 +339,7 @@ app.get('/set-password', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/quarterly/q1-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
+app.get('/report/quarterly/q2-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
 app.get('/report/advocate-care', (req, res) => res.sendFile(path.join(__dirname, 'public', 'advocate-care.html')));
 app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mom-status-report.html')));
 app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user-report.html')));

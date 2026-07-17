@@ -456,14 +456,14 @@ body.champ-admin .champ-mgmt-section{display:flex}
       <div class="sec-title">Impact Reports</div>
       <div class="sec-intro">A look at what happened over a period of time — how families were served, how the program performed, and where things stand. Available by quarter, month, and year.</div>
       <div class="rlist">
-        <a class="rcard cr" href="/report/quarterly/q1-2026">
+        <a class="rcard cr" href="/report/quarterly/q2-2026">
           <div class="ricon r"><svg viewBox="0 0 16 16"><polyline points="2,12 6,7 9,10 14,4"/><line x1="2" y1="14" x2="14" y2="14"/></svg></div>
           <div class="rbody">
             <div class="rname">Quarterly Impact Report</div>
             <div class="rdesc">How ĒMA performed this quarter — family preservation, stability, learning progress, and how families found us.</div>
           </div>
           <div class="rright">
-            <span class="badge-latest">Latest: Q1 2026</span>
+            <span class="badge-latest">Latest: Q2 2026</span>
             <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
           </div>
         </a>
@@ -596,17 +596,6 @@ body.champ-admin .champ-mgmt-section{display:flex}
       <div class="sec-title">Action Items</div>
       <div class="sec-intro">Targeted reports that surface specific data for review and action — available to HQ administrators only during the current validation phase.</div>
       <div class="rlist">
-        <a class="rcard cr" href="/report/child-welfare-status">
-          <div class="ricon r"><svg viewBox="0 0 16 16"><path d="M2,2 L14,2 L14,14 L2,14 Z"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/><circle cx="12" cy="12" r="2.5"/><line x1="11" y1="12" x2="13" y2="12"/><line x1="12" y1="11" x2="12" y2="13"/></svg></div>
-          <div class="rbody">
-            <div class="rname">Child Welfare Status Review</div>
-            <div class="rdesc">Review and confirm each child's intake and latest welfare status so family preservation reporting is accurate.</div>
-          </div>
-          <div class="rright">
-            <div class="badge-live"><div class="ldot"></div>Live</div>
-            <div class="rarrow"><svg viewBox="0 0 10 10"><polyline points="3,2 7,5 3,8"/></svg></div>
-          </div>
-        </a>
       </div>
     </div>
 
@@ -854,17 +843,7 @@ function applyHashNav() {
 // badge: 'new-report' | 'new-range'
 // href: link to the report
 // view: optional — switch to this nav view instead of navigating
-var WN_ENTRIES = [
-  {
-    date: "June 2026",
-    badge: "new-report",
-    accent: "cr",
-    name: "Child Welfare Status Review",
-    desc: "Review and validate each child's intake and latest welfare status.",
-    roles: ["administrator", "supervisor", "coordinator"],
-    href: "/report/child-welfare-status"
-  },
-];
+var WN_ENTRIES = [];
 
 var BADGE_LABELS = { "new-report": "New Report", "new-range": "New Time Range" };
 

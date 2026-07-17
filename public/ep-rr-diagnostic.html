@@ -485,6 +485,35 @@ function render(d) {
       ? 'The missing data is the primary reason KPI 3 is low — not how the assessment is designed or scored. Until every program completion reliably triggers both a pre-test and a post-test, the KPI denominator will stay too small to be meaningful. The affiliate table above shows exactly where the gaps are. Fix the workflow first.'
       : 'Data capture is not the primary problem. Most completions have both tests, giving enough paired moms to analyze the assessment design and scoring method in the sections below.')
     +'</div>';
+  if(counts.rr_pair===0&&currentTemplates.some(function(t){return t.track_group==='RR';})){
+    html += '<div style="margin-top:18px;border-radius:8px;overflow:hidden;border:2px solid var(--red)">'
+      +'<div style="background:var(--red);padding:10px 14px;display:flex;align-items:center;gap:10px">'
+      +'<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11.5" r=".5" fill="white" stroke="none"/></svg>'
+      +'<span style="font-family:\'Oswald\',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--white)">Significant Finding — RR Post-Assessments Not Recorded in Trellis</span>'
+      +'</div>'
+      +'<div style="background:var(--red-lt);padding:14px 16px">'
+      +'<p style="font-size:13px;line-height:1.6;color:var(--dark);margin-bottom:10px">Zero RR-paired moms have scoreable post-assessment data for Q2 YTD. This is why RR shows 0% across all three scoring methods. The root cause is not yet confirmed: it may be a <strong>Trellis save/persistence bug</strong> (assessments submitted by advocates but not saving to the database) or a workflow gap (post not being completed after the pairing is closed). Either way, this is a Trellis or operations issue — not a scoring or methodology problem.</p>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px">'
+      +'<div style="background:var(--white);border-radius:6px;padding:10px 12px">'
+      +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">What the data shows</div>'
+      +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">Post-assessment records exist in the database — Trellis creates the shell when a pairing is closed — but all show 0 responses saved. Two moms have 6 responses each but cannot be scored: one has no matching RR pre, the other has a pre dated after her post.</div>'
+      +'</div>'
+      +'<div style="background:var(--white);border-radius:6px;padding:10px 12px">'
+      +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">About the 6 of 9 questions</div>'
+      +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">The Resilience Post-Assessment has 9 questions total. Questions 7–9 are open-text qualitative fields intentionally excluded from the numeric score — only 6 questions use the rated scale. This is by design, not a data gap or Trellis problem.</div>'
+      +'</div>'
+      +'<div style="background:var(--white);border-radius:6px;padding:10px 12px">'
+      +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--red-dk);margin-bottom:4px">Moms with both EP and RR</div>'
+      +'<div style="font-size:12px;line-height:1.5;color:var(--dark)">Several RR-paired moms also have full EP assessments on file. This reflects dual curriculum enrollment — moms who completed both tracks intentionally — not a template selection error.</div>'
+      +'</div>'
+      +'</div>'
+      +'<div style="background:rgba(236,72,47,.1);border-radius:5px;padding:9px 12px;font-size:12px;color:var(--red-dk)">'
+      +'<strong style="font-family:\'Oswald\',sans-serif;text-transform:uppercase;font-size:10px;letter-spacing:.04em">Action required: </strong>'
+      +'Escalate to RD Hill and Trellis support to determine whether this is a Trellis save/persistence bug. At least one advocate has reported that assessments were not appearing after submission. Until post-assessments are saving correctly, RR will report 0% regardless of actual mom outcomes.'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  }
   html += '</div></div>';
 
   // ── Phase 2 ──

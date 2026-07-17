@@ -1070,8 +1070,8 @@ router.get('/', async (req, res) => {
           UNION ALL
           SELECT p.track_group,
             COALESCE(c.total_completions, 0) AS total_completions,
-            COUNT(CASE WHEN p.pre_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
-            SUM(CASE WHEN p.pre_sum IS NOT NULL AND p.post_sum > p.pre_sum THEN 1 ELSE 0 END)::int AS improved
+            COUNT(CASE WHEN p.pre_sum IS NOT NULL AND p.post_sum IS NOT NULL THEN 1 END)::int AS valid_pairs,
+            SUM(CASE WHEN p.pre_sum IS NOT NULL AND p.post_sum IS NOT NULL AND p.post_sum > p.pre_sum THEN 1 ELSE 0 END)::int AS improved
           FROM ep_rr_paired p
           LEFT JOIN ep_rr_pairing_counts c ON c.track_group = p.track_group
           GROUP BY p.track_group, c.total_completions
@@ -1754,7 +1754,7 @@ router.get('/', async (req, res) => {
         combined AS (
           SELECT post_sum, pre_sum FROM npp_scored
           UNION ALL
-          SELECT post_sum, pre_sum FROM ep_rr_paired WHERE pre_sum IS NOT NULL
+          SELECT post_sum, pre_sum FROM ep_rr_paired WHERE pre_sum IS NOT NULL AND post_sum IS NOT NULL
         )
         SELECT
           (SELECT COUNT(*)::int FROM npp_pairings)

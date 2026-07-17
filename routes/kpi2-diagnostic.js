@@ -112,7 +112,7 @@ const DOMAINS_UP = DOMAINS.map(d => `(q.post_${d}>p.${d})::int`).join('+');
 
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const [pairedResult, gapResult, affResult, distResult] = await Promise.all([
+    const [pairedResult, gapResult, affResult, distResult, mainKpiResult] = await Promise.all([
 
       // ── Q1: Paired rows — moms with both pre + post FWA in the 91-180 day window ──
       pool.query(`
@@ -124,6 +124,7 @@ router.get('/', requireAdmin, async (req, res) => {
           SELECT DISTINCT ON (w."mom_id")
             w."mom_id"::text AS mom_id,
             w."created_at"   AS pre_date,
+            w."completed_ahead" AS pre_link_sent,
 ${PRE_COLS}
           FROM "WellnessAssessment" w
           JOIN intake_dates id ON id.mom_id = w."mom_id"::text
@@ -134,6 +135,7 @@ ${PRE_COLS}
           SELECT DISTINCT ON (w."mom_id")
             w."mom_id"::text AS mom_id,
             w."updated_at"   AS post_date,
+            w."completed_ahead" AS post_link_sent,
 ${POST_COLS}
           FROM "WellnessAssessment" w
           JOIN intake_dates id ON id.mom_id = w."mom_id"::text
@@ -153,6 +155,8 @@ ${POST_COLS}
           q.post_date::date,
           (q.post_date::date - p.pre_date::date) AS days_between,
           CASE WHEN q.post_date < p.pre_date THEN 1 ELSE 0 END AS temporal_inversion,
+          p.pre_link_sent  AS intake_link_sent,
+          q.post_link_sent AS sixmo_link_sent,
           -- FSS composite
           (${PRE_SUM})  AS pre_fss,
           (${POST_SUM}) AS post_fss,
@@ -321,13 +325,64 @@ ${PRE_COLS}
         FROM unpivoted
         GROUP BY domain
         ORDER BY domain
+      `),
+
+      // ── Q5: Main KPI method — pairing_start +30d pre / +60d post (matches report-data.js V6) ──
+      // Returns one row per mom in active_pairings with their main-KPI pre/post FSS scores.
+      pool.query(`
+        WITH
+        ${PS_BATCH_CTE},
+        active_pairings AS (
+          SELECT DISTINCT ON (p."momId")
+            p."momId"::text AS mom_id,
+            p."created_at"  AS pairing_start
+          FROM "Pairing" p
+          JOIN "Mom" m ON m."id" = p."momId" AND m."deleted_at" = 0
+          LEFT JOIN ps_batch pb ON pb.mom_id = m."id"::text
+          WHERE p."deleted_at" = 0
+            AND p."created_at" <= '${DATA_END} 23:59:59'
+            AND (p."completed_on" IS NULL OR p."completed_on" > '${DATA_START}')
+            AND pb.mom_id IS NULL
+          ORDER BY p."momId", p."created_at" DESC
+        ),
+        scored_was AS (
+          SELECT wa."mom_id"::text AS mom_id, wa."created_at",
+            (COALESCE(wa."ats_score",0) + COALESCE(wa."cc_score",0) + COALESCE(wa."edu_score",0)
+             + COALESCE(wa."ei_score",0) + COALESCE(wa."fin_cpi_sum",0) + COALESCE(wa."home_score",0)
+             + COALESCE(wa."naa_score",0) + COALESCE(wa."res_score",0) + COALESCE(wa."soc_score",0)
+             + COALESCE(wa."trnprt_score",0) + COALESCE(wa."well_score",0)) AS fss_total
+          FROM "WellnessAssessment" wa
+          WHERE wa."deleted_at" = 0 AND wa."cpi_total" IS NOT NULL
+            AND wa."created_at" <= '${DATA_END} 23:59:59'
+        ),
+        mom_fss AS (
+          SELECT ap.mom_id,
+            ap.pairing_start::date AS pairing_start_date,
+            MAX(CASE WHEN sw."created_at" <= ap.pairing_start + INTERVAL '30 days'
+                THEN sw.fss_total END) AS main_pre_fss,
+            MAX(CASE WHEN sw."created_at" >= ap.pairing_start + INTERVAL '60 days'
+                THEN sw.fss_total END) AS main_post_fss
+          FROM active_pairings ap
+          JOIN scored_was sw ON sw.mom_id = ap.mom_id
+          GROUP BY ap.mom_id, ap.pairing_start
+        )
+        SELECT
+          mf.mom_id,
+          mf.pairing_start_date,
+          mf.main_pre_fss,
+          mf.main_post_fss,
+          CASE WHEN mf.main_pre_fss IS NOT NULL AND mf.main_post_fss IS NOT NULL THEN 1 ELSE 0 END AS main_kpi_eligible,
+          CASE WHEN mf.main_post_fss > mf.main_pre_fss THEN 1 ELSE 0 END AS main_kpi_improved
+        FROM mom_fss mf
+        ORDER BY main_kpi_eligible DESC, main_kpi_improved DESC
       `)
     ]);
 
-    const rows       = pairedResult.rows;
-    const gap        = gapResult.rows[0] || {};
-    const affRows    = affResult.rows;
-    const distRows   = distResult.rows;
+    const rows           = pairedResult.rows;
+    const gap            = gapResult.rows[0] || {};
+    const affRows        = affResult.rows;
+    const distRows       = distResult.rows;
+    const mainKpiRows    = mainKpiResult.rows;
 
     // ── Compute domain-level improvement rates from paired cohort ──
     const domainStats = {};
@@ -356,11 +411,30 @@ ${PRE_COLS}
       dr.ceil_pct = dr.n > 0 ? Math.round(100 * dr.at_max_n / dr.n) : 0;
     }
 
+    // ── Main KPI reconciliation (Q5) ──
+    const mainKpiMap = {};
+    for (const r of mainKpiRows) {
+      mainKpiMap[r.mom_id] = {
+        pairing_start_date: r.pairing_start_date,
+        main_pre_fss:       r.main_pre_fss != null ? parseFloat(r.main_pre_fss) : null,
+        main_post_fss:      r.main_post_fss != null ? parseFloat(r.main_post_fss) : null,
+        main_kpi_eligible:  parseInt(r.main_kpi_eligible) === 1,
+        main_kpi_improved:  parseInt(r.main_kpi_improved) === 1,
+      };
+    }
+    const diagMomIds    = new Set(rows.map(r => r.mom_id));
+    const main_eligible = mainKpiRows.filter(r => parseInt(r.main_kpi_eligible) === 1);
+    const mainEligSet   = new Set(main_eligible.map(r => r.mom_id));
+    const in_both       = main_eligible.filter(r => diagMomIds.has(r.mom_id));
+    const main_only     = main_eligible.filter(r => !diagMomIds.has(r.mom_id));
+    const diag_only     = rows.filter(r => !mainEligSet.has(r.mom_id));
+
     res.json({
       meta: {
         data_start: DATA_START, data_end: DATA_END,
         generated: new Date().toISOString(),
         domain_labels: DOMAIN_LABELS,
+        kpi_note: 'Main KPI tile uses pairing_start +30d/+60d anchor. Diagnostic uses intake_date +91-180d anchor.',
       },
       counts: {
         total_organic:        parseInt(gap.total_organic) || 0,
@@ -378,6 +452,34 @@ ${PRE_COLS}
         inversion_n,
         strict_n: rows.filter(r => parseInt(r.strict_kpi2) === 1).length,
       },
+      kpiReconciliation: {
+        main_active_pairings_n:  mainKpiRows.length,
+        main_eligible_n:         main_eligible.length,
+        main_improved_n:         main_eligible.filter(r => parseInt(r.main_kpi_improved) === 1).length,
+        diagnostic_paired_n:     paired_n,
+        diagnostic_improved_n:   fss_improved_n,
+        in_both_n:               in_both.length,
+        in_both_improved_n:      in_both.filter(r => parseInt(r.main_kpi_improved) === 1).length,
+        main_only_n:             main_only.length,
+        diag_only_n:             diag_only.length,
+        mainOnlyRows: main_only.map(r => ({
+          mom_id:           r.mom_id,
+          pairing_start:    r.pairing_start_date,
+          main_pre_fss:     r.main_pre_fss != null ? parseFloat(r.main_pre_fss) : null,
+          main_post_fss:    r.main_post_fss != null ? parseFloat(r.main_post_fss) : null,
+          main_kpi_improved: parseInt(r.main_kpi_improved) === 1,
+        })),
+        diagOnlyRows: diag_only.map(r => ({
+          mom_id:        r.mom_id,
+          first_name:    r.first_name,
+          last_name:     r.last_name,
+          affiliate:     r.affiliate_name,
+          intake_date:   r.intake_date,
+          intake_fss:    parseFloat(r.pre_fss),
+          sixmo_fss:     parseFloat(r.post_fss),
+          fss_improved:  parseInt(r.fss_improved) === 1,
+        })),
+      },
       affiliateFunnel: affRows,
       pairedRows: rows.map(r => ({
         mom_id:        r.mom_id,
@@ -390,6 +492,8 @@ ${PRE_COLS}
         sixmo_fwa_date:  r.post_date,
         days_between:  parseInt(r.days_between),
         inversion:     parseInt(r.temporal_inversion) === 1,
+        intake_link_sent: r.intake_link_sent === true || r.intake_link_sent === 't',
+        sixmo_link_sent:  r.sixmo_link_sent === true || r.sixmo_link_sent === 't',
         intake_fss:    parseFloat(r.pre_fss),
         sixmo_fss:     parseFloat(r.post_fss),
         fss_delta:     parseFloat(r.fss_delta),
@@ -397,6 +501,12 @@ ${PRE_COLS}
         any_domain_improved: parseInt(r.any_domain_improved) === 1,
         domains_improved_count: parseInt(r.domains_improved_count),
         flip:          parseInt(r.fss_vs_anydomain_flip) === 1,
+        // Main KPI method scores for this mom (if she's in an active pairing)
+        main_kpi_eligible: mainKpiMap[r.mom_id]?.main_kpi_eligible || false,
+        main_kpi_improved: mainKpiMap[r.mom_id]?.main_kpi_improved || false,
+        main_pre_fss:      mainKpiMap[r.mom_id]?.main_pre_fss ?? null,
+        main_post_fss:     mainKpiMap[r.mom_id]?.main_post_fss ?? null,
+        pairing_start:     mainKpiMap[r.mom_id]?.pairing_start_date ?? null,
         domains: DOMAINS.reduce((acc, d) => {
           acc[d] = {
             intake: parseFloat(r[`pre_${d}`]),

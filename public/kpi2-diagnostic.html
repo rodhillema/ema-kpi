@@ -107,9 +107,20 @@ body.logged-in .portal-view{display:flex}
 .tbl-wrap{overflow-x:auto;margin:6px 0 10px}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 table th{background:var(--green);color:var(--white);text-align:left;padding:6px 9px;font-family:'Oswald',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:11px;white-space:nowrap}
+table th.sortable{cursor:pointer;user-select:none}
+table th.sortable:hover{background:#1d5050}
+table th.sort-asc::after{content:' ▲';font-size:9px;opacity:.85}
+table th.sort-desc::after{content:' ▼';font-size:9px;opacity:.85}
 table td{padding:5px 9px;border-bottom:1px solid var(--border);vertical-align:top}
 tr:nth-child(even) td{background:var(--bg)}
 tr:hover td{background:var(--red-lt)}
+tr.hidden-row{display:none}
+/* filter input */
+.tbl-filter{display:flex;align-items:center;gap:8px;margin:8px 0 4px}
+.tbl-filter input{font-family:'Lato',sans-serif;font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;outline:none;min-width:220px;background:var(--white);color:var(--dark)}
+.tbl-filter input:focus{border-color:var(--green)}
+.tbl-filter label{font-family:'Oswald',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mid)}
+.tbl-filter .filter-count{font-family:'Oswald',sans-serif;font-size:10px;color:var(--light);letter-spacing:.04em}
 
 /* ── Tags/badges ── */
 .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin:0 1px}
@@ -249,15 +260,60 @@ async function loadDiagnostic() {
     var el = document.getElementById('report');
     el.innerHTML = render(data);
     el.style.display = '';
+    wireInteractivity();
   } catch(e) {
     document.getElementById('state').innerHTML = '<div class="err-box">Failed to load: '+esc(e.message)+'</div>';
   }
+}
+
+// ── SORT / FILTER ─────────────────────────────────────────────
+function makeSortable(tableId) {
+  var tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  var ths = tbl.querySelectorAll('thead th');
+  ths.forEach(function(th, ci) {
+    th.classList.add('sortable');
+    th.addEventListener('click', function() {
+      var asc = th.classList.contains('sort-asc');
+      ths.forEach(function(h){ h.classList.remove('sort-asc','sort-desc'); });
+      th.classList.add(asc ? 'sort-desc' : 'sort-asc');
+      var tbody = tbl.querySelector('tbody');
+      var rows  = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort(function(a,b){
+        var av = a.cells[ci] ? a.cells[ci].textContent.trim() : '';
+        var bv = b.cells[ci] ? b.cells[ci].textContent.trim() : '';
+        var an = parseFloat(av.replace(/[^0-9.\-]/g,'')), bn = parseFloat(bv.replace(/[^0-9.\-]/g,''));
+        var cmp = (!isNaN(an) && !isNaN(bn)) ? (an - bn) : av.localeCompare(bv);
+        return asc ? -cmp : cmp;
+      });
+      rows.forEach(function(r){ tbody.appendChild(r); });
+    });
+  });
+}
+
+function makeFilterable(inputId, tableId, countId) {
+  var inp = document.getElementById(inputId);
+  var tbl = document.getElementById(tableId);
+  var ctr = countId ? document.getElementById(countId) : null;
+  if (!inp || !tbl) return;
+  inp.addEventListener('input', function() {
+    var q = inp.value.trim().toLowerCase();
+    var rows = tbl.querySelectorAll('tbody tr');
+    var shown = 0;
+    rows.forEach(function(r) {
+      var match = !q || r.textContent.toLowerCase().indexOf(q) !== -1;
+      r.classList.toggle('hidden-row', !match);
+      if (match) shown++;
+    });
+    if (ctr) ctr.textContent = shown + ' of ' + rows.length + ' shown';
+  });
 }
 
 // ── RENDER ───────────────────────────────────────────────────
 function render(d) {
   var meta       = d.meta || {};
   var counts     = d.counts || {};
+  var reconcile  = d.kpiReconciliation || {};
   var affRows    = d.affiliateFunnel || [];
   var paired     = d.pairedRows || [];
   var domStats   = d.domainStats || {};
@@ -288,6 +344,131 @@ function render(d) {
     +'</div>'
     +'<div style="font-size:11px;color:var(--light);margin-top:10px">Window: '+esc(meta.data_start)+' – '+esc(meta.data_end)+' &nbsp;·&nbsp; Organic cohort only (PS-migrated moms excluded) &nbsp;·&nbsp; Generated '+genDate+'</div>'
     +'</div>';
+
+  // ── KPI Alignment / Reconciliation ──
+  var mainElig     = reconcile.main_eligible_n || 0;
+  var mainImproved = reconcile.main_improved_n || 0;
+  var mainPct      = mainElig ? Math.round(100 * mainImproved / mainElig) : null;
+  var diagPaired   = reconcile.diagnostic_paired_n || counts.paired_n || 0;
+  var diagImproved = reconcile.diagnostic_improved_n || counts.fss_improved_n || 0;
+  var diagPct      = diagPaired ? Math.round(100 * diagImproved / diagPaired) : null;
+  var inBoth       = reconcile.in_both_n || 0;
+  var mainOnly     = reconcile.main_only_n || 0;
+  var diagOnly     = reconcile.diag_only_n || 0;
+  var mainOnlyRows = reconcile.mainOnlyRows || [];
+  var diagOnlyRows = reconcile.diagOnlyRows || [];
+  var methodsAgree = mainElig > 0 && diagPaired > 0 && Math.abs((mainPct||0)-(diagPct||0)) <= 5;
+
+  html += '<div class="section"><div class="section-head"><span class="section-eyebrow">KPI Tile ↔ Diagnostic</span><span class="section-title">How the Hub KPI Number Relates to This Report</span></div><div class="section-body">';
+  html += '<div class="callout info"><strong>Two different measurement methods</strong>The Hub KPI tile and this diagnostic use different anchors and windows for "pre" vs. "post." This section shows exactly how the counts compare — and which moms appear in one method but not the other.</div>';
+
+  // Method comparison grid
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0">';
+  // Main KPI tile method
+  html += '<div style="border:2px solid var(--green);border-radius:8px;padding:12px 14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--green);margin-bottom:8px">Hub KPI Tile Method (V6)</div>'
+    +'<div style="font-size:12px;line-height:1.7;color:var(--dark);margin-bottom:10px">'
+    +'<strong>Anchor:</strong> Pairing start date<br>'
+    +'<strong>Pre FWA:</strong> Highest FSS within 30 days of pairing start<br>'
+    +'<strong>Post FWA:</strong> Highest FSS 60+ days after pairing start<br>'
+    +'<strong>Denominator:</strong> Active pairings (period-active, non-PS) with both pre + post<br>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<div style="background:var(--green-lt);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:var(--green)">'+mainElig+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:var(--mid)">Eligible (denominator)</div>'
+    +'</div>'
+    +'<div style="background:var(--green-lt);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:var(--green)">'+mainImproved+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:var(--mid)">Improved</div>'
+    +'</div>'
+    +'<div style="background:var(--green);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:var(--white)">'+(mainPct!=null?mainPct+'%':'—')+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,.7)">KPI Rate</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+  // Diagnostic method
+  html += '<div style="border:2px solid var(--yellow);border-radius:8px;padding:12px 14px">'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a6000;margin-bottom:8px">Diagnostic Method (This Report)</div>'
+    +'<div style="font-size:12px;line-height:1.7;color:var(--dark);margin-bottom:10px">'
+    +'<strong>Anchor:</strong> Intake date (coordinator engaged date or completed_ahead date)<br>'
+    +'<strong>Pre FWA:</strong> Earliest scored FWA for the mom<br>'
+    +'<strong>Post FWA:</strong> Latest scored FWA in 91–180 day window after intake<br>'
+    +'<strong>Denominator:</strong> Organic moms with both pre + post in window<br>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<div style="background:var(--yellow-lt);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:#8a6000">'+diagPaired+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:var(--mid)">Eligible (denominator)</div>'
+    +'</div>'
+    +'<div style="background:var(--yellow-lt);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:#8a6000">'+diagImproved+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:var(--mid)">Improved</div>'
+    +'</div>'
+    +'<div style="background:var(--yellow);border-radius:6px;padding:8px 12px;text-align:center">'
+    +'<div style="font-family:\'Shrikhand\',cursive;font-size:1.6rem;color:var(--dark)">'+(diagPct!=null?diagPct+'%':'—')+'</div>'
+    +'<div style="font-family:\'Oswald\',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(0,0,0,.55)">Rate</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+  html += '</div>';
+
+  // Overlap summary
+  html += '<div style="margin:10px 0;font-size:12px;line-height:1.7">'
+    +'<strong style="font-family:\'Oswald\',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em">Overlap between methods:</strong> '
+    +inBoth+' moms appear in <em>both</em> eligible sets &nbsp;·&nbsp; '
+    +'<span class="'+(mainOnly>0?'flag-text':'ok')+'">'+mainOnly+' moms are in Hub KPI only</span> (have a pairing + post 60d+ but no FWA in 91–180d intake window) &nbsp;·&nbsp; '
+    +'<span class="'+(diagOnly>0?'ambig':'ok')+'">'+diagOnly+' moms are in diagnostic only</span> (have intake + 6-month FWA but no active pairing for main KPI)'
+    +'</div>';
+
+  if (!methodsAgree && mainElig > 0 && diagPaired > 0) {
+    html += '<div class="callout alert"><strong>Methods produce different rates ('+(mainPct||0)+'% vs '+(diagPct||0)+'%)</strong>The '+mainOnly+' main-only moms and '+diagOnly+' diagnostic-only moms explain this gap. See the tables below.</div>';
+  } else if (methodsAgree) {
+    html += '<div class="callout info"><strong>Methods are in close agreement</strong>Both methods produce similar rates, suggesting the measurement anchor has minimal effect on the headline number for this cohort.</div>';
+  }
+
+  // Main-only rows table
+  if (mainOnlyRows.length) {
+    html += '<details style="margin:8px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--red);padding:6px 0;list-style:none">'
+      +'▶ '+mainOnly+' moms counted in Hub KPI but NOT in diagnostic</summary>'
+      +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
+      +'<th>Mom ID</th><th>Pairing Start</th><th>Hub KPI Pre FSS</th><th>Hub KPI Post FSS</th><th>Hub KPI Improved?</th>'
+      +'</tr></thead><tbody>';
+    mainOnlyRows.forEach(function(r) {
+      html += '<tr>'
+        +'<td style="font-size:11px;font-family:monospace">'+esc(r.mom_id)+'</td>'
+        +'<td style="font-size:11px">'+(r.pairing_start?String(r.pairing_start).substring(0,10):'')+'</td>'
+        +'<td>'+pf(r.main_pre_fss)+'</td>'
+        +'<td>'+pf(r.main_post_fss)+'</td>'
+        +'<td class="'+(r.main_kpi_improved?'ok':'ambig')+'">'+(r.main_kpi_improved?'yes':'no')+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div></details>';
+  }
+
+  // Diag-only rows table
+  if (diagOnlyRows.length) {
+    html += '<details style="margin:8px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#8a6000;padding:6px 0;list-style:none">'
+      +'▶ '+diagOnly+' moms in diagnostic but NOT in Hub KPI eligible set</summary>'
+      +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
+      +'<th>Mom</th><th>Affiliate</th><th>Intake Date</th><th>Intake FSS</th><th>6-Mo FSS</th><th>FSS Improved?</th>'
+      +'</tr></thead><tbody>';
+    diagOnlyRows.forEach(function(r) {
+      html += '<tr>'
+        +'<td>'+esc(r.first_name)+' '+esc(r.last_name)+'</td>'
+        +'<td style="font-size:11px">'+esc(r.affiliate||'')+'</td>'
+        +'<td style="font-size:11px">'+(r.intake_date?String(r.intake_date).substring(0,10):'')+'</td>'
+        +'<td>'+pf(r.intake_fss)+'</td>'
+        +'<td>'+pf(r.sixmo_fss)+'</td>'
+        +'<td class="'+(r.fss_improved?'ok':'ambig')+'">'+(r.fss_improved?'yes':'no')+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div></details>';
+  }
+
+  html += '<div class="footnote">Hub KPI tile uses report-data.js V6 logic (pairing_start anchor). This diagnostic uses intake_date anchor (matches FWA cadence language). Neither is wrong — they measure different things. The Hub tile is the official KPI number.</div>';
+  html += '</div></div>';
 
   // ── Assessment timing reference ──
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;margin-bottom:14px">'
@@ -393,7 +574,7 @@ function render(d) {
   // ── Affiliate breakdown with gap detail ──
   if (affRows.length) {
     html += '<div class="subsection">By Affiliate — FWA Status Breakdown</div>';
-    html += '<div class="tbl-wrap"><table><thead><tr>'
+    html += '<div class="tbl-wrap"><table id="affiliate-tbl"><thead><tr>'
       +'<th>Affiliate</th>'
       +'<th>Total (organic)</th>'
       +'<th>Intake FWA</th>'
@@ -529,36 +710,84 @@ function render(d) {
       html += '</tbody></table></div>';
     }
 
-    // Per-mom table (collapsible)
+    // Per-mom table (collapsible, sortable, filterable)
     if (paired.length) {
-      html += '<details style="margin:10px 0"><summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
-        +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0" class="expand-arrow"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
-        +'Per-Mom Paired Detail &nbsp;<span style="font-weight:300;color:var(--mid)">'+paired.length+' moms with both Intake + 6-Month FWA</span>'
-        +'</summary>'
-        +'<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
-        +'<th>Mom</th><th>Affiliate</th><th>KPI Cohort</th><th>Intake Date</th><th>Days Intake→6-Mo</th><th>Intake FSS</th><th>6-Month FSS</th><th>FSS Delta</th><th>FSS Improved?</th><th>Domains Up (of 11)</th>'
+      var linkSentCount = paired.filter(function(r){ return r.intake_link_sent || r.sixmo_link_sent; }).length;
+      html += '<details id="paired-detail" style="margin:10px 0" open>'
+        +'<summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">'
+        +'<svg viewBox="0 0 10 10" width="10" height="10" style="flex-shrink:0"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+        +'Per-Mom Paired Detail &nbsp;<span style="font-weight:300;color:var(--mid)">'+paired.length+' moms with both Intake + 6-Month FWA'+(linkSentCount?' &nbsp;·&nbsp; '+linkSentCount+' sent via link':'')+'</span>'
+        +'</summary>';
+
+      html += '<div class="tbl-filter">'
+        +'<label>Filter:</label>'
+        +'<input type="text" id="paired-filter" placeholder="name, affiliate, yes/no…">'
+        +'<span class="filter-count" id="paired-count"></span>'
+        +'</div>';
+
+      html += '<div class="tbl-wrap" style="margin-top:4px"><table id="paired-tbl"><thead><tr>'
+        +'<th>Mom</th>'
+        +'<th>Affiliate</th>'
+        +'<th>Intake Date</th>'
+        +'<th>Intake FWA<br><span style="font-size:9px;opacity:.7">via link?</span></th>'
+        +'<th>6-Mo FWA<br><span style="font-size:9px;opacity:.7">via link?</span></th>'
+        +'<th>Days Intake→6-Mo</th>'
+        +'<th>Intake FSS</th>'
+        +'<th>6-Month FSS</th>'
+        +'<th>FSS Δ (Diagnostic)</th>'
+        +'<th>Diag Improved?</th>'
+        +'<th>Pairing Start</th>'
+        +'<th>Hub Pre FSS</th>'
+        +'<th>Hub Post FSS</th>'
+        +'<th>Hub KPI Improved?</th>'
+        +'<th>Methods Agree?</th>'
+        +'<th>Domains Up (of 11)</th>'
         +'</tr></thead><tbody>';
+
       paired.forEach(function(r) {
+        var agree = r.main_kpi_eligible
+          ? (r.fss_improved === r.main_kpi_improved)
+          : null;
+        var intakeLink = r.intake_link_sent
+          ? '<span style="background:var(--green);color:var(--white);padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700">link</span>'
+          : '<span style="color:var(--light);font-size:10px">coord</span>';
+        var sixmoLink = r.sixmo_link_sent
+          ? '<span style="background:var(--green);color:var(--white);padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700">link</span>'
+          : '<span style="color:var(--light);font-size:10px">coord</span>';
+
         html += '<tr>'
-          +'<td>'+esc(r.first_name)+' '+esc(r.last_name)+(r.inversion?' <span class="warn-badge" title="6-month date before intake date">⚠ inv</span>':'')+'</td>'
+          +'<td>'+esc(r.first_name)+' '+esc(r.last_name)+(r.inversion?' <span class="warn-badge" title="temporal inversion">⚠</span>':'')+'</td>'
           +'<td style="font-size:11px">'+esc(r.affiliate||'')+'</td>'
-          +'<td style="font-size:11px">'+(r.strict_kpi2?'<span class="tag tag-ok">Strict</span>':'<span style="color:var(--light);font-size:10px">Widened</span>')+'</td>'
           +'<td style="font-size:11px">'+(r.intake_date?String(r.intake_date).substring(0,10):'')+'</td>'
+          +'<td>'+intakeLink+'</td>'
+          +'<td>'+sixmoLink+'</td>'
           +'<td>'+r.days_between+'</td>'
           +'<td>'+pf(r.intake_fss)+'</td>'
           +'<td>'+pf(r.sixmo_fss)+'</td>'
           +'<td class="'+(r.fss_delta>0?'ok':r.fss_delta<0?'ambig':'')+'">'+pf(r.fss_delta)+'</td>'
           +'<td class="'+(r.fss_improved?'ok':'ambig')+'">'+(r.fss_improved?'yes':'no')+'</td>'
+          +'<td style="font-size:11px">'+(r.pairing_start?String(r.pairing_start).substring(0,10):'<span style="color:#aaa">no pairing</span>')+'</td>'
+          +'<td>'+(r.main_kpi_eligible?pf(r.main_pre_fss):'<span style="color:#aaa">—</span>')+'</td>'
+          +'<td>'+(r.main_kpi_eligible?pf(r.main_post_fss):'<span style="color:#aaa">—</span>')+'</td>'
+          +'<td class="'+(r.main_kpi_eligible?(r.main_kpi_improved?'ok':'ambig'):'')+'">'+(!r.main_kpi_eligible?'<span style="color:#aaa">not eligible</span>':(r.main_kpi_improved?'yes':'no'))+'</td>'
+          +'<td class="'+(agree===true?'ok':agree===false?'flag-text':'')+'">'+( agree===null?'<span style="color:#aaa">n/a</span>':agree?'✓ yes':'✗ no')+'</td>'
           +'<td>'+r.domains_improved_count+' / 11</td>'
           +'</tr>';
       });
       html += '</tbody></table></div></details>';
     }
   }
-  html += '<div class="footnote">FSS composite = sum of all 11 domain scores. Apparent decline on a domain (6-month &lt; intake) is ambiguous — it may reflect a more honest self-assessment after the program, not a real regression. Admin access only.</div>';
+  html += '<div class="footnote">FSS composite = sum of all 11 domain scores. "Via link" = <code>completed_ahead=true</code> — FWA was sent to the mom as a self-service link rather than completed with a coordinator. "Hub KPI" columns use pairing_start +30d/+60d anchor (report-data.js V6). Admin access only.</div>';
   html += '</div></div>';
 
   return html;
+}
+
+// Wire up sort/filter after render injects DOM
+function wireInteractivity() {
+  makeSortable('paired-tbl');
+  makeFilterable('paired-filter', 'paired-tbl', 'paired-count');
+  makeSortable('affiliate-tbl');
 }
 </script>
 </body>

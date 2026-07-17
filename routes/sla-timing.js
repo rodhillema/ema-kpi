@@ -8,6 +8,7 @@ function requireAdmin(req, res, next) {
   res.status(403).json({ error: 'Access denied' });
 }
 
+// Used only for pairing queries (intake date requires engaged_in_program history)
 const INTAKE_CTE = `
   first_engaged AS (
     SELECT data->>'id' AS mom_id, MIN(created_at) AS coordinator_engaged_date
@@ -46,14 +47,17 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
       await Promise.all([
 
         // ── Contact: overall × month × engagement outcome ──────────────
-        pool.query(`WITH ${INTAKE_CTE},
+        // Cohort: ALL moms created Jan–Jun 2026 (not filtered by intake date)
+        // so Did Not Engage and Pending families are included
+        pool.query(`
+          WITH
           first_contact AS (
             SELECT mom_id, MIN(date_created_c) AS first_contact_date
             FROM "ConnectionLog" GROUP BY mom_id
           ),
           base AS (
             SELECT
-              DATE_TRUNC('month', id.best_intake_date) AS intake_month,
+              DATE_TRUNC('month', m.created_at) AS referral_month,
               CASE
                 WHEN m.prospect_status::text = 'engaged_in_program'        THEN 'Engaged'
                 WHEN m.prospect_status::text = 'did_not_engage_in_program' THEN 'Did Not Engage'
@@ -64,15 +68,14 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id
-            JOIN intake_dates id ON id.mom_id = m.id::text
             LEFT JOIN first_contact fc ON fc.mom_id = m.id
             WHERE m.deleted_at = 0
-              AND id.best_intake_date >= '2026-01-01'
-              AND id.best_intake_date <  '2026-07-01'
+              AND m.created_at >= '2026-01-01'
+              AND m.created_at <  '2026-07-01'
           )
           SELECT
-            TO_CHAR(intake_month, 'YYYY-MM') AS month_key,
-            TO_CHAR(intake_month, 'Mon YYYY') AS month,
+            TO_CHAR(referral_month, 'YYYY-MM') AS month_key,
+            TO_CHAR(referral_month, 'Mon YYYY') AS month,
             outcome,
             COUNT(*)::int                                                     AS families,
             COUNT(*) FILTER (WHERE days <= 1)::int                           AS d1,
@@ -83,11 +86,12 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
             COUNT(*) FILTER (WHERE days > 14)::int                          AS over14,
             COUNT(*) FILTER (WHERE days IS NULL)::int                        AS never
           FROM base
-          GROUP BY intake_month, outcome
-          ORDER BY intake_month, outcome`),
+          GROUP BY referral_month, outcome
+          ORDER BY referral_month, outcome`),
 
         // ── Contact: by affiliate × month × outcome ────────────────────
-        pool.query(`WITH ${INTAKE_CTE},
+        pool.query(`
+          WITH
           first_contact AS (
             SELECT mom_id, MIN(date_created_c) AS first_contact_date
             FROM "ConnectionLog" GROUP BY mom_id
@@ -95,7 +99,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
           base AS (
             SELECT
               a.name AS affiliate,
-              DATE_TRUNC('month', id.best_intake_date) AS intake_month,
+              DATE_TRUNC('month', m.created_at) AS referral_month,
               CASE
                 WHEN m.prospect_status::text = 'engaged_in_program'        THEN 'Engaged'
                 WHEN m.prospect_status::text = 'did_not_engage_in_program' THEN 'Did Not Engage'
@@ -106,16 +110,15 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id
-            JOIN intake_dates id ON id.mom_id = m.id::text
             LEFT JOIN first_contact fc ON fc.mom_id = m.id
             WHERE m.deleted_at = 0
-              AND id.best_intake_date >= '2026-01-01'
-              AND id.best_intake_date <  '2026-07-01'
+              AND m.created_at >= '2026-01-01'
+              AND m.created_at <  '2026-07-01'
           )
           SELECT
             affiliate,
-            TO_CHAR(intake_month, 'YYYY-MM') AS month_key,
-            TO_CHAR(intake_month, 'Mon YYYY') AS month,
+            TO_CHAR(referral_month, 'YYYY-MM') AS month_key,
+            TO_CHAR(referral_month, 'Mon YYYY') AS month,
             outcome,
             COUNT(*)::int                                                     AS families,
             COUNT(*) FILTER (WHERE days <= 1)::int                           AS d1,
@@ -126,27 +129,34 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
             COUNT(*) FILTER (WHERE days > 14)::int                          AS over14,
             COUNT(*) FILTER (WHERE days IS NULL)::int                        AS never
           FROM base
-          GROUP BY affiliate, intake_month, outcome
-          ORDER BY affiliate, intake_month, outcome`),
+          GROUP BY affiliate, referral_month, outcome
+          ORDER BY affiliate, referral_month, outcome`),
 
         // ── Pairing: overall × month × track outcome ───────────────────
+        // first_pairing: only records where an advocate was actually assigned
+        // (status = 'paired' or 'pairing_complete'), not waiting_to_be_paired
         pool.query(`WITH ${INTAKE_CTE},
           first_pairing AS (
             SELECT "momId" AS mom_id, MIN(created_at) AS first_pairing_date
-            FROM "Pairing" WHERE deleted_at = 0 GROUP BY "momId"
+            FROM "Pairing"
+            WHERE deleted_at = 0 AND status::text IN ('paired', 'pairing_complete')
+            GROUP BY "momId"
           ),
           track_completion AS (
             SELECT "momId" AS mom_id,
-              BOOL_OR(status::text = 'pairing_complete') AS completed_any_track
+              BOOL_OR(status::text = 'pairing_complete')    AS completed_any_track,
+              BOOL_OR(status::text = 'paired')              AS ever_paired,
+              BOOL_OR(status::text = 'waiting_to_be_paired') AS ever_waiting
             FROM "Pairing" WHERE deleted_at = 0 GROUP BY "momId"
           ),
           base AS (
             SELECT
               DATE_TRUNC('month', id.best_intake_date) AS intake_month,
               CASE
-                WHEN fp.first_pairing_date IS NULL  THEN 'Never Paired'
-                WHEN tc.completed_any_track = true  THEN 'Completed Track'
-                ELSE 'Incomplete / Active'
+                WHEN tc.mom_id IS NULL                                      THEN 'Never Paired'
+                WHEN COALESCE(tc.completed_any_track, false)                THEN 'Completed Track'
+                WHEN COALESCE(tc.ever_paired, false)                        THEN 'Active / Paired'
+                ELSE 'Waiting to be Paired'
               END AS outcome,
               CASE WHEN fp.first_pairing_date IS NOT NULL
                 THEN (SELECT COUNT(*)::int FROM generate_series(id.best_intake_date::date + 1, fp.first_pairing_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
@@ -164,12 +174,11 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
             TO_CHAR(intake_month, 'YYYY-MM') AS month_key,
             TO_CHAR(intake_month, 'Mon YYYY') AS month,
             outcome,
-            COUNT(*)::int                                                     AS families,
-            COUNT(*) FILTER (WHERE days IS NOT NULL AND days <= 7)::int      AS d0_7,
-            COUNT(*) FILTER (WHERE days BETWEEN 8 AND 14)::int              AS d8_14,
-            COUNT(*) FILTER (WHERE days BETWEEN 15 AND 21)::int             AS d15_21,
-            COUNT(*) FILTER (WHERE days > 21)::int                          AS over21,
-            COUNT(*) FILTER (WHERE days IS NULL AND outcome != 'Never Paired')::int AS never
+            COUNT(*)::int                                                          AS families,
+            COUNT(*) FILTER (WHERE days IS NOT NULL AND days <= 7)::int           AS d0_7,
+            COUNT(*) FILTER (WHERE days BETWEEN 8 AND 14)::int                   AS d8_14,
+            COUNT(*) FILTER (WHERE days BETWEEN 15 AND 21)::int                  AS d15_21,
+            COUNT(*) FILTER (WHERE days > 21)::int                               AS over21
           FROM base
           GROUP BY intake_month, outcome
           ORDER BY intake_month, outcome`),
@@ -178,11 +187,15 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
         pool.query(`WITH ${INTAKE_CTE},
           first_pairing AS (
             SELECT "momId" AS mom_id, MIN(created_at) AS first_pairing_date
-            FROM "Pairing" WHERE deleted_at = 0 GROUP BY "momId"
+            FROM "Pairing"
+            WHERE deleted_at = 0 AND status::text IN ('paired', 'pairing_complete')
+            GROUP BY "momId"
           ),
           track_completion AS (
             SELECT "momId" AS mom_id,
-              BOOL_OR(status::text = 'pairing_complete') AS completed_any_track
+              BOOL_OR(status::text = 'pairing_complete')    AS completed_any_track,
+              BOOL_OR(status::text = 'paired')              AS ever_paired,
+              BOOL_OR(status::text = 'waiting_to_be_paired') AS ever_waiting
             FROM "Pairing" WHERE deleted_at = 0 GROUP BY "momId"
           ),
           base AS (
@@ -190,9 +203,10 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
               a.name AS affiliate,
               DATE_TRUNC('month', id.best_intake_date) AS intake_month,
               CASE
-                WHEN fp.first_pairing_date IS NULL  THEN 'Never Paired'
-                WHEN tc.completed_any_track = true  THEN 'Completed Track'
-                ELSE 'Incomplete / Active'
+                WHEN tc.mom_id IS NULL                                      THEN 'Never Paired'
+                WHEN COALESCE(tc.completed_any_track, false)                THEN 'Completed Track'
+                WHEN COALESCE(tc.ever_paired, false)                        THEN 'Active / Paired'
+                ELSE 'Waiting to be Paired'
               END AS outcome,
               CASE WHEN fp.first_pairing_date IS NOT NULL
                 THEN (SELECT COUNT(*)::int FROM generate_series(id.best_intake_date::date + 1, fp.first_pairing_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
@@ -211,30 +225,23 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
             TO_CHAR(intake_month, 'YYYY-MM') AS month_key,
             TO_CHAR(intake_month, 'Mon YYYY') AS month,
             outcome,
-            COUNT(*)::int                                                     AS families,
-            COUNT(*) FILTER (WHERE days IS NOT NULL AND days <= 7)::int      AS d0_7,
-            COUNT(*) FILTER (WHERE days BETWEEN 8 AND 14)::int              AS d8_14,
-            COUNT(*) FILTER (WHERE days BETWEEN 15 AND 21)::int             AS d15_21,
-            COUNT(*) FILTER (WHERE days > 21)::int                          AS over21,
-            COUNT(*) FILTER (WHERE days IS NULL AND outcome != 'Never Paired')::int AS never
+            COUNT(*)::int                                                          AS families,
+            COUNT(*) FILTER (WHERE days IS NOT NULL AND days <= 7)::int           AS d0_7,
+            COUNT(*) FILTER (WHERE days BETWEEN 8 AND 14)::int                   AS d8_14,
+            COUNT(*) FILTER (WHERE days BETWEEN 15 AND 21)::int                  AS d15_21,
+            COUNT(*) FILTER (WHERE days > 21)::int                               AS over21
           FROM base
           GROUP BY affiliate, intake_month, outcome
           ORDER BY affiliate, intake_month, outcome`),
 
-        // ── Affiliate list ─────────────────────────────────────────────
+        // ── Affiliate list: all affiliates with moms referred Jan–Jun 2026 ─
         pool.query(`
           SELECT DISTINCT a.name AS affiliate
           FROM "Mom" m
           JOIN "Affiliate" a ON a.id = m.affiliate_id
-          JOIN (
-            SELECT data->>'id' AS mom_id, MIN(created_at) AS dt
-            FROM "AuditLog"
-            WHERE "table" = 'Mom' AND action = 'Update'
-              AND data->>'prospect_status' = 'engaged_in_program'
-            GROUP BY data->>'id'
-          ) al ON al.mom_id = m.id::text
           WHERE m.deleted_at = 0
-            AND al.dt >= '2026-01-01' AND al.dt < '2026-07-01'
+            AND m.created_at >= '2026-01-01'
+            AND m.created_at <  '2026-07-01'
           ORDER BY a.name`),
       ]);
 

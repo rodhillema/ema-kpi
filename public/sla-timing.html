@@ -154,8 +154,8 @@ tr:last-child td{border-bottom:none}
 .comp-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
 .comp-bar-label{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;color:var(--dark);width:160px;min-width:160px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comp-bar-track{flex:1;height:26px;display:flex;border-radius:5px;overflow:hidden;position:relative}
-.comp-bar-seg{height:100%;transition:width .3s;position:relative}
-.comp-bar-seg:hover::after{content:attr(data-tip);position:absolute;top:-32px;left:50%;transform:translateX(-50%);background:var(--dark);color:var(--white);font-family:'Lato',sans-serif;font-size:11px;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:10;pointer-events:none}
+.comp-bar-seg{height:100%;transition:width .3s;cursor:default}
+#tip-box{position:fixed;background:var(--dark);color:var(--white);font-family:'Lato',sans-serif;font-size:11px;padding:4px 9px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:9999;display:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .comp-bar-n{font-family:'Oswald',sans-serif;font-size:11px;color:var(--lighter);width:48px;min-width:48px}
 .comp-rank{font-family:'Shrikhand',cursive;font-size:13px;color:var(--lighter);width:20px;min-width:20px;text-align:right}
 .comp-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -164,6 +164,7 @@ tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
+<div id="tip-box"></div>
 
 <!-- LOGIN -->
 <div class="login-view">
@@ -500,7 +501,7 @@ function buildContactSection(rows) {
 // ── PAIRING SECTION ───────────────────────────────────────────────
 
 function buildPairingSection(rows) {
-  var outcomes = ['All','Completed Track','Incomplete / Active','Never Paired'];
+  var outcomes = ['All','Completed Track','Active / Paired','Waiting to be Paired','Never Paired'];
   var html = '<div class="sec">';
 
   // Tabs
@@ -523,7 +524,7 @@ function buildPairingSection(rows) {
     byMonth[key].over21  += r.over21;
   });
 
-  var isPaired = PAIRING_TAB !== 'Never Paired';
+  var isPaired = PAIRING_TAB !== 'Never Paired' && PAIRING_TAB !== 'Waiting to be Paired';
 
   html += '<table><thead><tr>'
     + '<th>Month</th>'
@@ -568,7 +569,7 @@ function buildPairingSection(rows) {
   }
 
   html += '</tbody></table>';
-  html += '<div class="fn"><strong>Source:</strong> MIN(Pairing.created_at) vs intake date (engaged_in_program AuditLog or WellnessAssessment.completed_date for link-based intakes). <strong>Completed Track:</strong> any Pairing with status = pairing_complete.</div>';
+  html += '<div class="fn"><strong>Source:</strong> First Pairing.created_at where status = paired or pairing_complete (advocate assigned) vs intake date. Timing reflects business days (Mon–Fri) from intake to advocate assignment. <strong>Waiting to be Paired:</strong> on the wait list, no advocate assigned yet. <strong>Completed Track:</strong> any Pairing with status = pairing_complete.</div>';
   html += '</div>';
   return html;
 }
@@ -580,7 +581,7 @@ function buildComparativeSection(contactRows, pairingRows) {
   var rows = isContact ? contactRows : pairingRows;
 
   var CONTACT_OUTCOMES = ['All','Engaged','Did Not Engage','Pending'];
-  var PAIRING_OUTCOMES = ['All','Completed Track','Incomplete / Active','Never Paired'];
+  var PAIRING_OUTCOMES = ['All','Completed Track','Active / Paired','Waiting to be Paired','Never Paired'];
   var outcomeList = isContact ? CONTACT_OUTCOMES : PAIRING_OUTCOMES;
 
   var MONTHS_LIST = [
@@ -739,6 +740,24 @@ function monthKey(label) {
   var parts = label.split(' ');
   return parts[1]+'-'+months[parts[0]];
 }
+
+// ── TOOLTIP ──────────────────────────────────────────────────────
+// JS-based tooltip to avoid overflow:hidden clipping on bar tracks
+(function(){
+  var box = document.getElementById('tip-box');
+  document.addEventListener('mouseover', function(e){
+    var seg = e.target.closest('.comp-bar-seg');
+    if (seg && seg.dataset.tip) { box.textContent = seg.dataset.tip; box.style.display = 'block'; }
+  });
+  document.addEventListener('mousemove', function(e){
+    if (box.style.display === 'none') return;
+    box.style.left = (e.clientX + 12) + 'px';
+    box.style.top  = (e.clientY - 32) + 'px';
+  });
+  document.addEventListener('mouseout', function(e){
+    if (e.target.classList.contains('comp-bar-seg')) box.style.display = 'none';
+  });
+})();
 
 // ── BOOT ─────────────────────────────────────────────────────────
 

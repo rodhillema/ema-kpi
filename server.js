@@ -305,47 +305,119 @@ app.get('/api/admin/audit-log-probe', requireAuth, async (req, res) => {
 app.get('/api/admin/wa-schema-probe', requireAuth, async (req, res) => {
   if (req.session.user.role !== 'administrator') return res.status(403).json({ error: 'Administrator only' });
   try {
-    const [allTables, waCols, assessmentTypes, assessmentRows, arqrSample] = await Promise.all([
-      // All table names — look for anything we haven't queried yet
+    // For each text-type question column: distinct values + counts (from all non-deleted WAs)
+    // Pick a representative sample across domains
+    const sampleCols = [
+      'cc_affordability','cc_reliable_care','cc_health_ins',
+      'naa_discipline','naa_emotions','naa_child_behavior',
+      'res_happiness','res_fulfillment','res_overall_sat',
+      'soc_resolve_arguments','soc_status','soc_dynamics',
+      'home_category','home_safe','home_type',
+      'trnprt_access','trnprt_affordable','trnprt_license',
+      'well_mental_health','well_phq_q1','well_gad_q1',
+      'edu_high_school','edu_training',
+      'ei_emp_status','ei_inc_subsidy',
+      'fin_budget','fin_savings',
+      'ats_difficulty','ats_afford_food',
+    ];
+    const distinctQueries = sampleCols.map(col =>
       pool.query(`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-        ORDER BY table_name
-      `),
-      // Every column on WellnessAssessment (may reveal question-level cols)
-      pool.query(`
-        SELECT column_name, data_type, ordinal_position
-        FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'WellnessAssessment'
-        ORDER BY ordinal_position
-      `),
-      // AssessmentResult type values + counts (check for FWA-type rows)
-      pool.query(`
-        SELECT type, COUNT(*)::int AS n
-        FROM "AssessmentResult"
-        WHERE deleted_at = 0
-        GROUP BY type ORDER BY n DESC
-      `).catch(() => ({ rows: [] })),
-      // Assessment table — all defined assessments
-      pool.query(`
-        SELECT id, name, type FROM "Assessment" ORDER BY name LIMIT 50
-      `).catch(() => ({ rows: [] })),
-      // Sample ARQR row to see data shape
-      pool.query(`
-        SELECT arqr.*, aq.*, ac.name AS construct_name
-        FROM "AssessmentResultQuestionResponse" arqr
-        JOIN "AssessmentQuestion" aq ON aq.id = arqr."assessmentQuestionId"
-        LEFT JOIN "AssessmentConstruct" ac ON ac.id = aq."assessmentConstructId"
-        LIMIT 3
-      `).catch(() => ({ rows: [] })),
+        SELECT '${col}' AS col, "${col}"::text AS val, COUNT(*)::int AS n
+        FROM "WellnessAssessment"
+        WHERE deleted_at = 0 AND "${col}" IS NOT NULL
+        GROUP BY "${col}"
+        ORDER BY n DESC
+        LIMIT 10
+      `).catch(e => ({ rows: [{ col, val: 'ERROR: ' + e.message, n: 0 }] }))
+    );
+
+    // For the paired cohort (matching diagnostic logic): how often do question values
+    // NOT change between intake and 6-month FWA?
+    const freezeProbe = pool.query(`
+      WITH intake_dates AS (
+        SELECT al.data->>'id' AS mom_id, MIN(al.created_at) AS coordinator_engaged_date
+        FROM "AuditLog" al
+        WHERE al."table" = 'Mom' AND al.action = 'Update'
+          AND al.data->>'prospect_status' = 'engaged_in_program'
+          AND DATE_TRUNC('day', al.created_at) NOT IN ('2025-11-30'::date,'2025-12-17'::date)
+        GROUP BY al.data->>'id'
+      ),
+      pre_fwa AS (
+        SELECT DISTINCT ON (w.mom_id)
+          w.mom_id, w.id AS pre_id,
+          w.naa_discipline, w.naa_emotions, w.naa_child_behavior,
+          w.res_happiness, w.res_fulfillment, w.res_overall_sat,
+          w.soc_status, w.soc_resolve_arguments,
+          w.home_category, w.home_safe,
+          w.trnprt_access, w.trnprt_affordable,
+          w.well_mental_health, w.ei_emp_status, w.fin_budget, w.fin_savings,
+          w.ats_difficulty
+        FROM "WellnessAssessment" w
+        JOIN intake_dates id ON id.mom_id = w.mom_id
+        WHERE w.cpi_total IS NOT NULL AND w.deleted_at = 0
+        ORDER BY w.mom_id, w.created_at ASC
+      ),
+      post_fwa AS (
+        SELECT DISTINCT ON (w.mom_id)
+          w.mom_id, w.id AS post_id,
+          w.naa_discipline, w.naa_emotions, w.naa_child_behavior,
+          w.res_happiness, w.res_fulfillment, w.res_overall_sat,
+          w.soc_status, w.soc_resolve_arguments,
+          w.home_category, w.home_safe,
+          w.trnprt_access, w.trnprt_affordable,
+          w.well_mental_health, w.ei_emp_status, w.fin_budget, w.fin_savings,
+          w.ats_difficulty
+        FROM "WellnessAssessment" w
+        JOIN intake_dates id ON id.mom_id = w.mom_id
+        WHERE w.cpi_total IS NOT NULL AND w.deleted_at = 0
+          AND w.updated_at >= id.coordinator_engaged_date + INTERVAL '91 days'
+          AND w.updated_at <= id.coordinator_engaged_date + INTERVAL '180 days'
+        ORDER BY w.mom_id, w.updated_at DESC
+      )
+      SELECT
+        COUNT(*) AS paired_n,
+        -- per question: how many moms have identical pre vs post value
+        SUM((pre.naa_discipline IS NOT DISTINCT FROM post.naa_discipline)::int) AS naa_discipline_same,
+        SUM((pre.naa_emotions   IS NOT DISTINCT FROM post.naa_emotions)::int)   AS naa_emotions_same,
+        SUM((pre.naa_child_behavior IS NOT DISTINCT FROM post.naa_child_behavior)::int) AS naa_child_behavior_same,
+        SUM((pre.res_happiness  IS NOT DISTINCT FROM post.res_happiness)::int)  AS res_happiness_same,
+        SUM((pre.res_fulfillment IS NOT DISTINCT FROM post.res_fulfillment)::int) AS res_fulfillment_same,
+        SUM((pre.res_overall_sat IS NOT DISTINCT FROM post.res_overall_sat)::int) AS res_overall_sat_same,
+        SUM((pre.soc_status     IS NOT DISTINCT FROM post.soc_status)::int)     AS soc_status_same,
+        SUM((pre.soc_resolve_arguments IS NOT DISTINCT FROM post.soc_resolve_arguments)::int) AS soc_resolve_arguments_same,
+        SUM((pre.home_category  IS NOT DISTINCT FROM post.home_category)::int)  AS home_category_same,
+        SUM((pre.trnprt_access  IS NOT DISTINCT FROM post.trnprt_access)::int)  AS trnprt_access_same,
+        SUM((pre.trnprt_affordable IS NOT DISTINCT FROM post.trnprt_affordable)::int) AS trnprt_affordable_same,
+        SUM((pre.well_mental_health IS NOT DISTINCT FROM post.well_mental_health)::int) AS well_mental_health_same,
+        SUM((pre.ei_emp_status  IS NOT DISTINCT FROM post.ei_emp_status)::int)  AS ei_emp_status_same,
+        SUM((pre.fin_budget     IS NOT DISTINCT FROM post.fin_budget)::int)     AS fin_budget_same,
+        SUM((pre.fin_savings    IS NOT DISTINCT FROM post.fin_savings)::int)    AS fin_savings_same,
+        SUM((pre.ats_difficulty IS NOT DISTINCT FROM post.ats_difficulty)::int) AS ats_difficulty_same
+      FROM pre_fwa pre
+      JOIN post_fwa post ON post.mom_id = pre.mom_id
+    `).catch(e => ({ rows: [{ error: e.message }] }));
+
+    // View definition
+    const viewDef = pool.query(`
+      SELECT definition FROM pg_views WHERE viewname = 'v_wellness_assessment_cpi_history'
+    `).catch(() => ({ rows: [] }));
+
+    const [distinctResults, freeze, view] = await Promise.all([
+      Promise.all(distinctQueries), freezeProbe, viewDef
     ]);
+
+    const distinctValues = {};
+    for (const r of distinctResults) {
+      if (r.rows.length) {
+        const col = r.rows[0].col;
+        distinctValues[col] = r.rows.map(x => ({ val: x.val, n: x.n }));
+      }
+    }
+
     res.json({
-      all_tables: allTables.rows.map(r => r.table_name),
-      wa_columns: waCols.rows,
-      assessment_result_types: assessmentTypes.rows,
-      assessments: assessmentRows.rows,
-      arqr_sample: arqrSample.rows,
+      question_distinct_values: distinctValues,
+      freeze_probe: freeze.rows[0] || {},
+      view_definition: view.rows[0]?.definition || null,
     });
   } catch (err) {
     console.error('wa-schema-probe error:', err);

@@ -60,7 +60,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
                 ELSE 'Pending'
               END AS outcome,
               CASE WHEN fc.first_contact_date IS NOT NULL
-                THEN EXTRACT(DAY FROM fc.first_contact_date - m.created_at)
+                THEN (SELECT COUNT(*)::int FROM generate_series(m.created_at::date + 1, fc.first_contact_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id
@@ -102,7 +102,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
                 ELSE 'Pending'
               END AS outcome,
               CASE WHEN fc.first_contact_date IS NOT NULL
-                THEN EXTRACT(DAY FROM fc.first_contact_date - m.created_at)
+                THEN (SELECT COUNT(*)::int FROM generate_series(m.created_at::date + 1, fc.first_contact_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id
@@ -149,7 +149,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
                 ELSE 'Incomplete / Active'
               END AS outcome,
               CASE WHEN fp.first_pairing_date IS NOT NULL
-                THEN EXTRACT(DAY FROM fp.first_pairing_date - id.best_intake_date)
+                THEN (SELECT COUNT(*)::int FROM generate_series(id.best_intake_date::date + 1, fp.first_pairing_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id
@@ -195,7 +195,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
                 ELSE 'Incomplete / Active'
               END AS outcome,
               CASE WHEN fp.first_pairing_date IS NOT NULL
-                THEN EXTRACT(DAY FROM fp.first_pairing_date - id.best_intake_date)
+                THEN (SELECT COUNT(*)::int FROM generate_series(id.best_intake_date::date + 1, fp.first_pairing_date::date, '1 day') g WHERE EXTRACT(ISODOW FROM g) <= 5)
               END AS days
             FROM "Mom" m
             JOIN "Affiliate" a ON a.id = m.affiliate_id

@@ -440,12 +440,12 @@ function buildContactSection(rows) {
   html += '<table><thead><tr>'
     + '<th>Month</th>'
     + '<th>Families</th>'
-    + '<th>≤ 1 day</th>'
-    + '<th>2 days</th>'
-    + '<th>3 days</th>'
-    + '<th>4 – 7 days</th>'
-    + '<th>8 – 14 days</th>'
-    + '<th>Over 14 days</th>'
+    + '<th>≤ 1 bday</th>'
+    + '<th>2 bdays</th>'
+    + '<th>3 bdays</th>'
+    + '<th>4 – 7 bdays</th>'
+    + '<th>8 – 14 bdays</th>'
+    + '<th>Over 14 bdays</th>'
     + '<th>Never Contacted</th>'
     + '</tr></thead><tbody>';
 
@@ -529,7 +529,7 @@ function buildPairingSection(rows) {
     + '<th>Month</th>'
     + '<th>Families</th>';
   if (isPaired) {
-    html += '<th>0 – 7 days</th><th>8 – 14 days</th><th>15 – 21 days</th><th>Over 21 days</th>';
+    html += '<th>0 – 7 bdays</th><th>8 – 14 bdays</th><th>15 – 21 bdays</th><th>Over 21 bdays</th>';
   }
   html += '</tr></thead><tbody>';
 
@@ -633,8 +633,8 @@ function buildComparativeSection(contactRows, pairingRows) {
   var pairingColors = ['#123939','#f2a136','#e07020','#ec482f'];
   var colors = isContact ? contactColors : pairingColors;
 
-  var contactLabels = ['≤ 1 day','2 days','3 days','4–7 days','8–14 days','14+ / Never'];
-  var pairingLabels = ['0–7 days','8–14 days','15–21 days','21+ days'];
+  var contactLabels = ['≤ 1 bday','2 bdays','3 bdays','4–7 bdays','8–14 bdays','14+ / Never'];
+  var pairingLabels = ['0–7 bdays','8–14 bdays','15–21 bdays','21+ bdays'];
   var bandLabels = isContact ? contactLabels : pairingLabels;
   var numBands = bandLabels.length;
 

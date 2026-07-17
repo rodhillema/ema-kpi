@@ -110,6 +110,101 @@ const POST_SUM = DOMAINS.map(d => `q.post_${d}`).join('+');
 // Count of domains where post > pre
 const DOMAINS_UP = DOMAINS.map(d => `(q.post_${d}>p.${d})::int`).join('+');
 
+// Question-level freeze analysis: for paired cohort, compare each question column pre vs post.
+// Returns per-question same/changed counts, grouped by domain.
+async function runQFreezeAnalysis(pool, PS_BATCH_CTE, INTAKE_CTES) {
+  // Step 1: get all question-level columns (exclude score totals and metadata)
+  const SCORE_COLS = new Set([
+    'ats_score','cc_score','edu_score','ei_score','fin_cpi_sum','home_score',
+    'naa_score','res_score','soc_score','trnprt_score','well_score',
+    'cpi_total','well_phq_total','well_gad_total',
+    'fin_lmi','fin_ami',
+  ]);
+  const colRes = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'WellnessAssessment'
+      AND column_name ~ '^(ats|cc|edu|ei|fin|home|naa|res|soc|trnprt|well)_'
+    ORDER BY column_name
+  `);
+  const qCols = colRes.rows.map(r => r.column_name).filter(c => !SCORE_COLS.has(c));
+  if (!qCols.length) return { error: 'no question columns found', rows: [] };
+
+  const domainOfCol = c => c.split('_')[0];
+
+  // Step 2: build dynamic freeze query
+  const preSelects  = qCols.map(c => `w."${c}" AS ${c}`).join(', ');
+  const postSelects = qCols.map(c => `w."${c}" AS ${c}`).join(', ');
+  const sameExprs   = qCols.map(c =>
+    `SUM((pre."${c}" IS NOT DISTINCT FROM post."${c}")::int) AS "${c}_same",` +
+    `SUM((pre."${c}" IS NOT NULL OR post."${c}" IS NOT NULL)::int) AS "${c}_answered"`
+  ).join(',\n        ');
+
+  const sql = `
+    WITH
+    ${PS_BATCH_CTE},
+    ${INTAKE_CTES},
+    pre_fwa AS (
+      SELECT DISTINCT ON (w."mom_id")
+        w."mom_id"::text AS mom_id,
+        ${preSelects}
+      FROM "WellnessAssessment" w
+      JOIN intake_dates id ON id.mom_id = w."mom_id"::text
+      WHERE w."cpi_total" IS NOT NULL AND w."deleted_at" = 0
+      ORDER BY w."mom_id", w."created_at" ASC
+    ),
+    post_fwa AS (
+      SELECT DISTINCT ON (w."mom_id")
+        w."mom_id"::text AS mom_id,
+        ${postSelects}
+      FROM "WellnessAssessment" w
+      JOIN intake_dates id ON id.mom_id = w."mom_id"::text
+      WHERE w."cpi_total" IS NOT NULL AND w."deleted_at" = 0
+        AND w."updated_at" >= id.intake_date + INTERVAL '91 days'
+        AND w."updated_at" <= id.intake_date + INTERVAL '180 days'
+      ORDER BY w."mom_id", w."updated_at" DESC
+    )
+    SELECT
+      COUNT(*) AS paired_n,
+      ${sameExprs}
+    FROM pre_fwa pre
+    JOIN post_fwa post ON post.mom_id = pre.mom_id
+  `;
+
+  const { rows } = await pool.query(sql);
+  const agg = rows[0] || {};
+  const paired_n = parseInt(agg.paired_n) || 0;
+
+  // Reshape into per-question objects, then group by domain
+  const questions = qCols.map(c => {
+    const same_n     = parseInt(agg[`${c}_same`]) || 0;
+    const answered_n = parseInt(agg[`${c}_answered`]) || 0;
+    const changed_n  = answered_n - same_n;
+    return {
+      col:        c,
+      domain:     domainOfCol(c),
+      same_n,
+      changed_n,
+      answered_n,
+      pct_frozen: answered_n > 0 ? Math.round(100 * same_n / answered_n) : null,
+    };
+  });
+
+  const byDomain = {};
+  for (const q of questions) {
+    if (!byDomain[q.domain]) byDomain[q.domain] = { domain: q.domain, questions: [], total_same: 0, total_changed: 0, total_answered: 0 };
+    byDomain[q.domain].questions.push(q);
+    byDomain[q.domain].total_same     += q.same_n;
+    byDomain[q.domain].total_changed  += q.changed_n;
+    byDomain[q.domain].total_answered += q.answered_n;
+  }
+  for (const d of Object.values(byDomain)) {
+    d.pct_frozen = d.total_answered > 0 ? Math.round(100 * d.total_same / d.total_answered) : null;
+  }
+
+  return { paired_n, questions, byDomain };
+}
+
 router.get('/', requireAdmin, async (req, res) => {
   try {
     const [pairedResult, gapResult, affResult, distResult, mainKpiResult] = await Promise.all([
@@ -384,6 +479,9 @@ ${PRE_COLS}
     const distRows       = distResult.rows;
     const mainKpiRows    = mainKpiResult.rows;
 
+    // ── Q6: Question-level freeze analysis (sequential — depends on schema first) ──
+    const qFreeze = await runQFreezeAnalysis(pool, PS_BATCH_CTE, INTAKE_CTES).catch(e => ({ error: e.message }));
+
     // ── Compute domain-level improvement rates from paired cohort ──
     const domainStats = {};
     for (const d of DOMAINS) {
@@ -518,6 +616,7 @@ ${PRE_COLS}
       })),
       domainStats,
       distByDomain,
+      questionFreeze: qFreeze,
     });
 
   } catch (err) {

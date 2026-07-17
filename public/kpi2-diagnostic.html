@@ -667,6 +667,73 @@ function render(d) {
       html += '<div class="callout"><strong>Paired cohort too small for stagnation analysis</strong> — need at least 3 paired moms. Currently '+counts.paired_n+'.</div>';
     }
 
+    // ── Question-Level Freeze Analysis ──
+    var qFreeze = d.questionFreeze || {};
+    if (qFreeze && qFreeze.byDomain && counts.paired_n > 0) {
+      html += '<div class="subsection">Question-Level Freeze Analysis: What Actually Changed?</div>';
+      html += '<div class="callout"><strong>For moms in the paired cohort (n='+qFreeze.paired_n+'):</strong> This shows, per question, whether the answer submitted on the 6-Month FWA was the same as the Intake FWA or different. '
+        +'A domain can be <em>stagnant</em> (score unchanged) for two reasons: <strong>(1) No change</strong> — exactly the same answers were submitted; or <strong>(2) Changed but no gain</strong> — different answers were given, but they scored the same or lower. '
+        +'Knowing which is happening helps distinguish real-life stability from assessment disengagement or ceiling effects.</div>';
+
+      // Build domain-level freeze summary table
+      var domFreeze = qFreeze.byDomain || {};
+      html += '<div class="tbl-wrap"><table><thead><tr>'
+        +'<th>Domain</th><th>Questions</th>'
+        +'<th># Responses Same</th><th># Responses Changed</th>'
+        +'<th>% Frozen<br><span style="font-size:9px;opacity:.7">(same answer)</span></th>'
+        +'<th>Stagnant Score?</th><th>Interpretation</th>'
+        +'</tr></thead><tbody>';
+      var DOMAIN_ORDER_FREEZE = ['ats','cc','edu','ei','fin','home','naa','res','soc','trnprt','well'];
+      DOMAIN_ORDER_FREEZE.forEach(function(dom) {
+        var df = domFreeze[dom];
+        if (!df) return;
+        var ds = domStats[dom] || {};
+        var isStagnant = ds.n >= 3 && (ds.up||0)/ds.n < 0.2;
+        var qCount = (df.questions||[]).length;
+        var pctFrz = df.pct_frozen;
+        // Interpretation
+        var interp = '';
+        if (isStagnant) {
+          if (pctFrz != null && pctFrz >= 80) interp = '⚠️ Very few answers are changing — likely same responses re-entered. May indicate copy-paste or disengagement.';
+          else if (pctFrz != null && pctFrz >= 50) interp = '⚠️ Many answers unchanged. Some engagement but score still stagnant — changed answers may not be scoring higher.';
+          else if (pctFrz != null) interp = '✓ Answers are changing, but the score isn\'t improving. Could be ceiling effect or answers moving laterally (same score value).';
+        } else {
+          if (pctFrz != null && pctFrz >= 80) interp = 'Score improved despite most answers being the same — a few key questions likely drive the score.';
+          else interp = 'Score improved and answers changed — expected pattern.';
+        }
+        html += '<tr>'
+          +'<td style="font-family:monospace;font-size:11px">'+esc(dom)+'</td>'
+          +'<td style="font-size:11px">'+esc(domLabels[dom]||dom)+'</td>'
+          +'<td>'+qCount+'</td>'
+          +'<td>'+(df.total_same||0).toLocaleString()+'</td>'
+          +'<td>'+(df.total_changed||0).toLocaleString()+'</td>'
+          +'<td class="'+(pctFrz!=null&&pctFrz>=80?'flag-text':pctFrz!=null&&pctFrz>=50?'ambig':pctFrz!=null?'ok':'')+'">'+(pctFrz!=null?pctFrz+'%':'n/a')+'</td>'
+          +'<td>'+(isStagnant?'<span class="warn-badge">Stagnant</span>':'')+'</td>'
+          +'<td style="font-size:11px;max-width:280px">'+esc(interp)+'</td>'
+          +'</tr>';
+      });
+      html += '</tbody></table></div>';
+
+      // Per-domain collapsible question drill-down
+      html += '<details style="margin:8px 0">'
+        +'<summary style="cursor:pointer;font-family:\'Oswald\',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--green);padding:4px 0;list-style:none">▸ Per-Question Detail (all '+((qFreeze.questions||[]).length)+' questions)</summary>';
+      html += '<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>'
+        +'<th>Domain</th><th>Question Column</th>'
+        +'<th>Same (n)</th><th>Changed (n)</th><th>% Frozen</th>'
+        +'</tr></thead><tbody>';
+      (qFreeze.questions||[]).forEach(function(q) {
+        var pctFrz = q.pct_frozen;
+        html += '<tr>'
+          +'<td style="font-family:monospace;font-size:10px">'+esc(q.domain)+'</td>'
+          +'<td style="font-family:monospace;font-size:10px">'+esc(q.col)+'</td>'
+          +'<td>'+q.same_n+'</td>'
+          +'<td>'+q.changed_n+'</td>'
+          +'<td class="'+(pctFrz!=null&&pctFrz>=80?'flag-text':pctFrz!=null&&pctFrz<30?'ok':'')+'">'+(pctFrz!=null?pctFrz+'%':'n/a')+'</td>'
+          +'</tr>';
+      });
+      html += '</tbody></table></div></details>';
+    }
+
     // Domain improvement rates from paired cohort
     if (counts.paired_n > 0) {
       html += '<div class="subsection">Domain Improvement Rates (Paired Cohort — Intake vs. 6-Month)</div>';

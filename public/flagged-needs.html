@@ -473,20 +473,6 @@ function render() {
     + '</div>'
     + '</div>';
 
-  // ── Who initiated
-  if (d.byInitiator) {
-    var adv = d.byInitiator.advocate, sta = d.byInitiator.staff, unk = d.byInitiator.unknown;
-    html += '<div class="divider-label">Who Initiated</div>';
-    html += '<div class="sec">'
-      + '<div class="sec-head"><div class="sec-label">Advocate vs Staff Initiated</div><div class="sec-sub">Based on the role recorded when the need was logged in Trellis</div></div>'
-      + '<div class="compare-2">'
-      +   cmp('Advocate-Initiated', adv.flagged+' flagged', pct(adv.met, adv.flagged)+' met', adv.met+' fulfilled')
-      +   cmp('Staff-Initiated', sta.flagged+' flagged', pct(sta.met, sta.flagged)+' met', sta.met+' fulfilled')
-      + '</div>'
-      + (unk.flagged ? '<div style="margin-top:10px;font-size:12px;color:var(--light)">'+unk.flagged+' records without a role tag.</div>' : '')
-      + '</div>';
-  }
-
   document.getElementById('report-body').innerHTML = html;
 }
 

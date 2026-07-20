@@ -198,14 +198,33 @@ router.get('/', requireAdmin, async (req, res) => {
 
     const pairedData = pairingRows.map(p => {
       const momArs = (arByMom[p.mom_id] || []).filter(ar => ar.track_group === p.track_group);
-      const posts = momArs.filter(ar => ar.atype === 'post' && ar.ar_date >= p.pairing_start)
-                          .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1);
+
+      // Require answered_count > 0 — a score of 0 means the form responses didn't save
+      const validArs = momArs.filter(ar => ar.answered_count > 0);
+
+      const posts = validArs.filter(ar => ar.atype === 'post' && ar.ar_date >= p.pairing_start)
+                            .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1);
       const post = posts[0] || null;
       const pre  = post
-        ? momArs.filter(ar => ar.atype === 'pre' && ar.ar_date < post.ar_date)
-                .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1)[0] || null
+        ? validArs.filter(ar => ar.atype === 'pre' && ar.ar_date < post.ar_date)
+                  .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1)[0] || null
         : null;
-      return { ...p, post, pre, has_post: !!post, has_pre: !!pre, has_pair: !!(post && pre) };
+
+      // Track zero-score assessments that were found but excluded
+      const zeroPost = !post && momArs.some(ar => ar.atype === 'post' && ar.ar_date >= p.pairing_start && ar.answered_count === 0);
+      const zeroPre  = post && !pre && momArs.some(ar => ar.atype === 'pre' && ar.ar_date < post.ar_date && ar.answered_count === 0);
+
+      let exclusion_reason = null;
+      if (!post && !zeroPost) exclusion_reason = 'no post assessment on file';
+      else if (!post && zeroPost) exclusion_reason = 'post assessment has 0 responses (form did not save)';
+      else if (!pre && !zeroPre) exclusion_reason = 'no pre assessment before post';
+      else if (!pre && zeroPre)  exclusion_reason = 'pre assessment has 0 responses (form did not save)';
+
+      return {
+        ...p, post, pre,
+        has_post: !!post, has_pre: !!pre, has_pair: !!(post && pre),
+        exclusion_reason,
+      };
     });
 
     const pairedWithBoth = pairedData.filter(d => d.has_pair);

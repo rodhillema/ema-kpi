@@ -599,39 +599,68 @@ function render(d) {
     // ── Per-mom table ──
     ['EP','RR'].forEach(function(track){
       var moms=momResults.filter(function(m){return m.track_group===track;});
-      if(!moms.length){html+='<p style="margin:8px 0;font-size:12px;color:var(--mid)"><strong>'+track+':</strong> No paired moms.</p>';return;}
-      html += '<div class="subsection">'+track+' — Per-Mom Detail ('+moms.length+' mom'+(moms.length!==1?'s':'')+')'+smallN(moms.length)+'</div>';
-      html += '<div class="tbl-wrap"><table><thead><tr>'
-        +'<th>Mom</th><th>Affiliate</th>'
-        +'<th colspan="2">Current KPI 3 (total)</th><th>Improved?</th>'
-        +'<th colspan="2">Domain-weighted</th><th>Improved?</th>'
-        +'<th>Any domain up?</th>'
-        +'<th>Methods agree?</th>'
-        +'</tr>'
-        +'<tr style="background:var(--bg)">'
-        +'<th></th><th></th>'
-        +'<th style="font-weight:400;font-size:10px">Pre total</th><th style="font-weight:400;font-size:10px">Post total</th><th></th>'
-        +'<th style="font-weight:400;font-size:10px">Pre avg</th><th style="font-weight:400;font-size:10px">Post avg</th><th></th>'
-        +'<th></th><th></th>'
-        +'</tr></thead><tbody>';
-      moms.forEach(function(m){
-        var agreeCell = m.flip_AvsC
-          ? '<span class="tag tag-flip">DISAGREE</span>'
-          : '<span class="tag tag-same">agree</span>';
-        html += '<tr>'
-          +'<td>'+esc(m.first_name)+' '+esc(m.last_name)+'</td>'
-          +'<td style="font-size:11px">'+esc(m.affiliate||'')+'</td>'
-          +'<td>'+(m.pre_C!=null?m.pre_C:'-')+'</td>'
-          +'<td>'+(m.post_C!=null?m.post_C:'-')+'</td>'
-          +'<td class="'+(m.improved_C?'ok':'ambig')+'">'+(m.improved_C?'yes':'no')+'</td>'
-          +'<td>'+(m.pre_A!=null?m.pre_A:'-')+'</td>'
-          +'<td>'+(m.post_A!=null?m.post_A:'-')+'</td>'
-          +'<td class="'+(m.improved_A===true?'ok':m.improved_A===false?'ambig':'')+'">'+(m.improved_A===true?'yes':m.improved_A===false?'no':'n/a')+'</td>'
-          +'<td class="'+(m.improved_anyDomain===true?'ok':m.improved_anyDomain===false?'ambig':'')+'">'+(m.improved_anyDomain===true?'yes':m.improved_anyDomain===false?'no':'n/a')+'</td>'
-          +'<td>'+agreeCell+'</td>'
-          +'</tr>';
-      });
-      html += '</tbody></table></div>';
+      var excluded=pairedData.filter(function(p){return p.track_group===track && !p.has_pair;});
+
+      if(!moms.length && !excluded.length){html+='<p style="margin:8px 0;font-size:12px;color:var(--mid)"><strong>'+track+':</strong> No completed pairings.</p>';return;}
+
+      // Included moms
+      if(moms.length){
+        html += '<div class="subsection">'+track+' — Included in KPI 3 ('+moms.length+' mom'+(moms.length!==1?'s':'')+')'+smallN(moms.length)+'</div>';
+        html += '<div class="tbl-wrap"><table><thead><tr>'
+          +'<th>Mom</th><th>Affiliate</th>'
+          +'<th colspan="2">Current KPI 3 (total)</th><th>Improved?</th>'
+          +'<th colspan="2">Domain-weighted</th><th>Improved?</th>'
+          +'<th>Any domain up?</th>'
+          +'<th>Methods agree?</th>'
+          +'</tr>'
+          +'<tr style="background:var(--bg)">'
+          +'<th></th><th></th>'
+          +'<th style="font-weight:400;font-size:10px">Pre total</th><th style="font-weight:400;font-size:10px">Post total</th><th></th>'
+          +'<th style="font-weight:400;font-size:10px">Pre avg</th><th style="font-weight:400;font-size:10px">Post avg</th><th></th>'
+          +'<th></th><th></th>'
+          +'</tr></thead><tbody>';
+        moms.forEach(function(m){
+          var agreeCell = m.flip_AvsC
+            ? '<span class="tag tag-flip">DISAGREE</span>'
+            : '<span class="tag tag-same">agree</span>';
+          html += '<tr>'
+            +'<td>'+esc(m.first_name)+' '+esc(m.last_name)+'</td>'
+            +'<td style="font-size:11px">'+esc(m.affiliate||'')+'</td>'
+            +'<td>'+(m.pre_C!=null?m.pre_C:'-')+'</td>'
+            +'<td>'+(m.post_C!=null?m.post_C:'-')+'</td>'
+            +'<td class="'+(m.improved_C?'ok':'ambig')+'">'+(m.improved_C?'yes':'no')+'</td>'
+            +'<td>'+(m.pre_A!=null?m.pre_A:'-')+'</td>'
+            +'<td>'+(m.post_A!=null?m.post_A:'-')+'</td>'
+            +'<td class="'+(m.improved_A===true?'ok':m.improved_A===false?'ambig':'')+'">'+(m.improved_A===true?'yes':m.improved_A===false?'no':'n/a')+'</td>'
+            +'<td class="'+(m.improved_anyDomain===true?'ok':m.improved_anyDomain===false?'ambig':'')+'">'+(m.improved_anyDomain===true?'yes':m.improved_anyDomain===false?'no':'n/a')+'</td>'
+            +'<td>'+agreeCell+'</td>'
+            +'</tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+
+      // Excluded moms
+      if(excluded.length){
+        html += '<div class="subsection" style="color:var(--mid)">'+track+' — Excluded from KPI 3 ('+excluded.length+' mom'+(excluded.length!==1?'s':'')+')</div>';
+        html += '<div class="tbl-wrap"><table><thead><tr>'
+          +'<th>Mom</th><th>Affiliate</th><th>Completed</th><th>Pre score</th><th>Post score</th><th>Reason excluded</th>'
+          +'</tr></thead><tbody>';
+        excluded.forEach(function(p){
+          var preScore  = p.pre  ? p.pre.sum_score  : (p.has_pre  ? '0' : '—');
+          var postScore = p.post ? p.post.sum_score : (p.has_post ? '0' : '—');
+          var reason = p.exclusion_reason || 'unknown';
+          var isZero = reason.indexOf('0 responses') >= 0;
+          html += '<tr>'
+            +'<td>'+esc(p.first_name)+' '+esc(p.last_name)+'</td>'
+            +'<td style="font-size:11px">'+esc(p.affiliate_name||'')+'</td>'
+            +'<td style="font-size:11px">'+(p.completed_on?p.completed_on.toString().substring(0,10):'?')+'</td>'
+            +'<td>'+(preScore!==null?preScore:'—')+'</td>'
+            +'<td>'+(postScore!==null?postScore:'—')+'</td>'
+            +'<td style="font-size:11px;color:'+(isZero?'#b45309':'var(--mid)')+'">'+esc(reason)+'</td>'
+            +'</tr>';
+        });
+        html += '</tbody></table></div>';
+      }
     });
   }
   html += '</div></div>';

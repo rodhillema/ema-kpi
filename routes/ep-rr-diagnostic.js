@@ -421,6 +421,33 @@ router.get('/', requireAdmin, async (req, res) => {
       }
     }
 
+    // ── Shannon Boggs pairing debug ─────────────────────
+    const { rows: shannonPairings } = await pool.query(`
+      SELECT
+        p."id" AS pairing_id,
+        p."status"::text AS pairing_status,
+        p."completed_on",
+        p."created_at" AS pairing_start,
+        p."complete_reason_sub_status"::text AS complete_reason,
+        p."incomplete_reason_sub_status"::text AS incomplete_reason,
+        p."trackId" AS track_id_direct,
+        p."advocacyGroupId" AS advocacy_group_id,
+        t."title" AS track_title_direct,
+        ag."id" AS ag_id,
+        ag."name" AS ag_name,
+        ag."trackId" AS ag_track_id,
+        ag."deleted_at" AS ag_deleted_at,
+        t2."title" AS track_title_via_group
+      FROM "Pairing" p
+      JOIN "Mom" m ON m."id" = p."momId"
+      LEFT JOIN "Track" t ON t."id" = p."trackId"
+      LEFT JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId"
+      LEFT JOIN "Track" t2 ON t2."id" = ag."trackId"
+      WHERE m."deleted_at" = 0 AND p."deleted_at" = 0
+        AND (m."first_name" ILIKE '%Shannon%' OR m."last_name" ILIKE '%Boggs%')
+      ORDER BY p."created_at" DESC
+    `);
+
     // ── Teisha Shepherd validation ───────────────────────
     const { rows: teishaRows } = await pool.query(`
       SELECT ar."id" AS ar_id, m."first_name", m."last_name",
@@ -494,6 +521,7 @@ router.get('/', requireAdmin, async (req, res) => {
       questions:      questionRows,
       momResults,
       itemMovement,
+      shannonPairings,
       teishaRows,
       teishaDomains,
       affiliateFunnel,

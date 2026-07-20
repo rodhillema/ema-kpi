@@ -1654,10 +1654,12 @@ router.get('/', async (req, res) => {
               WHEN t."title" ILIKE '%roadmap%' OR t."title" ILIKE '%resilien%' OR t."title" ILIKE '%hoja de ruta%' THEN 'RR'
             END AS track_group
           FROM "Pairing" p
-          JOIN "Track" t ON t."id" = p."trackId"
+          LEFT JOIN "AdvocacyGroup" ag ON ag."id" = p."advocacyGroupId" AND ag."deleted_at" = 0
+          JOIN "Track" t ON t."id" = COALESCE(p."trackId", ag."trackId")
           JOIN "Mom" m ON m."id" = p."momId"
           WHERE p."deleted_at" = 0 AND m."deleted_at" = 0
             AND p."status"::text = 'pairing_complete'
+            AND p."complete_reason_sub_status" IS NOT NULL
             AND p."completed_on" >= '${PERIOD_START}'
             AND p."completed_on" <= '${PERIOD_END} 23:59:59'
             AND (t."title" ILIKE '%empowered%' OR t."title" ILIKE '%crianza empoderada%'
@@ -1683,7 +1685,7 @@ router.get('/', async (req, res) => {
           SELECT
             ar."momId",
             ar."type"::text AS atype,
-            COALESCE(ar."completedAt", ar."created_at") AS ar_date,
+            ar."completedAt" AS ar_date,
             CASE
               WHEN a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%' THEN 'EP'
               WHEN a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%' THEN 'RR'
@@ -1697,6 +1699,7 @@ router.get('/', async (req, res) => {
           JOIN "Assessment" a ON a."id" = ar."assessmentId"
           JOIN "Mom" m ON m."id" = ar."momId"
           WHERE ar."deleted_at" = 0 AND m."deleted_at" = 0
+            AND ar."completedAt" IS NOT NULL
             AND a."name" NOT ILIKE '%Legacy%'
             AND (a."name" ILIKE 'Empowered Parenting%' OR a."name" ILIKE 'Crianza empoderada%'
                  OR a."name" ILIKE 'Resilience%' OR a."name" ILIKE 'Hoja de ruta%')

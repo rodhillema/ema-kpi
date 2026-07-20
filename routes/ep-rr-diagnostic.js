@@ -210,20 +210,32 @@ router.get('/', requireAdmin, async (req, res) => {
                   .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1)[0] || null
         : null;
 
+      // Raw best-match pre/post (including 0-response) for display in excluded table
+      const rawPosts = momArs.filter(ar => ar.atype === 'post' && ar.ar_date >= p.pairing_start)
+                             .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1);
+      const rawPost = rawPosts[0] || null;
+      const rawPre  = momArs.filter(ar => ar.atype === 'pre')
+                            .sort((a, b) => b.ar_date < a.ar_date ? -1 : 1)[0] || null;
+
       // Track zero-score assessments that were found but excluded
-      const zeroPost = !post && momArs.some(ar => ar.atype === 'post' && ar.ar_date >= p.pairing_start && ar.answered_count === 0);
-      const zeroPre  = post && !pre && momArs.some(ar => ar.atype === 'pre' && ar.ar_date < post.ar_date && ar.answered_count === 0);
+      const zeroPost = !post && rawPost && rawPost.answered_count === 0;
+      const zeroPre  = post && !pre && rawPre && rawPre.answered_count === 0;
 
       let exclusion_reason = null;
-      if (!post && !zeroPost) exclusion_reason = 'no post assessment on file';
+      if (!post && !rawPost) exclusion_reason = 'no post assessment on file';
       else if (!post && zeroPost) exclusion_reason = 'post assessment has 0 responses (form did not save)';
-      else if (!pre && !zeroPre) exclusion_reason = 'no pre assessment before post';
-      else if (!pre && zeroPre)  exclusion_reason = 'pre assessment has 0 responses (form did not save)';
+      else if (!pre && !rawPre) exclusion_reason = 'no pre assessment on file';
+      else if (!pre && zeroPre) exclusion_reason = 'pre assessment has 0 responses (form did not save)';
+      else if (!pre) exclusion_reason = 'no pre assessment before post';
 
       return {
         ...p, post, pre,
         has_post: !!post, has_pre: !!pre, has_pair: !!(post && pre),
         exclusion_reason,
+        raw_pre_score: rawPre ? rawPre.sum_score : null,
+        raw_pre_answered: rawPre ? rawPre.answered_count : null,
+        raw_post_score: rawPost ? rawPost.sum_score : null,
+        raw_post_answered: rawPost ? rawPost.answered_count : null,
       };
     });
 

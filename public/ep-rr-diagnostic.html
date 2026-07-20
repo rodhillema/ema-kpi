@@ -643,19 +643,22 @@ function render(d) {
       if(excluded.length){
         html += '<div class="subsection" style="color:var(--mid)">'+track+' — Excluded from KPI 3 ('+excluded.length+' mom'+(excluded.length!==1?'s':'')+')</div>';
         html += '<div class="tbl-wrap"><table><thead><tr>'
-          +'<th>Mom</th><th>Affiliate</th><th>Completed</th><th>Pre score</th><th>Post score</th><th>Reason excluded</th>'
+          +'<th>Mom</th><th>Affiliate</th><th>Completed</th>'
+          +'<th>Pre score<br><span style="font-weight:400;font-size:10px">(raw / answered)</span></th>'
+          +'<th>Post score<br><span style="font-weight:400;font-size:10px">(raw / answered)</span></th>'
+          +'<th>Reason excluded</th>'
           +'</tr></thead><tbody>';
         excluded.forEach(function(p){
-          var preScore  = p.pre  ? p.pre.sum_score  : (p.has_pre  ? '0' : '—');
-          var postScore = p.post ? p.post.sum_score : (p.has_post ? '0' : '—');
+          var preDisp  = p.raw_pre_score  != null ? p.raw_pre_score  + ' / ' + p.raw_pre_answered  + 'q' : '—';
+          var postDisp = p.raw_post_score != null ? p.raw_post_score + ' / ' + p.raw_post_answered + 'q' : '—';
           var reason = p.exclusion_reason || 'unknown';
           var isZero = reason.indexOf('0 responses') >= 0;
           html += '<tr>'
             +'<td>'+esc(p.first_name)+' '+esc(p.last_name)+'</td>'
             +'<td style="font-size:11px">'+esc(p.affiliate_name||'')+'</td>'
             +'<td style="font-size:11px">'+(p.completed_on?p.completed_on.toString().substring(0,10):'?')+'</td>'
-            +'<td>'+(preScore!==null?preScore:'—')+'</td>'
-            +'<td>'+(postScore!==null?postScore:'—')+'</td>'
+            +'<td style="font-size:11px">'+preDisp+'</td>'
+            +'<td style="font-size:11px">'+postDisp+'</td>'
             +'<td style="font-size:11px;color:'+(isZero?'#b45309':'var(--mid)')+'">'+esc(reason)+'</td>'
             +'</tr>';
         });

@@ -115,11 +115,11 @@ body.logged-in .portal-view{display:flex}
 .rpt-logo{height:32px;width:auto;display:block;margin-bottom:12px}
 .rpt-title{font-family:'Shrikhand',cursive;font-size:22px;color:var(--dark);margin-bottom:2px}
 .rpt-subtitle{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:14px}
-.rpt-meta-grid{display:flex;gap:40px;flex-wrap:wrap}
-.rpt-meta-col{display:flex;flex-direction:column;gap:4px}
-.rpt-meta-row{display:flex;gap:6px;font-size:12px;line-height:1.5}
-.rpt-meta-lbl{font-family:'Oswald',sans-serif;font-weight:400;font-size:11px;letter-spacing:.4px;color:var(--mid);white-space:nowrap;min-width:110px}
+.rpt-meta-grid{display:flex;gap:8px 32px;flex-wrap:wrap;align-items:baseline}
+.rpt-meta-row{display:flex;gap:7px;font-size:12px;line-height:1.5;align-items:baseline}
+.rpt-meta-lbl{font-family:'Oswald',sans-serif;font-weight:400;font-size:11px;letter-spacing:.4px;color:var(--mid);white-space:nowrap}
 .rpt-meta-val{font-family:'Lato',sans-serif;font-weight:700;color:var(--dark)}
+.meta-id{font-family:'Consolas','Menlo',monospace;font-size:10.5px;font-weight:400;color:var(--mid);letter-spacing:0}
 
 /* ── Sections ── */
 .rpt-section{border-top:1px solid var(--border);padding:20px 28px}
@@ -660,9 +660,10 @@ function renderReport(data) {
   html += '<div class="rpt-title">Court Summary Report</div>';
   html += '<div class="rpt-subtitle">Court-ready snapshot of quantitative progress, assessments, and documented session history</div>';
   html += '<div class="rpt-meta-grid">';
-  html += '<div class="rpt-meta-col">' + metaRow('Participant', esc(p.momName)) + '</div>';
-  html += '<div class="rpt-meta-col">' + metaRow('Location', esc(p.affiliateName || '—')) + '</div>';
-  html += '<div class="rpt-meta-col">' + metaRow('Report Generated', esc(generated)) + '</div>';
+  html += metaRow('Participant', esc(p.momName));
+  html += metaRow('ĒMA ID', '<span class="meta-id">' + esc(p.momId || '—') + '</span>');
+  html += metaRow('Location', esc(p.affiliateName || '—'));
+  html += metaRow('Report Generated', esc(generated));
   html += '</div>';
   html += '</div>';
 

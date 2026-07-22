@@ -679,6 +679,11 @@ function renderReport(data) {
   if (p.trackDescription) {
     html += '<div class="track-desc">' + esc(p.trackDescription) + '</div>';
   }
+  html += '</div>';
+
+  // ── Section 2: Lesson Completion ─────────────────────────────────────────
+  html += '<div class="rpt-section">';
+  html += '<div class="sec-heading">Lesson Completion</div>';
 
   // Lesson progress pills — prefer server-merged lessonProgress over client-side matching
   var lessonRows = lessonProgress && lessonProgress.length ? lessonProgress : buildLessonRows(ltList, lessonMap);

@@ -173,7 +173,17 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           s."session_type"::text   AS "type",
           s."advocacy_group_id"    AS "advocacyGroupId",
           sa."status"::text        AS "momAttended",
-          sa."promptness"::text    AS "promptness",
+          -- Promptness lives on SessionNote (attendance_and_promptness), 1:1 only;
+          -- group sessions record attendance in SessionAttendance.status.
+          CASE WHEN s."advocacy_group_id" IS NULL THEN
+            (SELECT sn4."attendance_and_promptness"::text
+               FROM "SessionNote" sn4
+              WHERE sn4."session_id" = s."id"
+                AND sn4."deleted_at" = 0
+                AND sn4."status"::text IN ('approved', 'submitted')
+              ORDER BY CASE sn4."status"::text WHEN 'approved' THEN 1 ELSE 2 END
+              LIMIT 1)
+          ELSE NULL END            AS "promptness",
           -- Best SessionNote status for this session
           (SELECT DISTINCT ON (sn2."session_id") sn2."status"::text
              FROM "SessionNote" sn2
@@ -187,9 +197,9 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                 ELSE 4
               END
           )                        AS "noteStatus",
-          -- Engagement from best approved/submitted note (1:1 only)
+          -- Engagement from best approved/submitted note (moms_engagement_c, 1:1 only)
           CASE WHEN s."advocacy_group_id" IS NULL THEN
-            (SELECT sn3."engagement"::text
+            (SELECT sn3."moms_engagement_c"::text
                FROM "SessionNote" sn3
               WHERE sn3."session_id" = s."id"
                 AND sn3."deleted_at" = 0
@@ -273,7 +283,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
             s."session_type"::text   AS "type",
             s."advocacy_group_id"    AS "advocacyGroupId",
             sa."status"::text        AS "momAttended",
-            sa."promptness"::text    AS "promptness",
+            NULL::text               AS "promptness",
             NULL::text               AS "engagement",
             (SELECT DISTINCT ON (sn2."session_id") sn2."status"::text
                FROM "SessionNote" sn2

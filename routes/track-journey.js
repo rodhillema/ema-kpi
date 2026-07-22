@@ -613,7 +613,17 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                END                    AS "date",
                s."status"::text       AS "groupStatus",
                sa."status"::text      AS "momAttended",
-               sa."promptness"::text  AS "promptness",
+               -- Promptness lives on SessionNote.attendance_and_promptness (1:1 only);
+               -- SessionAttendance has no promptness column.
+               CASE WHEN s."advocacy_group_id" IS NULL THEN
+                 (SELECT sn5."attendance_and_promptness"::text
+                    FROM "SessionNote" sn5
+                   WHERE sn5."session_id" = s."id"
+                     AND sn5."deleted_at" = 0
+                     AND sn5."status"::text IN ('approved', 'submitted')
+                   ORDER BY CASE sn5."status"::text WHEN 'approved' THEN 1 ELSE 2 END
+                   LIMIT 1)
+               ELSE NULL END          AS "promptness",
                CASE
                  -- Group: attendance record present
                  WHEN sa."status"::text = 'Present' THEN 'Held'
@@ -623,9 +633,14 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                       AND s."status"::text = 'Held'
                       AND sa."status" IS NULL
                       THEN 'Unmarked'
-                 -- 1:1: "No show" promptness overrides Session.status = Held
+                 -- 1:1: "No show" promptness (from SessionNote) overrides Session.status = Held
                  WHEN s."advocacy_group_id" IS NULL
-                      AND sa."promptness"::text = 'No show'
+                      AND EXISTS (
+                        SELECT 1 FROM "SessionNote" sn6
+                         WHERE sn6."session_id" = s."id"
+                           AND sn6."deleted_at" = 0
+                           AND sn6."attendance_and_promptness"::text = 'No show'
+                      )
                       THEN 'NotHeld'
                  -- General: any session with a SUBMITTED SessionNote is effectively held.
                  -- Trellis often leaves Session.status='Planned' even after the coordinator

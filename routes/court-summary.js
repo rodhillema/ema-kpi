@@ -224,13 +224,16 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           AND (
             s."pairing_id" = $1
             OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
-          )
-          AND (
-            EXISTS (SELECT 1 FROM "SessionNote" sn WHERE sn."session_id" = s."id" AND sn."deleted_at" = 0)
-            OR s."status"::text IN ('Held', 'NotHeld')
+            OR s."advocacy_group_id" IN (
+              SELECT p2."advocacyGroupId" FROM "Pairing" p2
+              WHERE p2."momId" = $3
+                AND p2."trackId" = $4
+                AND p2."deleted_at" = 0
+                AND p2."advocacyGroupId" IS NOT NULL
+            )
           )
         ORDER BY COALESCE(s."date_start", s."updated_at") ASC NULLS LAST
-      `, [pairingId, p.advocacyGroupId, p.momId]));
+      `, [pairingId, p.advocacyGroupId, p.momId, p.trackId]));
     } catch (err) {
       // Fallback: engagement column may not exist on SessionNote
       console.warn('[court-summary] session query with engagement failed, retrying without:', err.message);
@@ -274,13 +277,19 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           LEFT JOIN "SessionAttendance" sa
             ON sa."session_id" = s."id" AND sa."mom_id" = $3 AND sa."deleted_at" = 0
           WHERE s."deleted_at" = 0
-            AND (s."pairing_id" = $1 OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2))
             AND (
-              EXISTS (SELECT 1 FROM "SessionNote" sn WHERE sn."session_id" = s."id" AND sn."deleted_at" = 0)
-              OR s."status"::text IN ('Held', 'NotHeld')
+              s."pairing_id" = $1
+              OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
+              OR s."advocacy_group_id" IN (
+                SELECT p2."advocacyGroupId" FROM "Pairing" p2
+                WHERE p2."momId" = $3
+                  AND p2."trackId" = $4
+                  AND p2."deleted_at" = 0
+                  AND p2."advocacyGroupId" IS NOT NULL
+              )
             )
           ORDER BY COALESCE(s."date_start", s."updated_at") ASC NULLS LAST
-        `, [pairingId, p.advocacyGroupId, p.momId]));
+        `, [pairingId, p.advocacyGroupId, p.momId, p.trackId]));
       } catch (_) {}
     }
 
@@ -495,6 +504,22 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       console.warn('[court-summary] goals query failed (ActionPlanGoal table may not exist):', err.message);
     }
 
+    // Merge lessons with templates server-side; source_lesson_template_id is
+    // sometimes NULL for group-track lessons, so fall back to positional matching.
+    const lessonByTplId = {};
+    lessons.forEach(l => { if (l.lessonTemplateId) lessonByTplId[l.lessonTemplateId] = l; });
+    const lessonProgress = lessonTemplates.map((lt, idx) => {
+      const matched = lessonByTplId[lt.id] || lessons[idx] || null;
+      return {
+        templateId:    lt.id,
+        title:         lt.name || '—',
+        description:   lt.description,
+        order:         lt.order,
+        status:        matched ? (matched.status || 'not_started') : 'not_started',
+        completedDate: matched ? (matched.completedDate || null) : null,
+      };
+    });
+
     res.json({
       pairing: {
         id:              p.id,
@@ -513,6 +538,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
       sessions: sessRows,
       lessons,
       lessonTemplates,
+      lessonProgress,
       assessments,
       goals,
     });

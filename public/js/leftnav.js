@@ -23,7 +23,7 @@
         icon: '<svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>' },
     ]},
     { group: 'Trellis Live', items: [
-      { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey'],
+      { href: '/#moms', label: 'Our Moms', match: ['/report/mom-status', '/track-journey', '/court-summary'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.2"/><circle cx="12" cy="7" r="1.5"/><path d="M2,13 L4,8.5 L8,8.5 L10,13"/><path d="M10,13 L11,9.5 L14,9.5 L15,13"/><line x1="2" y1="13" x2="15" y2="13"/></svg>' },
       { href: '/#advocates', label: 'Our Advocates', match: ['/report/advocate-care'],
         icon: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3,13.5 C3,10.5 13,10.5 13,13.5"/></svg>' },

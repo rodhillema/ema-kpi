@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/leftnav.css">
+<script defer src="/js/leftnav.js"></script>
 <style>
 /* ── RESET + ROOT ─────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -568,6 +570,9 @@ function renderReport(data) {
   var lessonMap = {};
   lessons.forEach(function(l){ if (l.lessonTemplateId) lessonMap[l.lessonTemplateId] = l; });
 
+  // Server pre-merges lessonProgress (handles null source_lesson_template_id via positional fallback)
+  var lessonProgress = data.lessonProgress || null;
+
   // Filter sessions for court report:
   // - Curriculum (Track_Session): all sessions with a note
   // - Support: only within track date range
@@ -623,8 +628,8 @@ function renderReport(data) {
     html += '<div class="track-desc">' + esc(p.trackDescription) + '</div>';
   }
 
-  // Lesson progress pills
-  var lessonRows = buildLessonRows(ltList, lessonMap);
+  // Lesson progress pills — prefer server-merged lessonProgress over client-side matching
+  var lessonRows = lessonProgress && lessonProgress.length ? lessonProgress : buildLessonRows(ltList, lessonMap);
   var nComplete  = lessonRows.filter(function(l){ return l.status === 'completed'; }).length;
   var nInProg    = lessonRows.filter(function(l){ return l.status === 'in_progress'; }).length;
   var nUpcoming  = lessonRows.filter(function(l){ return l.status === 'not_started'; }).length;

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<!-- Court Summary · ĒMA Impact Hub -->
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Court Summary · ĒMA Impact Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Oswald:wght@300;400;600&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ── RESET + ROOT ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#ec482f;--red-dk:#c23018;--red-lt:#fef0ed;
+  --green:#123939;--green-lt:#ecefe1;--green-light:#e8f0f0;--green-pale:#f2f7f7;
+  --yellow:#f2a136;--yellow-lt:#fff3dc;
+  --pink:#f9ece8;--lpink:#fdf7f3;
+  --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
+  --faint:#f4f6f3;--white:#fff;
+  --amber:#f2a136;--amber-bg:#fef3e8;
+}
+html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);padding:0}
+
+/* ── LOGIN ────────────────────────────────────────────────────────── */
+.login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
+body.show-login .login-view{display:flex}
+body.logged-in .login-view{display:none!important}
+.login-box{width:100%;max-width:360px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 36px 36px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.login-logo{display:block;height:44px;width:auto;margin:0 auto 24px}
+.login-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--dark);text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--mid);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-err{background:var(--red-lt);border:1px solid rgba(236,72,47,.2);border-left:3px solid var(--red);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red-dk);margin-bottom:18px;display:none}
+.login-err.show{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid);margin-bottom:5px}
+.field input{width:100%;font-family:'Lato',sans-serif;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--dark);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--green)}
+.login-btn{width:100%;background:var(--red);color:var(--white);border:none;border-radius:7px;padding:12px 0;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:var(--red-dk)}
+
+/* ── PORTAL ───────────────────────────────────────────────────────── */
+.portal-view{display:none;flex-direction:column;min-height:100vh}
+body.logged-in .portal-view{display:flex}
+
+/* ── NAV ──────────────────────────────────────────────────────────── */
+.nav{background:var(--red);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:300;box-shadow:0 1px 8px rgba(0,0,0,.18);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-logo-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo{height:30px;width:auto;display:block}
+.nav-hub{font-family:'Oswald',sans-serif;font-size:12px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:1.5px;padding-left:14px;border-left:1px solid rgba(255,255,255,.3)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);text-decoration:none;padding:6px 13px;border:1px solid rgba(255,255,255,.35);border-radius:5px;transition:all .15s}
+.nav-link:hover{color:var(--white);border-color:rgba(255,255,255,.6)}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.25)}
+.nav-scope{display:flex;flex-direction:column;gap:1px;font-family:'Oswald',sans-serif;color:rgba(255,255,255,.95);padding:0 4px}
+.nav-scope-lbl{font-size:9px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.nav-scope-val{font-size:12px;font-weight:600}
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
+.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
+.nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
+
+/* ── LAYOUT ───────────────────────────────────────────────────────── */
+.layout{display:flex;flex:1;overflow:hidden}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 60px;min-width:0}
+
+/* ── SELECTOR BAR ─────────────────────────────────────────────────── */
+.sel-bar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 26px;margin:0 -26px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.sel-group{display:flex;flex-direction:column;gap:2px}
+.sel-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:300;text-transform:uppercase;letter-spacing:1.5px;color:var(--mid)}
+.sel{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 28px 5px 12px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A5A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;min-width:160px;max-width:260px}
+.sel:focus{outline:none;border-color:var(--green)}
+.aff-wrap{display:none;align-items:center;gap:7px}
+.aff-wrap.show{display:flex}
+/* Mom search */
+.search-wrap{position:relative;min-width:200px;max-width:280px}
+.search-input{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--dark);background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 12px;width:100%;box-sizing:border-box;outline:none;cursor:pointer}
+.search-input::placeholder{color:var(--mid);font-weight:300}
+.search-input:focus{border-color:var(--green);cursor:text}
+.search-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.10);z-index:200;max-height:260px;overflow-y:auto}
+.search-list.open{display:block}
+.search-item{font-family:'Lato',sans-serif;font-size:13px;color:var(--dark);padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.3}
+.search-item:last-child{border-bottom:none}
+.search-item:hover,.search-item.active{background:var(--lpink)}
+.search-empty{font-family:'Lato',sans-serif;font-size:13px;color:var(--mid);padding:10px 14px;font-style:italic}
+/* Print button */
+.print-btn{margin-left:auto;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;background:var(--green);color:var(--white);border:none;border-radius:20px;padding:7px 18px;cursor:pointer;transition:background .15s;display:none}
+.print-btn.show{display:block}
+.print-btn:hover{background:#1e5454}
+
+/* ── EMPTY STATE ──────────────────────────────────────────────────── */
+.empty-state{text-align:center;padding:80px 24px;color:var(--mid)}
+.empty-state p{font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:.5px}
+
+/* ═══════════════════════════════════════════════════════════════
+   COURT REPORT LAYOUT
+═══════════════════════════════════════════════════════════════ */
+.report{max-width:900px;margin:0 auto;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:'Lato',sans-serif}
+
+/* ── Report header ── */
+.rpt-head{background:var(--lpink);border-bottom:2px solid var(--red);padding:20px 28px 16px}
+.rpt-logo{height:32px;width:auto;display:block;margin-bottom:12px}
+.rpt-title{font-family:'Shrikhand',cursive;font-size:22px;color:var(--dark);margin-bottom:2px}
+.rpt-subtitle{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:14px}
+.rpt-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+.rpt-meta-row{display:flex;gap:6px;font-size:12px;line-height:1.5}
+.rpt-meta-lbl{font-family:'Oswald',sans-serif;font-weight:400;font-size:11px;letter-spacing:.4px;color:var(--mid);white-space:nowrap;min-width:110px}
+.rpt-meta-val{font-family:'Lato',sans-serif;font-weight:700;color:var(--dark)}
+
+/* ── Sections ── */
+.rpt-section{border-top:1px solid var(--border);padding:20px 28px}
+.rpt-section:first-of-type{border-top:none}
+.sec-heading{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--red);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* ── Track overview ── */
+.track-dates{font-size:12px;color:var(--mid);margin-bottom:8px}
+.track-desc{font-size:13px;color:var(--dark);line-height:1.6;margin-bottom:16px;padding:10px 14px;background:var(--lpink);border-radius:6px;border-left:3px solid var(--red)}
+
+/* ── Lesson progress summary pills ── */
+.lp-pills{display:flex;gap:10px;margin-bottom:16px}
+.lp-pill{padding:6px 16px;border-radius:20px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.5px;text-align:center}
+.lp-pill.complete{background:var(--green-light);color:var(--green)}
+.lp-pill.inprog{background:var(--yellow-lt);color:#8a5a00}
+.lp-pill.upcoming{background:#e8f0f8;color:#1a4a7a}
+.lp-pill span{display:block;font-size:20px;font-weight:700;line-height:1.1;margin-bottom:1px}
+
+/* ── Tables ── */
+.rpt-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.rpt-tbl th{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--mid);padding:6px 8px;border-bottom:1.5px solid var(--border);text-align:left;background:var(--faint)}
+.rpt-tbl td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.4}
+.rpt-tbl tr:last-child td{border-bottom:none}
+.rpt-tbl tr.pending-row td{color:var(--mid);font-style:italic}
+
+/* ── Status badges ── */
+.badge{display:inline-block;font-family:'Oswald',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge-approved{background:var(--green-light);color:var(--green)}
+.badge-review{background:var(--yellow-lt);color:#7a5200}
+.badge-pending{background:#f0f0f0;color:var(--mid)}
+.badge-present{background:var(--green-light);color:var(--green)}
+.badge-absent{background:var(--red-lt);color:var(--red-dk)}
+.badge-ontime{background:var(--green-light);color:var(--green)}
+.badge-late{background:var(--yellow-lt);color:#7a5200}
+.badge-noshow{background:var(--red-lt);color:var(--red-dk)}
+.badge-complete{background:var(--green-light);color:var(--green)}
+.badge-overdue{background:var(--red-lt);color:var(--red-dk)}
+.badge-inprog{background:var(--yellow-lt);color:#7a5200}
+.badge-notstarted{background:#f0f0f0;color:var(--mid)}
+
+/* ── Attendance summary line ── */
+.att-summary{font-size:12px;color:var(--dark);margin-bottom:12px;padding:8px 12px;background:var(--green-pale);border-radius:6px;border-left:3px solid var(--green)}
+.att-summary strong{color:var(--green)}
+
+/* ── Goals two-col layout ── */
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border)}
+.goals-col{padding:16px 20px}
+.goals-col:first-child{border-right:1px solid var(--border)}
+.goals-col-head{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--mid);margin-bottom:10px}
+.goal-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.goal-item:last-child{border-bottom:none}
+.goal-name{font-weight:700;color:var(--dark);margin-bottom:3px}
+.goal-meta{color:var(--mid);font-size:11px}
+.goals-empty{color:var(--mid);font-style:italic;font-size:12px;padding:8px 0}
+
+/* ── Assessment ── */
+.assess-instrument{margin-bottom:20px}
+.assess-instrument:last-child{margin-bottom:0}
+.assess-name{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+.assess-no-post{font-size:12px;color:var(--mid);font-style:italic;margin-bottom:6px}
+
+/* ─────────────────────────────────────────────────────────────────
+   @MEDIA PRINT
+───────────────────────────────────────────────────────────────── */
+@media print {
+  .nav,.sel-bar,.empty-state{ display:none!important }
+  body{ background:white!important }
+  .layout{ display:block }
+  .main{ padding:0!important;overflow:visible }
+  .report{ border:none!important;border-radius:0!important;max-width:100%!important;box-shadow:none }
+  .rpt-head{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
+  .rpt-tbl th{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
+  tr{ page-break-inside:avoid }
+  .rpt-section{ page-break-inside:avoid }
+}
+</style>
+</head>
+<body class="show-login">
+
+<!-- ── Login ──────────────────────────────────────────────────────────── -->
+<div class="login-view">
+  <div class="login-box">
+    <img class="login-logo" src="/logo.png" alt="ĒMA">
+    <div class="login-title">Impact Hub</div>
+    <div class="login-sub">Court Summary</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="field"><label for="login-user">Username</label><input type="text" id="login-user" autocomplete="username"></div>
+    <div class="field"><label for="login-pass">Password</label><input type="password" id="login-pass" autocomplete="current-password"></div>
+    <button class="login-btn" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- ── Portal ─────────────────────────────────────────────────────────── -->
+<div class="portal-view">
+
+  <!-- Nav -->
+  <nav class="nav" id="main-nav">
+    <div class="nav-left">
+      <a class="nav-logo-link" href="/"><img class="nav-logo" src="/logo-white.png" alt="ĒMA"></a>
+      <span class="nav-hub">Impact Hub</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-scope" id="nav-scope" style="display:none">
+        <span class="nav-scope-lbl">Viewing</span>
+        <span class="nav-scope-val" id="nav-scope-val"></span>
+      </div>
+      <span class="nav-sep" id="nav-scope-sep" style="display:none"></span>
+      <div class="nav-user">
+        <div style="display:flex;flex-direction:column;gap:1px;text-align:right">
+          <span class="nav-name" id="nav-name"></span>
+          <span class="nav-role" id="nav-role"></span>
+        </div>
+        <div class="nav-avatar" id="nav-avatar"></div>
+      </div>
+      <a class="nav-link" href="/track-journey">Track Journey</a>
+      <a class="nav-link" href="https://app.trellis.org" target="_blank" rel="noopener">Go to Trellis →</a>
+      <button class="nav-signout" id="btn-signout">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="layout">
+    <div class="main">
+
+      <!-- Selector bar -->
+      <div class="sel-bar" id="sel-bar">
+        <div class="aff-wrap" id="aff-wrap">
+          <div class="sel-group">
+            <span class="sel-lbl">Affiliate</span>
+            <select class="sel" id="sel-affiliate" onchange="onAffChange(this)">
+              <option value="">All Affiliates</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sel-group">
+          <span class="sel-lbl">Participant</span>
+          <div class="search-wrap">
+            <input class="search-input" id="mom-search-input" type="text" placeholder="Search participants..." autocomplete="off">
+            <div class="search-list" id="search-list"></div>
+          </div>
+        </div>
+
+        <div class="sel-group" id="track-sel-wrap" style="display:none">
+          <span class="sel-lbl">Track</span>
+          <select class="sel" id="sel-track"></select>
+        </div>
+
+        <button class="print-btn" id="print-btn" onclick="window.print()">⬇ Download / Print PDF</button>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state">
+        <p>Search for a participant above to generate their Court Summary.</p>
+      </div>
+
+      <!-- Report container -->
+      <div class="report" id="report" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer style="background:var(--red);color:rgba(255,255,255,.7);padding:16px 40px;flex-shrink:0;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between">
+    <span class="footer-brand">ĒMA Impact Hub</span>
+    <a href="/integrity" style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.75);text-decoration:none;font-size:11px;letter-spacing:.5px;text-transform:none;font-weight:400">Our Approach to Data</a>
+  </footer>
+</div>
+
+<script>
+'use strict';
+var CURRENT_USER = null;
+var ALL_PAIRINGS = [];
+var SELECTED_PAIRING = null;
+
+var ROLE_LABELS = {
+  administrator: 'HQ Admin', coordinator: 'Coordinator',
+  advocate: 'Advocate', champion: 'Champion'
+};
+
+// ── Auth helpers ──────────────────────────────────────────────────────────
+function applySession(u) {
+  CURRENT_USER = u;
+  document.body.classList.remove('show-login');
+  document.body.classList.add('logged-in');
+  var nm = document.getElementById('nav-name');
+  var rl = document.getElementById('nav-role');
+  var av = document.getElementById('nav-avatar');
+  if (nm) nm.textContent = ((u.firstName||'')+' '+(u.lastName||'')).trim();
+  if (rl) rl.textContent = ROLE_LABELS[u.role] || u.role;
+  if (av) av.textContent = ((u.firstName||'').charAt(0)+(u.lastName||'').charAt(0)).toUpperCase();
+  var scope    = document.getElementById('nav-scope');
+  var scopeVal = document.getElementById('nav-scope-val');
+  var scopeSep = document.getElementById('nav-scope-sep');
+  if (scope && scopeVal) {
+    var isOrgWide = u.role === 'administrator' || (u.role === 'champion' && !u.affiliateId) || !!u.isOrgWide;
+    scopeVal.textContent = isOrgWide ? 'All Affiliates' : (u.affiliateName || '');
+    scope.style.display = '';
+    if (scopeSep) scopeSep.style.display = '';
+  }
+}
+
+async function checkSession() {
+  try {
+    var r = await fetch('/api/me');
+    if (r.ok) {
+      var data = await r.json();
+      var u = data.user || data;
+      applySession(u);
+      return u;
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function doLogin() {
+  var u = document.getElementById('login-user').value.trim();
+  var p = document.getElementById('login-pass').value;
+  var err = document.getElementById('login-err');
+  err.classList.remove('show');
+  try {
+    var r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p}) });
+    if (r.ok) {
+      var user = await checkSession();
+      if (user) { await init(); return; }
+    }
+    err.textContent = 'Invalid username or password.';
+    err.classList.add('show');
+  } catch (e) {
+    err.textContent = 'Connection error. Please try again.';
+    err.classList.add('show');
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    if (document.getElementById('login-pass') === document.activeElement ||
+        document.getElementById('login-user') === document.activeElement) doLogin();
+  }
+});
+
+document.getElementById('btn-signout').addEventListener('click', async function() {
+  try { await fetch('/api/logout', {method:'POST'}); } catch(e){}
+  location.href = '/';
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  var isOrgWide = CURRENT_USER && CURRENT_USER.isOrgWide;
+  if (isOrgWide) {
+    try {
+      var affs = await fetch('/api/affiliates').then(function(r){ return r.json(); });
+      var sel = document.getElementById('sel-affiliate');
+      affs.forEach(function(a) {
+        var opt = document.createElement('option');
+        opt.value = a.id; opt.textContent = a.name;
+        sel.appendChild(opt);
+      });
+      document.getElementById('aff-wrap').classList.add('show');
+    } catch (e) {}
+  }
+  await loadPairings('');
+
+  var params = new URLSearchParams(window.location.search);
+  var deepId = params.get('pairing_id');
+  if (deepId) {
+    var target = ALL_PAIRINGS.find(function(p){ return p.pairingId === deepId; });
+    if (target) {
+      var groups = groupByMom(ALL_PAIRINGS);
+      var group  = groups.find(function(g){ return g.pairings.some(function(p){ return p.pairingId === deepId; }); });
+      if (group) {
+        document.getElementById('mom-search-input').value = group.momName;
+        populateTrackDrop(group, deepId);
+        await loadReport(deepId);
+      }
+    }
+  }
+}
+
+// ── Pairings ──────────────────────────────────────────────────────────────
+async function loadPairings(affiliateId) {
+  try {
+    var url = '/api/court-summary/pairings' + (affiliateId ? '?affiliate_id=' + affiliateId : '');
+    var res = await fetch(url);
+    ALL_PAIRINGS = res.ok ? (await res.json()) : [];
+    if (!Array.isArray(ALL_PAIRINGS)) ALL_PAIRINGS = [];
+  } catch (e) { ALL_PAIRINGS = []; }
+  buildMomList(ALL_PAIRINGS);
+}
+
+async function onAffChange(sel) {
+  clearSelection();
+  await loadPairings(sel.value);
+}
+
+// ── Mom search ────────────────────────────────────────────────────────────
+function groupByMom(pairings) {
+  var map = new Map();
+  pairings.forEach(function(p) {
+    if (!map.has(p.momId)) map.set(p.momId, { momId:p.momId, momName:p.momName, pairings:[] });
+    map.get(p.momId).pairings.push(p);
+  });
+  return Array.from(map.values());
+}
+
+function buildMomList(pairings) {
+  var list = document.getElementById('search-list');
+  list.innerHTML = '';
+  if (!pairings.length) {
+    list.innerHTML = '<div class="search-empty">No participants found.</div>';
+    return;
+  }
+  var groups = groupByMom(pairings);
+  groups.forEach(function(g) {
+    var div = document.createElement('div');
+    div.className = 'search-item';
+    div.textContent = g.momName;
+    div.addEventListener('click', function() { selectMom(g); });
+    list.appendChild(div);
+  });
+}
+
+var searchInput = document.getElementById('mom-search-input');
+var searchList  = document.getElementById('search-list');
+
+searchInput.addEventListener('focus', function() {
+  buildMomList(ALL_PAIRINGS);
+  searchList.classList.add('open');
+});
+searchInput.addEventListener('input', function() {
+  var q = this.value.toLowerCase();
+  var filtered = ALL_PAIRINGS.filter(function(p){ return p.momName.toLowerCase().includes(q); });
+  buildMomList(filtered);
+  searchList.classList.add('open');
+});
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-wrap')) searchList.classList.remove('open');
+});
+
+function selectMom(group) {
+  searchList.classList.remove('open');
+  searchInput.value = group.momName;
+  var active = group.pairings.find(function(p){ return p.status === 'paired'; }) || group.pairings[0];
+  populateTrackDrop(group, active.pairingId);
+  loadReport(active.pairingId);
+}
+
+function populateTrackDrop(group, selectedId) {
+  var wrap = document.getElementById('track-sel-wrap');
+  var sel  = document.getElementById('sel-track');
+  sel.innerHTML = '';
+  group.pairings.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.pairingId;
+    opt.textContent = (p.trackTitle || 'Unknown Track') + (p.status === 'paired' ? '' : ' (Completed)');
+    if (p.pairingId === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  wrap.style.display = group.pairings.length > 1 ? '' : 'none';
+  sel.onchange = function() { loadReport(sel.value); };
+}
+
+function clearSelection() {
+  searchInput.value = '';
+  document.getElementById('track-sel-wrap').style.display = 'none';
+  document.getElementById('sel-track').innerHTML = '';
+  document.getElementById('report').style.display = 'none';
+  document.getElementById('empty-state').style.display = '';
+  document.getElementById('print-btn').classList.remove('show');
+  SELECTED_PAIRING = null;
+}
+
+// ── Load + render report ──────────────────────────────────────────────────
+async function loadReport(pairingId) {
+  var reportEl = document.getElementById('report');
+  var emptyEl  = document.getElementById('empty-state');
+  reportEl.style.display = 'none';
+  emptyEl.style.display = '';
+  reportEl.innerHTML = '<div style="padding:40px 28px;text-align:center;color:var(--mid);font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase">Generating report…</div>';
+  reportEl.style.display = '';
+
+  try {
+    var res = await fetch('/api/court-summary/' + pairingId);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    SELECTED_PAIRING = data.pairing;
+    emptyEl.style.display = 'none';
+    reportEl.innerHTML = renderReport(data);
+    document.getElementById('print-btn').classList.add('show');
+  } catch (e) {
+    reportEl.innerHTML = '<div style="padding:40px 28px;color:var(--red);font-size:13px">Failed to load report. Please try again.</div>';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'numeric' });
+}
+
+function fmtDateLong(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+}
+
+function pct(pre, post) {
+  if (pre == null || post == null || pre === 0) return null;
+  return Math.round(((post - pre) / pre) * 100);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function promptnessBadge(promptness, momAttended) {
+  if (!promptness && !momAttended) return '<span class="badge badge-pending">Not recorded</span>';
+  var p = (promptness || '').toLowerCase();
+  var a = (momAttended || '').toLowerCase();
+  if (a === 'absent') return '<span class="badge badge-absent">Absent</span>';
+  if (p === 'on time' || p === 'ontime') return '<span class="badge badge-ontime">On time</span>';
+  if (p === 'late') return '<span class="badge badge-late">Late</span>';
+  if (p === 'no show' || p === 'noshow') return '<span class="badge badge-noshow">No show</span>';
+  if (a === 'present') return '<span class="badge badge-present">Present</span>';
+  return '<span class="badge badge-pending">Not recorded</span>';
+}
+
+function engagementDisplay(engagement, isGroup) {
+  if (isGroup) return '<span style="color:var(--mid)">—</span>';
+  if (!engagement) return '<span style="color:var(--mid)">—</span>';
+  return esc(engagement);
+}
+
+// ── Main render ───────────────────────────────────────────────────────────
+function renderReport(data) {
+  var p        = data.pairing;
+  var sessions = data.sessions || [];
+  var lessons  = data.lessons  || [];
+  var ltList   = data.lessonTemplates || [];
+  var assess   = data.assessments || { pre:null, post:null };
+  var goals    = data.goals || { completed:[], inProgress:[] };
+
+  var trackStart = p.startDate ? new Date(p.startDate) : null;
+  var trackEnd   = p.endDate   ? new Date(p.endDate)   : new Date();
+
+  // Build lesson template map
+  var ltMap = {};
+  ltList.forEach(function(lt){ ltMap[lt.id] = lt; });
+
+  // Build lesson (completion) map by templateId
+  var lessonMap = {};
+  lessons.forEach(function(l){ if (l.lessonTemplateId) lessonMap[l.lessonTemplateId] = l; });
+
+  // Filter sessions for court report:
+  // - Curriculum (Track_Session): all sessions with a note
+  // - Support: only within track date range
+  var reportSessions = sessions.filter(function(s) {
+    if (!s.date) return s.noteStatus && s.noteStatus !== null;
+    var d = new Date(s.date);
+    var isSupport = (s.type || '').toLowerCase().indexOf('support') >= 0 ||
+                    (s.type || '').toLowerCase() === 'support_session';
+    if (isSupport) {
+      return d >= trackStart && d <= trackEnd;
+    }
+    return true;
+  });
+
+  // Attendance summary counts (approved or submitted notes only)
+  var documented = reportSessions.filter(function(s){ return s.noteStatus === 'approved' || s.noteStatus === 'submitted'; });
+  var present    = documented.filter(function(s){
+    var a = (s.momAttended || '').toLowerCase();
+    var pr = (s.promptness || '').toLowerCase();
+    return a === 'present' || pr === 'on time' || pr === 'ontime' || pr === 'late';
+  });
+
+  var statusLabel = p.status === 'paired' ? 'In Program' : 'Completed';
+  var now = new Date();
+  var generated = now.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  var html = '';
+
+  // ── Report header ────────────────────────────────────────────────────────
+  html += '<div class="rpt-head">';
+  html += '<img class="rpt-logo" src="/logo.png" alt="ĒMA">';
+  html += '<div class="rpt-title">Court Summary</div>';
+  html += '<div class="rpt-subtitle">Court-ready snapshot of quantitative progress, assessments, and documented session history</div>';
+  html += '<div class="rpt-meta-grid">';
+  html += metaRow('Participant',        esc(p.momName));
+  html += metaRow('Track',              esc(p.trackTitle || '—'));
+  html += metaRow('Track Status',       esc(statusLabel));
+  html += metaRow('Location',           esc(p.affiliateName || '—'));
+  html += metaRow('Staff Coordinator',  esc(p.coordinatorName || '—'));
+  html += metaRow('Volunteer Advocate', esc(p.advocateName || '—'));
+  html += metaRow('Report Generated',   esc(generated));
+  html += '</div>';
+  html += '</div>';
+
+  // ── Section 1: Track Overview ────────────────────────────────────────────
+  html += '<div class="rpt-section">';
+  html += '<div class="sec-heading">Track Overview</div>';
+  html += '<div class="track-dates">';
+  html += '<strong>Start:</strong> ' + fmtDateLong(p.startDate);
+  html += ' &nbsp;·&nbsp; <strong>End:</strong> ' + (p.endDate ? fmtDateLong(p.endDate) : 'Ongoing');
+  html += '</div>';
+  if (p.trackDescription) {
+    html += '<div class="track-desc">' + esc(p.trackDescription) + '</div>';
+  }
+
+  // Lesson progress pills
+  var lessonRows = buildLessonRows(ltList, lessonMap);
+  var nComplete  = lessonRows.filter(function(l){ return l.status === 'completed'; }).length;
+  var nInProg    = lessonRows.filter(function(l){ return l.status === 'in_progress'; }).length;
+  var nUpcoming  = lessonRows.filter(function(l){ return l.status === 'not_started'; }).length;
+
+  html += '<div class="lp-pills">';
+  html += '<div class="lp-pill complete"><span>' + nComplete + '</span>Completed</div>';
+  html += '<div class="lp-pill inprog"><span>' + nInProg + '</span>In Progress</div>';
+  html += '<div class="lp-pill upcoming"><span>' + nUpcoming + '</span>Upcoming</div>';
+  html += '</div>';
+
+  if (lessonRows.length > 0) {
+    html += '<table class="rpt-tbl">';
+    html += '<thead><tr><th>Lesson</th><th>Status</th><th>Date Completed</th></tr></thead><tbody>';
+    lessonRows.forEach(function(l) {
+      html += '<tr>';
+      html += '<td>' + esc(l.title) + (l.description ? '<br><span style="font-size:11px;color:var(--mid)">' + esc(l.description) + '</span>' : '') + '</td>';
+      html += '<td>' + lessonStatusBadge(l.status) + '</td>';
+      html += '<td>' + fmtDate(l.completedDate) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // ── Section 2: Attendance and Session Log ────────────────────────────────
+  html += '<div class="rpt-section">';
+  html += '<div class="sec-heading">Attendance and Session Log</div>';
+  html += '<div class="att-summary"><strong>' + documented.length + '</strong> of ' + reportSessions.length + ' sessions documented &nbsp;·&nbsp; Participant present in <strong>' + present.length + '</strong></div>';
+
+  if (reportSessions.length === 0) {
+    html += '<p style="font-size:12px;color:var(--mid);font-style:italic">No sessions on record for this track.</p>';
+  } else {
+    html += '<table class="rpt-tbl">';
+    html += '<thead><tr><th>#</th><th>Date</th><th>Type</th><th>Attendance</th><th>Engagement</th><th>Lesson Covered</th><th>Note Status</th></tr></thead><tbody>';
+    reportSessions.forEach(function(s, i) {
+      var isGroup  = !!s.advocacyGroupId;
+      var isPending = !s.noteStatus || s.noteStatus === 'new';
+      var isReview  = s.noteStatus === 'submitted';
+      var isApproved = s.noteStatus === 'approved';
+      var typeLabel  = sessionTypeLabel(s.type);
+
+      if (isPending) {
+        html += '<tr class="pending-row">';
+        html += '<td>' + (i+1) + '</td>';
+        html += '<td>' + fmtDate(s.date) + '</td>';
+        html += '<td>' + esc(typeLabel) + '</td>';
+        html += '<td colspan="3" style="color:var(--mid);font-style:italic">Documentation not yet submitted</td>';
+        html += '<td><span class="badge badge-pending">New</span></td>';
+        html += '</tr>';
+      } else {
+        var lessonTitle = lessonTitleForSession(s, ltMap);
+        html += '<tr>';
+        html += '<td>' + (i+1) + '</td>';
+        html += '<td>' + fmtDate(s.date) + '</td>';
+        html += '<td>' + esc(typeLabel) + '</td>';
+        html += '<td>' + promptnessBadge(s.promptness, s.momAttended) + '</td>';
+        html += '<td>' + engagementDisplay(s.engagement, isGroup) + '</td>';
+        html += '<td style="font-size:11px">' + esc(lessonTitle) + '</td>';
+        html += '<td>' + noteStatusBadge(s.noteStatus) + '</td>';
+        html += '</tr>';
+      }
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // ── Section 3: Action Plan ────────────────────────────────────────────────
+  html += '<div class="rpt-section" style="padding-bottom:0">';
+  html += '<div class="sec-heading">Action Plan</div>';
+  html += '</div>';
+  html += '<div class="goals-grid">';
+
+  // Completed goals
+  html += '<div class="goals-col">';
+  html += '<div class="goals-col-head">Completed goals</div>';
+  if (goals.completed.length === 0) {
+    html += '<div class="goals-empty">No completed goals on record.</div>';
+  } else {
+    goals.completed.forEach(function(g) {
+      html += '<div class="goal-item">';
+      html += '<div class="goal-name">' + esc(g.name) + '</div>';
+      html += '<div class="goal-meta">';
+      html += 'Subtasks: ' + g.subtasksDone + ' / ' + g.subtaskCount;
+      if (g.completedAt) html += ' &nbsp;·&nbsp; Completed: ' + fmtDate(g.completedAt);
+      html += '</div></div>';
+    });
+  }
+  html += '</div>';
+
+  // In-progress goals
+  html += '<div class="goals-col">';
+  html += '<div class="goals-col-head">In progress goals</div>';
+  if (goals.inProgress.length === 0) {
+    html += '<div class="goals-empty">No open goals on record.</div>';
+  } else {
+    goals.inProgress.forEach(function(g) {
+      var now2 = new Date();
+      var overdue = g.dueDate && new Date(g.dueDate) < now2 && !g.completedAt;
+      html += '<div class="goal-item">';
+      html += '<div class="goal-name">' + esc(g.name) + '</div>';
+      html += '<div class="goal-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+      html += 'Subtasks: ' + g.subtasksDone + ' / ' + g.subtaskCount;
+      if (g.dueDate) html += ' &nbsp;·&nbsp; Due: ' + fmtDate(g.dueDate);
+      if (overdue) html += ' <span class="badge badge-overdue">Overdue</span>';
+      html += '</div></div>';
+    });
+  }
+  html += '</div>';
+  html += '</div>'; // goals-grid
+
+  // ── Section 4: Pre/Post Knowledge Growth ─────────────────────────────────
+  html += '<div class="rpt-section">';
+  html += '<div class="sec-heading">Pre / Post Knowledge Growth</div>';
+
+  if (!assess.pre && !assess.post) {
+    html += '<p style="font-size:12px;color:var(--mid);font-style:italic">No assessments on file for this track.</p>';
+  } else {
+    // EP/RR domain-level (domains array)
+    if ((assess.pre && assess.pre.domains) || (assess.post && assess.post.domains)) {
+      html += renderDomainAssessment(assess);
+    }
+    // NPP — AAPI constructs A–E
+    else if ((assess.pre && assess.pre.constructs) || (assess.post && assess.post.constructs)) {
+      html += renderAAPIAssessment(assess);
+    }
+    // Fallback: total score only
+    else {
+      html += renderTotalScoreAssessment(assess);
+    }
+  }
+  html += '</div>';
+
+  return html;
+}
+
+function metaRow(lbl, val) {
+  return '<div class="rpt-meta-row"><span class="rpt-meta-lbl">' + lbl + ':</span><span class="rpt-meta-val">' + val + '</span></div>';
+}
+
+function buildLessonRows(ltList, lessonMap) {
+  if (!ltList.length) return [];
+  return ltList.map(function(lt) {
+    var l = lessonMap[lt.id];
+    return {
+      id:          lt.id,
+      title:       lt.name || '—',
+      description: lt.description || null,
+      order:       lt.order,
+      status:      l ? (l.status || 'not_started') : 'not_started',
+      completedDate: l ? l.completedDate : null,
+    };
+  });
+}
+
+function lessonStatusBadge(status) {
+  var s = (status || '').toLowerCase();
+  if (s === 'completed') return '<span class="badge badge-complete">Completed</span>';
+  if (s === 'in_progress' || s === 'in progress') return '<span class="badge badge-inprog">In Progress</span>';
+  return '<span class="badge badge-notstarted">Not Started</span>';
+}
+
+function noteStatusBadge(status) {
+  if (status === 'approved')  return '<span class="badge badge-approved">Approved</span>';
+  if (status === 'submitted') return '<span class="badge badge-review">Needs staff review</span>';
+  return '<span class="badge badge-pending">New</span>';
+}
+
+function sessionTypeLabel(type) {
+  var t = (type || '').toLowerCase();
+  if (t === 'track_session') return 'Curriculum';
+  if (t === 'support_session') return 'Support';
+  return type || '—';
+}
+
+function lessonTitleForSession(s, ltMap) {
+  if (s.sessionName) return s.sessionName;
+  if (s.lessonTemplateId && ltMap[s.lessonTemplateId]) return ltMap[s.lessonTemplateId].name || '—';
+  return '—';
+}
+
+function renderDomainAssessment(assess) {
+  var preDomains  = (assess.pre  && assess.pre.domains)  || [];
+  var postDomains = (assess.post && assess.post.domains) || [];
+  var hasPost = postDomains.length > 0;
+
+  var html = '<div class="assess-instrument">';
+  html += '<div class="assess-name">' + esc((assess.pre || assess.post || {}).name || '') + '</div>';
+  if (!hasPost) html += '<div class="assess-no-post">Post-assessment not yet completed — pre scores shown only.</div>';
+
+  html += '<table class="rpt-tbl"><thead><tr>';
+  html += '<th>Construct</th><th>Pre Score</th>';
+  if (hasPost) html += '<th>Post Score</th><th>% Change</th>';
+  html += '</tr></thead><tbody>';
+
+  var allDomains = preDomains.length ? preDomains : postDomains;
+  allDomains.forEach(function(d) {
+    var preD  = preDomains.find(function(x){ return x.name === d.name; });
+    var postD = postDomains.find(function(x){ return x.name === d.name; });
+    var preScore  = preD  ? preD.score  : null;
+    var postScore = postD ? postD.score : null;
+    var change = pct(preScore, postScore);
+
+    html += '<tr>';
+    html += '<td>' + esc(d.name) + '</td>';
+    html += '<td>' + (preScore  != null ? preScore  : '—') + '</td>';
+    if (hasPost) {
+      html += '<td>' + (postScore != null ? postScore : '—') + '</td>';
+      html += '<td>' + (change != null ? (change >= 0 ? '+' : '') + change + '%' : '—') + '</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderAAPIAssessment(assess) {
+  var pre  = assess.pre  && assess.pre.constructs  ? assess.pre.constructs  : null;
+  var post = assess.post && assess.post.constructs ? assess.post.constructs : null;
+  var hasPost = !!post;
+
+  var html = '<div class="assess-instrument">';
+  html += '<div class="assess-name">AAPI Assessment — Nurturing Parenting Program</div>';
+  if (!hasPost) html += '<div class="assess-no-post">Post-assessment not yet completed — pre scores shown only.</div>';
+
+  html += '<table class="rpt-tbl"><thead><tr>';
+  html += '<th>Construct</th><th>Pre Score</th>';
+  if (hasPost) html += '<th>Post Score</th><th>% Change</th>';
+  html += '</tr></thead><tbody>';
+
+  ['A','B','C','D','E'].forEach(function(key) {
+    var preVal  = pre  ? pre[key]  : null;
+    var postVal = post ? post[key] : null;
+    var change = pct(preVal, postVal);
+    html += '<tr>';
+    html += '<td>Construct ' + key + '</td>';
+    html += '<td>' + (preVal  != null ? preVal  : '—') + '</td>';
+    if (hasPost) {
+      html += '<td>' + (postVal != null ? postVal : '—') + '</td>';
+      html += '<td>' + (change != null ? (change >= 0 ? '+' : '') + change + '%' : '—') + '</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderTotalScoreAssessment(assess) {
+  var hasPost = !!(assess.post && assess.post.totalScore != null);
+  var html = '<div class="assess-instrument">';
+  html += '<div class="assess-name">' + esc((assess.pre || assess.post || {}).name || 'Assessment') + '</div>';
+  if (!hasPost) html += '<div class="assess-no-post">Post-assessment not yet completed.</div>';
+  html += '<table class="rpt-tbl"><thead><tr><th>Score Type</th><th>Score</th>';
+  if (hasPost) html += '<th>% Change</th>';
+  html += '</tr></thead><tbody>';
+  var preScore  = assess.pre  ? assess.pre.totalScore  : null;
+  var postScore = assess.post ? assess.post.totalScore : null;
+  var change = pct(preScore, postScore);
+  if (preScore != null) {
+    html += '<tr><td>Pre Assessment</td><td>' + preScore + '</td>';
+    if (hasPost) html += '<td>—</td>';
+    html += '</tr>';
+  }
+  if (hasPost) {
+    html += '<tr><td>Post Assessment</td><td>' + postScore + '</td>';
+    html += '<td>' + (change != null ? (change >= 0 ? '+' : '') + change + '%' : '—') + '</td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+(async function() {
+  var user = await checkSession();
+  if (user) await init();
+})();
+</script>
+</body>
+</html>

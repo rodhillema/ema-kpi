@@ -42,6 +42,7 @@ app.use('/api/admin/champions', requireAuth, require('./routes/champions'));
 app.use('/api/admin/export', require('./routes/admin-export'));
 app.use('/api/champion', require('./routes/champion-auth'));
 app.use('/api/track-journey', require('./routes/track-journey'));
+app.use('/api/court-summary', require('./routes/court-summary'));
 app.use('/api/child-welfare', require('./routes/child-welfare'));
 app.use('/api/flagged-needs', require('./routes/flagged-needs'));
 app.use('/api/kpi1-breakdown', require('./routes/kpi1-breakdown'));
@@ -469,6 +470,7 @@ app.get('/report/mom-status', (req, res) => res.sendFile(path.join(__dirname, 'p
 app.get('/report/users', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user-report.html')));
 app.get('/integrity', (req, res) => res.sendFile(path.join(__dirname, 'public', 'integrity.html')));
 app.get('/track-journey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'track-journey.html')));
+app.get('/court-summary', (req, res) => res.sendFile(path.join(__dirname, 'public', 'court-summary.html')));
 app.get('/report/child-welfare-status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'child-welfare-status-report.html')));
 app.get('/report/flagged-needs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'flagged-needs.html')));
 app.get('/report/kpi1-preservation-breakdown', (req, res) => res.sendFile(path.join(__dirname, 'public', 'kpi1-preservation-breakdown.html')));

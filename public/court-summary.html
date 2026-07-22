@@ -521,6 +521,7 @@ function clearSelection() {
   document.getElementById('empty-state').style.display = '';
   document.getElementById('print-btn').classList.remove('show');
   SELECTED_PAIRING = null;
+  document.title = 'Court Summary · ĒMA Impact Hub';
 }
 
 // ── Load + render report ──────────────────────────────────────────────────
@@ -540,6 +541,10 @@ async function loadReport(pairingId) {
     emptyEl.style.display = 'none';
     reportEl.innerHTML = renderReport(data);
     document.getElementById('print-btn').classList.add('show');
+    // Drives the browser's print header (top of each page when Headers/footers is on)
+    if (data.pairing && data.pairing.momName) {
+      document.title = "Court Summary - Every Mother's Advocate - Participant Name: " + data.pairing.momName;
+    }
   } catch (e) {
     reportEl.innerHTML = '<div style="padding:40px 28px;color:var(--red);font-size:13px">Failed to load report. Please try again.</div>';
   }

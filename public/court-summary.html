@@ -476,8 +476,9 @@ function populateTrackDrop(group, selectedId) {
   group.pairings.forEach(function(p) {
     var opt = document.createElement('option');
     opt.value = p.pairingId;
-    var trackSuffix = p.status === 'paired' ? '' : (p.incompleteReason ? ' (Incomplete)' : ' (Completed)');
-    opt.textContent = (p.trackTitle || 'Unknown Track') + trackSuffix;
+    var statusTxt = p.status === 'paired' ? 'In Program' : (p.incompleteReason ? 'Incomplete' : 'Completed');
+    var when = p.startDate ? new Date(p.startDate).toLocaleDateString('en-US', { month:'short', year:'numeric' }) : '';
+    opt.textContent = (p.trackTitle || 'Unknown Track') + ' (' + statusTxt + (when ? ' · ' + when : '') + ')';
     if (p.pairingId === selectedId) opt.selected = true;
     sel.appendChild(opt);
   });

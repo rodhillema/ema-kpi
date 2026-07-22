@@ -479,7 +479,8 @@ function populateTrackDrop(group, selectedId) {
   group.pairings.forEach(function(p) {
     var opt = document.createElement('option');
     opt.value = p.pairingId;
-    opt.textContent = (p.trackTitle || 'Unknown Track') + (p.status === 'paired' ? '' : ' (Completed)');
+    var trackSuffix = p.status === 'paired' ? '' : (p.incompleteReason ? ' (Incomplete)' : ' (Completed)');
+    opt.textContent = (p.trackTitle || 'Unknown Track') + trackSuffix;
     if (p.pairingId === selectedId) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -607,7 +608,7 @@ function renderReport(data) {
     return a === 'present' || pr === 'on time' || pr === 'ontime' || pr === 'late';
   });
 
-  var statusLabel = p.status === 'paired' ? 'In Program' : 'Completed';
+  var statusLabel = p.status === 'paired' ? 'In Program' : (p.incompleteReason ? 'Incomplete' : 'Completed');
   var now = new Date();
   var generated = now.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
 

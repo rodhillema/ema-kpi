@@ -31,6 +31,8 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
         m."first_name" || ' ' || m."last_name" AS "momName",
         t."title"       AS "trackTitle",
         p."status"::text AS "status",
+        p."complete_reason_sub_status"::text   AS "completeReason",
+        p."incomplete_reason_sub_status"::text AS "incompleteReason",
         p."created_at"  AS "startDate",
         p."completed_on" AS "endDate"
       FROM "Pairing" p
@@ -129,6 +131,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         t."description"  AS "trackDescription",
         p."status"::text AS "status",
         p."advocacy_type"::text AS "advocacyType",
+        p."complete_reason_sub_status"::text   AS "completeReason",
+        p."incomplete_reason_sub_status"::text AS "incompleteReason",
         p."created_at"   AS "startDate",
         p."completed_on" AS "endDate",
         adv."firstName"  AS "advFirst",
@@ -528,6 +532,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         trackTitle:      p.trackTitle  || null,
         trackDescription: p.trackDescription || null,
         status:          p.status,
+        completeReason:  p.completeReason  || null,
+        incompleteReason: p.incompleteReason || null,
         advocacyType:    p.advocacyType || null,
         startDate:       p.startDate,
         endDate:         p.endDate,

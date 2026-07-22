@@ -629,13 +629,13 @@ function renderReport(data) {
   html += metaRow('Participant',        esc(p.momName));
   html += metaRow('Staff Coordinator',  esc(p.coordinatorName || '—'));
   html += metaRow('Volunteer Advocate', esc(p.advocateName || '—'));
-  html += metaRow('Pairing Type',       esc(pairingTypeLabel));
-  html += metaRow('Report Generated',   esc(generated));
+  html += metaRow('Location',           esc(p.affiliateName || '—'));
   html += '</div>';
   html += '<div class="rpt-meta-col">';
-  html += metaRow('Track',        esc(p.trackTitle || '—'));
-  html += metaRow('Track Status', esc(statusLabel));
-  html += metaRow('Location',     esc(p.affiliateName || '—'));
+  html += metaRow('Track',            esc(p.trackTitle || '—'));
+  html += metaRow('Track Status',     esc(statusLabel));
+  html += metaRow('Pairing Type',     esc(pairingTypeLabel));
+  html += metaRow('Report Generated', esc(generated));
   html += '</div>';
   html += '</div>';
   html += '</div>';

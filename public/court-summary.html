@@ -71,6 +71,11 @@ body.logged-in .portal-view{display:flex}
 .layout{display:flex;flex:1;overflow:hidden}
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 60px;min-width:0}
 
+/* ── PAGE TITLE ───────────────────────────────────────────────────── */
+.page-head{padding:26px 0 18px}
+.page-title{font-family:'Shrikhand',cursive;font-size:26px;color:var(--green);line-height:1.2}
+.page-sub{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-top:4px}
+
 /* ── SELECTOR BAR ─────────────────────────────────────────────────── */
 .sel-bar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 26px;margin:0 -26px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
 .sel-group{display:flex;flex-direction:column;gap:2px}
@@ -176,7 +181,7 @@ body.logged-in .portal-view{display:flex}
    @MEDIA PRINT
 ───────────────────────────────────────────────────────────────── */
 @media print {
-  .nav,.sel-bar,.empty-state,.shared-leftnav{ display:none!important }
+  .nav,.sel-bar,.empty-state,.shared-leftnav,.page-head{ display:none!important }
   body{ background:white!important;padding-left:0!important;padding-top:0!important }
   .layout{ display:block }
   .main{ padding:0!important;overflow:visible }
@@ -245,6 +250,12 @@ body.logged-in .portal-view{display:flex}
   <!-- Main -->
   <div class="layout">
     <div class="main">
+
+      <!-- Page title -->
+      <div class="page-head" id="page-head">
+        <div class="page-title">Court Summary</div>
+        <div class="page-sub">Court-ready snapshot of a participant's track progress, sessions, and assessments</div>
+      </div>
 
       <!-- Selector bar -->
       <div class="sel-bar" id="sel-bar">
@@ -435,6 +446,9 @@ function buildMomList(pairings) {
     return;
   }
   var groups = groupByMom(pairings);
+  groups.sort(function(a, b) {
+    return a.momName.toLowerCase().localeCompare(b.momName.toLowerCase());
+  });
   groups.forEach(function(g) {
     var div = document.createElement('div');
     div.className = 'search-item';

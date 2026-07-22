@@ -72,7 +72,8 @@ body.logged-in .portal-view{display:flex}
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 26px 60px;min-width:0}
 
 /* ── PAGE TITLE ───────────────────────────────────────────────────── */
-.page-head{padding:26px 0 18px}
+.page-head{display:flex;align-items:center;gap:16px;padding:26px 0 18px}
+.page-logo{height:46px;width:auto;flex-shrink:0}
 .page-title{font-family:'Shrikhand',cursive;font-size:26px;color:var(--green);line-height:1.2}
 .page-sub{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-top:4px}
 
@@ -171,6 +172,12 @@ body.logged-in .portal-view{display:flex}
 .goal-meta{color:var(--mid);font-size:11px}
 .goals-empty{color:var(--mid);font-style:italic;font-size:12px;padding:8px 0}
 
+/* ── Track overview info grid ── */
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 28px;margin:2px 0 16px;padding:14px 16px;background:var(--faint);border:1px solid var(--border);border-radius:8px}
+.ov-item{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ov-lbl{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--mid)}
+.ov-val{font-family:'Lato',sans-serif;font-size:12.5px;font-weight:700;color:var(--dark);line-height:1.35}
+
 /* ── Assessment ── */
 .assess-instrument{margin-bottom:20px}
 .assess-instrument:last-child{margin-bottom:0}
@@ -180,6 +187,7 @@ body.logged-in .portal-view{display:flex}
 /* ─────────────────────────────────────────────────────────────────
    @MEDIA PRINT
 ───────────────────────────────────────────────────────────────── */
+@page{ margin:14mm 12mm }
 @media print {
   .nav,.sel-bar,.empty-state,.shared-leftnav,.page-head{ display:none!important }
   body{ background:white!important;padding-left:0!important;padding-top:0!important }
@@ -188,8 +196,12 @@ body.logged-in .portal-view{display:flex}
   .report{ border:none!important;border-radius:0!important;max-width:100%!important;box-shadow:none }
   .rpt-head{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
   .rpt-tbl th{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
-  tr{ page-break-inside:avoid }
-  .rpt-section{ page-break-inside:avoid }
+  .ov-grid{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
+  /* Let long sections flow across pages; keep small units intact */
+  .rpt-section{ page-break-inside:auto }
+  tr,.goal-item,.assess-instrument,.lp-pills,.ov-grid{ page-break-inside:avoid }
+  .rpt-tbl thead{ display:table-header-group }
+  .sec-heading{ page-break-after:avoid }
   .print-page-header{ display:flex!important }
 }
 .print-page-header{
@@ -253,8 +265,11 @@ body.logged-in .portal-view{display:flex}
 
       <!-- Page title -->
       <div class="page-head" id="page-head">
-        <div class="page-title">Court Summary</div>
-        <div class="page-sub">Court-ready snapshot of a participant's track progress, sessions, and assessments</div>
+        <img class="page-logo" src="/e-yellow%20logo.png" alt="ĒMA">
+        <div>
+          <div class="page-title">Court Summary</div>
+          <div class="page-sub">Court-ready snapshot of a participant's track progress, sessions, and assessments</div>
+        </div>
       </div>
 
       <!-- Selector bar -->
@@ -478,6 +493,10 @@ document.addEventListener('click', function(e) {
 function selectMom(group) {
   searchList.classList.remove('open');
   searchInput.value = group.momName;
+  // Newest enrollment first; an active (paired) track wins over completed ones.
+  group.pairings.sort(function(a, b) {
+    return new Date(b.startDate || 0) - new Date(a.startDate || 0);
+  });
   var active = group.pairings.find(function(p){ return p.status === 'paired'; }) || group.pairings[0];
   populateTrackDrop(group, active.pairingId);
   loadReport(active.pairingId);
@@ -640,27 +659,22 @@ function renderReport(data) {
   html += '<div class="rpt-title">Court Summary Report</div>';
   html += '<div class="rpt-subtitle">Court-ready snapshot of quantitative progress, assessments, and documented session history</div>';
   html += '<div class="rpt-meta-grid">';
-  html += '<div class="rpt-meta-col">';
-  html += metaRow('Participant',        esc(p.momName));
-  html += metaRow('Staff Coordinator',  esc(p.coordinatorName || '—'));
-  html += metaRow('Volunteer Advocate', esc(p.advocateName || '—'));
-  html += metaRow('Location',           esc(p.affiliateName || '—'));
-  html += '</div>';
-  html += '<div class="rpt-meta-col">';
-  html += metaRow('Track',            esc(p.trackTitle || '—'));
-  html += metaRow('Track Status',     esc(statusLabel));
-  html += metaRow('Pairing Type',     esc(pairingTypeLabel));
-  html += metaRow('Report Generated', esc(generated));
-  html += '</div>';
+  html += '<div class="rpt-meta-col">' + metaRow('Participant', esc(p.momName)) + '</div>';
+  html += '<div class="rpt-meta-col">' + metaRow('Location', esc(p.affiliateName || '—')) + '</div>';
+  html += '<div class="rpt-meta-col">' + metaRow('Report Generated', esc(generated)) + '</div>';
   html += '</div>';
   html += '</div>';
 
   // ── Section 1: Track Overview ────────────────────────────────────────────
   html += '<div class="rpt-section">';
   html += '<div class="sec-heading">Track Overview</div>';
-  html += '<div class="track-dates">';
-  html += '<strong>Start:</strong> ' + fmtDateLong(p.startDate);
-  html += ' &nbsp;·&nbsp; <strong>End:</strong> ' + (p.endDate ? fmtDateLong(p.endDate) : 'Ongoing');
+  html += '<div class="ov-grid">';
+  html += ovItem('Track',              esc(p.trackTitle || '—'));
+  html += ovItem('Track Status',       esc(statusLabel));
+  html += ovItem('Pairing Type',       esc(pairingTypeLabel));
+  html += ovItem('Staff Coordinator',  esc(p.coordinatorName || '—'));
+  html += ovItem('Volunteer Advocate', esc(p.advocateName || '—'));
+  html += ovItem('Track Dates',        fmtDateLong(p.startDate) + ' – ' + (p.endDate ? fmtDateLong(p.endDate) : 'Ongoing'));
   html += '</div>';
   if (p.trackDescription) {
     html += '<div class="track-desc">' + esc(p.trackDescription) + '</div>';
@@ -697,16 +711,19 @@ function renderReport(data) {
   html += '<div class="sec-heading">Attendance and Session Log</div>';
   html += '<div class="att-summary"><strong>' + documented.length + '</strong> of ' + reportSessions.length + ' sessions documented &nbsp;·&nbsp; Participant present in <strong>' + present.length + '</strong></div>';
 
+  // Engagement is a 1:1 concept — omit the column entirely for group pairings.
+  var isGroupPairing = (p.advocacyType || '').toLowerCase() === 'group';
+
   if (reportSessions.length === 0) {
     html += '<p style="font-size:12px;color:var(--mid);font-style:italic">No sessions on record for this track.</p>';
   } else {
     html += '<table class="rpt-tbl">';
-    html += '<thead><tr><th>#</th><th>Date</th><th>Type</th><th>Attendance</th><th>Engagement</th><th>Lesson Covered</th><th>Note Status</th></tr></thead><tbody>';
+    html += '<thead><tr><th>#</th><th>Date</th><th>Type</th><th>Attendance</th>'
+          + (isGroupPairing ? '' : '<th>Engagement</th>')
+          + '<th>Lesson Covered</th><th>Note Status</th></tr></thead><tbody>';
     reportSessions.forEach(function(s, i) {
       var isGroup  = !!s.advocacyGroupId;
       var isPending = !s.noteStatus || s.noteStatus === 'new';
-      var isReview  = s.noteStatus === 'submitted';
-      var isApproved = s.noteStatus === 'approved';
       var typeLabel  = sessionTypeLabel(s.type);
 
       if (isPending) {
@@ -714,7 +731,7 @@ function renderReport(data) {
         html += '<td>' + (i+1) + '</td>';
         html += '<td>' + fmtDate(s.date) + '</td>';
         html += '<td>' + esc(typeLabel) + '</td>';
-        html += '<td colspan="3" style="color:var(--mid);font-style:italic">Documentation not yet submitted</td>';
+        html += '<td colspan="' + (isGroupPairing ? 2 : 3) + '" style="color:var(--mid);font-style:italic">Documentation not yet submitted</td>';
         html += '<td><span class="badge badge-pending">New</span></td>';
         html += '</tr>';
       } else {
@@ -724,7 +741,7 @@ function renderReport(data) {
         html += '<td>' + fmtDate(s.date) + '</td>';
         html += '<td>' + esc(typeLabel) + '</td>';
         html += '<td>' + promptnessBadge(s.promptness, s.momAttended) + '</td>';
-        html += '<td>' + engagementDisplay(s.engagement, isGroup) + '</td>';
+        if (!isGroupPairing) html += '<td>' + engagementDisplay(s.engagement, isGroup) + '</td>';
         html += '<td style="font-size:11px">' + esc(lessonTitle) + '</td>';
         html += '<td>' + noteStatusBadge(s.noteStatus) + '</td>';
         html += '</tr>';
@@ -791,6 +808,10 @@ function renderReport(data) {
 
 function metaRow(lbl, val) {
   return '<div class="rpt-meta-row"><span class="rpt-meta-lbl">' + lbl + ':</span><span class="rpt-meta-val">' + val + '</span></div>';
+}
+
+function ovItem(lbl, val) {
+  return '<div class="ov-item"><span class="ov-lbl">' + lbl + '</span><span class="ov-val">' + val + '</span></div>';
 }
 
 function buildLessonRows(ltList, lessonMap) {

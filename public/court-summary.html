@@ -839,15 +839,20 @@ function lessonTitleForSession(s, ltMap) {
 function renderDomainAssessment(assess) {
   var preDomains  = (assess.pre  && assess.pre.domains)  || [];
   var postDomains = (assess.post && assess.post.domains) || [];
-  var hasPost = postDomains.length > 0;
+  var hasPost = !!(assess.post);
+  var hasPostScores = postDomains.length > 0;
 
   var html = '<div class="assess-instrument">';
   html += '<div class="assess-name">' + esc((assess.pre || assess.post || {}).name || '') + '</div>';
-  if (!hasPost) html += '<div class="assess-no-post">Post-assessment not yet completed — pre scores shown only.</div>';
+  if (!hasPost) {
+    html += '<div class="assess-no-post">Post-assessment not yet completed — pre scores shown only.</div>';
+  } else if (!hasPostScores) {
+    html += '<div class="assess-no-post">Post-assessment completed ' + fmtDate(assess.post.date) + ' (scores not recorded).</div>';
+  }
 
   html += '<table class="rpt-tbl"><thead><tr>';
   html += '<th>Construct</th><th>Pre Score</th>';
-  if (hasPost) html += '<th>Post Score</th><th>% Change</th>';
+  if (hasPostScores) html += '<th>Post Score</th><th>% Change</th>';
   html += '</tr></thead><tbody>';
 
   var allDomains = preDomains.length ? preDomains : postDomains;
@@ -861,7 +866,7 @@ function renderDomainAssessment(assess) {
     html += '<tr>';
     html += '<td>' + esc(d.name) + '</td>';
     html += '<td>' + (preScore  != null ? preScore  : '—') + '</td>';
-    if (hasPost) {
+    if (hasPostScores) {
       html += '<td>' + (postScore != null ? postScore : '—') + '</td>';
       html += '<td>' + (change != null ? (change >= 0 ? '+' : '') + change + '%' : '—') + '</td>';
     }
@@ -903,22 +908,27 @@ function renderAAPIAssessment(assess) {
 }
 
 function renderTotalScoreAssessment(assess) {
-  var hasPost = !!(assess.post && assess.post.totalScore != null);
+  var hasPost = !!(assess.post);
+  var hasPostScore = !!(assess.post && assess.post.totalScore != null);
   var html = '<div class="assess-instrument">';
   html += '<div class="assess-name">' + esc((assess.pre || assess.post || {}).name || 'Assessment') + '</div>';
-  if (!hasPost) html += '<div class="assess-no-post">Post-assessment not yet completed.</div>';
+  if (!hasPost) {
+    html += '<div class="assess-no-post">Post-assessment not yet completed.</div>';
+  } else if (!hasPostScore) {
+    html += '<div class="assess-no-post">Post-assessment completed ' + fmtDate(assess.post.date) + ' (scores not recorded).</div>';
+  }
   html += '<table class="rpt-tbl"><thead><tr><th>Score Type</th><th>Score</th>';
-  if (hasPost) html += '<th>% Change</th>';
+  if (hasPostScore) html += '<th>% Change</th>';
   html += '</tr></thead><tbody>';
   var preScore  = assess.pre  ? assess.pre.totalScore  : null;
   var postScore = assess.post ? assess.post.totalScore : null;
   var change = pct(preScore, postScore);
   if (preScore != null) {
     html += '<tr><td>Pre Assessment</td><td>' + preScore + '</td>';
-    if (hasPost) html += '<td>—</td>';
+    if (hasPostScore) html += '<td>—</td>';
     html += '</tr>';
   }
-  if (hasPost) {
+  if (hasPostScore) {
     html += '<tr><td>Post Assessment</td><td>' + postScore + '</td>';
     html += '<td>' + (change != null ? (change >= 0 ? '+' : '') + change + '%' : '—') + '</td>';
     html += '</tr>';

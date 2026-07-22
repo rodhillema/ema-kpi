@@ -228,12 +228,20 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           AND (
             s."pairing_id" = $1
             OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
-            OR s."advocacy_group_id" IN (
-              SELECT p2."advocacyGroupId" FROM "Pairing" p2
-              WHERE p2."momId" = $3
-                AND p2."trackId" = $4
-                AND p2."deleted_at" = 0
-                AND p2."advocacyGroupId" IS NOT NULL
+            OR (
+              s."advocacy_group_id" IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM "SessionAttendance" sa_fb
+                WHERE sa_fb."session_id" = s."id"
+                  AND sa_fb."mom_id" = $3
+                  AND sa_fb."deleted_at" = 0
+              )
+              AND EXISTS (
+                SELECT 1 FROM "AdvocacyGroup" ag_fb
+                WHERE ag_fb."id" = s."advocacy_group_id"
+                  AND ag_fb."trackId" = $4
+                  AND ag_fb."deleted_at" = 0
+              )
             )
           )
         ORDER BY COALESCE(s."date_start", s."updated_at") ASC NULLS LAST
@@ -284,12 +292,20 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
             AND (
               s."pairing_id" = $1
               OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
-              OR s."advocacy_group_id" IN (
-                SELECT p2."advocacyGroupId" FROM "Pairing" p2
-                WHERE p2."momId" = $3
-                  AND p2."trackId" = $4
-                  AND p2."deleted_at" = 0
-                  AND p2."advocacyGroupId" IS NOT NULL
+              OR (
+                s."advocacy_group_id" IS NOT NULL
+                AND EXISTS (
+                  SELECT 1 FROM "SessionAttendance" sa_fb
+                  WHERE sa_fb."session_id" = s."id"
+                    AND sa_fb."mom_id" = $3
+                    AND sa_fb."deleted_at" = 0
+                )
+                AND EXISTS (
+                  SELECT 1 FROM "AdvocacyGroup" ag_fb
+                  WHERE ag_fb."id" = s."advocacy_group_id"
+                    AND ag_fb."trackId" = $4
+                    AND ag_fb."deleted_at" = 0
+                )
               )
             )
           ORDER BY COALESCE(s."date_start", s."updated_at") ASC NULLS LAST
@@ -343,6 +359,56 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
         ORDER BY l."order" ASC NULLS LAST
       `, [pairingId]);
       lessons = lRows;
+      // For group-track pairings, Lesson rows may not have pairing_id set.
+      // Fall back to lessons covered in group sessions this mom attended.
+      if (lessons.length === 0 && p.trackId) {
+        try {
+          const { rows: glRows } = await pool.query(`
+            SELECT DISTINCT ON (l."id")
+              l."id",
+              l."source_lesson_template_id" AS "lessonTemplateId",
+              l."status"::text              AS "status",
+              CASE
+                WHEN l."title" ~ '^(Lesson|Lecci[óo]n)\\s+\\d+' THEN l."title"
+                WHEN lt2."title" IS NOT NULL THEN lt2."title"
+                ELSE l."title"
+              END                            AS "title",
+              l."order",
+              (SELECT MAX(s2."date_start")
+                 FROM "SessionNote" sn2
+                 JOIN "Session" s2 ON s2."id" = sn2."session_id" AND s2."deleted_at" = 0
+                WHERE sn2."covered_lesson_id" = l."id"
+                  AND sn2."deleted_at" = 0 AND s2."date_start" IS NOT NULL
+              )                              AS "completedDate"
+            FROM "SessionNote" sn
+            JOIN "Lesson" l ON l."id" = sn."covered_lesson_id" AND l."deleted_at" = 0
+            JOIN "Session" s ON s."id" = sn."session_id" AND s."deleted_at" = 0
+            LEFT JOIN "LessonTemplate" lt2
+              ON lt2."id" = l."source_lesson_template_id" AND lt2."deleted_at" = 0
+            WHERE sn."deleted_at" = 0
+              AND (
+                s."pairing_id" = $1
+                OR (
+                  s."advocacy_group_id" IS NOT NULL
+                  AND EXISTS (
+                    SELECT 1 FROM "SessionAttendance" sa2
+                    WHERE sa2."session_id" = s."id"
+                      AND sa2."mom_id" = $2
+                      AND sa2."deleted_at" = 0
+                  )
+                  AND EXISTS (
+                    SELECT 1 FROM "AdvocacyGroup" ag2
+                    WHERE ag2."id" = s."advocacy_group_id"
+                      AND ag2."trackId" = $3
+                      AND ag2."deleted_at" = 0
+                  )
+                )
+              )
+            ORDER BY l."id", l."order" ASC NULLS LAST
+          `, [pairingId, p.momId, p.trackId]);
+          lessons = glRows;
+        } catch (_) {}
+      }
     } catch (_) {}
 
     // ── Assessments (exact same logic as track-journey) ─────────────────────
@@ -381,7 +447,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           AND a."name" NOT ILIKE '%Legacy%'
           AND ar."deleted_at" = 0
           ${assessmentNameFilter}
-          AND COALESCE(ar."completedAt", ar."lastSaved") >= pr."created_at" - INTERVAL '30 days'
+          AND COALESCE(ar."completedAt", ar."lastSaved") >= pr."created_at" - INTERVAL '90 days'
           AND (pr."completed_on" IS NULL
                OR COALESCE(ar."completedAt", ar."lastSaved") <= pr."completed_on" + INTERVAL '60 days')
         ORDER BY COALESCE(ar."completedAt", ar."lastSaved")
@@ -442,7 +508,7 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
            WHERE s."mom_id" = pr."momId"
              AND s."deleted_at" = 0
              AND s."legacy_ps_id" IS NULL
-             AND s."created_at" >= pr."created_at" - INTERVAL '30 days'
+             AND s."created_at" >= pr."created_at" - INTERVAL '90 days'
              AND (pr."completed_on" IS NULL OR s."created_at" <= pr."completed_on" + INTERVAL '60 days')
            ORDER BY s."created_at"
            LIMIT 1
@@ -483,10 +549,18 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           (SELECT COUNT(*)::int FROM "GoalSubtask" st WHERE st."goal_id" = g."id" AND st."deleted_at" = 0)     AS "subtaskCount",
           (SELECT COUNT(*)::int FROM "GoalSubtask" st WHERE st."goal_id" = g."id" AND st."deleted_at" = 0 AND st."completed_at" IS NOT NULL) AS "subtasksDone"
         FROM "ActionPlanGoal" g
-        WHERE g."pairing_id" = $1
+        WHERE (
+          g."pairing_id" = $1
+          OR g."pairing_id" IN (
+            SELECT p2."id" FROM "Pairing" p2
+            WHERE p2."momId" = $2
+              AND p2."trackId" = $3
+              AND p2."deleted_at" = 0
+          )
+        )
           AND g."deleted_at" = 0
         ORDER BY g."completed_at" NULLS LAST, g."due_date" ASC NULLS LAST
-      `, [pairingId]);
+      `, [pairingId, p.momId, p.trackId]);
 
       for (const g of goalRows) {
         const obj = {

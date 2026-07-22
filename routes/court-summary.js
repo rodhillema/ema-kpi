@@ -536,65 +536,73 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
     } catch (_) {}
 
     // ── Action plan goals ───────────────────────────────────────────────────
-    // Try the most likely Trellis table names; graceful fallback if not found.
+    // Goals live in "Goal" keyed by momId (no pairing link); completion is
+    // doneDate. Subtasks are "ActionItem" rows keyed by goalId.
     let goals = { completed: [], inProgress: [] };
     try {
       const { rows: goalRows } = await pool.query(`
         SELECT
           g."id",
-          g."name"            AS "name",
-          g."status"::text    AS "status",
-          g."due_date"        AS "dueDate",
-          g."completed_at"    AS "completedAt",
-          (SELECT COUNT(*)::int FROM "GoalSubtask" st WHERE st."goal_id" = g."id" AND st."deleted_at" = 0)     AS "subtaskCount",
-          (SELECT COUNT(*)::int FROM "GoalSubtask" st WHERE st."goal_id" = g."id" AND st."deleted_at" = 0 AND st."completed_at" IS NOT NULL) AS "subtasksDone"
-        FROM "ActionPlanGoal" g
-        WHERE (
-          g."pairing_id" = $1
-          OR g."pairing_id" IN (
-            SELECT p2."id" FROM "Pairing" p2
-            WHERE p2."momId" = $2
-              AND p2."trackId" = $3
-              AND p2."deleted_at" = 0
-          )
-        )
+          g."name"      AS "name",
+          g."dueDate"   AS "dueDate",
+          g."doneDate"  AS "completedAt",
+          (SELECT COUNT(*)::int FROM "ActionItem" ai
+            WHERE ai."goalId" = g."id" AND ai."deleted_at" = 0)                                AS "subtaskCount",
+          (SELECT COUNT(*)::int FROM "ActionItem" ai
+            WHERE ai."goalId" = g."id" AND ai."deleted_at" = 0 AND ai."doneDate" IS NOT NULL)  AS "subtasksDone"
+        FROM "Goal" g
+        WHERE g."momId" = $1
           AND g."deleted_at" = 0
-        ORDER BY g."completed_at" NULLS LAST, g."due_date" ASC NULLS LAST
-      `, [pairingId, p.momId, p.trackId]);
+        ORDER BY g."doneDate" NULLS FIRST, g."dueDate" ASC NULLS LAST
+      `, [p.momId]);
 
       for (const g of goalRows) {
         const obj = {
           id:            g.id,
           name:          g.name,
-          status:        g.status,
+          status:        g.completedAt ? 'completed' : 'in_progress',
           dueDate:       g.dueDate,
           completedAt:   g.completedAt,
           subtaskCount:  g.subtaskCount,
           subtasksDone:  g.subtasksDone,
         };
-        if (g.completedAt || (g.status || '').toLowerCase() === 'completed') {
-          goals.completed.push(obj);
-        } else {
-          goals.inProgress.push(obj);
-        }
+        if (g.completedAt) goals.completed.push(obj);
+        else goals.inProgress.push(obj);
       }
     } catch (err) {
-      console.warn('[court-summary] goals query failed (ActionPlanGoal table may not exist):', err.message);
+      console.warn('[court-summary] goals query failed:', err.message);
     }
 
-    // Merge lessons with templates server-side; source_lesson_template_id is
-    // sometimes NULL for group-track lessons, so fall back to positional matching.
+    // Merge lessons with templates server-side. Three sources, in priority order:
+    //   1. Per-pairing Lesson row status (when Trellis tracks it)
+    //   2. Attended session covering the template — group-track lessons often
+    //      have no Lesson row, but each Track_Session carries lesson_template_id
+    //      and SessionAttendance proves the mom was there.
     const lessonByTplId = {};
     lessons.forEach(l => { if (l.lessonTemplateId) lessonByTplId[l.lessonTemplateId] = l; });
+    const attendedByTplId = {};
+    (sessRows || []).forEach(s => {
+      const att = (s.momAttended || '').toLowerCase();
+      if (s.lessonTemplateId && att === 'present' && !attendedByTplId[s.lessonTemplateId]) {
+        attendedByTplId[s.lessonTemplateId] = s;
+      }
+    });
     const lessonProgress = lessonTemplates.map((lt, idx) => {
-      const matched = lessonByTplId[lt.id] || lessons[idx] || null;
+      const matched = lessonByTplId[lt.id] || null;
+      let status        = matched ? (matched.status || 'not_started') : 'not_started';
+      let completedDate = matched ? (matched.completedDate || null) : null;
+      const attSess = attendedByTplId[lt.id];
+      if (attSess && status !== 'completed') {
+        status = 'completed';
+        completedDate = attSess.date || completedDate;
+      }
       return {
         templateId:    lt.id,
         title:         lt.name || '—',
         description:   lt.description,
         order:         lt.order,
-        status:        matched ? (matched.status || 'not_started') : 'not_started',
-        completedDate: matched ? (matched.completedDate || null) : null,
+        status,
+        completedDate,
       };
     });
 

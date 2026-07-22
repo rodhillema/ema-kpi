@@ -201,10 +201,11 @@ body.logged-in .portal-view{display:flex}
   .rpt-tbl th,.rpt-tbl td,.ov-grid,.goal-item{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
   /* Let long sections flow across pages; keep small units intact */
   .rpt-section{ page-break-inside:auto }
-  tr,.goal-item,.assess-instrument,.lp-pills,.ov-grid{ page-break-inside:avoid }
+  tr,.goal-item,.ov-grid,.lp-pills{ page-break-inside:avoid }
   .rpt-tbl thead{ display:table-header-group }
+  /* Keep a heading with the first bit of its section, nothing more, so
+     sections aren't shoved wholesale to the next page. */
   .sec-heading{ break-after:avoid-page;page-break-after:avoid }
-  .att-summary,.lp-pills,.ov-grid{ break-after:avoid-page;page-break-after:avoid }
 }
 </style>
 </head>

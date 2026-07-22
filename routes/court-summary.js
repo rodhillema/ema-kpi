@@ -41,7 +41,7 @@ router.get('/pairings', requireAuth, requireRole, async (req, res) => {
         ${affWhere}
       ORDER BY
         CASE WHEN p."status"::text = 'paired' THEN 0 ELSE 1 END,
-        p."created_at" DESC NULLS LAST
+        m."last_name" ASC, m."first_name" ASC
     `, params);
 
     res.json(rows);

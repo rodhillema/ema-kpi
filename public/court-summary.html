@@ -178,8 +178,8 @@ body.logged-in .portal-view{display:flex}
    @MEDIA PRINT
 ───────────────────────────────────────────────────────────────── */
 @media print {
-  .nav,.sel-bar,.empty-state{ display:none!important }
-  body{ background:white!important }
+  .nav,.sel-bar,.empty-state,.shared-leftnav{ display:none!important }
+  body{ background:white!important;padding-left:0!important;padding-top:0!important }
   .layout{ display:block }
   .main{ padding:0!important;overflow:visible }
   .report{ border:none!important;border-radius:0!important;max-width:100%!important;box-shadow:none }
@@ -187,7 +187,18 @@ body.logged-in .portal-view{display:flex}
   .rpt-tbl th{ -webkit-print-color-adjust:exact;print-color-adjust:exact }
   tr{ page-break-inside:avoid }
   .rpt-section{ page-break-inside:avoid }
+  .print-page-header{ display:flex!important }
 }
+.print-page-header{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 0 14px;
+  border-bottom:2px solid var(--red);
+  margin-bottom:20px;
+}
+.print-page-header-org{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mid)}
+.print-page-header-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;color:var(--dark)}
 </style>
 </head>
 <body class="show-login">
@@ -599,7 +610,15 @@ function renderReport(data) {
   var now = new Date();
   var generated = now.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
 
+  var pairingTypeLabel = (p.advocacyType || '').toLowerCase() === 'group' ? 'Group Pairing' : 'One-on-One Pairing';
+
   var html = '';
+
+  // Print-only page header (hidden on screen, visible when printing)
+  html += '<div class="print-page-header">';
+  html += '<div><div class="print-page-header-org">ĒMA Impact Hub</div><div class="print-page-header-title">Court Summary Report</div></div>';
+  html += '<div class="print-page-header-org">Generated: ' + esc(generated) + '</div>';
+  html += '</div>';
 
   // ── Report header ────────────────────────────────────────────────────────
   html += '<div class="rpt-head">';
@@ -613,6 +632,7 @@ function renderReport(data) {
   html += metaRow('Location',           esc(p.affiliateName || '—'));
   html += metaRow('Staff Coordinator',  esc(p.coordinatorName || '—'));
   html += metaRow('Volunteer Advocate', esc(p.advocateName || '—'));
+  html += metaRow('Pairing Type',       esc(pairingTypeLabel));
   html += metaRow('Report Generated',   esc(generated));
   html += '</div>';
   html += '</div>';

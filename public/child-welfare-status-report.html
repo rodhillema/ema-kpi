@@ -33,8 +33,8 @@
   --faint:#f4f6f3;--white:#fff;
   --intake-tint:#fef6f0;--latest-tint:#f0f5f0;--impact-tint:#fdfaf0;
 }
-html{font-size:14px}
-body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
+html,body{height:100%}html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark)}
 
 /* ── LOGIN ── */
 .login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
@@ -53,7 +53,7 @@ body.logged-in .login-view{display:none!important}
 .login-btn:hover{background:var(--red-dk)}
 
 /* ── PORTAL ── */
-.portal-view{display:none;flex-direction:column;min-height:100vh}
+.portal-view{display:none;flex-direction:column;height:100vh}
 body.logged-in .portal-view{display:flex}
 .cw-loading .toolbar,.cw-loading .steps-strip,.cw-loading .filter-row,.cw-loading .table-wrap{visibility:hidden;height:0;overflow:hidden;margin:0;padding:0}
 .cw-loading-overlay{display:none;text-align:center;padding:120px 20px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:var(--mid)}

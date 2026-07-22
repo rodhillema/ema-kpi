@@ -19,8 +19,8 @@
   --dark:#2C2C2C;--mid:#5A5A5A;--light:#999;
   --border:#E0E0E0;--bg:#fdf7f3;--white:#fff;
 }
-html{font-size:14px}
-body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
+html,body{height:100%}html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--dark)}
 
 /* ── LOGIN ── */
 .login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--bg)}
@@ -39,7 +39,7 @@ body.logged-in .login-view{display:none!important}
 .login-btn:hover{background:var(--red-dk)}
 
 /* ── PORTAL ── */
-.portal-view{display:none;flex-direction:column;min-height:100vh}
+.portal-view{display:none;flex-direction:column;height:100vh}
 body.logged-in .portal-view{display:flex}
 
 /* ── NAV ── */

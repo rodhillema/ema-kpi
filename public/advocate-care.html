@@ -31,8 +31,8 @@
   --dark:#2C2C2C;--mid:#5A6A6A;--border:#dde4e4;
   --faint:#f4f6f3;--white:#fff;
 }
-html{font-size:14px}
-body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark);min-height:100vh}
+html,body{height:100%}html{font-size:14px}
+body{font-family:'Lato',sans-serif;background:var(--lpink);color:var(--dark)}
 
 /* ── LOGIN OVERLAY ── */
 .login-view{display:none;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;padding:40px 16px;background:var(--lpink)}
@@ -54,7 +54,7 @@ body.logged-in .login-view{display:none !important}
 .login-trellis:hover{color:var(--green)}
 
 /* ── PORTAL VIEW ── */
-.portal-view{display:none;flex-direction:column;min-height:100vh}
+.portal-view{display:none;flex-direction:column;height:100vh}
 body.logged-in .portal-view{display:flex}
 /* Loading state */
 .adv-loading .toolbar,.adv-loading .metrics,.adv-loading .filter-pills,.adv-loading .table-wrap{visibility:hidden;height:0;overflow:hidden;margin:0;padding:0}

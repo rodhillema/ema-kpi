@@ -239,8 +239,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
               AND EXISTS (
                 SELECT 1 FROM "AdvocacyGroup" ag_fb
                 WHERE ag_fb."id" = s."advocacy_group_id"
-                  AND ag_fb."trackId" = $4
                   AND ag_fb."deleted_at" = 0
+                  AND ($4::text IS NULL OR ag_fb."trackId" = $4)
               )
             )
           )
@@ -303,8 +303,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                 AND EXISTS (
                   SELECT 1 FROM "AdvocacyGroup" ag_fb
                   WHERE ag_fb."id" = s."advocacy_group_id"
-                    AND ag_fb."trackId" = $4
                     AND ag_fb."deleted_at" = 0
+                    AND ($4::text IS NULL OR ag_fb."trackId" = $4)
                 )
               )
             )
@@ -399,8 +399,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                   AND EXISTS (
                     SELECT 1 FROM "AdvocacyGroup" ag2
                     WHERE ag2."id" = s."advocacy_group_id"
-                      AND ag2."trackId" = $3
                       AND ag2."deleted_at" = 0
+                      AND ($3::text IS NULL OR ag2."trackId" = $3)
                   )
                 )
               )

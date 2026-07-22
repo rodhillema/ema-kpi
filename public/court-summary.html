@@ -62,8 +62,8 @@ body.logged-in .portal-view{display:flex}
 .nav-scope-val{font-size:12px;font-weight:600}
 .nav-user{display:flex;align-items:center;gap:10px}
 .nav-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--white)}
-.nav-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
-.nav-role{font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
+.nav-name{display:block;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--white)}
+.nav-role{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:.5px;text-transform:uppercase}
 .nav-signout{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .15s;text-decoration:none}
 .nav-signout:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.95)}
 
@@ -191,7 +191,7 @@ body.logged-in .portal-view{display:flex}
    @MEDIA PRINT
 ───────────────────────────────────────────────────────────────── */
 @page{
-  margin:14mm 12mm 16mm;
+  margin:16mm 14mm 18mm;
   @bottom-left{
     content:"ĒMA — Every Mother's Advocate  ·  Court Summary Report";
     font-family:'Oswald',sans-serif;font-size:8pt;letter-spacing:.5px;color:#8a8a8a;
@@ -243,21 +243,22 @@ body.logged-in .portal-view{display:flex}
       <span class="nav-hub">Impact Hub</span>
     </div>
     <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar"></div>
+        <div>
+          <span class="nav-name" id="nav-name"></span>
+          <span class="nav-role" id="nav-role"></span>
+        </div>
+      </div>
+      <span class="nav-sep" id="nav-scope-sep" style="display:none"></span>
       <div class="nav-scope" id="nav-scope" style="display:none">
         <span class="nav-scope-lbl">Viewing</span>
         <span class="nav-scope-val" id="nav-scope-val"></span>
       </div>
-      <span class="nav-sep" id="nav-scope-sep" style="display:none"></span>
-      <div class="nav-user">
-        <div style="display:flex;flex-direction:column;gap:1px;text-align:right">
-          <span class="nav-name" id="nav-name"></span>
-          <span class="nav-role" id="nav-role"></span>
-        </div>
-        <div class="nav-avatar" id="nav-avatar"></div>
-      </div>
-      <a class="nav-link" href="/track-journey">Track Journey</a>
-      <a class="nav-link" href="https://app.trellis.org" target="_blank" rel="noopener">Go to Trellis →</a>
-      <button class="nav-signout" id="btn-signout">Sign out</button>
+      <span class="nav-sep"></span>
+      <a href="#" class="nav-signout" id="btn-signout">Sign out</a>
+      <span class="nav-sep"></span>
+      <a class="nav-link" href="https://trellis.ema.org/login" target="_blank" rel="noopener">Go to Trellis →</a>
     </div>
   </nav>
 
@@ -390,7 +391,8 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-document.getElementById('btn-signout').addEventListener('click', async function() {
+document.getElementById('btn-signout').addEventListener('click', async function(e) {
+  e.preventDefault();
   try { await fetch('/api/logout', {method:'POST'}); } catch(e){}
   location.href = '/';
 });

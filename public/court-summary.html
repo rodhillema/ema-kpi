@@ -190,17 +190,7 @@ body.logged-in .portal-view{display:flex}
 /* ─────────────────────────────────────────────────────────────────
    @MEDIA PRINT
 ───────────────────────────────────────────────────────────────── */
-@page{
-  margin:16mm 14mm 18mm;
-  @bottom-left{
-    content:"ĒMA — Every Mother's Advocate  ·  Court Summary Report";
-    font-family:'Oswald',sans-serif;font-size:8pt;letter-spacing:.5px;color:#8a8a8a;
-  }
-  @bottom-right{
-    content:"Page " counter(page) " of " counter(pages);
-    font-family:'Oswald',sans-serif;font-size:8pt;letter-spacing:.5px;color:#8a8a8a;
-  }
-}
+@page{ margin:16mm 14mm 18mm }
 @media print {
   .nav,.sel-bar,.empty-state,.shared-leftnav,.page-head,footer{ display:none!important }
   body{ background:white!important;padding-left:0!important;padding-top:0!important }

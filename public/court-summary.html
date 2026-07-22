@@ -109,7 +109,8 @@ body.logged-in .portal-view{display:flex}
 .rpt-logo{height:32px;width:auto;display:block;margin-bottom:12px}
 .rpt-title{font-family:'Shrikhand',cursive;font-size:22px;color:var(--dark);margin-bottom:2px}
 .rpt-subtitle{font-family:'Oswald',sans-serif;font-size:10px;font-weight:300;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:14px}
-.rpt-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+.rpt-meta-grid{display:flex;gap:40px;flex-wrap:wrap}
+.rpt-meta-col{display:flex;flex-direction:column;gap:4px}
 .rpt-meta-row{display:flex;gap:6px;font-size:12px;line-height:1.5}
 .rpt-meta-lbl{font-family:'Oswald',sans-serif;font-weight:400;font-size:11px;letter-spacing:.4px;color:var(--mid);white-space:nowrap;min-width:110px}
 .rpt-meta-val{font-family:'Lato',sans-serif;font-weight:700;color:var(--dark)}
@@ -201,7 +202,7 @@ body.logged-in .portal-view{display:flex}
 .print-page-header-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;color:var(--dark)}
 </style>
 </head>
-<body class="show-login">
+<body>
 
 <!-- ── Login ──────────────────────────────────────────────────────────── -->
 <div class="login-view">
@@ -626,14 +627,18 @@ function renderReport(data) {
   html += '<div class="rpt-title">Court Summary</div>';
   html += '<div class="rpt-subtitle">Court-ready snapshot of quantitative progress, assessments, and documented session history</div>';
   html += '<div class="rpt-meta-grid">';
+  html += '<div class="rpt-meta-col">';
   html += metaRow('Participant',        esc(p.momName));
-  html += metaRow('Track',              esc(p.trackTitle || '—'));
-  html += metaRow('Track Status',       esc(statusLabel));
-  html += metaRow('Location',           esc(p.affiliateName || '—'));
   html += metaRow('Staff Coordinator',  esc(p.coordinatorName || '—'));
   html += metaRow('Volunteer Advocate', esc(p.advocateName || '—'));
   html += metaRow('Pairing Type',       esc(pairingTypeLabel));
   html += metaRow('Report Generated',   esc(generated));
+  html += '</div>';
+  html += '<div class="rpt-meta-col">';
+  html += metaRow('Track',        esc(p.trackTitle || '—'));
+  html += metaRow('Track Status', esc(statusLabel));
+  html += metaRow('Location',     esc(p.affiliateName || '—'));
+  html += '</div>';
   html += '</div>';
   html += '</div>';
 
@@ -924,7 +929,11 @@ function renderTotalScoreAssessment(assess) {
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 (async function() {
   var user = await checkSession();
-  if (user) await init();
+  if (user) {
+    await init();
+  } else {
+    document.body.classList.add('show-login');
+  }
 })();
 </script>
 </body>

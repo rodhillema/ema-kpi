@@ -228,8 +228,11 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
           AND (
             s."pairing_id" = $1
             OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
+            -- Fallback only when the pairing has no group of its own, scoped
+            -- to the pairing's date window so re-enrollments don't bleed in.
             OR (
-              s."advocacy_group_id" IS NOT NULL
+              $2::text IS NULL
+              AND s."advocacy_group_id" IS NOT NULL
               AND EXISTS (
                 SELECT 1 FROM "SessionAttendance" sa_fb
                 WHERE sa_fb."session_id" = s."id"
@@ -241,6 +244,15 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                 WHERE ag_fb."id" = s."advocacy_group_id"
                   AND ag_fb."deleted_at" = 0
                   AND ($4::text IS NULL OR ag_fb."trackId" = $4)
+              )
+              AND EXISTS (
+                SELECT 1 FROM "Pairing" pr_fb
+                WHERE pr_fb."id" = $1
+                  AND (s."date_start" IS NULL OR (
+                    s."date_start" >= pr_fb."created_at" - INTERVAL '14 days'
+                    AND (pr_fb."completed_on" IS NULL
+                         OR s."date_start" <= pr_fb."completed_on" + INTERVAL '14 days')
+                  ))
               )
             )
           )
@@ -293,7 +305,8 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
               s."pairing_id" = $1
               OR ($2::text IS NOT NULL AND s."advocacy_group_id" = $2)
               OR (
-                s."advocacy_group_id" IS NOT NULL
+                $2::text IS NULL
+                AND s."advocacy_group_id" IS NOT NULL
                 AND EXISTS (
                   SELECT 1 FROM "SessionAttendance" sa_fb
                   WHERE sa_fb."session_id" = s."id"
@@ -305,6 +318,15 @@ router.get('/:pairingId', requireAuth, requireRole, async (req, res) => {
                   WHERE ag_fb."id" = s."advocacy_group_id"
                     AND ag_fb."deleted_at" = 0
                     AND ($4::text IS NULL OR ag_fb."trackId" = $4)
+                )
+                AND EXISTS (
+                  SELECT 1 FROM "Pairing" pr_fb
+                  WHERE pr_fb."id" = $1
+                    AND (s."date_start" IS NULL OR (
+                      s."date_start" >= pr_fb."created_at" - INTERVAL '14 days'
+                      AND (pr_fb."completed_on" IS NULL
+                           OR s."date_start" <= pr_fb."completed_on" + INTERVAL '14 days')
+                    ))
                 )
               )
             )

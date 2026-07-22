@@ -203,6 +203,7 @@ body.logged-in .portal-view{display:flex}
   .rpt-tbl thead{ display:table-header-group }
   .sec-heading{ page-break-after:avoid }
   .print-page-header{ display:flex!important }
+  .rpt-logo{ display:none } /* wordmark already in the print page header */
 }
 .print-page-header{
   display:none;
@@ -212,7 +213,8 @@ body.logged-in .portal-view{display:flex}
   border-bottom:2px solid var(--red);
   margin-bottom:20px;
 }
-.print-page-header-org{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mid)}
+.print-page-header-logo{height:44px;width:auto}
+.print-page-header-org{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-top:3px}
 .print-page-header-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;color:var(--dark)}
 </style>
 </head>
@@ -265,7 +267,6 @@ body.logged-in .portal-view{display:flex}
 
       <!-- Page title -->
       <div class="page-head" id="page-head">
-        <img class="page-logo" src="/e-yellow%20logo.png" alt="ĒMA">
         <div>
           <div class="page-title">Court Summary</div>
           <div class="page-sub">Court-ready snapshot of a participant's track progress, sessions, and assessments</div>
@@ -649,8 +650,8 @@ function renderReport(data) {
 
   // Print-only page header (hidden on screen, visible when printing)
   html += '<div class="print-page-header">';
-  html += '<div><div class="print-page-header-org">ĒMA Impact Hub</div><div class="print-page-header-title">Court Summary Report</div></div>';
-  html += '<div class="print-page-header-org">Generated: ' + esc(generated) + '</div>';
+  html += '<img class="print-page-header-logo" src="/ema-logo-horizontal.png" alt="ĒMA — Every Mother\'s Advocate">';
+  html += '<div style="text-align:right"><div class="print-page-header-title">Court Summary Report</div><div class="print-page-header-org">Generated: ' + esc(generated) + '</div></div>';
   html += '</div>';
 
   // ── Report header ────────────────────────────────────────────────────────

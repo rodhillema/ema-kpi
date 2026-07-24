@@ -1843,7 +1843,7 @@
      </div>
     </div>
     <div class="hc-label">Family Stability Score Improvement</div>
-    <div class="hc-context"><span data-hydrate="kpi2-num">—</span> of <span data-hydrate="kpi2-den">—</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">—</span> moms excluded</div>
+    <div class="hc-context" data-hydrate="kpi2-context"><span data-hydrate="kpi2-num">—</span> of <span data-hydrate="kpi2-den">—</span> moms show composite FSS improvement &nbsp;&middot;&nbsp; <span data-hydrate="kpi2-excl">—</span> moms excluded</div>
     <div class="hc-context hc-fss-split" style="margin-top:4px;font-size:11.5px;color:var(--mid);">
      Improved&nbsp;<strong data-hydrate="kpi2-improved">—</strong>
      &nbsp;&nbsp;Stable&nbsp;<strong data-hydrate="kpi2-stable">—</strong>
@@ -3640,11 +3640,20 @@
      if (k2.stable != null)      setH1('kpi2-stable', k2.stable);
      if (k2.declined != null)    setH1('kpi2-declined', k2.declined);
    } else {
-     // Pending state — replace context line with cohort_n explanation
-     var k2NumEl = tab1.querySelector('[data-hydrate="kpi2-num"]');
-     var k2CtxEl = k2NumEl ? k2NumEl.closest('.hc-context') : null;
+     // Pending state — replace context line with cohort_n explanation.
+     // Select the context div by its OWN data-hydrate id, NOT via the child
+     // [data-hydrate="kpi2-num"] span: setting textContent below wipes the
+     // child spans, so on every render after the first the child lookup
+     // returned null and this block was skipped — freezing the line at the
+     // first-loaded (all-affiliates) value regardless of the selected
+     // affiliate. The div's own attribute survives textContent, so the line
+     // now updates on every affiliate switch.
+     // NOTE: this wipes kpi2-num/den/excl spans; the rate branch above relies
+     // on them, so if the FSS rate is ever un-hidden, restore this div's
+     // span markup before hydrating it.
+     var k2CtxEl = tab1.querySelector('[data-hydrate="kpi2-context"]');
      if (k2CtxEl) {
-       k2CtxEl.textContent = (k2.cohort_n || 0) + ' moms assessed — fewer than 5 eligible pairs';
+       k2CtxEl.textContent = (k2.cohort_n || 0) + ' moms with a matched pre/post assessment';
      }
    }
    if (k3.rate != null) {

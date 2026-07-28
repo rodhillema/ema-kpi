@@ -575,15 +575,17 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function promptnessBadge(promptness, momAttended) {
-  if (!promptness && !momAttended) return '<span class="badge badge-pending">Not recorded</span>';
+function promptnessBadge(promptness, momAttended, isGroup) {
   var p = (promptness || '').toLowerCase();
   var a = (momAttended || '').toLowerCase();
   if (a === 'absent') return '<span class="badge badge-absent">Absent</span>';
+  if (p === 'no show' || p === 'noshow') return '<span class="badge badge-noshow">No show</span>';
   if (p === 'on time' || p === 'ontime') return '<span class="badge badge-ontime">On time</span>';
   if (p === 'late') return '<span class="badge badge-late">Late</span>';
-  if (p === 'no show' || p === 'noshow') return '<span class="badge badge-noshow">No show</span>';
   if (a === 'present') return '<span class="badge badge-present">Present</span>';
+  // One-on-one: this badge only renders for documented notes, so a session with no explicit
+  // attendance flag was still held — show Present rather than "Not recorded".
+  if (!isGroup) return '<span class="badge badge-present">Present</span>';
   return '<span class="badge badge-pending">Not recorded</span>';
 }
 
@@ -635,7 +637,13 @@ function renderReport(data) {
   var present    = documented.filter(function(s){
     var a = (s.momAttended || '').toLowerCase();
     var pr = (s.promptness || '').toLowerCase();
-    return a === 'present' || pr === 'on time' || pr === 'ontime' || pr === 'late';
+    if (s.advocacyGroupId) {
+      // Group session: presence is recorded explicitly in SessionAttendance / promptness.
+      return a === 'present' || pr === 'on time' || pr === 'ontime' || pr === 'late';
+    }
+    // One-on-one session: a documented (approved/submitted) note means the meeting was
+    // held, so count it as attended unless it was explicitly marked absent or a no-show.
+    return a !== 'absent' && pr !== 'no show' && pr !== 'noshow';
   });
 
   var statusLabel = p.status === 'paired' ? 'In Program' : (p.incompleteReason ? 'Incomplete' : 'Completed');
@@ -710,10 +718,17 @@ function renderReport(data) {
   // ── Section 2: Attendance and Session Log ────────────────────────────────
   html += '<div class="rpt-section">';
   html += '<div class="sec-heading">Attendance and Session Log</div>';
-  html += '<div class="att-summary"><strong>' + documented.length + '</strong> of ' + reportSessions.length + ' sessions documented &nbsp;·&nbsp; Participant present in <strong>' + present.length + '</strong></div>';
 
-  // Engagement is a 1:1 concept — omit the column entirely for group pairings.
+  // Engagement (and group-style present/absent counting) is a 1:1 vs group concept.
   var isGroupPairing = (p.advocacyType || '').toLowerCase() === 'group';
+
+  var attSummary = '<strong>' + documented.length + '</strong> of ' + reportSessions.length + ' sessions documented';
+  if (isGroupPairing) {
+    attSummary += ' &nbsp;·&nbsp; Participant present in <strong>' + present.length + '</strong>';
+  } else {
+    attSummary += ' &nbsp;·&nbsp; Participant attended <strong>' + present.length + '</strong> of ' + documented.length;
+  }
+  html += '<div class="att-summary">' + attSummary + '</div>';
 
   if (reportSessions.length === 0) {
     html += '<p style="font-size:12px;color:var(--mid);font-style:italic">No sessions on record for this track.</p>';
@@ -741,7 +756,7 @@ function renderReport(data) {
         html += '<td>' + (i+1) + '</td>';
         html += '<td>' + fmtDate(s.date) + '</td>';
         html += '<td>' + esc(typeLabel) + '</td>';
-        html += '<td>' + promptnessBadge(s.promptness, s.momAttended) + '</td>';
+        html += '<td>' + promptnessBadge(s.promptness, s.momAttended, isGroup) + '</td>';
         if (!isGroupPairing) html += '<td>' + engagementDisplay(s.engagement, isGroup) + '</td>';
         html += '<td style="font-size:11px">' + esc(lessonTitle) + '</td>';
         html += '<td>' + noteStatusBadge(s.noteStatus) + '</td>';

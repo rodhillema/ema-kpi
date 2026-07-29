@@ -203,6 +203,8 @@ tr.dr.sel td{background:var(--pink)}
 .b-track{background:var(--green-lt);color:var(--green)}
 /* Stalled — small oval, yellow, sits after track name */
 .b-stalled{background:var(--yellow-lt);color:#8a4a00;border:1px solid rgba(242,161,54,.45);font-size:9px;padding:1px 6px;letter-spacing:.5px;vertical-align:middle;margin-left:4px}
+/* Waiting — in program but not yet paired / not yet begun. Neutral blue-grey. */
+.b-wait{background:#e7eef5;color:#2c4d6e;border:1px solid rgba(44,77,110,.28);font-size:9px;padding:1px 6px;letter-spacing:.5px;vertical-align:middle;margin-left:4px}
 .copy-cell{display:flex;align-items:center;gap:5px;min-width:0}
 .copy-cell a{color:var(--green);text-decoration:none;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .copy-cell a:hover{text-decoration:underline}
@@ -853,6 +855,8 @@ function trackCell(m){
   // Name as plain text, stalled as pill below (stacked to avoid overflow)
   var out='<span style="font-size:12px;color:var(--dark);display:block;line-height:1.2;">'+fullName+'</span>';
   if(t.stalled)out+='<span class="badge b-stalled" style="margin-left:0;margin-top:3px;display:inline-block;">Stalled</span>';
+  else if(t.awaitingAdvocate)out+='<span class="badge b-wait" style="margin-left:0;margin-top:3px;display:inline-block;">Awaiting advocate</span>';
+  else if(t.notStarted)out+='<span class="badge b-wait" style="margin-left:0;margin-top:3px;display:inline-block;">Waiting to begin</span>';
   return out;
 }
 
@@ -1206,12 +1210,20 @@ function openDrawer(id){
     if(isGroup&&t.advocateName&&t.advocateName!==t.groupName){
       advDisplay=(t.groupName||'Group')+' · '+t.advocateName;
     }
+    // Waiting states: awaiting an advocate (no advocate matched yet) or paired but
+    // not yet begun. When awaiting an advocate there are no sessions yet, so the first
+    // tile shows the program status instead of a "0 / N" that reads like a stall.
+    var waitBadge=t.awaitingAdvocate?'<span class="badge b-wait">AWAITING ADVOCATE</span>'
+                 :t.notStarted?'<span class="badge b-wait">WAITING TO BEGIN</span>':"";
+    var firstTile=t.awaitingAdvocate
+      ?'<div class="d-mi"><div class="d-mi-lbl">Program status</div><div class="d-mi-val" style="font-size:13px;">Waiting to be paired</div></div>'
+      :'<div class="d-mi"><div class="d-mi-lbl">Track sessions</div><div class="d-mi-val">'+t.sessionsDone+' / '+t.sessionsTotal+'</div></div>';
     var tHtml='<div class="d-track-badges">'
       +'<span style="font-size:13px;font-weight:600;color:var(--dark);">'+tFullName+'</span>'
-      +(t.stalled?' <span class="badge b-stalled">STALLED</span>':"")
+      +(t.stalled?' <span class="badge b-stalled">STALLED</span>':waitBadge)
       +'</div>'
       +'<div class="d-track-grid">'
-      +'<div class="d-mi"><div class="d-mi-lbl">Track sessions</div><div class="d-mi-val">'+t.sessionsDone+' / '+t.sessionsTotal+'</div></div>'
+      +firstTile
       +(typeof t.supportSessions==="number"?'<div class="d-mi"><div class="d-mi-lbl">Support sessions</div><div class="d-mi-val">'+t.supportSessions+'</div></div>':'<div class="d-mi"></div>')
       +(advDisplay?'<div class="d-mi" style="grid-column:span 2;"><div class="d-mi-lbl">'+advTypeLabel+'</div><div class="d-mi-val" style="font-size:13px;">'+advDisplay+'</div></div>':"")
       +'</div>';

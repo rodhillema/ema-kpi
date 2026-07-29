@@ -267,16 +267,32 @@ Set in Railway dashboard or `.env` file (never commit `.env`):
 ### Confirmed Enum Values (from Railway DB)
 ```
 Mom.status:       'active', 'inactive'
-Pairing.status:   'paired', 'pairing_complete', 'waiting_to_be_paired'
+Pairing.status:   'paired', 'pairing_complete', 'waiting_to_be_paired'   (whether an advocate is matched)
+Pairing.track_status: 'in_program', 'discharged_incomplete', 'complete'  (whether she's enrolled — the Trellis "Track Status" field)
+Pairing.in_program_track_sub_status: 'waiting_to_begin', 'session_in_progress'   (where she is once in program)
 Session.status:   'Held', 'NotHeld', 'Planned'   (capitalized!)
 Pairing.complete_reason_sub_status:   'completed_full_track', 'completed_without_post_assessment', 'completed_without_support_sessions'
 Pairing.incomplete_reason_sub_status: 'achieved_outcomes', 'extended_wait', 'no_advocate', 'priorities_shifted'
+Pairing.discharge_incomplete_sub_status: 'track_requirements_unmet', 'client_choice', 'relocated', 'other', 'advocate_unable_to_fulfill_duties', 'did_not_initiate_sessions'
 ```
 
-### Active in Track
-- Source: `"Pairing"` table ONLY — never the program track-status field
-- `WHERE p."status"::text = 'paired'`
-- Do NOT use `track_status` field for this — it is unreliable and not used for reporting
+**`status` vs `track_status` — the two are independent and BOTH matter:**
+- `status` answers "is an advocate matched?" — `waiting_to_be_paired` → `paired` → `pairing_complete`.
+- `track_status` answers "is she enrolled in the track?" — `in_program` / `discharged_incomplete` / `complete`.
+- A mom can be `track_status='in_program'` while `status='waiting_to_be_paired'` (assigned to a track, awaiting an advocate). Confirmed cross-tab (Jul 2026): 163 `paired`+`in_program`, **47 `waiting_to_be_paired`+`in_program`**, 899 `pairing_complete`+`complete`, 962 `pairing_complete`+`discharged_incomplete`. `track_status` is well-populated (only 6 null rows of ~2080).
+
+### Active in Track — TWO different definitions, do not conflate
+
+**(a) Active Enrollment KPI** (`routes/report-data.js`, headline metrics):
+- `WHERE p."status"::text = 'paired'` — the stricter "advocate matched and actively delivering" definition.
+- This KPI deliberately does NOT count assigned-but-unpaired moms. Left unchanged.
+
+**(b) Mom Status Report** (`routes/mom-status.js`, coordinator operational tool):
+- Authoritative source is `Pairing.track_status = 'in_program'` (the Trellis "Track Status" field), NOT `status='paired'`.
+- Rationale: a mom is "in a track" the moment she's assigned to one, even while `status='waiting_to_be_paired'`. Keying off `paired` alone dropped ~47 in-program pairings (34 active moms) and mislabeled them as Membership Community — Cristina reported this Jul 2026.
+- `active_pairing` CTE filter: `track_status='in_program' OR (status='paired' AND track_status IS NULL)`. The second clause preserves legacy `paired` rows that never had `track_status` set.
+- The report surfaces `pairing_status` ('Awaiting advocate' when `waiting_to_be_paired`) and `in_program_track_sub_status` ('Waiting to begin' when `waiting_to_begin`) as badges. These moms fold into the "In a Track" bucket per Cristina's decision.
+- (Historical note: the earlier "track_status is unreliable, never use it" rule was wrong for this report — the field is clean. It remains correct that the Active Enrollment KPI uses `paired`.)
 
 ### Membership Community (never "Alumni")
 - Client status Active AND no active pairing record

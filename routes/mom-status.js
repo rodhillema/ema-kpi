@@ -179,6 +179,14 @@ router.get('/', async (req, res) => {
         ORDER BY wa."mom_id", wa."created_at" DESC
       ),
       active_pairing AS (
+        -- "In a track" is authoritatively driven by Pairing.track_status = 'in_program'
+        -- (the Trellis "Track Status" field), NOT by Pairing.status = 'paired'.
+        -- A mom is in program the moment she's assigned to a track, even while her
+        -- pairing status is still 'waiting_to_be_paired' (no advocate matched yet).
+        -- Using 'paired' alone silently dropped ~47 in-program pairings (assigned to a
+        -- track, awaiting an advocate) and mislabeled those moms as Membership Community.
+        -- The paired-with-null-track_status clause preserves a handful of legacy
+        -- 'paired' rows that never had track_status set (no regression for them).
         SELECT DISTINCT ON (p."momId")
           p."momId" AS mom_id,
           p."id" AS pairing_id,
@@ -186,12 +194,21 @@ router.get('/', async (req, res) => {
           p."created_at" AS pairing_started_at,
           t."title" AS track_title,
           p."advocacy_type"::text AS pairing_type,
-          p."advocacyGroupId" AS advocacy_group_id
+          p."advocacyGroupId" AS advocacy_group_id,
+          p."status"::text AS pairing_status,
+          p."in_program_track_sub_status"::text AS in_program_sub
         FROM "Pairing" p
         LEFT JOIN "Track" t ON t."id" = p."trackId"
         WHERE p."deleted_at" = 0
-          AND p."status"::text = 'paired'
-        ORDER BY p."momId", p."created_at" DESC
+          AND (
+            p."track_status"::text = 'in_program'
+            OR (p."status"::text = 'paired' AND p."track_status" IS NULL)
+          )
+        -- When a mom somehow has multiple open pairings, prefer a fully-paired one,
+        -- then the most recently created.
+        ORDER BY p."momId",
+          (CASE WHEN p."status"::text = 'paired' THEN 0 ELSE 1 END),
+          p."created_at" DESC
       ),
       latest_session AS (
         -- Latest session note per mom — date_submitted_c is the true completion date.
@@ -254,6 +271,8 @@ router.get('/', async (req, res) => {
         ap.track_title AS "activeTrackTitle",
         ap.pairing_started_at AS "pairingStartedAt",
         ap.pairing_type AS "activePairingType",
+        ap.pairing_status AS "activePairingStatus",
+        ap.in_program_sub AS "activeInProgramSub",
         ls.session_date AS "lastSessionDate",
         ls.session_status AS "lastSessionStatus",
         lcs.curriculum_date AS "lastCurriculumDate",
@@ -459,6 +478,7 @@ router.get('/', async (req, res) => {
           p."id"                                     AS pairing_id,
           t."title"                                  AS track_title,
           p."status"::text                           AS status,
+          p."track_status"::text                     AS track_status,
           p."advocacy_type"::text                    AS advocacy_type,
           p."created_at"                             AS started_at,
           p."completed_on"                           AS ended_at,
@@ -477,8 +497,12 @@ router.get('/', async (req, res) => {
       const trackHistoryResult = await pool.query(trackHistoryQuery, [momIds]);
       for (const r of trackHistoryResult.rows) {
         if (!trackHistoryByMom[r.mom_id]) trackHistoryByMom[r.mom_id] = [];
+        // 'active' = currently in program (whether fully paired or still awaiting an
+        // advocate). track_status='in_program' is authoritative here, matching the
+        // active_pairing CTE above, so an assigned-but-unpaired track reads "In progress"
+        // in the history rather than falling through to the "Incomplete" default.
         let outcome = 'unknown';
-        if (r.status === 'paired') outcome = 'active';
+        if (r.status === 'paired' || r.track_status === 'in_program') outcome = 'active';
         else if (r.complete_reason)   outcome = 'completed';
         else if (r.incomplete_reason) outcome = 'incomplete';
         const advName = [r.adv_first, r.adv_last].filter(Boolean).join(' ').trim();
@@ -601,10 +625,19 @@ router.get('/', async (req, res) => {
         if (title.includes('nurturing') || title.includes('crianza con')) group = 'NPP';
         else if (title.includes('empowered') || title.includes('crianza empoderada') || title.includes('empoderada')) group = 'EP';
         else if (title.includes('roadmap') || title.includes('resilience') || title.includes('hoja de ruta') || title.includes('resiliencia')) group = 'RR';
+        // Pairing status: 'paired' means an advocate is matched; 'waiting_to_be_paired'
+        // means she's in program on this track but still awaiting an advocate.
+        // in_program sub-status: 'waiting_to_begin' vs 'session_in_progress'.
+        const awaitingAdvocate = r.activePairingStatus === 'waiting_to_be_paired';
+        const notStarted = r.activeInProgramSub === 'waiting_to_begin';
         inProgressTrack = {
           name: r.activeTrackTitle,
           group,
           pairingType: r.activePairingType === 'group' ? 'group' : '1:1',
+          pairingStatus: r.activePairingStatus || null,
+          inProgramSub: r.activeInProgramSub || null,
+          awaitingAdvocate,
+          notStarted,
           sessionsDone,
           sessionsTotal,
           supportSessions: supportByMom[r.id] || 0,

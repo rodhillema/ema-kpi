@@ -575,7 +575,7 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function promptnessBadge(promptness, momAttended, isGroup) {
+function promptnessBadge(promptness, momAttended) {
   var p = (promptness || '').toLowerCase();
   var a = (momAttended || '').toLowerCase();
   if (a === 'absent') return '<span class="badge badge-absent">Absent</span>';
@@ -583,9 +583,6 @@ function promptnessBadge(promptness, momAttended, isGroup) {
   if (p === 'on time' || p === 'ontime') return '<span class="badge badge-ontime">On time</span>';
   if (p === 'late') return '<span class="badge badge-late">Late</span>';
   if (a === 'present') return '<span class="badge badge-present">Present</span>';
-  // One-on-one: this badge only renders for documented notes, so a session with no explicit
-  // attendance flag was still held — show Present rather than "Not recorded".
-  if (!isGroup) return '<span class="badge badge-present">Present</span>';
   return '<span class="badge badge-pending">Not recorded</span>';
 }
 
@@ -641,9 +638,9 @@ function renderReport(data) {
       // Group session: presence is recorded explicitly in SessionAttendance / promptness.
       return a === 'present' || pr === 'on time' || pr === 'ontime' || pr === 'late';
     }
-    // One-on-one session: a documented (approved/submitted) note means the meeting was
-    // held, so count it as attended unless it was explicitly marked absent or a no-show.
-    return a !== 'absent' && pr !== 'no show' && pr !== 'noshow';
+    // One-on-one session: attendance comes from the note's Attendance & Promptness field.
+    // Only On time / Late count as attended; No show and a blank (unrecorded) field do not.
+    return pr === 'on time' || pr === 'ontime' || pr === 'late';
   });
 
   var statusLabel = p.status === 'paired' ? 'In Program' : (p.incompleteReason ? 'Incomplete' : 'Completed');
@@ -756,7 +753,7 @@ function renderReport(data) {
         html += '<td>' + (i+1) + '</td>';
         html += '<td>' + fmtDate(s.date) + '</td>';
         html += '<td>' + esc(typeLabel) + '</td>';
-        html += '<td>' + promptnessBadge(s.promptness, s.momAttended, isGroup) + '</td>';
+        html += '<td>' + promptnessBadge(s.promptness, s.momAttended) + '</td>';
         if (!isGroupPairing) html += '<td>' + engagementDisplay(s.engagement, isGroup) + '</td>';
         html += '<td style="font-size:11px">' + esc(lessonTitle) + '</td>';
         html += '<td>' + noteStatusBadge(s.noteStatus) + '</td>';

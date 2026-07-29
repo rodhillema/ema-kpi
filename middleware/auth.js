@@ -18,6 +18,27 @@ const ORG_WIDE_USERNAMES = ['cristina.galloway'];
 // Roles allowed to access the KPI dashboard (coordinator and above + champion)
 const ALLOWED_ROLES = ['coordinator', 'staff_advocate', 'supervisor', 'administrator', 'champion'];
 
+// Role precedence, most privileged first.
+// Trellis users commonly hold SEVERAL roles (e.g. Jessie Ray is Advocate +
+// Supervisor + Administrator). The Hub must resolve to the most privileged one:
+// picking arbitrarily both blocks logins (if 'advocate' comes back) and changes
+// affiliate scope between sessions (supervisor is affiliate-scoped,
+// administrator is org-wide).
+const ROLE_PRECEDENCE = ['administrator', 'supervisor', 'staff_advocate', 'coordinator', 'advocate'];
+
+// Resolve a user's effective role from every role they hold.
+// Keys are lower-cased so a capitalised Role.key still matches ALLOWED_ROLES.
+// An unrecognised key is returned as-is so the access gate fails closed.
+function resolveRole(roleKeys) {
+  const keys = roleKeys
+    .map(k => (k || '').trim().toLowerCase())
+    .filter(Boolean);
+  for (const role of ROLE_PRECEDENCE) {
+    if (keys.includes(role)) return role;
+  }
+  return keys[0] || null;
+}
+
 // Middleware: require authenticated session
 function requireAuth(req, res, next) {
   if (req.session && req.session.user) return next();
@@ -41,6 +62,11 @@ async function login(req, res) {
 
     const normalizedUsername = username.trim().toLowerCase();
 
+    // Tracks whether the Trellis password checked out, so that a user rejected
+    // purely on role gets told that — instead of "invalid username or password"
+    // after falling through the ChampionUser lookup.
+    let trellisPasswordValid = false;
+
     // 1. Find user in Trellis User table + affiliate name
     const userResult = await pool.query(
       `SELECT u."id", u."username", u."firstName", u."lastName", u."passwordHash", u."affiliateId",
@@ -58,15 +84,18 @@ async function login(req, res) {
       const passwordValid = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
 
       if (passwordValid) {
+        trellisPasswordValid = true;
         // ChampionAccess grant lets a Trellis user (e.g. an advocate) get
         // champion-level Hub access using their existing Trellis password.
+        // Fetch EVERY role — resolveRole() picks the most privileged. Do not
+        // add LIMIT 1 here; multi-role users are common and the row order is
+        // arbitrary without it.
         const [roleResult, grantResult] = await Promise.all([
           pool.query(
             `SELECT r."key"
              FROM "UserRole" ur
              JOIN "Role" r ON r."id" = ur."role_id"
-             WHERE ur."user_id" = $1 AND ur."deleted_at" = 0
-             LIMIT 1`,
+             WHERE ur."user_id" = $1 AND ur."deleted_at" = '0'`,
             [user.id]
           ),
           pool.query(
@@ -78,7 +107,7 @@ async function login(req, res) {
             [user.id]
           ),
         ]);
-        const roleKey = roleResult.rows.length > 0 ? roleResult.rows[0].key : null;
+        const roleKey = resolveRole(roleResult.rows.map(r => r.key));
         const grant = grantResult.rows[0] || null;
         const isWhitelisted = WHITELISTED_USERNAMES.includes(normalizedUsername);
 
@@ -130,6 +159,13 @@ async function login(req, res) {
     );
 
     if (championResult.rows.length === 0) {
+      // Correct Trellis password, but no qualifying role and no ChampionAccess
+      // grant. Say so — reporting "invalid password" here sends people chasing
+      // a credential problem they don't have.
+      if (trellisPasswordValid) {
+        console.warn(`[AUTH] ${normalizedUsername} authenticated but has no qualifying Hub role`);
+        return res.status(403).json({ error: 'Access denied — your Trellis role does not have Impact Hub access. Contact your administrator.' });
+      }
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 

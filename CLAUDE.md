@@ -124,6 +124,34 @@ WHERE ur."user_id" = $1
   AND ur."deleted_at" = '0'
 ```
 
+### Multi-Role Users (Critical)
+
+**Trellis users commonly hold MORE THAN ONE role.** Example: `jessie.ray` is
+Advocate + Supervisor + Administrator. This is normal, not a data error.
+
+**Never `LIMIT 1` a role lookup.** Without `ORDER BY`, Postgres returns an
+arbitrary row, which causes two failures:
+1. If `advocate` comes back, the user is denied access entirely — and because
+   login falls through to the `ChampionUser` table, they get the misleading
+   error "Invalid username or password" despite a correct password.
+2. Affiliate scope changes between sessions — `supervisor` is affiliate-scoped
+   while `administrator` is org-wide, so the same person sees different data.
+
+**Rule:** fetch every role, then resolve to the most privileged via
+`resolveRole()` in `middleware/auth.js`. Precedence, highest first:
+```javascript
+const ROLE_PRECEDENCE = ['administrator', 'supervisor', 'staff_advocate', 'coordinator', 'advocate'];
+```
+Keys are lower-cased before matching, so a capitalised `Role.key` still
+resolves. An unrecognised key is returned unchanged so the gate fails closed.
+
+Note `Role.key` is lowercase (`administrator`); `Role.name` is display-cased
+(`Administrator`). The Trellis admin UI shows `name`. Auth matches on `key`.
+
+This bug masked itself for months because `rd.hill` and `cristina.galloway`
+are both on `WHITELISTED_USERNAMES`, and `isWhitelisted` short-circuits the
+role check — so neither of them ever exercised role resolution.
+
 ### Affiliate Scoping by Role
 - `coordinator`: filter all queries `WHERE affiliate_id = session.user.affiliate_id`
 - `staff_advocate`: same as coordinator — affiliate-scoped

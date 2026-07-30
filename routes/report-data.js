@@ -926,7 +926,14 @@ router.get('/', async (req, res) => {
       // ─── Completions by track + language ────────────────────
       pool.query(`
         SELECT t."title" AS track_title, t."language_type"::text AS language,
-          COUNT(*)::int AS total_closed,
+          -- total_closed = completed + incomplete (excl DNI), matching the
+          -- Track Completions headline universe. DNI (no_advocate) and
+          -- unclassified pairings (no substatus set) are excluded so every
+          -- count on the tab reconciles to the completion-rate denominator.
+          SUM(CASE WHEN p."complete_reason_sub_status" IS NOT NULL
+                    OR (p."incomplete_reason_sub_status" IS NOT NULL
+                        AND p."incomplete_reason_sub_status"::text != 'no_advocate')
+               THEN 1 ELSE 0 END)::int AS total_closed,
           SUM(CASE WHEN p."complete_reason_sub_status" IS NOT NULL THEN 1 ELSE 0 END)::int AS completed,
           -- DNI (no_advocate) excluded from incomplete count per Fix 1 spec:
           -- completion rate = complete / (complete + incomplete excl DNI)

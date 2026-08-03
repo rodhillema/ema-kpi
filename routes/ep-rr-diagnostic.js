@@ -12,7 +12,7 @@ const router  = express.Router();
 const pool    = require('../db');
 
 const DATA_START = '2026-01-01';
-const DATA_END   = '2026-06-30'; // Q2 YTD — matches quarterly KPI reporting window
+const DATA_END   = '2026-07-31'; // Extended through July to reflect the pre/post assessment cleanup (was 2026-06-30, Q2 YTD)
 
 const pf = (v, d = 2) => v == null ? null : parseFloat(parseFloat(v).toFixed(d));
 
